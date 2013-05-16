@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title></title>
+<meta charset="utf-8" />
+<link type="text/css" href="/static/~.css?31" rel="stylesheet" media="screen" />
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+
+    $('#landing_holder').show();
+    setTimeout(function(){
+        $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
+        $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
+    }, 330);
+
+
+    var cur_anchor = false;
+    setInterval(function(){
+    if (cur_anchor != document.location.hash){
+        cur_anchor = document.location.hash;
+        var anchor = cur_anchor.substr(1);
+        if (anchor != 'start'){
+            document.location = '/static/frontend.html#' + anchor;
+        }
+    }
+    }, 330);
+
+
+    $('#download_trigger').click(function(){
+        document.location = 'http://code.google.com/p/wwwtilda/downloads';
+    });
+    $('#continue_trigger').click(function(){
+        document.location = '/static/frontend.html';
+    });
+
+
+});
+
+// google analytics for tilde.pro domain
+if (location.hostname == 'tilde.pro'){
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37277398-1']);
+    _gaq.push(['_trackPageview']);
+    (function(){
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+};
+</script>
+</head>
+<body>
+
+<!-- LANDING LAYOUT -->
+<div id="landing_holder" class="pane">
+
+    <!-- TOP LOGO SIDE -->
+    <div id="top">
+        <div id="tilde_logo"></div>
+    </div>
+
+    <!-- MAIN CONTENT SIDE -->
+    <div id="mainframe" class="shadow">
+        <div id="welcome">
+            <p>Welcome to Tilde, the knowledge-management system for computational material science. In a nutshell, it is a&nbsp;desktop application, which automatically creates the systemized repository from raw scientific modeling data.</p>
+
+            <p>Tilde is an open-source project of Max-Planck Institute for Solid State Research (Stuttgart, Germany) and Saint&nbsp;Petersburg State University (Russia). See more info at <a href="http://wwwtilda.googlecode.com" style="color:#06c;white-space:nowrap">http://wwwtilda.googlecode.com</a></p>
+
+            <div id="download_trigger" class="btn left" style="font-size:1.2em;margin:10px 1px 20px 35px;line-height:1.5em;">Download (all OS) <span style="font-size:2.1em">&darr;</span></div>
+            <div id="continue_trigger" class="btn btn2 right" style="font-size:1.2em;margin:10px 35px 20px 1px;line-height:1.5em;">Run online example <span style="font-size:2.1em">&rarr;</span></div>
+            <div class="clear"></div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+cefpython: ------------------------------------------------------------
+cefpython: Initialize() called
+cefpython: CefInitialize()
+[0507/210607:WARNING:resource_bundle.cc(303)] locale_file_path.empty()
+[0507/210607:FATAL:cef_context.cc(411)] Check failed: !loaded_locale.empty(). Locale could not be found for en-US
+cefpython: ------------------------------------------------------------
+cefpython: Initialize() called
+cefpython: CefInitialize()
+cefwindow: win32gui.RegisterClass(cefadvanced)
+cefwindow: Centering window on the screen.
+cefwindow: windowID = 1704530
+cefpython: CreateBrowserSync() called
+cefpython: navigateUrl: ///Z:/wwwtilda/windows/cef/cefadvanced.html
+cefpython: CefBrowser::CreateBrowserSync()
+cefpython: GetPyBrowser(): creating new PyBrowser, browserId=1
+cefpython: CefBrowser::CreateBrowserSync() succeeded
+cefpython: MessageLoop()
+cefpython: GetPyBrowser(): creating new PyBrowser, browserId=2
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+cefpython: WindowUtils.SetIcon(): popup inherits icon from parent window: 1704530
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/210753:VERBOSE1:cookie_monster.cc(1967)] WARNING: Unsupported cookie scheme: chrome-devtools
+[0507/212308:ERROR_REPORT:cef_context.cc(569)] Check failed: CefThread::CurrentlyOn(CefThread::UI). 
+[0507/212308:ERROR_REPORT:browser_impl.h(182)] Check failed: CefThread::CurrentlyOn(CefThread::UI). 
+[0507/212308:ERROR_REPORT:browser_impl.h(186)] Check failed: CefThread::CurrentlyOn(CefThread::UI). 
+[0507/212308:ERROR_REPORT:browser_appcache_system.cc(184)] Check failed: false. 
