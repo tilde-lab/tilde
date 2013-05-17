@@ -80,10 +80,10 @@ if args.cif:
 # if there are commands, run command-line text interface
 db = None
 if args.add:
-    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['cur_db']))
+    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_db']))
     db.row_factory = sqlite3.Row
     db.text_factory = str
-    print "The database used:", settings['cur_db']
+    print "The database used:", settings['default_db']
 
 
 Tilde = API(db_conn=db, filter=settings['filter'], skip_if_path=settings['skip_if_path'])

@@ -13,13 +13,13 @@ EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../examples')
 DEFAULT_SETUP = {
                 'webport': 7777,
                 'default_db': DEFAULT_DB,
-                'local_dir': 0,
+                'local_dir': None,
                 'demo_regime': 0,
                 'debug_regime': 0,
                 'quick_regime': 0,
                 'filter': 1,
                 'skip_if_path': "-_~",
-                'title': 0
+                'title': None
                 }
 DB_SCHEMA = '''
 DROP TABLE IF EXISTS "results";

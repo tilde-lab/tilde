@@ -606,9 +606,9 @@ function resp__settings(req, data){
         $('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
         if (!_tilde.protected) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
         $('div.ipane_db_field_active').removeClass('ipane_db_field_active');
-        $('div[rel="' + req.switch + '"]').addClass('ipane_db_field_active').children('div').remove();
-        _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switch), 1)
-        _tilde.settings.dbs.unshift(req.switch);
+        $('div[rel="' + req['switch'] + '"]').addClass('ipane_db_field_active').children('div').remove();
+        _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req['switch']), 1)
+        _tilde.settings.dbs.unshift(req['switch']);
         set_repo_title(_tilde.settings.dbs[0], _tilde.settings.dbs.length);
         
         $('#category_holder').empty();
@@ -1131,7 +1131,7 @@ $(document).ready(function(){
     // SETTINGS: CLICKS ON DATABASES
     $('div.db-make-active-trigger').live('click', function(){
         var active_db = $(this).parent().attr('rel');
-        __send('settings',  {area: 'switch', switch: active_db} );
+        __send('settings',  {area: 'switch', 'switch': active_db} );
     });
     $('div.db-delete-trigger').live('click', function(){
         var $e = $(this);
@@ -1226,12 +1226,14 @@ $(document).ready(function(){
     $('#ui-restart').click(function(){ document.location.reload() });
     
     // SETTINGS: USABILITY
-    $('#profile_holder').mouseleave(function(){
-        _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1000);
-    });
-    $('#profile_holder').mouseenter(function(){
-        clearTimeout(_tilde.timeout4);
-    });
+    /* if (!_tilde.debug){
+        $('#profile_holder').mouseleave(function(){
+            _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1000);
+        });
+        $('#profile_holder').mouseenter(function(){
+            clearTimeout(_tilde.timeout4);
+        });
+    } */
 
     // ABOUT
     $('#about_trigger').click(function(){
