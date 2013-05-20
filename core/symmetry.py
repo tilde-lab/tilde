@@ -47,6 +47,9 @@ elif 'linux' in sys.platform:
     from numpy import array
     from numpy import matrix
     
+    if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym', os.X_OK):
+        os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym' )), 0777)
+    
     class SymmetryFinder:
         def __init__(self, tilde_obj):
             self.error = None

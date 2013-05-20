@@ -170,9 +170,9 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         if not settings['local_dir']: return (data, 'Please, define working path!')
-        
+
         userobj['path'] = userobj['path'].replace('../', '')
-        
+
         # skip huge files
         if settings['quick_regime']:
             if os.path.getsize(settings['local_dir'] + userobj['path']) > 25*1024*1024:
@@ -399,13 +399,13 @@ class Request_Handler:
     @staticmethod
     def settings(userobj, session_id):
         data, error = None, None
-        
+
         global Tilde, Users
-        
+
         # *server-side* settings
         if userobj['area'] == 'scan':
             if settings['demo_regime']: return (data, 'Action not allowed!')
-            
+
             if not len(userobj['settings']['local_dir']): return (data, 'Please, input a working path.')
             if not os.path.exists(userobj['settings']['local_dir']) or not os.access(userobj['settings']['local_dir'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
             if 'win' in sys.platform and userobj['settings']['local_dir'].startswith('/'): return (data, 'Working path should not start with slash!')
@@ -417,17 +417,16 @@ class Request_Handler:
             settings['quick_regime'] = userobj['settings']['quick_regime']
             settings['filter'] = userobj['settings']['filter']
             settings['skip_if_path'] = userobj['settings']['skip_if_path']
-            
+
             if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
-            
-            if userobj['settings']['filter'] != settings['filter']:                
-                Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
+
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
 
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
             for i in ['cols', 'colnum']:
                 Users[session_id].usettings[i] = userobj['settings'][i]
-        
+
         # *server + client-side* settings
         elif userobj['area'] == 'switch':
             if not userobj['switch'] in Repo_pool or Users[session_id].cur_db == userobj['switch']: return (data, 'Invalid database switch!')
@@ -439,7 +438,7 @@ class Request_Handler:
 
         data = 1
         return (data, error)
-        
+
     @staticmethod
     def check_version(userobj, session_id):
         data, error = None, None
@@ -455,22 +454,22 @@ class Request_Handler:
         except: data = 'Could not check new version. Update server is unreachable. Please, try again later.'
         else:
             try: int(v.split('.')[0])
-            except: data = 'Could not check new version. Update server answered with something strange. Please, try again later.'            
+            except: data = 'Could not check new version. Update server answered with something strange. Please, try again later.'
             else: data = 'Actual version is %s. Your version is %s' % (v, API.version)
         return (data, error)
-        
+
     @staticmethod
     def db_create(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         if not len(userobj['newname']) or not re.match('^[\w-]+$', userobj['newname']): return (data, 'Invalid name!')
-        
+
         global Repo_pool
         userobj['newname'] = userobj['newname'].replace('../', '') + '.db'
         if len(userobj['newname']) > 21: return (data, 'Please, do not use long names for the databases!')
         if len(Repo_pool) == 6: return (data, 'Due to memory limits cannot manage more than 6 databases!')
         if os.path.exists(DATA_DIR + os.sep + userobj['newname']) or not os.access(DATA_DIR, os.W_OK): return (data, 'Cannot write database file, please, check the path ' + DATA_DIR + os.sep + userobj['newname'])
-        
+
         Repo_pool[userobj['newname']] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + userobj['newname']  ) )
         Repo_pool[userobj['newname']].row_factory = sqlite3.Row
         Repo_pool[userobj['newname']].text_factory = str
@@ -480,7 +479,7 @@ class Request_Handler:
         Repo_pool[userobj['newname']].commit()
         data = 1
         return (data, error)
-        
+
     @staticmethod
     def ph_dos(userobj, session_id):
         data, error = None, None
@@ -683,11 +682,11 @@ class Request_Handler:
             try: os.remove(os.path.abspath(  DATA_DIR + os.sep + userobj['db']  ))
             except:
                 return (data, 'Cannot delete database: ' + "%s" % sys.exc_info()[1])
-            
+
             if userobj['db'] == settings['default_db']:
                 settings['default_db'] = Users[session_id].cur_db
                 if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
-            
+
             data = 1
             return (data, error)
 
@@ -735,7 +734,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
     @tornado.gen.engine
     def on_message(self, message):
         #if not Users[ session_id ].uid: return data, 'Sorry, you must be logged in to perform this operation!'
-        
+
         userobj, output = {}, {'act': '', 'req': '', 'error': '', 'data': ''}
         output['act'], output['req'] = message.split(DELIM)
 
@@ -792,8 +791,8 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         answer = "%s%s%s%s%s%s%s" % (output['act'], DELIM, output['req'], DELIM, output['error'], DELIM, output['data'])
         self.send( answer )
 
-    def _keepalive(self, output, current, timestamp):    
-        if not self.session.session_id in Users: return        
+    def _keepalive(self, output, current, timestamp):
+        if not self.session.session_id in Users: return
         while not Users[ self.session.session_id ].running[ current ].is_set():
             Users[ self.session.session_id ].running[ current ].wait(2.5)
             if time.time() - timestamp > 4:
@@ -827,7 +826,7 @@ class CIFDownloadHandler(tornado.web.RequestHandler):
             self.set_header('Content-type', 'application/download;')
             self.set_header('Content-disposition', 'attachment; filename="' + filename + '.cif')
             self.write(content)
-        
+
 class UpdateServiceHandler(tornado.web.RequestHandler):
     def get(self):
         logging.critical("Client " + self.request.remote_ip + " has requested an update.")
@@ -895,8 +894,8 @@ if __name__ == "__main__":
     debug = True if settings['debug_regime'] else False
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
     logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
-    #logging.basicConfig( level=loglevel, stream=sys.stdout )    
-       
+    #logging.basicConfig( level=loglevel, stream=sys.stdout )
+
     for r in repositories:
         Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
         Repo_pool[r].row_factory = sqlite3.Row
@@ -904,7 +903,7 @@ if __name__ == "__main__":
         Tilde_tags[r] = DataMap( r )
         if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
 
-    Tilde.reload( db_conn=Repo_pool[settings['default_db']], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )    
+    Tilde.reload( db_conn=Repo_pool[settings['default_db']], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
 
     # compiling table columns: invoke modules through their API
     APP_COLS, n = [], 0
@@ -947,7 +946,7 @@ if __name__ == "__main__":
             try: address = socket.gethostname() # socket.gethostbyname(socket.gethostname())
             except: address = 'localhost'
         else: address = 'localhost'
-        address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])        
+        address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
         print "\nWelcome to " + EDITION + " UI service\nPlease, open http://" + address + "/ in your browser\n"
 
