@@ -238,7 +238,7 @@ class Request_Handler:
 
                 # --compulsory part--
                 data += '<tr id=i_' + row['checksum'] + (' class=shared' if row['shared'] else '') + '>'
-                data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
+                #data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
 
                 # --dynamic part--
                 for item in Tilde_cols:
@@ -837,7 +837,7 @@ def build_header(cols):
     # --compulsory part--
     headers_html = '<thead>'
     headers_html += '<tr>'
-    headers_html += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
+    #headers_html += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
 
     # --dynamic part--
     for item in Tilde_cols:

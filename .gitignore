@@ -1,5 +1,5 @@
 *.py[cod]
 !core/deps/pyspglib/_spglib.pyd
 debug.log
-data/*
+data
 core/deps/findsym/findsym.log

@@ -48,7 +48,9 @@ def write_settings(settings):
 # INSTALL MODE
 if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ) ):
     settings = DEFAULT_SETUP
-    if not os.path.exists(DATA_DIR): os.makedirs(DATA_DIR)
+    if not os.path.exists(DATA_DIR):
+        try: os.makedirs(DATA_DIR)
+        except IOError: raise RuntimeError('Fatal error: failed write ' + DATA_DIR)
     if not write_settings(settings): raise RuntimeError('Fatal error: failed to save settings in ' + DATA_DIR)
 try: settings
 except NameError:

@@ -804,7 +804,7 @@ $(document).ready(function(){
 
             var hashes = anchor.split('+');
 
-            if ($('#databrowser').is(':empty')){
+            if (!$('#databrowser td').length){
                 _tilde.timeout3 = setInterval(function(){
                     if (!_tilde.freeze){
                         __send('browse',  {hashes: hashes} );
@@ -1225,16 +1225,6 @@ $(document).ready(function(){
     });
     $('#ui-restart').click(function(){ document.location.reload() });
     
-    // SETTINGS: USABILITY
-    /* if (!_tilde.debug){
-        $('#profile_holder').mouseleave(function(){
-            _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1000);
-        });
-        $('#profile_holder').mouseenter(function(){
-            clearTimeout(_tilde.timeout4);
-        });
-    } */
-
     // ABOUT
     $('#about_trigger').click(function(){
         document.location.hash = '#start';

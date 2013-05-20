@@ -1,5 +1,5 @@
 /* GENERAL SWITCHES */
-*{font-family:'Courier New';margin:0;padding:0;}
+*{font-family:"Courier New";margin:0;padding:0;}
 .left{float:left;}
 .right{float:right;}
 .clear{clear:both;}
@@ -38,7 +38,7 @@ div.btn2{border:1px solid #06c;color:#06c;}
 div.btn2:hover{background:#06c;color:#fff;}
 div.btn3{border:1px solid #900;color:#900;}
 div.btn3:hover{background:#900;color:#fff;}
-#settings_holder div.ipane div.btn{width:auto;margin:3px;padding:3px 5px;line-height:1.4em;}
+#settings_holder > div.ipane div.btn{width:auto;padding:3px 5px;margin:3px;line-height:1.4em;}
 div.shadow{-webkit-box-shadow:-1.5px 1.5px 1.5px 1.5px #999;-moz-box-shadow:-1.5px 1.5px 1.5px 1.5px #999;box-shadow:-1.5px 1.5px 1.5px 1.5px #999;}
 span.link, span.red, span.white{text-decoration:underline;cursor:pointer;color:#06c;}
 span.red{color:#900;}
@@ -52,11 +52,11 @@ div.tiny{font-size:0.7em;line-height:1.1;overflow-x:hidden;}
 div.ipane{display:none;border:1px solid #06c;width:100%;min-height:100px;margin-top:23px;z-index:1;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;word-wrap:break-word;}
 div.ipane > div{clear:both;}
 div.ipane div.ipane-local-menu{height:34px;padding:10px 15px 0 30px;clear:none;}
-#settings_holder div.ipane div.ipane_db_field{width:85%;height:30px;border:1px solid #ccc;margin-bottom:6px;padding:10px;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;}
-#settings_holder div.ipane div.ipane_db_field span{font-size:1.5em;}
-#settings_holder div.ipane div.ipane_db_field input{font-size:1.5em;border:none;width:56%;}
-#settings_holder div.ipane div.ipane_db_field:hover{border:1px solid #000;background:#ffc;}
-#settings_holder div.ipane div.ipane_db_field_active{border:1px solid #000;background:#ffc;}
+#settings_holder div.ipane_db_field{width:85%;height:30px;border:1px solid #ccc;margin-bottom:6px !important;padding:10px !important;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;}
+#settings_holder div.ipane_db_field:hover{border:1px solid #000;background:#ffc;}
+#settings_holder div.ipane_db_field span{font-size:1.5em;float:left;}
+#settings_holder div.ipane_db_field input{font-size:1.5em;border:none;width:56%;float:left;}
+#settings_holder div.ipane_db_field_active{border:1px solid #000;background:#ffc;}
 ul.ipane_ctrl{padding:0 30px;}
 ul.ipane_ctrl li{list-style:none;float:left;color:#06c;font-size:13px;line-height:22px;border:1px solid #06c;height:22px;background:#fff;width:104px;text-align:center;cursor:pointer;margin:0 2px 4px;z-index:10;overflow:hidden;border-top-right-radius:4px;-moz-border-radius-topright:4px;-webkit-border-top-right-radius:4px;border-top-left-radius:4px;-moz-border-radius-topleft:4px;-webkit-border-top-left-radius:4px;}
 ul.ipane_ctrl li:hover {background:#06c;color:#fff;}
@@ -83,7 +83,7 @@ div.flot_holder{width:97%;height:460px;margin:0 auto 5px;}
 div.menu_main_cmds{height:100%;display:table;}
 #countbox{display:table-cell;vertical-align:middle;font-size:0.75em;padding-left:4px;}
 #data_holder{display:none;width:100%;}
-#databrowser{margin:53px auto 150px;}
+#databrowser{position:absolute;width:100%;top:53px;left:0;}
 #collapser_new{width:126px;}
 #collapser_menu{position:absolute;background:#fff;z-index:10;border:1px solid #000;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;}
 #collapser_menu ul li{list-style-type:none;width:132px;height:24px;padding-left:4px;font-size:13px;cursor:pointer;}
@@ -97,7 +97,7 @@ table.tablesorter tr{width:100%;}
 thead tr th:first-child{padding-left:5px;}*/
 tbody td:first-child{padding-left:4px;}
 thead tr th{background:#fff;padding:4px;}
-tbody td{color:#3D3D3D;padding:3px 1px;background:#fff;vertical-align:middle;}
+tbody td{color:#3D3D3D;padding:2px 1px;background:#fff;vertical-align:middle;}
 tbody td.em{font-size:10px;}
 thead tr th.header{background:url(images/ascdesc.gif) no-repeat 98% center;cursor:pointer;}
 thead tr th.headerSortUp{background-image:url(images/asc.gif);}
@@ -156,7 +156,7 @@ div.ii{background:#fff url(images/spinner.gif) no-repeat center center;}
 
 #debug{font-size:1.05em;width:100%;height:100%;overflow-y:scroll;overflow-x:auto;word-wrap:break-word;}
 #tagcloud_holder{background:#fff url(images/spinner.gif) no-repeat center center;}
-#splashscreen{display:none;width:100%;background:#fff;margin-top:53px;}
+#splashscreen{display:none;padding-top:53px;width:100%;background:#fff;}
 #repo_title_holder{width:60%;text-align:center;padding-bottom:15px;}
 h1{font-size:1.4em;}
 #category_holder{width:100%;}
