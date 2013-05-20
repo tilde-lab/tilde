@@ -15,7 +15,7 @@ class NEB:
         images: list of Atoms objects
             Images defining path from initial to final state.
         k: float or list of floats
-            Spring constant(s).  One number or one for each spring.
+            Spring constant(s) in eV/Ang.  One number or one for each spring.
         climb: bool
             Use a climbing image (default is no climbing image).
         parallel: bool

@@ -17,6 +17,7 @@ def read_aims(filename):
     positions = []
     cell = []
     symbols = []
+    magmoms = []
     fix = []
     fix_cart = []
     xyz = np.array([0, 0, 0])
@@ -42,6 +43,8 @@ def read_aims(filename):
             cell.append(floatvect)
             n_periodic = n_periodic + 1
             periodic[n_periodic] = True
+        elif inp[0] == 'initial_moment':
+            magmoms.append(float(inp[1]))
         if inp[0] == 'constrain_relaxation':
             if inp[1] == '.true.':
                 fix.append(i)
@@ -56,7 +59,9 @@ def read_aims(filename):
     elif xyz.any():
         fix_cart.append(FixCartesian(i, xyz))
     atoms = Atoms(symbols, positions)
-    if periodic.all():
+    if len(magmoms) > 0:
+        atoms.set_initial_magnetic_moments(magmoms)
+    if periodic.any():
         atoms.set_cell(cell)
         atoms.set_pbc(periodic)
     if len(fix):
@@ -64,6 +69,7 @@ def read_aims(filename):
     else:
         atoms.set_constraint(fix_cart)
     return atoms
+
 
 def write_aims(filename, atoms):
     """Method to write FHI-aims geometry files.
@@ -125,11 +131,13 @@ def write_aims(filename, atoms):
 # except KeyError:
 #     continue
 
+
 def read_energy(filename):
     for line in open(filename, 'r'):
         if line.startswith('  | Total energy corrected'):
             E = float(line.split()[-2])
     return E
+
 
 def read_aims_output(filename, index = -1):
     """  Import FHI-aims output files with all data available, i.e. relaxations, 
@@ -287,59 +295,3 @@ def read_aims_output(filename, index = -1):
                 if stop < 0:
                     stop += len(images)
         return [images[i] for i in range(start, stop, step)]
-
-def read_aims_calculator(file):
-    """  found instructions for building an FHI-aims calculator in the output file, 
-    read its specifications and return it. """
-    from ase.calculators.aims import Aims
-    calc = Aims()
-    while True:
-        line = file.readline()
-        if "=======================================================" in line:
-            break
-        else:
-            args = line.split()
-            key = '#'
-            if len(args) > 0:
-                key = args[0]
-            if key == '#':
-                comment = True   
-            elif calc.float_params.has_key(key):
-                calc.float_params[key] = float(args[1])
-            elif calc.exp_params.has_key(key):
-                calc.exp_params[key] = float(args[1])
-            elif calc.string_params.has_key(key):
-                calc.string_params[key] = args[1]
-                if len(args) > 2:
-                    for s in args[2:]:
-                        calc.string_params[key] += " "+s
-            elif calc.int_params.has_key(key):
-                calc.int_params[key] = int(args[1])
-            elif calc.bool_params.has_key(key):
-                try:
-                    calc.bool_params[key] = bool(args[1])
-                except:
-                    if key == 'vdw_correction_hirshfeld':
-                        calc.bool_params[key] = True
-            elif calc.list_params.has_key(key):
-                if key == 'output':
-                    # build output string from args:
-                    out_option = ''
-                    for arg in args[1:]:
-                        out_option +=str(arg)+' '
-                    if calc.list_params['output'] is not None:
-                        calc.list_params['output'] += [out_option]
-                    else:
-                        calc.list_params['output'] = [out_option]
-                else:
-                    calc.list_params[key] = list(args[1:])
-            elif '#' in key or calc.input_parameters.has_key(key):
-                key = key[1:]
-                if calc.input_parameters.has_key(key):
-                    calc.input_parameters[key] = args[1]
-                    if len(args) > 2: 
-                        for s in args[2:]:
-                            calc.input_parameters[key] += " "+s                
-            else:
-                raise TypeError('FHI-aims keyword not defined in ASE: ' + key + '. Please check.')
-    return calc

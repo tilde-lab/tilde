@@ -34,9 +34,9 @@ class FLEUR:
     functions:
 
     write_inp
-        generate the input file `inp`
+        generate the input file *inp*
     initialize_density
-        creates the initial density after possible manual edits of `inp`
+        creates the initial density after possible manual edits of *inp*
     calculate
         convergence the total energy. With fleur, one specifies always
         only the number of SCF-iterations so this function launches
@@ -44,12 +44,13 @@ class FLEUR:
     relax
         Uses fleur's internal algorithm for structure
         optimization. Requires that the proper optimization parameters
-        (atoms to optimize etc.) are specified by hand in `inp`
+        (atoms to optimize etc.) are specified by hand in *inp*
 
     """
     def __init__(self, xc='LDA', kpts=None, nbands=None, convergence=None,
                  width=None, kmax=None, mixer=None, maxiter=None,
-                 maxrelax=20, workdir=None, equivatoms=True):
+                 maxrelax=20, workdir=None, equivatoms=True, rmt=None,
+                 lenergy=None):
 
         """Construct FLEUR-calculator object.
 
@@ -83,7 +84,12 @@ class FLEUR:
         equivatoms: bool
             If False: generate inequivalent atoms (default is True).
             Setting to False allows one for example to calculate spin-polarized dimers.
-            Ssee http://www.flapw.de/pm/index.php?n=User-Documentation.InputFileForTheInputGenerator.
+            See http://www.flapw.de/pm/index.php?n=User-Documentation.InputFileForTheInputGenerator.
+        rmt: dictionary
+            rmt values in Angstrom., e.g: {'O': 1.1 * Bohr, 'N': -0.1}
+            Negative number with respect to the rmt set by FLEUR.
+        lenergy: float
+            Lower energy in eV. Default -1.8 * Hartree.
         """
 
         self.xc = xc
@@ -121,6 +127,9 @@ class FLEUR:
 
         self.equivatoms = equivatoms
 
+        self.rmt = rmt
+        self.lenergy = lenergy
+
         self.converged = False
 
     def run_executable(self, mode='fleur', executable='FLEUR'):
@@ -143,9 +152,11 @@ class FLEUR:
         # special handling of exit status from density generation and regular fleur.x
         if mode in ['density']:
             if '!' in err:
+                os.chdir(self.start_dir)
                 raise RuntimeError(executable_use + ' exited with a code %s' % err)
         else:
             if stat != 0:
+                os.chdir(self.start_dir)
                 raise RuntimeError(executable_use + ' exited with a code %d' % stat)
 
 
@@ -265,6 +276,7 @@ class FLEUR:
         err = ''
         while not self.converged:
             if self.niter > self.itmax:
+                os.chdir(self.start_dir)
                 raise RuntimeError('FLEUR failed to convergence in %d iterations' % self.itmax)
 
             self.run_executable(mode='fleur', executable='FLEUR')
@@ -308,19 +320,20 @@ class FLEUR:
             os.system('cp out out_%d' % nrelax)
             os.system('cp cdn1 cdn1_%d' % nrelax)
             if nrelax > self.maxrelax:
+                os.chdir(self.start_dir)
                 raise RuntimeError('Failed to relax in %d iterations' % self.maxrelax)
             self.converged = False
 
 
     def write_inp(self, atoms):
-        """Write the `inp` input file of FLEUR.
+        """Write the *inp* input file of FLEUR.
 
         First, the information from Atoms is written to the simple input
-        file and the actual input file `inp` is then generated with the
+        file and the actual input file *inp* is then generated with the
         FLEUR input generator. The location of input generator is specified
         in the environment variable FLEUR_INPGEN.
 
-        Finally, the `inp` file is modified according to the arguments of
+        Finally, the *inp* file is modified according to the arguments of
         the FLEUR calculator object.
         """
 
@@ -406,6 +419,11 @@ class FLEUR:
             if self.kmax and ln == window_ln:
                 line = '%10.5f\n' % self.kmax
                 lines[ln+2] = line
+            # lower energy
+            if self.lenergy is not None and ln == window_ln:
+                l0 = lines[ln+1].split()[0]
+                l = lines[ln+1].replace(l0, '%8.5f' % (self.lenergy / Hartree))
+                lines[ln+1] = l
             # gmax   cutoff for PW-expansion of potential & density  ( > 2*kmax)
             # gmaxxc cutoff for PW-expansion of XC-potential ( > 2*kmax, < gmax)
             if self.kmax and line.startswith('vchk'):
@@ -453,6 +471,21 @@ class FLEUR:
             # inpgen produces incorrect symbol 'J' for Iodine
             if line.startswith(' J  53'):
                 lines[ln] = lines[ln].replace(' J  53', ' I  53')
+        # rmt
+        if self.rmt is not None:
+            for s in list(set(atoms.get_chemical_symbols())):  # unique
+                if s in self.rmt:
+                    # set the requested rmt
+                    for ln, line in enumerate(lines):
+                        ls = line.split()
+                        if len(ls) == 7 and ls[0].strip() == s:
+                            rorig = ls[5].strip()
+                            if self.rmt[s] < 0.0:
+                                r = float(rorig) + self.rmt[s] / Bohr
+                            else:
+                                r = self.rmt[s] / Bohr
+                            print s, rorig, r
+                            lines[ln] = lines[ln].replace(rorig, ("%.6f" % r))
 
         # write everything back to inp
         fh = open('inp', 'w')

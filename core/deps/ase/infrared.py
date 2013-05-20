@@ -5,12 +5,13 @@
 
 import pickle
 from math import sin, pi, sqrt, exp, log
+from sys import stdout
 
 import numpy as np
 
 import ase.units as units
 from ase.io.trajectory import PickleTrajectory
-from ase.parallel import rank, barrier, parprint
+from ase.parallel import rank, barrier, parprint, paropen
 from ase.vibrations import Vibrations
 
 
@@ -225,26 +226,33 @@ class InfraRed(Vibrations):
         conv = (1.0 / units.Debye)**2*units._amu/units._me
         self.intensities = intensities*conv
 
-    def summary(self, method='standard', direction='central', 
-                intensity_unit='(D/A)2/amu'):
-        hnu = self.get_energies(method, direction)
-        s = 0.01 * units._e / units._c / units._hplanck
+    def intensity_prefactor(self, intensity_unit):
         if intensity_unit == '(D/A)2/amu':
-            iu = 1.0
-            iu_string = '(D/Å)^2 amu^-1'
-            iu_format = '%9.4f'
+            return 1.0, '(D/Å)^2 amu^-1'
         elif intensity_unit == 'km/mol':
             # conversion factor from Porezag PRB 54 (1996) 7830
-            iu = 42.255
-            iu_string = '   km/mol'
-            iu_format = ' %7.1f'
+            return 42.255, 'km/mol'
         else:
             raise RuntimeError('Intensity unit >' + intensity_unit +
                                '< unknown.')
-        parprint('-------------------------------------')
-        parprint(' Mode    Frequency        Intensity')
-        parprint('  #    meV     cm^-1   ' + iu_string)
-        parprint('-------------------------------------')
+
+    def summary(self, method='standard', direction='central', 
+                intensity_unit='(D/A)2/amu', log=stdout):
+        hnu = self.get_energies(method, direction)
+        s = 0.01 * units._e / units._c / units._hplanck
+        iu, iu_string = self.intensity_prefactor(intensity_unit)
+        if intensity_unit == '(D/A)2/amu':
+            iu_format = '%9.4f'
+        elif intensity_unit == 'km/mol':
+            iu_string = '   ' + iu_string
+            iu_format = ' %7.1f'
+        if isinstance(log, str):
+            log = paropen(log, 'a')
+
+        parprint('-------------------------------------', file=log)
+        parprint(' Mode    Frequency        Intensity', file=log)
+        parprint('  #    meV     cm^-1   ' + iu_string, file=log)
+        parprint('-------------------------------------', file=log)
         for n, e in enumerate(hnu):
             if e.imag != 0:
                 c = 'i'
@@ -252,30 +260,44 @@ class InfraRed(Vibrations):
             else:
                 c = ' '
             parprint(('%3d %6.1f%s  %7.1f%s  ' + iu_format) % 
-                     (n, 1000 * e, c, s * e, c, iu * self.intensities[n]))
-        parprint('-------------------------------------')
-        parprint('Zero-point energy: %.3f eV' % self.get_zero_point_energy())
-        parprint('Static dipole moment: %.3f D' % self.dipole_zero)
+                     (n, 1000 * e, c, s * e, c, iu * self.intensities[n]),
+                     file=log)
+        parprint('-------------------------------------', file=log)
+        parprint('Zero-point energy: %.3f eV' % self.get_zero_point_energy(), 
+                file=log)
+        parprint('Static dipole moment: %.3f D' % self.dipole_zero, file=log)
         parprint('Maximum force on atom in `equilibrium`: %.4f eV/Å' % 
-                  self.force_zero)
-        parprint()
+                  self.force_zero, file=log)
+        parprint(file=log)
 
-    def get_spectrum(self, start=800, end=4000, npts=None, width=4, type='Gaussian', method='standard', direction='central'):
+    def get_spectrum(self, start=800, end=4000, npts=None, width=4, 
+                     type='Gaussian', method='standard', direction='central', 
+                     intensity_unit='(D/A)2/amu', normalize=False):
         """Get infrared spectrum.
 
-        The method returns wavenumbers in cm^-1 with corresonding absolute infrared intensity.
-        Start and end point, and width of the Gaussian/Lorentzian should be given in cm^-1."""
+        The method returns wavenumbers in cm^-1 with corresponding 
+        absolute infrared intensity.
+        Start and end point, and width of the Gaussian/Lorentzian should 
+        be given in cm^-1.
+        normalize=True ensures the integral over the peaks to give the 
+        intensity.
+        """
 
         self.type = type.lower()
         assert self.type in ['gaussian', 'lorentzian']
         if not npts: 
             npts = (end-start)/width*10+1
         frequencies = self.get_frequencies(method, direction).real
-        intensities=self.intensities
+        intensities = self.intensities
+        prefactor = 1 
         if type == 'lorentzian':
-            intensities = intensities*width*pi/2.
+            intensities = intensities * width * pi / 2.
+            if normalize:
+                prefactor = 2. / width / pi
         else:
-            sigma = width/2./sqrt(2.*log(2.))
+            sigma = width / 2. / sqrt(2. * log(2.))
+            if normalize:
+                prefactor = 1. / sigma / sqrt(2 * pi)
         #Make array with spectrum data
         spectrum = np.empty(npts,np.float)
         energies = np.empty(npts,np.float)
@@ -284,28 +306,45 @@ class InfraRed(Vibrations):
         for i, energy in enumerate(energies):
             energies[i] = energy
             if type == 'lorentzian':
-                spectrum[i] = (intensities*0.5*width/pi/((frequencies-energy)**2+0.25*width**2)).sum()
+                spectrum[i] = (intensities * 0.5 * width / pi / (
+                        (frequencies - energy)**2 + 0.25 * width**2)).sum()
             else:
-                spectrum[i] = (intensities*np.exp(-(frequencies - energy)**2/2./sigma**2)).sum()
-        return [energies, spectrum]
+                spectrum[i] = (intensities * 
+                               np.exp(-(frequencies - energy)**2 / 
+                                       2. / sigma**2)).sum()
+        return [energies, prefactor * spectrum]
 
-    def write_spectra(self, out='ir-spectra.dat', start=800, end=4000, npts=None, width=10, type='Gaussian', method='standard', direction='central'):
+    def write_spectra(self, out='ir-spectra.dat', start=800, end=4000, 
+                      npts=None, width=10, 
+                      type='Gaussian', method='standard', direction='central', 
+                      intensity_unit='(D/A)2/amu', normalize=False):
         """Write out infrared spectrum to file.
 
-        First column is the wavenumber in cm^-1, the second column the absolute infrared intensities, and
-        the third column the absorbance scaled so that data runs from 1 to 0. Start and end 
-        point, and width of the Gaussian/Lorentzian should be given in cm^-1."""
-        energies, spectrum = self.get_spectrum(start, end, npts, width, type, method, direction)
+        First column is the wavenumber in cm^-1, the second column the 
+        absolute infrared intensities, and
+        the third column the absorbance scaled so that data runs 
+        from 1 to 0. Start and end 
+        point, and width of the Gaussian/Lorentzian should be given 
+        in cm^-1."""
+        energies, spectrum = self.get_spectrum(start, end, npts, width, 
+                                               type, method, direction, 
+                                               normalize)
 
         #Write out spectrum in file. First column is absolute intensities. 
         #Second column is absorbance scaled so that data runs from 1 to 0
-        spectrum2 = 1. - spectrum/spectrum.max()
+        spectrum2 = 1. - spectrum / spectrum.max()
         outdata = np.empty([len(energies), 3])
         outdata.T[0] = energies
         outdata.T[1] = spectrum
         outdata.T[2] = spectrum2
         fd = open(out, 'w')
+        fd.write('# %s folded, width=%g cm^-1\n' % (type.title(), width))
+        iu, iu_string = self.intensity_prefactor(intensity_unit)
+        if normalize:
+            iu_string = 'cm ' + iu_string
+        fd.write('# [cm^-1] %14s\n' % ('[' + iu_string + ']'))
         for row in outdata:
-            fd.write('%.3f  %15.5e  %15.5e \n' % (row[0], row[1], row[2]) )
+            fd.write('%.3f  %15.5e  %15.5e \n' % 
+                     (row[0], iu * row[1], row[2]))
         fd.close()
         #np.savetxt(out, outdata, fmt='%.3f  %15.5e  %15.5e')

@@ -21,12 +21,13 @@ for i in range(3):
             ni.set_calculator(EMT())
             ni.get_potential_energy()
             traj.write(ni)
+    traj.close()
 
     configs = read('Ni.traj@:')
     energies = [config.get_potential_energy() for config in configs]
     ac = [(config.cell[0, 0], config.cell[2, 2]) for config in configs]
     from ase.optimize import polyfit
-    p = polyfit(ac, energies)
+    p = polyfit(ac, energies, 2)
     from scipy.optimize import fmin_bfgs
     a0, c0 = fmin_bfgs(p, (a0, c0))
     print '%.4f %.3f' % (a0, c0 / a0)

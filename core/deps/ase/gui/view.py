@@ -19,11 +19,13 @@ from ase.gui.render import Render
 from ase.gui.colors import ColorWindow
 from ase.gui.defaults import read_defaults
 from ase.utils import rotate
+from ase.quaternions import Quaternion
 
 class View:
     def __init__(self, vbox, rotations):
         self.colormode = 'jmol'  # The default colors
         self.nselected = 0
+        self.labels = None
         self.light_green_markings = 0
         self.axes = rotate(rotations)
         # this is a hack, in order to be able to toggle menu actions off/on
@@ -72,6 +74,7 @@ class View:
         
         if init or frame != self.frame:
             A = self.images.A
+            Disp = self.images.D
             nc = len(self.B1)
             nb = len(self.bonds)
             
@@ -319,7 +322,7 @@ class View:
         if an == "AtomIndex":
             self.labels = [range(self.images.natoms)] * self.images.nimages
         elif an == "NoLabel":
-            self.labels = [""] * self.images.natoms * self.images.nimages
+            self.labels = None
         elif an == "MagMom":
             self.labels = self.images.M
         elif an == "Element":
@@ -327,7 +330,6 @@ class View:
 
         self.draw()
 
-            
     def toggle_show_axes(self, action):
         self.draw()
 
@@ -340,6 +342,14 @@ class View:
 
     def toggle_show_forces(self, action):
         self.show_vectors(self.images.F)
+        self.draw()
+
+    def hide_selected(self, button):
+        self.images.visible[self.images.selected] = False
+        self.draw()
+
+    def show_selected(self, button):
+        self.images.visible[self.images.selected] = True
         self.draw()
 
     def repeat_window(self, menuitem):
@@ -379,13 +389,65 @@ class View:
         self.set_coordinates()
         self.focus(self)
 
+    def set_view(self, menuitem):
+        plane_rotation = menuitem.get_name()
+
+        if plane_rotation == 'xyPlane':
+            self.axes = rotate('0.0x,0.0y,0.0z')
+        elif plane_rotation == 'yzPlane':
+            self.axes = rotate('-90.0x,-90.0y,0.0z')
+        elif plane_rotation == 'zxPlane':
+            self.axes = rotate('90.0x,0.0y,90.0z')
+        elif plane_rotation == 'yxPlane':
+            self.axes = rotate('180.0x,0.0y,90.0z')
+        elif plane_rotation == 'zyPlane':
+            self.axes = rotate('0.0x,90.0y,0.0z')
+        elif plane_rotation == 'xzPlane':
+            self.axes = rotate('-90.0x,0.0y,0.0z')
+        else:
+            if plane_rotation == 'a1a2Plane':
+                i, j = 0, 1
+            elif plane_rotation == 'a2a3Plane':
+                i, j = 1, 2
+            elif plane_rotation == 'a3a1Plane':
+                i, j = 2, 0
+            elif plane_rotation == 'a2a1Plane':
+                i, j = 1, 0
+            elif plane_rotation == 'a3a2Plane':
+                i, j = 2, 1
+            elif plane_rotation == 'a1a3Plane':
+                i, j = 0, 2
+
+            x1 = self.images.A[self.frame, i]
+            x2 = self.images.A[self.frame, j]
+
+            norm = np.linalg.norm
+
+            x1 = x1 / norm(x1)
+            x2 = x2 - x1 * np.dot(x1, x2)
+            x2 /= norm(x2)
+            x3 = np.cross(x1, x2)
+
+            self.axes = np.array([x1, x2, x3]).T
+
+        self.set_coordinates()
+
     def get_colors(self, rgb = False):
         Z = self.images.Z
         if rgb:
-            # create a shape that is equivalent to self.colors,
-            # but contains rgb data instead gtk.gdk.GCX11 objects
-            colarray = [None] * max(len(jmol_colors)+1,len(self.colordata))
+            # Create a shape that is equivalent to self.colors,
+            # but contains rgb data instead gtk.gdk.GCX11 objects.
+            # The rgb data may be three numbers, or a named color.  As
+            # the type of data is unknown, we cannot create an array
+            # beforehand with sensible default values, but need to
+            # create unused elements on the fly.  The type of unused
+            # elements is important to prevent trouble when converting
+            # to numpy arrays.
+            colarray = []
             for z, c in self.colordata:
+                if z >= len(colarray):
+                    # Allocate unused elements as well.
+                    colarray.extend([c,] * (1 + z - len(colarray)))
                 colarray[z] = c
         else:
             colarray = self.colors
@@ -405,6 +467,12 @@ class View:
             nV = (V - self.colormode_velocity_data[0]) * self.colormode_velocity_data[1]
             nV = np.clip(nV.astype(int), 0, len(self.colors)-1)
             colors = np.array(colarray)[nV]
+        elif self.colormode == 'charge':
+            Q = self.images.q[self.frame]
+            nq = ((Q - self.colormode_charge_data[0]) * 
+                  self.colormode_charge_data[1]        )
+            nq = np.clip(nq.astype(int), 0, len(self.colors)-1)
+            colors = np.array(colarray)[nq]
         elif self.colormode == 'manual':
             colors = colarray
         elif self.colormode == 'same':
@@ -429,65 +497,63 @@ class View:
             self.colors = colors
             self.colordata = colordata
 
-    def my_arc(self, gc, fill, j, X, r, n, A):
+    def my_arc(self, gc, fill, j, X, r, n, A, d):
    
         if self.images.shapes is not None:
             rx = (self.images.shapes[j, 0]).round().astype(int)
             ry = (self.images.shapes[j, 1]).round().astype(int)
             rz = (self.images.shapes[j, 2]).round().astype(int)
             circle = rx == ry and ry == rz
+
+            if not circle:
+                Q = Quaternion(self.images.Q[self.frame][j])
+                X2d = np.array([X[j][0], X[j][1]])
+                Ellipsoid = np.array([[1. / (rx*rx), 0, 0],
+                                      [0, 1. / (ry*ry), 0],
+                                      [0, 0, 1. / (rz*rz)]
+                                      ])
+                # Ellipsoid rotated by quaternion as Matrix X' = R X R_transpose
+                El_r = np.dot(Q.rotation_matrix(),
+                              np.dot(Ellipsoid, 
+                                     np.transpose(Q.rotation_matrix())))
+                # Ellipsoid rotated by quaternion and axes as 
+                # Matrix X' =  R_axes X' R_axes
+                El_v = np.dot(np.transpose(self.axes), np.dot(El_r, self.axes))
+                # Projection of rotated ellipsoid on xy plane
+                El_p = Ell = np.array([
+                        [El_v[0][0] - El_v[0][2] * El_v[0][2] / El_v[2][2],
+                         El_v[0][1] - El_v[0][2] * El_v[1][2] / El_v[2][2]],
+                        [El_v[0][1] - El_v[0][2] * El_v[1][2] / El_v[2][2],
+                         El_v[1][1] - El_v[1][2] * El_v[1][2] / El_v[2][2]]
+                        ])
+                # diagonal matrix der Ellipse gibt halbachsen
+                El_p_diag = np.linalg.eig(El_p)
+                # Winkel mit dem Ellipse in xy gedreht ist aus 
+                # eigenvektor der diagonal matrix
+                phi = atan(El_p_diag[1][0][1] / El_p_diag[1][0][0])
+                tupl = []
+                alpha = np.array(range(16)) * 2 * np.pi / 16
+                El_xy = np.array([sqrt(1. / (El_p_diag[0][0])) *
+                                  np.cos(alpha)*np.cos(phi) 
+                                  - sqrt(1./(El_p_diag[0][1])) * 
+                                  np.sin(alpha) * np.sin(phi),
+                                  sqrt(1./(El_p_diag[0][0])) * 
+                                  np.cos(alpha)*np.sin(phi)
+                                  + sqrt(1./(El_p_diag[0][1])) * 
+                                  np.sin(alpha) * np.cos(phi)])
+
+                tupl = (El_xy.transpose() * self.scale + 
+                        X[j][:2]).round().astype(int)
+                # XXX there must be a better way
+                tupl = [tuple(i) for i in tupl]
+
+                return self.pixmap.draw_polygon( gc, fill, tupl)
+            else:
+                return self.pixmap.draw_arc(gc, fill, A[j, 0], A[j, 1], d[j],
+                                            d[j], 0, 23040)
         else:
-            circle = True
-
-        if not circle:
-            Q = self.images.Q[j]
-            X2d = np.array([X[j][0], X[j][1]])
-            Ellipsoid = np.array([[1. / (rx*rx), 0, 0],
-                                  [0, 1. / (ry*ry), 0],
-                                  [0, 0, 1. / (rz*rz)]
-                                  ])
-            # Ellipsoid rotated by quaternion as Matrix X' = R X R_transpose
-            El_r = np.dot(Q.rotation_matrix(),
-                          np.dot(Ellipsoid, 
-                                 np.transpose(Q.rotation_matrix())))
-            # Ellipsoid rotated by quaternion and axes as 
-            # Matrix X' =  R_axes X' R_axes
-            El_v = np.dot(np.transpose(self.axes), np.dot(El_r, self.axes))
-            # Projection of rotated ellipsoid on xy plane
-            El_p = Ell = np.array([
-                    [El_v[0][0] - El_v[0][2] * El_v[0][2] / El_v[2][2],
-                     El_v[0][1] - El_v[0][2] * El_v[1][2] / El_v[2][2]],
-                    [El_v[0][1] - El_v[0][2] * El_v[1][2] / El_v[2][2],
-                     El_v[1][1] - El_v[1][2] * El_v[1][2] / El_v[2][2]]
-                    ])
-            # diagonal matrix der Ellipse gibt halbachsen
-            El_p_diag = np.linalg.eig(El_p)
-            # Winkel mit dem Ellipse in xy gedreht ist aus 
-            # eigenvektor der diagonal matrix
-            phi = atan(El_p_diag[1][0][1] / El_p_diag[1][0][0])
-            tupl = []
-            alpha = np.array(range(20)) *2* np.pi /20
-            El_xy = np.array([sqrt(1. / (El_p_diag[0][0])) *
-                              np.cos(alpha)*np.cos(phi) 
-                              - sqrt(1./(El_p_diag[0][1])) * 
-                              np.sin(alpha) * np.sin(phi),
-                              sqrt(1./(El_p_diag[0][0])) * 
-                              np.cos(alpha)*np.sin(phi)
-                              + sqrt(1./(El_p_diag[0][1])) * 
-                              np.sin(alpha) * np.cos(phi)])
-
-            tupl = (El_xy.transpose() * self.scale + 
-                    X[j][:2]).round().astype(int)
-            # XXX there must be a better way
-            tupl = [tuple(i) for i in tupl]
-
-            return self.pixmap.draw_polygon( gc, fill, tupl)
-        
-        dx = dy = (2 * r).round().astype(int)
-        rj = dx[j]
-        
-        return self.pixmap.draw_arc(gc, fill, A[j, 0], A[j, 1], rj, rj, 
-                                    0, 23040)
+            return self.pixmap.draw_arc(gc, fill, A[j, 0], A[j, 1], d[j], d[j], 
+                                        0, 23040)
 
     def arrow(self, begin, end):
         vec = end - begin
@@ -524,6 +590,7 @@ class View:
         A = (P - r[:, None]).round().astype(int)
         X1 = X[n:, :2].round().astype(int)
         X2 = (np.dot(self.B, axes) - offset).round().astype(int)
+        disp = (np.dot(self.images.D[self.frame],axes)).round().astype(int)
         d = (2 * r).round().astype(int)
 
         vectors = (self.ui.get_widget('/MenuBar/ViewMenu/ShowVelocities'
@@ -545,45 +612,52 @@ class View:
             if a < n:
                 ra = d[a]
                 if visible[a]:
-                    self.my_arc(colors[a], True, a, X, r, n, A)
-                    # start labeling with atomic indexes
-                    # to do: scale position and size with radius in some
-                    # meaningful manner - pick a reference magnification
-                    # where it "looks good" and then go from there ... 
-                    try:
+                    # Draw the atoms
+                    self.my_arc(colors[a], True, a, X, r, n, A, d)
+
+                    # Draw labels on the atoms
+                    if self.labels is not None:
+                        # start labeling with atomic indexes
+                        # to do: scale position and size with radius in some
+                        # meaningful manner - pick a reference magnification
+                        # where it "looks good" and then go from there ... 
                         nlabel = str(self.labels[self.frame][a])
-                    except:
-                        nlabel = ""
-                    colorl = self.foreground_gc
+                        colorl = self.foreground_gc
 
-                    layout = self.drawing_area.create_pango_layout(nlabel)
-                    xlabel = int(A[a,0]+ra/2 - layout.get_size()[0]/2. / pango.SCALE)
-                    ylabel = int(A[a,1]+ra/2 - layout.get_size()[1]/2. / pango.SCALE)
+                        layout = self.drawing_area.create_pango_layout(nlabel)
+                        xlabel = int(A[a,0]+ra/2 - layout.get_size()[0]/2. / pango.SCALE)
+                        ylabel = int(A[a,1]+ra/2 - layout.get_size()[1]/2. / pango.SCALE)
 
-                    self.pixmap.draw_layout(colorl, xlabel, ylabel, layout)
+                        self.pixmap.draw_layout(colorl, xlabel, ylabel, layout)
 
-                if  self.light_green_markings and self.atoms_to_rotate_0[a]:
+                    # Draw cross on constrained atoms
+                    if not dynamic[a]:
+                        R1 = int(0.14644 * ra)
+                        R2 = int(0.85355 * ra)
+                        line(foreground_gc,
+                             A[a, 0] + R1, A[a, 1] + R1,
+                             A[a, 0] + R2, A[a, 1] + R2)
+                        line(foreground_gc,
+                             A[a, 0] + R2, A[a, 1] + R1,
+                             A[a, 0] + R1, A[a, 1] + R2)
+
+                    # Draw velocities og forces
+                    if vectors:
+                        self.arrow(X[a], X[a] + V[a])
+
+                if self.light_green_markings and self.atoms_to_rotate_0[a]:
                     arc(self.green, False, A[a, 0] + 2, A[a, 1] + 2,
                         ra - 4, ra - 4, 0, 23040)
 
-                if not dynamic[a]:
-                    R1 = int(0.14644 * ra)
-                    R2 = int(0.85355 * ra)
-                    line(foreground_gc,
-                         A[a, 0] + R1, A[a, 1] + R1,
-                         A[a, 0] + R2, A[a, 1] + R2)
-                    line(foreground_gc,
-                         A[a, 0] + R2, A[a, 1] + R1,
-                         A[a, 0] + R1, A[a, 1] + R2)
+                # Draw marking circles around the atoms
                 if selected[a]:
-                    self.my_arc(selected_gc, False, a, X, r, n, A)
+                    self.my_arc(selected_gc, False, a, X, r, n, A, d)
                 elif visible[a]:
-                    self.my_arc(foreground_gc, False, a, X, r, n, A)
-                if vectors:
-                    self.arrow(X[a], X[a] + V[a])
+                    self.my_arc(foreground_gc, False, a, X, r, n, A, d)
             else:
+                # Draw unit cell
                 a -= n
-                line(foreground_gc, X1[a, 0], X1[a, 1], X2[a, 0], X2[a, 1])
+                line(foreground_gc, X1[a, 0] + disp[0], X1[a, 1] + disp[1], X2[a, 0] + disp[0], X2[a, 1] + disp[1])
 
         if self.ui.get_widget('/MenuBar/ViewMenu/ShowAxes').get_active():
             self.draw_axes()
@@ -599,8 +673,6 @@ class View:
             self.status()
 
     def draw_axes(self):
-        from ase.quaternions import Quaternion
-        q = Quaternion().from_matrix(self.axes)
         axes_labels = [
                 "<span foreground=\"red\" weight=\"bold\">X</span>",
                 "<span foreground=\"green\" weight=\"bold\">Y</span>",
@@ -622,8 +694,6 @@ class View:
             loy = int(self.height - 20 - self.axes[i][1] * 20\
                     - layout.get_size()[1] / 2. / pango.SCALE)
             self.pixmap.draw_layout(self.foreground_gc, lox, loy, layout)
-
- 
     
     def draw_frame_number(self):
         n = str(self.frame)
@@ -791,4 +861,3 @@ class View:
         
     def show_vectors(self, vectors):
         self.vectors = vectors
-    

@@ -34,9 +34,9 @@ class Task:
         methods.
 
         calcfactory: CalculatorFactory object or str
-            A calculator factory or the name of a calculator.
+        A calculator factory or the name of a calculator.
         collection: dict
-            Collection of systems.
+        Collection of systems.
 
         For the meaning of the other arguments, see the add_options()
         and parse_args() methods."""

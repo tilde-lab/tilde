@@ -6,10 +6,11 @@ warnings.filterwarnings('ignore', 'ase.atoms.*deprecated',)
 
 from ase.test import NotAvailable
 
-# make sure a settings file exist (do this only for the tests please)
+# if CMR_SETTINGS_FILE is missing, cmr raises simply
+# Exception("CMR is not configured properly. Please create the settings file with cmr --create-settings.")
 try:
     import cmr
-except ImportError:
+except (Exception, ImportError):
     raise NotAvailable('CMR is required')
 
 from ase.calculators.emt import EMT
@@ -34,7 +35,7 @@ for (formula, coef) in reaction:
         # add project_id also as a field to support search across projects
         "project_id": project_id,
         "formula": formula,
-        "calculator": calculator.get_name(),
+        "calculator": calculator.name,
         }
     write(filename=('reactions_xsimple.%s.db' % formula),
           images=m, format='db', cmr_params=cmr_params)

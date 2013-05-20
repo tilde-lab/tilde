@@ -5,7 +5,7 @@
 import pickle
 from math import sin, pi, sqrt
 from os import remove
-from os.path import isfile
+from os.path import isfile, getsize
 import sys
 
 import numpy as np
@@ -129,6 +129,9 @@ class Vibrations:
                         filename = ('%s.%d%s%s.pckl' %
                                     (self.name, a, 'xyz'[i],
                                      ndis * ' +-'[sign]))
+                        if (isfile(filename) and getsize(filename) == 0
+                            and rank == 0):
+                            remove(filename)
                         fd = opencew(filename)
                         if fd is not None:
                             disp = ndis * sign * self.delta

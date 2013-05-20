@@ -8,13 +8,9 @@ from glob import glob
 import numpy as np
 
 
-class NotAvailable(SystemExit):
-    def __init__(self, msg, code=0):
-        SystemExit.__init__(self, (msg,code,))
-        self.msg = msg
-        self.code = code
+class NotAvailable(Exception):
+    pass
 
-# -------------------------------------------------------------------
 
 # Custom test case/suite for embedding unittests in the test scripts
 
@@ -26,6 +22,8 @@ else:
     from unittest import TestCase as CustomTestCase
 
 from ase.parallel import paropen
+from ase.calculators.calculator import names as calc_names, get_calculator
+
 
 class CustomTextTestRunner(unittest.TextTestRunner):
     def __init__(self, logname, descriptions=1, verbosity=1):
@@ -54,10 +52,14 @@ class ScriptTestCase(unittest.TestCase):
             execfile(self.filename, {'display': self.display})
         except KeyboardInterrupt:
             raise RuntimeError('Keyboard interrupt')
-        except NotAvailable, err:
-            # Only non-zero error codes are failures
-            if err.code:
+        except ImportError, ex:
+            module = ex.args[0].split()[-1].split('.')[0]
+            if module in ['scipy', 'cmr', 'Scientific']:
+                sys.__stdout__.write('(skipped) ')
+            else:
                 raise
+        except NotAvailable:
+            sys.__stdout__.write('skipped ')
 
     def id(self):
         return self.filename
@@ -75,7 +77,10 @@ class ScriptTestCase(unittest.TestCase):
         return "ScriptTestCase(filename='%s')" % self.filename
 
 
-def test(verbosity=1, dir=None, display=True, stream=sys.stdout):
+def test(verbosity=1, calculators=[],
+         dir=None, display=True, stream=sys.stdout):
+    disable_calculators([name for name in calc_names
+                         if name not in calculators])
     ts = unittest.TestSuite()
     if dir is None:
         # ase/test (__path__[0])
@@ -127,6 +132,21 @@ def test(verbosity=1, dir=None, display=True, stream=sys.stdout):
     sys.stdout = sys.__stdout__
 
     return results
+
+
+def disable_calculators(names):
+    def __init__(self, *args, **kwargs):
+        raise NotAvailable
+
+    for name in names:
+        if name in ['emt', 'lj', 'eam', 'morse']:
+            continue
+        try:
+            cls = get_calculator(name)
+        except ImportError:
+            pass
+        else:
+            cls.__init__ = __init__
 
 
 class World:

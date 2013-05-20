@@ -164,6 +164,7 @@ class BulkTask(OptimizeTask):
                 # relax internal degrees of freedom
                 OptimizeTask.optimize(self, name, atoms, data, trajectory=traj)
             data['relaxed energy'] = atoms.get_potential_energy()
+            data['relaxed volume'] = atoms.get_volume()
         elif self.sfmax is not None:
             # this performs single-point energy calculation
             data = OptimizeTask.calculate(self, name, atoms)
@@ -172,6 +173,7 @@ class BulkTask(OptimizeTask):
             traj = PickleTrajectory(self.get_filename(name, 'traj'), 'w', atoms)
             self.soptimize(name, sf, data, trajectory=traj)
             data['relaxed energy'] = atoms.get_potential_energy()
+            data['relaxed volume'] = atoms.get_volume()
         elif self.fmax is not None:
             data = OptimizeTask.calculate(self, name, atoms)
         else:
@@ -192,7 +194,12 @@ class BulkTask(OptimizeTask):
         for name, data in self.data.items():
             if 'strains' in data:
                 atoms = self.create_system(name)
-                volumes = data['strains']**3 * atoms.get_volume()
+                # use relaxed volume if present
+                if 'relaxed volume' in data:
+                    volume = data['relaxed volume']
+                else:
+                    volume = atoms.get_volume()
+                volumes = data['strains']**3 * volume
                 energies = data['energies']
                 # allow selection of eos type independent of data
                 if self.eos is not None:
@@ -201,7 +208,7 @@ class BulkTask(OptimizeTask):
                     eos = EquationOfState(volumes, energies)
                 try:
                     v, e, B = eos.fit()
-                except ValueError:
+                except (RuntimeError, ValueError):
                     pass
                 else:
                     data['fitted energy'] = e

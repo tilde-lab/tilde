@@ -120,10 +120,13 @@ def write_clr(f, atoms):
 ###
 
 def read_key_val(f):
-    if isinstance(f, str):
-        l = f
-    else:
-        l = f.readline()
+    while True:
+        if isinstance(f, str):
+            l = f
+        else:
+            l = f.readline()
+        if not l.startswith('#'):
+            break
     s = l.split('=')
     if len(s) != 2:
         raise RuntimeError("Line '%s' is not of the form 'key = value'." % l[:-1])

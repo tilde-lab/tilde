@@ -1,41 +1,31 @@
 import numpy as np
+from ase.calculators.calculator import Calculator
 
 
-class LennardJones:
-    def __init__(self, epsilon=1.0, sigma=1.0):
-        self.epsilon = epsilon
-        self.sigma = sigma
-        self.positions = None
+class LennardJones(Calculator):
+    implemented_properties = ['energy', 'forces']
+    default_parameters = {'epsilon': 1.0,
+                          'sigma': 1.0}
+    nolabel = True
 
-    def update(self, atoms):
-        assert not atoms.get_pbc().any()
-        if (self.positions is None or
-            (self.positions != atoms.get_positions()).any()):
-            self.calculate(atoms)
+    def __init__(self, **kwargs):
+        Calculator.__init__(self, **kwargs)
 
-    def get_potential_energy(self, atoms):
-        self.update(atoms)
-        return self.energy
-
-    def get_forces(self, atoms):
-        self.update(atoms)
-        return self._forces
-
-    def get_stress(self, atoms):
-        return np.zeros(6)
-    
-    def calculate(self, atoms):
+    def calculate(self, atoms, properties, changes):
+        epsilon = self.parameters.epsilon
+        sigma = self.parameters.sigma
         positions = atoms.get_positions()
-        self.energy = 0.0
-        self._forces = np.zeros((len(atoms), 3))
+        energy = 0.0
+        forces = np.zeros((len(atoms), 3))
         for i1, p1 in enumerate(positions):
             for i2, p2 in enumerate(positions[:i1]):
                 diff = p2 - p1
                 d2 = np.dot(diff, diff)
-                c6 = (self.sigma**2 / d2)**3
+                c6 = (sigma**2 / d2)**3
                 c12 = c6**2
-                self.energy += 4 * self.epsilon * (c12 - c6)
-                F = 24 * self.epsilon * (2 * c12 - c6) / d2 * diff
-                self._forces[i1] -= F
-                self._forces[i2] += F
-        self.positions = positions.copy()
+                energy += 4 * epsilon * (c12 - c6)
+                F = 24 * epsilon * (2 * c12 - c6) / d2 * diff
+                forces[i1] -= F
+                forces[i2] += F
+        self.results['energy'] = energy
+        self.results['forces'] = forces

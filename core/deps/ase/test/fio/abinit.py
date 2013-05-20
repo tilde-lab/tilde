@@ -11,7 +11,7 @@ from ase.io import read, write
 
 from ase.structure import molecule
 
-m1 = molecule('O2')
+m1 = molecule('O2', pbc=True)
 m1.center(2.0)
 
 write('abinit_save.in', images=m1, format='abinit')

@@ -113,6 +113,7 @@ def write_reactant_con(fileobj, images):
     out.append(' '.join([str(n) for n in atommasses]))
 
     for n in range(ntypes):
+        fixed = np.array([False] * len(atoms))
         out.append(atomtypes[n])
         out.append('Coordinates of Component %d' % (n + 1))
         indices = [i for i, at in enumerate(symbols) if at == atomtypes[n]]

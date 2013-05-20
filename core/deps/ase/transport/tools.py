@@ -346,7 +346,7 @@ def quadlstep(f, Za, Zb, fa, fb, tol, trace, fcnt, hmin, calcutype,
     else:
         pass
     if trace:
-        print fcnt, real(Za), imag(Za), abs(Zh)
+        print fcnt, np.real(Za), np.imag(Za), np.abs(Zh)
     #Check accurancy of integral over this subinterval
     XXk = [Xp[0], Xp[2], Xp[4], Xp[6]]
     WWk = [Wk[0], Wk[2], Wk[4], Wk[6]]

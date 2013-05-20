@@ -33,6 +33,7 @@ defaultpseudopotentials = {'H':'ch_e9g4.pseudo', #  H
                            'Ga':'ga_pw91_us_13elec.pseudo', #  Ga
                            'Ge':'ge_pw91_us_14elec.pseudo', #  Ge
                            'As':'as_pw91_us_15elec.pseudo', #  As
+                           'Br':'Br_us.pseudo', #  Br
                            'Kr':'Kr_us_gga.pseudo', #  Kr
                            'Sr':'Sr_us_cc_pw91.pseudo', #  Sr
                            'Y':'Y_us_cc_pw91.pseudo', #  Y
@@ -47,6 +48,7 @@ defaultpseudopotentials = {'H':'ch_e9g4.pseudo', #  H
                            'Sn':'sn_us_f.pseudo', #  Sn
                            'Sb':'sb_us_gga.pseudo', #  Sb
                            'Te':'te_tm.pseudo', #  Te
+                           'I':'I_us.pseudo', #  I
                            'Xe':'Xe_us_gga.pseudo', #  Xe
                            'Cs':'cs_tm_7el.pseudo', #  Cs
                            'Ba':'Ba_us_cc_pw91.pseudo', #  Ba

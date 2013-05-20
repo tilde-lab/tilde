@@ -115,7 +115,7 @@ class Cluster(Atoms, ClusterBase):
             d = pickle.load(f)
             self.arrays = pickle.load(f)
         except EOFError:
-            raise Warinig('Bad file.')
+            raise Warning('Bad file.')
 
         f.close()
 

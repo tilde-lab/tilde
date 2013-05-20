@@ -3,6 +3,7 @@ import numpy as np
 from ase.atoms import Atoms
 from ase.units import Hartree
 from ase.parallel import paropen
+from ase.data import atomic_numbers
 from ase.calculators.singlepoint import SinglePointCalculator
 
 
@@ -93,7 +94,7 @@ def write_xsf(fileobj, images, data=None):
     fileobj.write('END_BLOCK_DATAGRID_3D\n')
 
 
-def read_xsf(fileobj, index=-1, read_data=True):
+def read_xsf(fileobj, index=-1, read_data=False):
     if isinstance(fileobj, str):
         fileobj = open(fileobj)
 
@@ -130,6 +131,11 @@ def read_xsf(fileobj, index=-1, read_data=True):
                 cell.append([float(x) for x in readline().split()])
 
         line = readline().strip()
+        if line[0] == 'CONVVEC':
+            for i in range(3):
+                readline()
+            line = readline().strip()
+
         assert 'PRIMCOORD' in line
 
         natoms = int(readline().split()[0])
@@ -137,15 +143,19 @@ def read_xsf(fileobj, index=-1, read_data=True):
         positions = []
         for a in range(natoms):
             line = readline().split()
-            numbers.append(int(line[0]))
+            symbol = line[0]
+            if symbol.isdigit():
+                numbers.append(int(symbol))
+            else:
+                numbers.append(atomic_numbers[symbol])
             positions.append([float(x) for x in line[1:]])
 
         positions = np.array(positions)
         if len(positions[0]) == 3:
             forces = None
         else:
-            positions = positions[:, :3]
             forces = positions[:, 3:] * Hartree
+            positions = positions[:, :3]
 
         image = Atoms(numbers, positions, cell=cell, pbc=pbc)
 

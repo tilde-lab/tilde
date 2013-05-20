@@ -1,3 +1,4 @@
+import sys
 from gettext import gettext as _
 import gtk
 import re

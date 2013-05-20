@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+import sys
+
+from ase.test import NotAvailable
+
+if sys.platform in ['win32']:
+    raise NotAvailable('Fails on Windows https://trac.fysik.dtu.dk/projects/ase/ticket/62')
+
 from ase.visualize.vtk import requirevtk, probe_vtk_kilobyte
 
 requirevtk()

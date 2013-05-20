@@ -91,7 +91,7 @@ def read_struct(filename, ase = True):
     else:
         return cell, lattice, pos, atomtype, rmt
 
-def write_struct(filename, atoms2 = None, rmt = None, lattice = 'P'):
+def write_struct(filename, atoms2 = None, rmt = None, lattice = 'P', zza=None):
     atoms=atoms2.copy()
     atoms.set_scaled_positions(atoms.get_scaled_positions())
     f = file(filename, 'w')
@@ -106,12 +106,14 @@ def write_struct(filename, atoms2 = None, rmt = None, lattice = 'P'):
     cell2[0:3] = cell2[0:3] / Bohr
     f.write(('%10.6f' * 6) % tuple(cell2) + '\n')
     #print atoms.get_positions()[0]
+    if zza is None:
+        zza = atoms.get_atomic_numbers()
     for ii in range(nat):
         f.write('ATOM %3i: ' % (ii + 1))
         pos = atoms.get_scaled_positions()[ii]
         f.write('X=%10.8f Y=%10.8f Z=%10.8f\n' % tuple(pos))
         f.write('          MULT= 1          ISPLIT= 1\n')
-        zz = atoms.get_atomic_numbers()[ii]
+        zz = zza[ii]
         if zz > 71:
             ro = 0.000005 
         elif zz > 36:

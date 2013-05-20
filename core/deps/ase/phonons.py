@@ -21,6 +21,7 @@ import ase.units as units
 from ase.parallel import rank, barrier
 from ase.dft import monkhorst_pack
 from ase.io.trajectory import PickleTrajectory
+from ase.utils import opencew
 
 class Displacement:
     """Abstract base class for phonon and el-ph supercell calculations.
@@ -147,20 +148,13 @@ class Displacement:
         
         # Do calculation on equilibrium structure
         filename = self.name + '.eq.pckl'
-        
-        if not isfile(filename):
-            # Wait for all ranks to enter
-            barrier()
-            # Create file
-            if rank == 0:
-                fd = open(filename, 'w')
-                fd.close()
 
+        fd = opencew(filename)
+        if fd is not None:
             # Call derived class implementation of __call__
             output = self.__call__(atoms_N)
             # Write output to file
             if rank == 0:
-                fd = open(filename, 'w')
                 pickle.dump(output, fd)
                 sys.stdout.write('Writing %s\n' % filename)
                 fd.close()
@@ -179,15 +173,11 @@ class Displacement:
                     filename = '%s.%d%s%s.pckl' % \
                                (self.name, a, 'xyz'[i], ' +-'[sign])
                     # Wait for ranks before checking for file
-                    # barrier()                    
-                    if isfile(filename):
+                    # barrier()
+                    fd = opencew(filename)
+                    if fd is None:
                         # Skip if already done
                         continue
-                    # Wait for ranks
-                    barrier()
-                    if rank == 0:
-                        fd = open(filename, 'w')
-                        fd.close()
 
                     # Update atomic positions
                     atoms_N.positions[offset + a, i] = \
@@ -197,7 +187,6 @@ class Displacement:
                     output = self.__call__(atoms_N)
                     # Write output to file    
                     if rank == 0:
-                        fd = open(filename, 'w')
                         pickle.dump(output, fd)
                         sys.stdout.write('Writing %s\n' % filename)
                         fd.close()
@@ -424,7 +413,7 @@ class Phonons(Displacement):
                 C_xNav[index] = C_Nav
 
         # Make unitcell index the first and reshape
-        C_N = C_xNav.swapaxes(0 ,1). reshape((N,) + (3 * natoms, 3 * natoms))
+        C_N = C_xNav.swapaxes(0 ,1).reshape((N,) + (3 * natoms, 3 * natoms))
 
         # Cut off before symmetry and acoustic sum rule are imposed
         if cutoff is not None:
@@ -689,7 +678,7 @@ class Phonons(Displacement):
             dos_el = 1. / (diff_el + (0.5 * delta)**2)
             dos_e += dos_el.sum(axis=1)
 
-        dos_e *= 1./(N * pi) * 0.5*delta
+        dos_e *= 1. / (N * pi) * 0.5 * delta
         
         return omega_e, dos_e
     
@@ -700,7 +689,7 @@ class Phonons(Displacement):
         Parameters
         ----------
         q_c: ndarray
-            q-vector of modes.
+            q-vector of the modes.
         branches: int or list
             Branch index of modes.
         kT: float
@@ -755,12 +744,12 @@ class Phonons(Displacement):
             # Insert slice with atomic displacements for the included atoms
             mode_av[self.indices] = u_av
             # Repeat and multiply by Bloch phase factor
-            mode_Nav = (np.vstack(N * [mode_av]) * phase_Na[:, np.newaxis]).real
+            mode_Nav = np.vstack(N * [mode_av]) * phase_Na[:, np.newaxis]
             
             traj = PickleTrajectory('%s.mode.%d.traj' % (self.name, l), 'w')
             
             for x in np.linspace(0, 2*pi, nimages, endpoint=False):
-                atoms.set_positions(pos_Nav + sin(x) * mode_Nav)
+                atoms.set_positions((pos_Nav + np.exp(1.j * x) * mode_Nav).real)
                 traj.write(atoms)
                 
             traj.close()

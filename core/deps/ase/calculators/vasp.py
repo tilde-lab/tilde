@@ -27,6 +27,8 @@ from os.path import join, isfile, islink
 import numpy as np
 
 import ase
+import ase.io
+from ase.utils import devnull
 
 # Parameters that can be set in INCAR. The values which are None
 # are not written and default parameters of VASP are used for them.
@@ -43,10 +45,12 @@ float_keys = [
     'bmix_mag',   #
     'deper',      # relative stopping criterion for optimization of eigenvalue
     'ebreak',     # absolute stopping criterion for optimization of eigenvalues (EDIFF/N-BANDS/4)
+    'efield',     # applied electrostatic field
     'emax',       # energy-range for DOSCAR file
     'emin',       #
     'enaug',      # Density cutoff
     'encut',      # Planewave cutoff
+    'encutgw',    # energy cutoff for response function
     'encutfock',  # FFT grid in the HF related routines
     'hfscreen',   # attribute to change from PBE0 to HSE
     'kspacing', # determines the number of k-points if the KPOINTS
@@ -59,6 +63,7 @@ float_keys = [
     'param2',     # Exchange parameter
     'pomass',     # mass of ions in am
     'sigma',      # broadening in eV
+    'spring',     # spring constant for NEB
     'time',       # special control tag
     'weimin',     # maximum weight for a band to be considered empty
     'zab_vdw',    # vdW-DF parameter
@@ -98,6 +103,7 @@ string_keys = [
     'system',     # name of System
     'tebeg',      #
     'teend',      # temperature during run
+    'precfock',    # FFT grid in the HF related routines
 ]
 
 int_keys = [
@@ -105,6 +111,7 @@ int_keys = [
     'ibrion',     # ionic relaxation: 0-MD 1-quasi-New 2-CG
     'icharg',     # charge: 0-WAVECAR 1-CHGCAR 2-atom 10-const
     'idipol',     # monopol/dipol and quadropole corrections
+    'images',     # number of images for NEB calculation
     'iniwav',     # initial electr wf. : 0-lowe 1-rand
     'isif',       # calculate stress and what to relax
     'ismear',     # part. occupancies: -5 Blochl -4-tet -1-fermi 0-gaus >0 MP
@@ -134,6 +141,8 @@ int_keys = [
     'nkredx',      # define sub grid of q-points in x direction for HF
     'nkredy',      # define sub grid of q-points in y direction for HF
     'nkredz',      # define sub grid of q-points in z direction for HF
+    'nomega',     # number of frequency points
+    'nomegar',    # number of frequency points on real axis
     'npar',       # parallelization over bands
     'nsim',       # evaluate NSIM bands simultaneously if using RMM-DIIS
     'nsw',        # number of steps for ionic upd.
@@ -223,9 +232,9 @@ keys = [
 ]
 
 class Vasp(Calculator):
+    name = 'Vasp'
     def __init__(self, restart=None, output_template='vasp', track_output=False,
                  **kwargs):
-        self.name = 'Vasp'
         self.float_params = {}
         self.exp_params = {}
         self.string_params = {}
@@ -267,6 +276,7 @@ class Vasp(Calculator):
             'kpts':       (1,1,1), # k-points
             'gamma':      False,   # Option to use gamma-sampling instead
                                    # of Monkhorst-Pack
+            'kpts_nintersections': None,  # number of points between points in band structures
             'reciprocal': False,   # Option to write explicit k-points in units
                                    # of reciprocal lattice vectors
             })
@@ -462,7 +472,9 @@ class Vasp(Calculator):
 
         # Write input
         from ase.io.vasp import write_vasp
-        write_vasp('POSCAR', self.atoms_sorted, symbol_count = self.symbol_count)
+        write_vasp('POSCAR',
+                   self.atoms_sorted,
+                   symbol_count=self.symbol_count)
         self.write_incar(atoms)
         self.write_potcar()
         self.write_kpoints()
@@ -473,7 +485,8 @@ class Vasp(Calculator):
         # Read output
         atoms_sorted = ase.io.read('CONTCAR', format='vasp')
         if self.int_params['ibrion']>-1 and self.int_params['nsw']>0:
-            # Update atomic positions and unit cell with the ones read from CONTCAR.
+            # Update atomic positions and unit cell with the ones read
+            # from CONTCAR.
             atoms.positions = atoms_sorted[self.resort].positions
             atoms.cell = atoms_sorted.cell
         self.converged = self.read_convergence()
@@ -483,7 +496,9 @@ class Vasp(Calculator):
         self.read(atoms)
         if self.spinpol:
             self.magnetic_moment = self.read_magnetic_moment()
-            if self.int_params['lorbit']>=10 or (self.int_params['lorbit']!=None and self.list_params['rwigs']):
+            if (self.int_params['lorbit']>=10
+                or (self.int_params['lorbit']!=None
+                    and self.list_params['rwigs'])):
                 self.magnetic_moments = self.read_magnetic_moments(atoms)
             else:
                 self.magnetic_moments = None
@@ -534,7 +549,6 @@ class Vasp(Calculator):
 
     def restart_load(self):
         """Method which is called upon restart."""
-        import ase.io
         # Try to read sorting file
         if os.path.isfile('ase-sort.dat'):
             self.sort = []
@@ -588,9 +602,6 @@ class Vasp(Calculator):
         atoms = self.atoms.copy()
         atoms.set_calculator(self)
         return atoms
-
-    def get_name(self):
-        return self.name
 
     def get_version(self):
         self.update(self.atoms)
@@ -1028,19 +1039,39 @@ class Vasp(Calculator):
         converged = None
         # First check electronic convergence
         for line in open('OUTCAR', 'r'):
+            if 0:  # vasp always prints that!
+                if line.rfind('aborting loop') > -1:  # scf failed
+                    raise RuntimeError(line.strip())
+                    break
             if line.rfind('EDIFF  ') > -1:
                 ediff = float(line.split()[2])
             if line.rfind('total energy-change')>-1:
+                # I saw this in an atomic oxygen calculation. it
+                # breaks this code, so I am checking for it here.
+                if 'MIXING' in line:
+                    continue
                 split = line.split(':')
                 a = float(split[1].split('(')[0])
-                b = float(split[1].split('(')[1][0:-2])
+                b = split[1].split('(')[1][0:-2]
+                # sometimes this line looks like (second number wrong format!):
+                # energy-change (2. order) :-0.2141803E-08  ( 0.2737684-111)
+                # we are checking still the first number so
+                # let's "fix" the format for the second one
+                if 'e' not in b.lower():
+                    # replace last occurence of - (assumed exponent) with -e
+                    bsplit = b.split('-')
+                    bsplit[-1] = 'e' + bsplit[-1]
+                    b = '-'.join(bsplit).replace('-e','e-')
+                b = float(b)
                 if [abs(a), abs(b)] < [ediff, ediff]:
                     converged = True
                 else:
                     converged = False
                     continue
-        # Then if ibrion in [1,2,3] check whether ionic relaxation condition been fulfilled
-        if self.int_params['ibrion'] in [1,2,3]:
+        # Then if ibrion in [1,2,3] check whether ionic relaxation
+        # condition been fulfilled
+        if (self.int_params['ibrion'] in [1,2,3]
+            and self.int_params['nsw'] not in [0]) :
             if not self.read_relaxed():
                 converged = False
             else:
@@ -1150,6 +1181,8 @@ class Vasp(Calculator):
                     self.string_params[key] = str(data[2])
                 elif key in int_keys:
                     if key == 'ispin':
+                        # JRK added. not sure why we would want to leave ispin out
+                        self.int_params[key] = int(data[2])
                         if int(data[2]) == 2:
                             self.spinpol = True
                     else:
@@ -1684,6 +1717,8 @@ class xdat2traj:
 
         # Write also the last image
         # I'm sure there is also more clever fix...
+        if step == 0:
+            self.out.write_header(self.atoms[self.calc.resort])
         scaled_pos = np.array(scaled_pos)
         self.atoms.set_scaled_positions(scaled_pos)
         d = {'positions': self.atoms.get_positions()[self.calc.resort],

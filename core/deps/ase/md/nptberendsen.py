@@ -132,7 +132,7 @@ class NPTBerendsen(NVTBerendsen):
 
         return f
 
-class Inhomogenous_NPTBerendsen(NPTBerendsen):
+class Inhomogeneous_NPTBerendsen(NPTBerendsen):
     """Berendsen (constant N, P, T) molecular dynamics.
     
     This dynamics scale the velocities and volumes to maintain a constant
@@ -179,10 +179,11 @@ class Inhomogenous_NPTBerendsen(NPTBerendsen):
             stress = [stress[i][i] for i in range(3)]
         else:
             raise ValueError("Cannot use a stress tensor of shape " + str(stress.shape))
-        scl_pressurex = 1.0 - taupscl * (self.pressure - stress[0])
-        scl_pressurey = 1.0 - taupscl * (self.pressure - stress[1])
-        scl_pressurez = 1.0 - taupscl * (self.pressure - stress[2])
-
+        pbc = self.atoms.get_pbc()
+        scl_pressurex = 1.0 - taupscl * (self.pressure - stress[0]) * pbc[0]
+        scl_pressurey = 1.0 - taupscl * (self.pressure - stress[1]) * pbc[1]
+        scl_pressurez = 1.0 - taupscl * (self.pressure - stress[2]) * pbc[2]
+        
         cell = self.atoms.get_cell()
         cell = np.array([scl_pressurex * cell[0],scl_pressurey * cell[1],scl_pressurez * cell[2]])
         self.atoms.set_cell(cell, scale_atoms=True)

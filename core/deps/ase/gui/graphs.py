@@ -3,7 +3,6 @@ from math import sqrt
 
 import gtk
 from gettext import gettext as _
-
 from ase.gui.widgets import pack, help
 
 graph_help_text = _("""\
@@ -80,7 +79,7 @@ class Graphs(gtk.Window):
         
         import matplotlib
         matplotlib.interactive(True)
-        matplotlib.use('GTK')
+        matplotlib.use('GTKAgg')
         #matplotlib.use('GTK', warn=False)# Not avail. in 0.91 (it is in 0.98)
         import pylab
         pylab.ion()

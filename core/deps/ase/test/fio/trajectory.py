@@ -1,3 +1,10 @@
+import sys
+
+from ase.test import NotAvailable
+
+if sys.platform in ['win32']:
+    raise NotAvailable('Fails on Windows https://trac.fysik.dtu.dk/projects/ase/ticket/62')
+
 import os
 from ase import Atom, Atoms
 from ase.io import PickleTrajectory

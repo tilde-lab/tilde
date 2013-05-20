@@ -15,7 +15,7 @@ assert task.data == {}
 # fit in range
 # when only fitting the number of points not must be odd
 # in this case data['energy'] is the energy of the middle fit point
-# 
+#
 # test trailing space
 atoms, task = run('molecule H2 -F 5,7 --atomize -t fit ')
 atoms, task = run('molecule H2 H -t fit -s')

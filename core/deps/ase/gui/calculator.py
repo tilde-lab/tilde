@@ -1,5 +1,5 @@
 # encoding: utf-8
-"calculator.py - module for choosing a calculator."
+"""calculator.py - module for choosing a calculator."""
 
 import gtk
 from gettext import gettext as _
@@ -82,6 +82,34 @@ implementation is mainly to make EMT available when ASAP is
 not installed.
 """)
 
+eam_info_txt = _("""\
+The EAM/ADP potential is a many-body potential
+implementation of the Embedded Atom Method and
+equipotential plus the Angular Dependent Potential,
+which is an extension of the EAM to include
+directional bonds. EAM is suited for FCC metallic
+bonding while the ADP is suited for metallic bonds
+with some degree of directionality.
+
+For EAM see M.S. Daw and M.I. Baskes,
+Phys. Rev. Letters 50 (1983) 1285.
+
+For ADP see Y. Mishin, M.J. Mehl, and
+D.A. Papaconstantopoulos, Acta Materialia 53 2005
+4029--4041.
+
+Data for the potential is contained in a file in either LAMMPS Alloy
+or ADP format which need to be loaded before use. The Interatomic
+Potentials Repository Project at http://www.ctcms.nist.gov/potentials/
+contains many suitable potential files.
+
+For large simulations the LAMMPS calculator is more
+suitable; this implementation is mainly to make EAM
+available when LAMMPS is not installed or to develop
+new EAM/ADP poentials by matching results using ab
+initio.
+""")
+
 brenner_info_txt = _("""\
 The Brenner potential is a reactive bond-order potential for
 carbon and hydrocarbons.  As a bond-order potential, it takes
@@ -108,23 +136,23 @@ gpaw_info_txt = _("""\
 GPAW implements Density Functional Theory using a
 <b>G</b>rid-based real-space representation of the wave
 functions, and the <b>P</b>rojector <b>A</b>ugmented <b>W</b>ave
-method for handling the core regions.  
+method for handling the core regions.
 """)
 
 aims_info_txt = _("""\
-FHI-aims is an external package implementing density 
-functional theory and quantum chemical methods using 
-all-electron methods and a numeric local orbital basis set. 
-For full details, see http://www.fhi-berlin.mpg.de/aims/ 
-or Comp. Phys. Comm. v180 2175 (2009). The ASE 
-documentation contains information on the keywords and 
-functionalities available within this interface. 
+FHI-aims is an external package implementing density
+functional theory and quantum chemical methods using
+all-electron methods and a numeric local orbital basis set.
+For full details, see http://www.fhi-berlin.mpg.de/aims/
+or Comp. Phys. Comm. v180 2175 (2009). The ASE
+documentation contains information on the keywords and
+functionalities available within this interface.
 """)
 
 aims_pbc_warning_text = _("""\
 WARNING:
 Your system seems to have more than zero but less than 
-three periodic dimensions. Please check that this is 
+three periodic dimensions. Please check that this is
 really what you want to compute. Assuming full 
 3D periodicity for this calculator.""")
 
@@ -143,13 +171,16 @@ emt_parameters = (
     (_("CuMg and CuZr metallic glass"), "EMTMetalGlassParameters")
     )
 
+
 class SetCalculator(SetupWindow):
     "Window for selecting a calculator."
 
     # List the names of the radio button attributes
-    radios = ("none", "lj", "emt", "aseemt", "brenner", "gpaw", "aims", "vasp")
+    radios = ("none", "lj", "emt", "aseemt", "eam", "brenner",
+              "gpaw", "aims", "vasp")
     # List the names of the parameter dictionaries
-    paramdicts = ("lj_parameters","gpaw_parameters","aims_parameters",)
+    paramdicts = ("lj_parameters", "eam_parameters", "gpaw_parameters",
+                  "aims_parameters",)
     # The name used to store parameters on the gui object
     classname = "SetCalculator"
     
@@ -192,6 +223,15 @@ class SetCalculator(SetupWindow):
             self.none_radio, _("EMT - Effective Medium Theory (ASE)"))
         self.aseemt_info = InfoButton(aseemt_info_txt)
         self.pack_line(vbox, self.aseemt_radio, None, self.aseemt_info)
+
+        # EAM 
+        self.eam_radio = gtk.RadioButton(
+            self.none_radio,
+            _("EAM - Embedded Atom Method/Angular Dependent Potential (ASE)"))
+        self.eam_setup = gtk.Button(_("Setup"))
+        self.eam_setup.connect("clicked", self.eam_setup_window)
+        self.eam_info = InfoButton(eam_info_txt)
+        self.pack_line(vbox, self.eam_radio, self.eam_setup, self.eam_info)
 
         # Brenner potential
         self.brenner_radio = gtk.RadioButton(
@@ -269,6 +309,13 @@ class SetCalculator(SetupWindow):
         LJ_Window(self, lj_param, "lj_parameters")
         # When control is retuned, self.lj_parameters has been set.
         
+    def eam_setup_window(self, widget):
+        if not self.get_atoms():
+            return
+        eam_param = getattr(self, "eam_parameters", None)
+        EAM_Window(self, eam_param, "eam_parameters")
+        # When control is retuned, self.eam_parameters has been set.
+        
     def gpaw_setup_window(self, widget):
         if not self.get_atoms():
             return
@@ -304,7 +351,7 @@ class SetCalculator(SetupWindow):
                            magmoms=images.M[frame])
         if not images.dynamic.all(): 
             from ase.constraints import FixAtoms
-            self.atoms.set_constraint(FixAtoms(mask=1-images.dynamic))
+            self.atoms.set_constraint(FixAtoms(mask=1 - images.dynamic))
         return True
 
     def apply(self, *widget):
@@ -332,6 +379,10 @@ class SetCalculator(SetupWindow):
             if nochk or self.aseemt_check():
                 self.choose_aseemt()
                 return True
+        elif self.eam_radio.get_active():
+            if nochk or self.eam_check():
+                self.choose_eam()
+                return True
         elif self.brenner_radio.get_active():
             if nochk or self.brenner_check():
                 self.choose_brenner()
@@ -357,7 +408,7 @@ class SetCalculator(SetupWindow):
     def save_state(self):
         state = {}
         for r in self.radios:
-            radiobutton = getattr(self, r+"_radio")
+            radiobutton = getattr(self, r + "_radio")
             if radiobutton.get_active():
                 state["radio"] = r
         state["emtsetup"] = self.emt_setup.get_active()
@@ -401,6 +452,7 @@ class SetCalculator(SetupWindow):
     def choose_lj(self):
         # Define a function on the fly!
         import asap3
+
         def lj_factory(p=self.lj_parameters, lj=asap3.LennardJones):
             return lj(**p)
         self.gui.simulation["calc"] = lj_factory
@@ -408,7 +460,7 @@ class SetCalculator(SetupWindow):
     def emt_get(self):
         import asap3
         provider_name = self.emt_setup.get_active_text()
-        provider =  self.emt_param_info[provider_name]
+        provider = self.emt_param_info[provider_name]
         if provider is not None:
             provider = getattr(asap3, provider)
         return (asap3.EMT, provider, asap3)
@@ -444,6 +496,23 @@ class SetCalculator(SetupWindow):
     def aseemt_check(self):
         return self.element_check("ASE EMT", ['H', 'Al', 'Cu', 'Ag', 'Au',
                                               'Ni', 'Pd', 'Pt', 'C', 'N', 'O'])
+
+    def eam_check(self):
+        from ase.calculators.eam import EAM
+        if not hasattr(self, "eam_parameters"):
+            oops(_("You must set up the EAM parameters"))
+            return False
+
+        self.atoms.set_calculator(EAM(**self.eam_parameters))
+        return self.element_check("EAM", self.atoms.get_calculator().elements)
+
+    def choose_eam(self):
+        from ase.calculators.eam import EAM
+
+        def eam_factory(p=self.eam_parameters):
+            calc = EAM(**p)
+            return calc
+        self.gui.simulation["calc"] = eam_factory
 
     def brenner_check(self):
         try:
@@ -505,7 +574,8 @@ class SetCalculator(SetupWindow):
         self.gui.simulation["progress"] = progress
         gpaw_param["txt"] = progress.get_gpaw_stream()
         gpaw_calc = gpaw.GPAW(**gpaw_param)
-        def gpaw_factory(calc = gpaw_calc):
+
+        def gpaw_factory(calc=gpaw_calc):
             return calc
         self.gui.simulation["calc"] = gpaw_factory
                 
@@ -519,7 +589,8 @@ class SetCalculator(SetupWindow):
         param = self.aims_parameters
         from ase.calculators.aims import Aims
         calc_aims = Aims(**param)
-        def aims_factory(calc = calc_aims):
+
+        def aims_factory(calc=calc_aims):
             return calc
         self.gui.simulation["calc"] = aims_factory
 
@@ -533,7 +604,8 @@ class SetCalculator(SetupWindow):
         param = self.vasp_parameters
         from ase.calculators.vasp import Vasp
         calc_vasp = Vasp(**param)
-        def vasp_factory(calc = calc_vasp):
+
+        def vasp_factory(calc=calc_vasp):
             return calc
         self.gui.simulation["calc"] = vasp_factory
 
@@ -553,7 +625,8 @@ class SetCalculator(SetupWindow):
                  % dict(sym=ase.data.chemical_symbols[e], name=name))
             return False
         return True
-    
+ 
+
 class InfoButton(gtk.Button):
     def __init__(self, txt):
         gtk.Button.__init__(self, _("Info"))
@@ -624,18 +697,19 @@ class LJ_Window(gtk.Window):
     def makematrix(self, present):
         nelem = len(present)
         adjdict = {}
-        tbl = gtk.Table(2+nelem, 2+nelem)
+        tbl = gtk.Table(2 + nelem, 2 + nelem)
         for i in range(nelem):
             s = chemical_symbols[present[i]]
-            tbl.attach(gtk.Label(" " + str(present[i])), 0, 1, i, i+1)
-            tbl.attach(gtk.Label("  "+s+" "), 1, 2, i, i+1)
-            tbl.attach(gtk.Label(str(present[i])), i+2, i+3, 1+nelem, 2+nelem)
-            tbl.attach(gtk.Label(s), i+2, i+3, nelem, 1+nelem)
-            for j in range(i+1):
+            tbl.attach(gtk.Label(" " + str(present[i])), 0, 1, i, i + 1)
+            tbl.attach(gtk.Label("  " + s + " "), 1, 2, i, i + 1)
+            tbl.attach(gtk.Label(str(present[i])),
+                       i + 2, i + 3, 1 + nelem, 2 + nelem)
+            tbl.attach(gtk.Label(s), i + 2, i + 3, nelem, 1 + nelem)
+            for j in range(i + 1):
                 adj = gtk.Adjustment(1.0, 0.0, 100.0, 0.1)
                 spin = gtk.SpinButton(adj, 0.1, 3)
-                tbl.attach(spin, 2+j, 3+j, i, i+1)
-                adjdict[(i,j)] = adj
+                tbl.attach(spin, 2 + j, 3 + j, i, i + 1)
+                adjdict[(i, j)] = adj
         tbl.show_all()
         return tbl, adjdict
     
@@ -643,14 +717,13 @@ class LJ_Window(gtk.Window):
         for i in range(n):
             for j in range(n):
                 if j <= i:
-                    adj[(i,j)].value = params[i,j]
+                    adj[(i, j)].value = params[i, j]
 
     def get_param(self, adj, params, n):
         for i in range(n):
             for j in range(n):
                 if j <= i:
-                    params[i,j] = params[j,i] = adj[(i,j)].value
-
+                    params[i, j] = params[j, i] = adj[(i, j)].value
 
     def destroy(self):
         self.grab_remove()
@@ -660,9 +733,9 @@ class LJ_Window(gtk.Window):
         params = {}
         params["elements"] = copy(self.present)
         n = len(self.present)
-        eps = np.zeros((n,n))
+        eps = np.zeros((n, n))
         self.get_param(self.epsilon_adj, eps, n)
-        sigma = np.zeros((n,n))
+        sigma = np.zeros((n, n))
         self.get_param(self.sigma_adj, sigma, n)
         params["epsilon"] = eps
         params["sigma"] = sigma
@@ -671,9 +744,75 @@ class LJ_Window(gtk.Window):
         self.destroy()
 
 
+class EAM_Window(gtk.Window):
+    def __init__(self, owner, param, attrname):
+        gtk.Window.__init__(self)
+        self.set_title(_("EAM parameters"))
+        self.owner = owner
+        self.attrname = attrname
+
+        self.owner = owner
+        atoms = owner.atoms
+        self.natoms = len(atoms)
+
+        vbox = gtk.VBox()
+        vbox.show()
+        self.add(vbox)
+
+        pack(vbox, gtk.Label(""))
+        butbox = gtk.HButtonBox()
+        import_potential_but = gtk.Button(_("Import Potential"))
+        import_potential_but.connect("clicked", self.import_potential)
+        cancel_but = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancel_but.connect('clicked', lambda widget: self.destroy())
+        ok_but = gtk.Button(stock=gtk.STOCK_OK)
+        ok_but.connect('clicked', self.ok)
+
+        butbox.pack_start(import_potential_but, 0, 0)
+        butbox.pack_start(cancel_but, 0, 0)
+        butbox.pack_start(ok_but, 0, 0)
+        butbox.show_all()
+        pack(vbox, [butbox], end=True, bottom=True)
+        vbox.show()
+
+        # Now, set the parameters
+        if param:
+            self.eam_file = param['fileobj']
+
+        self.show()
+        self.grab_add()  # Lock all other windows
+        
+    def ok(self, *args):
+        if not hasattr(self.owner, "eam_parameters"):
+            oops(_("You need to import the potential file"))
+
+        self.destroy()
+
+    def import_potential(self, *args):
+        dirname = "."
+        filename = "Al99.eam.alloy"
+        chooser = gtk.FileChooserDialog(
+            _('Import .alloy or .adp potential file ... '),
+            None, gtk.FILE_CHOOSER_ACTION_OPEN,
+            (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+             gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+
+        chooser.set_filename(dirname + filename)
+        openr = chooser.run()
+
+        if openr == gtk.RESPONSE_OK:
+            param = {}
+            filename = chooser.get_filename()
+            param['fileobj'] = filename
+            setattr(self.owner, self.attrname, param)
+
+        chooser.destroy()
+
+
 class GPAW_Window(gtk.Window):
     gpaw_xc_list = ['LDA', 'PBE', 'RPBE', 'revPBE']
     gpaw_xc_default = 'PBE'
+
     def __init__(self, owner, param, attrname):
         gtk.Window.__init__(self)
         self.set_title(_("GPAW parameters"))
@@ -681,7 +820,7 @@ class GPAW_Window(gtk.Window):
         self.attrname = attrname
         atoms = owner.atoms
         self.ucell = atoms.get_cell()
-        self.size = tuple([self.ucell[i,i] for i in range(3)])
+        self.size = tuple([self.ucell[i, i] for i in range(3)])
         self.pbc = atoms.get_pbc()
         self.orthogonal = self.isorthogonal(self.ucell)
         self.natoms = len(atoms)
@@ -773,7 +912,7 @@ class GPAW_Window(gtk.Window):
         self.basis.append_text(_("sz - Single Zeta"))
         self.basis.append_text(_("szp - Single Zeta polarized"))
         self.basis.append_text(_("dzp - Double Zeta polarized"))
-        self.basis.set_active(2) # dzp
+        self.basis.set_active(2)  # dzp
         pack(vbox, [gtk.Label(_("Basis functions: ")), self.basis])
         pack(vbox, gtk.Label(""))
         self.mode.connect("changed", self.mode_changed)
@@ -845,7 +984,7 @@ class GPAW_Window(gtk.Window):
             getattr(self, "radio_" + param["mixer"].lower()).set_active(True)
             for t in ("beta", "nmaxold", "weight", "beta_m", "nmaxold_m",
                       "weight_m"):                    
-                getattr(self, t+"_adj").value = param[t]
+                getattr(self, t + "_adj").value = param[t]
 
         self.show()
         self.grab_add()  # Lock all other windows
@@ -860,7 +999,7 @@ class GPAW_Window(gtk.Window):
     def gpts_changed(self, *args):
         if self.radio_gpts.get_active():
             g = np.array([int(g.value) for g in self.gpts])
-            size = np.array([self.ucell[i,i] for i in range(3)])
+            size = np.array([self.ucell[i, i] for i in range(3)])
             txt = self.gpts_hlabel_format % tuple(size / g)
             self.gpts_hlabel.set_markup(txt)
         else:
@@ -869,7 +1008,7 @@ class GPAW_Window(gtk.Window):
     def h_changed(self, *args):
         h = self.h.value
         for i in range(3):
-            g = 4 * round(self.ucell[i,i] / (4*h))
+            g = 4 * round(self.ucell[i, i] / (4 * h))
             self.gpts[i].value = g
 
     def k_changed(self, *args):
@@ -945,9 +1084,10 @@ class GPAW_Window(gtk.Window):
         param["mixer"] = m
         for t in ("beta", "nmaxold", "weight", "beta_m", "nmaxold_m",
                   "weight_m"):
-            param[t] = getattr(self, t+"_adj").value
+            param[t] = getattr(self, t + "_adj").value
         setattr(self.owner, self.attrname, param)
         self.destroy()
+
 
 class AIMS_Window(gtk.Window):
     aims_xc_cluster = ['pw-lda','pz-lda','pbe','pbesol','rpbe','revpbe',
@@ -1023,11 +1163,11 @@ class AIMS_Window(gtk.Window):
         # Spin polarized, charge, relativity
         self.spinpol = gtk.CheckButton(_("Spin / initial moment "))
         self.spinpol.connect('toggled',self.spinpol_changed)
-        self.moment  = gtk.Adjustment(0,-100,100,0.1)
+        self.moment = gtk.Adjustment(0,-100,100,0.1)
         self.moment_spin = gtk.SpinButton(self.moment, 0, 0)
         self.moment_spin.set_digits(2)
         self.moment_spin.set_sensitive(False)
-        self.charge  = gtk.Adjustment(0,-100,100,0.1)
+        self.charge = gtk.Adjustment(0,-100,100,0.1)
         self.charge_spin = gtk.SpinButton(self.charge, 0, 0)
         self.charge_spin.set_digits(2)
         self.relativity_type = gtk.combo_box_new_text()
@@ -1049,22 +1189,22 @@ class AIMS_Window(gtk.Window):
 
         # self-consistency criteria
         pack(vbox,[gtk.Label(_("Self-consistency convergence:"))])
-        self.sc_tot_energy      = gtk.Adjustment(1e-6, 1e-6, 1e0, 1e-6)
+        self.sc_tot_energy = gtk.Adjustment(1e-6, 1e-6, 1e0, 1e-6)
         self.sc_tot_energy_spin = gtk.SpinButton(self.sc_tot_energy, 0, 0)
         self.sc_tot_energy_spin.set_digits(6)
         self.sc_tot_energy_spin.set_numeric(True)
-        self.sc_sum_eigenvalue      = gtk.Adjustment(1e-3, 1e-6, 1e0, 1e-6)
+        self.sc_sum_eigenvalue = gtk.Adjustment(1e-3, 1e-6, 1e0, 1e-6)
         self.sc_sum_eigenvalue_spin = gtk.SpinButton(self.sc_sum_eigenvalue, 0, 0)
         self.sc_sum_eigenvalue_spin.set_digits(6)
         self.sc_sum_eigenvalue_spin.set_numeric(True)
-        self.sc_density      = gtk.Adjustment(1e-4, 1e-6, 1e0, 1e-6)
+        self.sc_density = gtk.Adjustment(1e-4, 1e-6, 1e0, 1e-6)
         self.sc_density_spin = gtk.SpinButton(self.sc_density, 0, 0)
         self.sc_density_spin.set_digits(6)
         self.sc_density_spin.set_numeric(True)
         self.compute_forces = gtk.CheckButton(_("Compute forces"))
         self.compute_forces.set_active(True)
         self.compute_forces.connect("toggled", self.compute_forces_toggled,"")
-        self.sc_forces      = gtk.Adjustment(1e-4, 1e-6, 1e0, 1e-6)
+        self.sc_forces = gtk.Adjustment(1e-4, 1e-6, 1e0, 1e-6)
         self.sc_forces_spin = gtk.SpinButton(self.sc_forces, 0, 0)
         self.sc_forces_spin.set_numeric(True)
         self.sc_forces_spin.set_digits(6)
@@ -1090,8 +1230,8 @@ class AIMS_Window(gtk.Window):
         swin.set_border_width(0)
         swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-        self.expert_keyword_set = gtk.Entry(max = 55)
-        self.expert_keyword_add = gtk.Button(stock = gtk.STOCK_ADD)
+        self.expert_keyword_set = gtk.Entry(max=55)
+        self.expert_keyword_add = gtk.Button(stock=gtk.STOCK_ADD)
         self.expert_keyword_add.connect("clicked", self.expert_keyword_import)
         self.expert_keyword_set.connect("activate", self.expert_keyword_import)
         pack(vbox,[gtk.Label(_("Additional keywords: ")),
@@ -1209,19 +1349,19 @@ class AIMS_Window(gtk.Window):
             param["spin"] = "none"
             param["default_initial_moment"] = None
         param["vdw_correction_hirshfeld"] = self.TS.get_active()
-        param["charge"]             = self.charge.value
-        param["relativistic"]       = self.relativity_type.get_active_text()
+        param["charge"] = self.charge.value
+        param["relativistic"] = self.relativity_type.get_active_text()
         if param["relativistic"] == 'atomic_zora':
             param["relativistic"] += " scalar "
         if param["relativistic"] == 'zora':
             param["relativistic"] += " scalar "+self.relativity_threshold.get_text() 
-        param["sc_accuracy_etot"]   = self.sc_tot_energy.value
-        param["sc_accuracy_eev"]    = self.sc_sum_eigenvalue.value
-        param["sc_accuracy_rho"]    = self.sc_density.value
-        param["compute_forces"]     = self.compute_forces.get_active()
+        param["sc_accuracy_etot"] = self.sc_tot_energy.value
+        param["sc_accuracy_eev"] = self.sc_sum_eigenvalue.value
+        param["sc_accuracy_rho"] = self.sc_density.value
+        param["compute_forces"] = self.compute_forces.get_active()
         param["sc_accuracy_forces"] = self.sc_forces.value
-        param["run_command"]        = self.run_command.get_text()
-        param["species_dir"]        = self.species_defaults.get_text()
+        param["run_command"] = self.run_command.get_text()
+        param["species_dir"] = self.species_defaults.get_text()
         from ase.calculators.aims import float_keys,exp_keys,string_keys,int_keys,bool_keys,list_keys,input_keys
         for option in self.expert_keywords:
             if option[3]:   # set type of parameter according to which list it is in
@@ -1272,11 +1412,11 @@ class AIMS_Window(gtk.Window):
                         self.relativity_threshold.set_text(rel[2])
                         self.relativity_threshold.set_sensitive(True)
         if param["sc_accuracy_etot"] is not None:
-            self.sc_tot_energy.value     = param["sc_accuracy_etot"]
+            self.sc_tot_energy.value = param["sc_accuracy_etot"]
         if param["sc_accuracy_eev"] is not None:
             self.sc_sum_eigenvalue.value = param["sc_accuracy_eev"]
         if param["sc_accuracy_rho"] is not None:
-            self.sc_density.value        = param["sc_accuracy_rho"]
+            self.sc_density.value = param["sc_accuracy_rho"]
         if param["compute_forces"] is not None:
             if param["compute_forces"]:
                 if param["sc_accuracy_forces"] is not None:
@@ -1291,9 +1431,10 @@ class AIMS_Window(gtk.Window):
         for (key,val) in param.items():
             if key in self.aims_keyword_list and key not in self.aims_keyword_gui_list:
                 if val is not None:  # = existing "expert keyword"
-                    if key == 'output': # 'output' can be used more than once
+                    if key == 'output':  # 'output' can be used more than once
                         options = val
-                        if isinstance(options,str): options = [options]
+                        if isinstance(options,str): 
+                            options = [options]
                         for arg in options:
                             self.expert_keyword_create([key]+[arg])
                     else:
@@ -1325,8 +1466,8 @@ class AIMS_Window(gtk.Window):
             calc_temp = Aims(**param)
             atoms_temp = self.owner.atoms.copy()
             atoms_temp.set_calculator(calc_temp)
-            atoms_temp.calc.write_control(file = filename)
-            atoms_temp.calc.write_species(file = filename)
+            atoms_temp.calc.write_control(file=filename)
+            atoms_temp.calc.write_species(file=filename)
         chooser.destroy()
 
     def import_control(self, *args):
@@ -1422,9 +1563,9 @@ class AIMS_Window(gtk.Window):
             table = self.expert_vbox.get_children()[0]
             nrows = table.get_property('n-rows')
             table.resize(nrows + 1, 3)
-            table.attach(self.expert_keywords[index][0],  0, 1, nrows, nrows + 1, 0) 
-            table.attach(self.expert_keywords[index][1],  1, 2, nrows, nrows + 1, 0) 
-            table.attach(self.expert_keywords[index][2],  2, 3, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][0], 0, 1, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][1], 1, 2, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][2], 2, 3, nrows, nrows + 1, 0) 
             table.show_all()
 
     def expert_keyword_delete(self, button, *args):
@@ -1561,8 +1702,8 @@ class VASP_Window(gtk.Window):
         swin.set_border_width(0)
         swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-        self.expert_keyword_set = gtk.Entry(max = 55)
-        self.expert_keyword_add = gtk.Button(stock = gtk.STOCK_ADD)
+        self.expert_keyword_set = gtk.Entry(max=55)
+        self.expert_keyword_add = gtk.Button(stock=gtk.STOCK_ADD)
         self.expert_keyword_add.connect("clicked", self.expert_keyword_import)
         self.expert_keyword_set.connect("activate", self.expert_keyword_import)
         pack(vbox,[gtk.Label(_("Additional keywords: ")),
@@ -1614,7 +1755,7 @@ class VASP_Window(gtk.Window):
 
         self.load_attributes()
 
-    def load_attributes(self, directory = "."):
+    def load_attributes(self, directory="."):
         """Sets values of fields of the window according to the values 
         set inside the INCAR, KPOINTS and POTCAR file in 'directory'."""
         from os import chdir
@@ -1636,11 +1777,11 @@ class VASP_Window(gtk.Window):
             if calc_temp.float_params['encut']:
                 self.encut.set_value(calc_temp.float_params['encut'])
  
-            if calc_temp.int_params['ismear'] == -1: # Fermi
+            if calc_temp.int_params['ismear'] == -1:  # Fermi
                 vasp_ismear_default = 'Fermi'
-            elif calc_temp.int_params['ismear'] == 0: # Gauss
+            elif calc_temp.int_params['ismear'] == 0:  # Gauss
                 vasp_ismear_default = 'Gauss'
-            elif calc_temp.int_params['ismear'] > 0: # Methfessel-Paxton
+            elif calc_temp.int_params['ismear'] > 0:  # Methfessel-Paxton
                 vasp_ismear_default = 'Methfessel-Paxton'
             else:
                 vasp_ismear_default = None
@@ -1700,8 +1841,6 @@ class VASP_Window(gtk.Window):
                         command += str(v) + " "
                     self.expert_keyword_create(command.split())
                  
-
-
         # Try and load POTCAR, in the current directory
         try:
             calc_temp.read_potcar()
@@ -1786,7 +1925,7 @@ class VASP_Window(gtk.Window):
         calc_temp = Vasp()
         atoms_temp = self.owner.atoms.copy()
         calc_temp.initialize(atoms_temp)
-        calc_temp.write_potcar(suffix = '.check_energy_cutoff')
+        calc_temp.write_potcar(suffix='.check_energy_cutoff')
         enmin = -1e6
         enmax = -1e6
         for line in open("POTCAR.check_energy_cutoff",'r').readlines():
@@ -1866,7 +2005,6 @@ class VASP_Window(gtk.Window):
             self.load_attributes(dirname)
         chooser.destroy()
             
-
     def export_vasp_files(self, *args):
         filename = ""
         chooser = gtk.FileChooserDialog(
@@ -1892,7 +2030,7 @@ class VASP_Window(gtk.Window):
             calc_temp.write_kpoints()
             calc_temp.write_sort_file()
             from ase.io.vasp import write_vasp
-            write_vasp('POSCAR', calc_temp.atoms_sorted, symbol_count = calc_temp.symbol_count)
+            write_vasp('POSCAR', calc_temp.atoms_sorted, symbol_count=calc_temp.symbol_count)
         chooser.destroy()
 
     def expert_keyword_import(self, *args):
@@ -1936,9 +2074,9 @@ class VASP_Window(gtk.Window):
             table = self.expert_vbox.get_children()[0]
             nrows = table.get_property('n-rows')
             table.resize(nrows + 1, 3)
-            table.attach(self.expert_keywords[index][0],  0, 1, nrows, nrows + 1, 0) 
-            table.attach(self.expert_keywords[index][1],  1, 2, nrows, nrows + 1, 0) 
-            table.attach(self.expert_keywords[index][2],  2, 3, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][0], 0, 1, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][1], 1, 2, nrows, nrows + 1, 0) 
+            table.attach(self.expert_keywords[index][2], 2, 3, nrows, nrows + 1, 0) 
             table.show_all()
         
     def expert_keyword_delete(self, button, *args):

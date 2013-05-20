@@ -1,13 +1,13 @@
 """Effective medium theory potential."""
 
-from math import sqrt, exp, log, pi
+from math import sqrt, exp, log
 
 import numpy as np
-import sys
 
 from ase.data import chemical_symbols
 from ase.units import Bohr
 from ase.calculators.neighborlist import NeighborList
+from ase.calculators.calculator import Calculator
 
 
 parameters = {
@@ -30,48 +30,14 @@ beta = 1.809     # (16 * pi / 3)**(1.0 / 3) / 2**0.5,
                  # but preserve historical rounding
 
 
-class EMT:
-    disabled = False  # Set to True to disable (asap does this).
-    
-    def __init__(self, fakestress=False):
-        self.energy = None
-        self.name = 'EMT'
-        self.version = '1.0'
-        self.niter = 0
-        # fakestress is needed to fake some stress value for the testsuite
-        # in order to test the filter functionality.
-        self.fakestress = fakestress
-        if self.disabled:
-            print >> sys.stderr, """
-            ase.EMT has been disabled by Asap.  Most likely, you
-            intended to use Asap's EMT calculator, but accidentally
-            imported ase's EMT calculator after Asap's.  This could
-            happen if your script contains the lines
+class EMT(Calculator):
+    implemented_properties = ['energy', 'forces']
 
-              from asap3 import *
-              from ase.calculators.emt import EMT
-            Swap the two lines to solve the problem.
+    nolabel = True
 
-            (or 'from ase import *' in older versions of ASE.) Swap 
-            the two lines to solve the problem.
+    def __init__(self):
+        Calculator.__init__(self)
 
-            In the UNLIKELY event that you actually wanted to use
-            ase.calculators.emt.EMT although asap3 is loaded into memory,
-            please reactivate it with the command
-              ase.calculators.emt.EMT.disabled = False
-            """
-            raise RuntimeError('ase.EMT has been disabled.  ' +
-                               'See message printed above.')
-        
-    def get_name(self):
-        return self.name
-
-    def get_version(self):
-        return self.version
-
-    def get_spin_polarized(self):
-        return False
-    
     def initialize(self, atoms):
         self.par = {}
         self.rc = 0.0
@@ -123,95 +89,38 @@ class EMT:
         self.nl = NeighborList([0.5 * self.rc + 0.25] * len(atoms),
                                self_interaction=False)
 
-    def update(self, atoms):
-        if (self.energy is None or
-            len(self.numbers) != len(atoms) or
-            (self.numbers != atoms.get_atomic_numbers()).any()):
+    def calculate(self, atoms, properties, changes):
+        if 'numbers' in changes:
             self.initialize(atoms)
-            self.calculate(atoms)
-        elif ((self.positions != atoms.get_positions()).any() or
-              (self.pbc != atoms.get_pbc()).any() or
-              (self.cell != atoms.get_cell()).any()):
-            self.calculate(atoms)
 
-    def calculation_required(self, atoms, quantities):
-        if len(quantities) == 0:
-            return False
-
-        return (self.energy is None or
-                len(self.numbers) != len(atoms) or
-                (self.numbers != atoms.get_atomic_numbers()).any() or
-                (self.positions != atoms.get_positions()).any() or
-                (self.pbc != atoms.get_pbc()).any() or
-                (self.cell != atoms.get_cell()).any())
-                
-    def get_number_of_iterations(self):
-        return 1
-
-    def get_potential_energy(self, atoms):
-        self.update(atoms)
-        return self.energy
-
-    def get_numeric_forces(self, atoms):
-        self.update(atoms)
-        p = atoms.positions
-        p0 = p.copy()
-        forces = np.empty_like(p)
-        eps = 0.0001
-        for a in range(len(p)):
-            for c in range(3):
-                p[a, c] += eps
-                self.calculate(atoms)
-                de = self.energy
-                p[a, c] -= 2 * eps
-                self.calculate(atoms)
-                de -= self.energy
-                p[a, c] += eps
-                forces[a, c] = -de / (2 * eps)
-        p[:] = p0
-        return forces
-
-    def get_forces(self, atoms):
-        self.update(atoms)
-        return self.forces.copy()
-    
-    def get_stress(self, atoms):
-        if self.fakestress:
-            return np.zeros((6))
-        else:
-            raise NotImplementedError
-    
-    def calculate(self, atoms):
-        self.positions = atoms.get_positions().copy()
-        self.cell = atoms.get_cell().copy()
-        self.pbc = atoms.get_pbc().copy()
+        positions = atoms.positions
+        numbers = atoms.numbers
+        cell = atoms.cell
         
         self.nl.update(atoms)
         
         self.energy = 0.0
         self.sigma1[:] = 0.0
         self.forces[:] = 0.0
-        
-        self.niter += 1
 
         natoms = len(atoms)
 
         for a1 in range(natoms):
-            Z1 = self.numbers[a1]
+            Z1 = numbers[a1]
             p1 = self.par[Z1]
             ksi = self.ksi[Z1]
             neighbors, offsets = self.nl.get_neighbors(a1)
-            offsets = np.dot(offsets, atoms.cell)
+            offsets = np.dot(offsets, cell)
             for a2, offset in zip(neighbors, offsets):
-                d = self.positions[a2] + offset - self.positions[a1]
+                d = positions[a2] + offset - positions[a1]
                 r = sqrt(np.dot(d, d))
                 if r < self.rc + 0.5:
-                    Z2 = self.numbers[a2]
+                    Z2 = numbers[a2]
                     p2 = self.par[Z2]
                     self.interact1(a1, a2, d, r, p1, p2, ksi[Z2])
                                 
         for a in range(natoms):
-            Z = self.numbers[a]
+            Z = numbers[a]
             p = self.par[Z]
             try:
                 ds = -log(self.sigma1[a] / 12) / (beta * p['eta2'])
@@ -224,22 +133,24 @@ class EMT:
             z = 6 * p['V0'] * exp(-p['kappa'] * ds)
             self.deds[a] = ((x * y * p['E0'] * p['lambda'] + p['kappa'] * z) /
                             (self.sigma1[a] * beta * p['eta2']))
-            e = p['E0'] * ((1 + x) * y - 1) + z
             self.energy += p['E0'] * ((1 + x) * y - 1) + z
 
         for a1 in range(natoms):
-            Z1 = self.numbers[a1]
+            Z1 = numbers[a1]
             p1 = self.par[Z1]
             ksi = self.ksi[Z1]
             neighbors, offsets = self.nl.get_neighbors(a1)
-            offsets = np.dot(offsets, atoms.cell)
+            offsets = np.dot(offsets, cell)
             for a2, offset in zip(neighbors, offsets):
-                d = self.positions[a2] + offset - self.positions[a1]
+                d = positions[a2] + offset - positions[a1]
                 r = sqrt(np.dot(d, d))
                 if r < self.rc + 0.5:
-                    Z2 = self.numbers[a2]
+                    Z2 = numbers[a2]
                     p2 = self.par[Z2]
                     self.interact2(a1, a2, d, r, p1, p2, ksi[Z2])
+
+        self.results['energy'] = self.energy
+        self.results['forces'] = self.forces
 
     def interact1(self, a1, a2, d, r, p1, p2, ksi):
         x = exp(self.acut * (r - self.rc))
@@ -269,8 +180,3 @@ class EMT:
              (y1 + y2) * self.acut * theta * x) * d / r
         self.forces[a1] -= f
         self.forces[a2] += f
-
-    def set_atoms(self,*args,**kwargs):
-        'empty function for compatibility with other calculators and tests'
-        pass
-

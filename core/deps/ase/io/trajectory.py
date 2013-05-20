@@ -22,6 +22,7 @@ class PickleTrajectory:
     write_energy = True
     write_forces = True
     write_stress = True
+    write_charges = True
     write_magmoms = True
     write_momenta = True
     write_info = True
@@ -202,7 +203,11 @@ class PickleTrajectory:
                     d['stress'] = atoms.get_stress()
                 except NotImplementedError:
                     pass
-
+            if self.write_charges:
+                try:
+                    d['charges'] = atoms.get_charges()
+                except NotImplementedError:
+                    pass
             if self.write_magmoms:
                 try:
                     if atoms.calc.get_spin_polarized():
@@ -212,6 +217,10 @@ class PickleTrajectory:
 
         if 'magmoms' not in d and atoms.has('magmoms'):
             d['magmoms'] = atoms.get_initial_magnetic_moments()
+        if 'charges' not in d and atoms.has('charges'):
+            charges = atoms.get_initial_charges()
+            if (charges != 0).any():
+                d['charges'] = charges
 
         if self.write_info:
             d['info'] = stringnify_info(atoms.info)
@@ -267,10 +276,8 @@ class PickleTrajectory:
                 raise IndexError
             if i == N - 1:
                 self.offsets.append(self.fd.tell())
-            try:
-                magmoms = d['magmoms']
-            except KeyError:
-                magmoms = None
+            charges = d.get('charges')
+            magmoms = d.get('magmoms')
             try:
                 constraints = [c.copy() for c in self.constraints]
             except AttributeError:
@@ -281,6 +288,7 @@ class PickleTrajectory:
                           cell=d['cell'],
                           momenta=d['momenta'],
                           magmoms=magmoms,
+                          charges=charges,
                           tags=self.tags,
                           masses=self.masses,
                           pbc=self.pbc,
@@ -490,6 +498,8 @@ def write_trajectory(filename, images):
                     traj.write_forces = False
                 if calc.calculation_required(atoms, ['stress']):
                     traj.write_stress = False
+                if calc.calculation_required(atoms, ['charges']):
+                    traj.write_charges = False
                 if calc.calculation_required(atoms, ['magmoms']):
                     traj.write_magmoms = False
         else:

@@ -120,8 +120,9 @@ class NeighborList:
                     neighbors2[b].append(a)
                     displacements2[b].append(-disp)
             for a in range(natoms):
-                self.neighbors[a] = np.concatenate((self.neighbors[a],
-                                                    neighbors2[a]))
+                # Force neighbors to be integer array
+                self.neighbors[a] = np.array(np.concatenate((self.neighbors[a],
+                                                    neighbors2[a])), int)
                 self.displacements[a] = np.array(list(self.displacements[a]) +
                                                  displacements2[a])
 

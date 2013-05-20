@@ -212,10 +212,15 @@ class Spacegroup(object):
         if self.centrosymmetric:
             rot = np.tile(np.vstack((self.rotations, -self.rotations)), 
                           (self.nsubtrans, 1, 1))
-            trans = np.repeat(self.subtrans, 2*len(self.rotations), axis=0)
+            trans = np.tile(np.vstack((self.translations, -self.translations)),
+                            (self.nsubtrans, 1))
+            trans += np.repeat(self.subtrans, 2 * len(self.rotations), axis=0)
+            trans = np.mod(trans, 1)
         else:
             rot = np.tile(self.rotations, (self.nsubtrans, 1, 1))
-            trans = np.repeat(self.subtrans, len(self.rotations), axis=0)
+            trans = np.tile(self.translations, (self.nsubtrans, 1))
+            trans += np.repeat(self.subtrans, len(self.rotations), axis=0)
+            trans = np.mod(trans, 1)
         return rot, trans
 
     def get_rotations(self):
@@ -351,7 +356,6 @@ class Spacegroup(object):
         """
         kinds = []
         sites = []
-        symprec2 = symprec**2
         scaled = np.array(scaled_positions, ndmin=2)
         for kind, pos in enumerate(scaled):
             for rot, trans in self.get_symop():
@@ -361,7 +365,8 @@ class Spacegroup(object):
                     kinds.append(kind)
                     continue
                 t = site - sites
-                mask = np.sum(t*t, 1) < symprec2
+                mask = np.all((abs(t) < symprec) | 
+                              (abs(abs(t) - 1.0) < symprec), axis=1)
                 if np.any(mask):
                     ind = np.argwhere(mask)[0][0]
                     if kinds[ind] == kind:

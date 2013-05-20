@@ -3,7 +3,7 @@ import threading
 from ase.test import World
 from ase.io import PickleTrajectory
 from ase.neb import NEB
-from ase.calculators.lj import LennardJones as Calculator
+from ase.calculators.morse import MorsePotential
 from ase.optimize import BFGS
 
 fmax = 0.05
@@ -19,7 +19,7 @@ neb = NEB(images)
 neb.interpolate()
 
 for image in images[1:]:
-    image.set_calculator(Calculator())
+    image.set_calculator(MorsePotential())
 
 dyn = BFGS(neb, trajectory='mep.traj')
 
@@ -38,7 +38,7 @@ def run_neb_calculation(cpu):
     neb = NEB(images, parallel=True, world=cpu)
     neb.interpolate()
 
-    images[cpu.rank + 1].set_calculator(Calculator())
+    images[cpu.rank + 1].set_calculator(MorsePotential())
 
     dyn = BFGS(neb)
     dyn.run(fmax=fmax)

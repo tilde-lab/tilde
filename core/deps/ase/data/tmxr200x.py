@@ -98,7 +98,7 @@ def read_geometries(filename, dir='.'):
             if abs(charge) > 0.0:
                 charges = [0.0 for a in atoms]
                 charges[heaviest_index] = charge
-                atoms.set_charges(charges)
+                atoms.set_initial_charges(charges)
             if compound in [ # see corresponding articles
                 'Ti(BH4)3',  # TM1R2006
                 'V(NMe2)4',  # TM1R2006
@@ -190,7 +190,7 @@ def read_geometries(filename, dir='.'):
             if abs(charge) > 0.0:
                 charges = [0.0 for a in atoms]
                 charges[heaviest_index] = charge
-                atoms.set_charges(charges)
+                atoms.set_initial_charges(charges)
             if multiplicity > 1.0:
                 magmoms = [0.0 for a in atoms]
                 magmoms[heaviest_index] = multiplicity - 1

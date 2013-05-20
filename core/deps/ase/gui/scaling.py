@@ -142,6 +142,8 @@ class HomogeneousDeformation(Simulation, MinimizeMixin, OutputFieldMixin):
         outframe = self.makeoutputfield(None, 
                                         heading=_("Strain\t\tEnergy [eV]"))
         fitframe = gtk.Frame(_("Fit:"))
+        fitframe.set_size_request(100,150)
+
         vbox2 = gtk.VBox()
         vbox2.show()
         fitframe.add(vbox2)
@@ -198,7 +200,7 @@ class HomogeneousDeformation(Simulation, MinimizeMixin, OutputFieldMixin):
         x, y = self.scrwin.get_children()[0].size_request() 
         x += self.scrwin.get_vscrollbar().size_request()[0] + 5
         y += self.scrwin.get_hscrollbar().size_request()[1] + 5
-        print x,y 
+
         if resize: 
             xdef, ydef = self.get_default_size() 
             xnow, ynow = self.get_size() 

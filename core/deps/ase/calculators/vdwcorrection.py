@@ -5,7 +5,7 @@ from ase.units import Bohr, Hartree
 
 
 # dipole polarizabilities and C6 values from 
-# X. Chu and A. Dalgarno, J. Chem. Phys. 129 (2004) 4083
+# X. Chu and A. Dalgarno, J. Chem. Phys. 121 (2004) 4083
 # atomic units, a_0^3
 vdWDB_Chu04jcp = {
     # Element: [alpha, C6]; units [Bohr^3, Hartree * Bohr^6]
@@ -23,13 +23,18 @@ vdWDB_Chu04jcp = {
     'Mg' : [71, 626],
     'Al' : [60, 528],
     'Si' : [37, 305],
+    'P'  : [25, 185],
+    'S'  : [19.6, 134],
     'Cl' : [15, 94.6],
     'Ar' : [11.1, 64.2],
     'Ca' : [160, 2163],
     'Fe' : [56, 482],
+    'As' : [29, 246],
+    'Se' : [25, 210],
     'Br' : [20, 162],
     'Kr' : [16.7, 130],
     'Sr' : [199, 3175],
+    'Te' : [40, 445],
     'I'  : [35, 385],
 }
 
@@ -132,7 +137,7 @@ class vdWTkatchenko09prl:
         elif hasattr(self.hirshfeld,'__len__'): # a list
             assert(len(atoms) == len(self.hirshfeld))
             volume_ratios = self.hirshfeld
-        else: # sould be an object
+        else: # should be an object
             self.hirshfeld.initialize()
             volume_ratios = self.hirshfeld.get_effective_volume_ratios()
 

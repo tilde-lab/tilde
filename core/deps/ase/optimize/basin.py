@@ -10,7 +10,12 @@ from ase.io.trajectory import PickleTrajectory
 class BasinHopping(Dynamics):
     """Basin hopping algorythm.
 
-    After Wales and Doye, J. Phys. Chem. A, vol 101 (1997) 5111-5116"""
+    After Wales and Doye, J. Phys. Chem. A, vol 101 (1997) 5111-5116
+
+    and 
+
+    David J. Wales and Harold A. Scheraga, Science, Vol. 285, 1368 (1999)
+    """
 
     def __init__(self, atoms,
                  temperature=100 * kB,
@@ -53,9 +58,9 @@ class BasinHopping(Dynamics):
 
         ro = self.positions
         Eo = self.get_energy(ro)
-        En = None
  
         for step in range(steps):
+            En = None
             while En is None:
                 rn = self.move(ro)
                 En = self.get_energy(rn)
@@ -65,12 +70,11 @@ class BasinHopping(Dynamics):
                 self.Emin = En
                 self.rmin = self.atoms.get_positions()
                 self.call_observers()
-                rn = self.rmin
             self.log(step, En, self.Emin)
 
             accept = np.exp((Eo - En) / self.kT) > np.random.uniform()
             if accept:
-                ro = rn
+                ro = rn.copy()
                 Eo = En
 
     def log(self, step, En, Emin):
@@ -109,7 +113,8 @@ class BasinHopping(Dynamics):
             self.atoms.set_positions(positions)
  
             try:
-                opt = self.optimizer(self.atoms, logfile=self.optimizer_logfile)
+                opt = self.optimizer(self.atoms, 
+                                     logfile=self.optimizer_logfile)
                 opt.run(fmax=self.fmax)
                 if self.lm_trajectory is not None:
                     self.lm_trajectory.write(self.atoms)
@@ -121,4 +126,3 @@ class BasinHopping(Dynamics):
                 return None
             
         return self.energy
-       

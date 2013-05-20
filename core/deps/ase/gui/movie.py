@@ -122,7 +122,6 @@ class Movie(gtk.Window):
         else:
             i = (i + self.direction * delta + nimages) % nimages
             
-        self.gui.set_frame(i)
         self.frame_number.value = i
         return True
 

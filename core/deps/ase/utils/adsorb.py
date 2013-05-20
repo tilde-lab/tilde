@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 import numpy as np
 
-from ase.lattice.surface import fcc111, hcp0001, bcc110, diamond111, \
+from ase.lattice.surface import fcc111, hcp0001, bcc110, bcc100, diamond111, \
     add_adsorbate
 from ase.structure import estimate_lattice_constant
 from ase.data import reference_states, atomic_numbers, covalent_radii
@@ -105,10 +105,13 @@ def build():
     elif x == 'bcc':
         if face is None:
             face = '110'
-        slab = bcc110(surf, (n, m, opt.layers), a, opt.vacuum)
-        script[0] += 'bcc110'
-        script += ['slab = bcc110(%r, (%d, %d, %d), a, vac)' %
-                   (surf, n, m, opt.layers)]
+        if face == '110':
+            slab = bcc110(surf, (n, m, opt.layers), a, opt.vacuum)
+        elif face == '100':
+            slab = bcc100(surf, (n, m, opt.layers), a, opt.vacuum)
+        script[0] += 'bcc' + face
+        script += ['slab = bcc%s(%r, (%d, %d, %d), a, vac)' %
+                   (face, surf, n, m, opt.layers)]
         r = a * np.sqrt(3) / 4
     elif x == 'hcp':
         if face is None:

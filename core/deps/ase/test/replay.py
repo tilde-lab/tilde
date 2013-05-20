@@ -5,6 +5,7 @@ from ase.calculators.emt import EMT
 from ase.optimize import QuasiNewton
 from ase.io import read
 from ase.vibrations import Vibrations
+from ase.visualize import view
 
 # Distance between Cu atoms on a (100) surface:
 d = 3.6 / sqrt(2)

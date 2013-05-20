@@ -34,17 +34,15 @@ import weakref
 import pickle
 from gettext import gettext as _
 from gettext import ngettext
-import numpy as np
 
+import numpy as np
 import pygtk
 pygtk.require("2.0")
-
 import gtk
+
 from ase.gui.view import View
 from ase.gui.status import Status
 from ase.gui.widgets import pack, help, Help, oops
-#from ase.gui.languages import translate as _
-
 from ase.gui.settings import Settings
 from ase.gui.crystal import SetupBulkCrystal
 from ase.gui.surfaceslab import SetupSurfaceSlab
@@ -56,6 +54,8 @@ from ase.gui.energyforces import EnergyForces
 from ase.gui.minimize import Minimize
 from ase.gui.scaling import HomogeneousDeformation
 from ase.gui.quickinfo import QuickInfo
+from ase.version import version
+
 
 ui_info = """\
 <ui>
@@ -75,6 +75,9 @@ ui_info = """\
       <separator/>
       <menuitem action='Copy'/>
       <menuitem action='Paste'/>
+      <separator/>
+      <menuitem action='HideAtoms'/>
+      <menuitem action='ShowAtoms'/>
       <separator/>
       <menuitem action='Modify'/>
       <menuitem action='AddAtoms'/>
@@ -105,7 +108,21 @@ ui_info = """\
       <menuitem action='Focus'/>
       <menuitem action='ZoomIn'/>
       <menuitem action='ZoomOut'/>
-      <menuitem action='ResetView'/>
+      <menu action='ChangeView'>
+        <menuitem action='ResetView'/>
+        <menuitem action='xyPlane'/>
+        <menuitem action='yzPlane'/>
+        <menuitem action='zxPlane'/>
+        <menuitem action='yxPlane'/>
+        <menuitem action='zyPlane'/>
+        <menuitem action='xzPlane'/>
+        <menuitem action='a2a3Plane'/>
+        <menuitem action='a3a1Plane'/>
+        <menuitem action='a1a2Plane'/>
+        <menuitem action='a3a2Plane'/>
+        <menuitem action='a2a1Plane'/>
+        <menuitem action='a1a3Plane'/>
+      </menu>
       <menuitem action='Settings'/>
       <menuitem action='VMD'/>
       <menuitem action='RasMol'/>
@@ -229,6 +246,12 @@ class GUI(View, Status):
              '',
              self.step),
             ('ShowLabels', None, _('Show _Labels')),
+            ('HideAtoms', None, _('Hide selected atoms'), None,
+             '',
+             self.hide_selected),
+            ('ShowAtoms', None, _('Show selected atoms'), None,
+             '',
+             self.show_selected),
             ('QuickInfo', None, _('Quick Info ...'), None,
              '',
              self.quick_info_window),
@@ -250,9 +273,22 @@ class GUI(View, Status):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, _('Zoom out'), 'minus',
              '',
              self.zoom),
+            ('ChangeView', None, _('Change View')),
             ('ResetView', None, _('Reset View'), 'equal',
              '',
              self.reset_view),
+            ('xyPlane', None, _('\'xy\' Plane'), 'z', '', self.set_view),
+            ('yzPlane', None, _('\'yz\' Plane'), 'x', '', self.set_view),
+            ('zxPlane', None, _('\'zx\' Plane'), 'y', '', self.set_view),
+            ('yxPlane', None, _('\'yx\' Plane'), '<alt>z', '', self.set_view),
+            ('zyPlane', None, _('\'zy\' Plane'), '<alt>x', '', self.set_view),
+            ('xzPlane', None, _('\'xz\' Plane'), '<alt>y', '', self.set_view),
+            ('a2a3Plane', None, _('\'a2 a3\' Plane'), '1', '', self.set_view),
+            ('a3a1Plane', None, _('\'a3 a1\' Plane'), '2', '', self.set_view),
+            ('a1a2Plane', None, _('\'a1 a2\' Plane'), '3', '', self.set_view),
+            ('a3a2Plane', None, _('\'a3 a2\' Plane'), '<alt>1', '', self.set_view),
+            ('a1a3Plane', None, _('\'a1 a3\' Plane'), '<alt>2', '', self.set_view),
+            ('a2a1Plane', None, _('\'a2 a1\' Plane'), '<alt>3', '', self.set_view),
             ('Settings', gtk.STOCK_PREFERENCES, _('Settings ...'), None,
              '',
              self.settings),
@@ -1327,12 +1363,16 @@ class GUI(View, Status):
     def about(self, action):
         try:
             dialog = gtk.AboutDialog()
+            dialog.set_version(version)
+            dialog.set_website(
+                'https://wiki.fysik.dtu.dk/ase/ase/gui/gui.html')
         except AttributeError:
             self.xxx()
         else:
             dialog.run()
+            dialog.destroy()
 
 def webpage(widget):
     import webbrowser
-    webbrowser.open('https://wiki.fysik.dtu.dk/ase/ase/gui.html')
+    webbrowser.open('https://wiki.fysik.dtu.dk/ase/ase/gui/gui.html')
 

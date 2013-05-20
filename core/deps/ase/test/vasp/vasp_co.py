@@ -36,7 +36,7 @@ calc = Vasp(
 
 co.set_calculator(calc)
 en = co.get_potential_energy()
-assert abs(en + 14.918933) < 1e-4
+assert abs(en + 14.918933) < 5e-3
 
 # Secondly, check that restart from the previously created VASP output works
 

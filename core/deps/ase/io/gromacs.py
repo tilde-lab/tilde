@@ -6,7 +6,14 @@ from ase.parallel import paropen
 
 
 def read_gromacs(filename):
-    """Import gromacs geometry type files (\*.gro).
+    """ From:
+    http://manual.gromacs.org/current/online/gro.html
+    C format
+    "%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f" 
+    python: starting from 0, including first excluding last
+    0:4 5:10 10:15 15:20 20:28 28:36 36:44 44:52 52:60 60:68 
+
+    Import gromacs geometry type files (.gro).
     Reads atom positions,
     velocities(if present) and
     simulation cell (if present)
@@ -25,17 +32,18 @@ def read_gromacs(filename):
     gromacs_residuenames = []
     gromacs_atomtypes = []
     for line in (lines[2:-1]):
+        #print line[0:5]+':'+line[5:11]+':'+line[11:15]+':'+line[15:20]
         inp = line.split()
-        floatvect = float(inp[3]) * 10.0, \
-            float(inp[4]) * 10.0, \
-            float(inp[5]) * 10.0
+        floatvect = float(line[20:28]) * 10.0, \
+            float(line[28:36]) * 10.0, \
+            float(line[36:44]) * 10.0
         positions.append(floatvect)
         try:
             #velocities from nm/ps to ase units
             floatvect = \
-                float(inp[6]) * units.nm / (1000.0 * units.fs), \
-                float(inp[7]) * units.nm / (1000.0 * units.fs), \
-                float(inp[8]) * units.nm / (1000.0 * units.fs)
+                float(line[44:52]) * units.nm / (1000.0 * units.fs), \
+                float(line[52:60]) * units.nm / (1000.0 * units.fs), \
+                float(line[60:68]) * units.nm / (1000.0 * units.fs)
         except:
             floatvect = 0.0, 0.0, 0.0
         gromacs_velocities.append(floatvect)

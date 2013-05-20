@@ -7,7 +7,8 @@ from ase.atoms import Atoms
 from ase.units import Bohr, Hartree
 from ase.io.trajectory import PickleTrajectory
 from ase.io.bundletrajectory import BundleTrajectory
-from ase.calculators.singlepoint import SinglePointCalculator
+from ase.calculators.singlepoint import SinglePointDFTCalculator
+from ase.calculators.singlepoint import SinglePointKPoint
 
 __all__ = ['read', 'write', 'PickleTrajectory', 'BundleTrajectory']
 
@@ -27,9 +28,9 @@ def read(filename, index=-1, format=None):
 
     Known formats:
 
-    =========================  ===========
+    =========================  =============
     format                     short name
-    =========================  ===========
+    =========================  =============
     GPAW restart-file          gpw
     Dacapo netCDF output file  dacapo
     Old ASE netCDF trajectory  nc
@@ -67,8 +68,13 @@ def read(filename, index=-1, format=None):
     CMR db/cmr-file            db
     CMR db/cmr-file            cmr
     LAMMPS dump file           lammps
+    EON reactant.con file      eon
     Gromacs coordinates        gro
-    =========================  ===========
+    Gaussian com (input) file  gaussian
+    Gaussian output file       gaussian_out
+    Quantum espresso in file   esp_in
+    Quantum espresso out file  esp_out
+    =========================  =============
 
     """
     if isinstance(filename, str):
@@ -115,8 +121,18 @@ def read(filename, index=-1, format=None):
         else:
             magmoms = None
 
-        atoms.calc = SinglePointCalculator(energy, forces, None, magmoms,
-                                           atoms)
+        atoms.calc = SinglePointDFTCalculator(energy, forces, None, magmoms,
+                                              atoms)
+        kpts = []
+        if r.has_array('IBZKPoints'):
+            for w, kpt, eps_n, f_n in zip(r.get('IBZKPointWeights'), 
+                                          r.get('IBZKPoints'),
+                                          r.get('Eigenvalues'),
+                                          r.get('OccupationNumbers')):
+                print eps_n.shape, f_n.shape
+                kpts.append(SinglePointKPoint(w, kpt[0], kpt[1],
+                                              eps_n[0], f_n[0]  )) # XXX
+        atoms.calc.kpts = kpts
 
         return atoms
 
@@ -272,9 +288,29 @@ def read(filename, index=-1, format=None):
         from ase.io.lammps import read_lammps_dump
         return read_lammps_dump(filename, index)
 
+    if format == 'eon':
+        from ase.io.eon import read_reactant_con
+        return read_reactant_con(filename)
+
     if format == 'gromacs':
         from ase.io.gromacs import read_gromacs
         return read_gromacs(filename)
+
+    if format == 'gaussian':
+        from ase.io.gaussian import read_gaussian
+        return read_gaussian(filename)
+
+    if format == 'gaussian_out':
+        from ase.io.gaussian import read_gaussian_out
+        return read_gaussian_out(filename, index)
+
+    if format == 'esp_in':
+        from ase.io.espresso import read_espresso_in
+        return read_espresso_in(filename)
+
+    if format == 'esp_out':
+        from ase.io.espresso import read_espresso_out
+        return read_espresso_out(filename, index)
 
     raise RuntimeError('File format descriptor '+format+' not recognized!')
 
@@ -323,7 +359,10 @@ def write(filename, images, format=None, **kwargs):
     DFTBPlus GEN format        gen
     CMR db/cmr-file            db
     CMR db/cmr-file            cmr
+    EON reactant.con file      eon
     Gromacs coordinates        gro
+    GROMOS96 (only positions)  g96
+
     =========================  ===========
 
     The use of additional keywords is format specific.
@@ -385,6 +424,8 @@ def write(filename, images, format=None, **kwargs):
             format = 'vasp_out'
         elif filename.endswith('etsf.nc'):
             format = 'etsf'
+        elif filename.lower().endswith('.con'):
+            format = 'eon'
         elif os.path.basename(filename) == 'coord':
             format = 'tmol'
         else:
@@ -447,9 +488,17 @@ def write(filename, images, format=None, **kwargs):
     elif format == 'db' or format == 'cmr':
         from ase.io.cmr_io import write_db
         return write_db(filename, images, **kwargs)
+    elif format == 'eon':
+        from ase.io.eon import write_reactant_con
+        write_reactant_con(filename, images)
+        return
     elif format == 'gro':
         from ase.io.gromacs import write_gromacs
         write_gromacs(filename, images)
+        return
+    elif format == 'g96':
+        from ase.io.gromos import write_gromos
+        write_gromos(filename, images)
         return
 
     format = {'traj': 'trajectory',
@@ -491,6 +540,8 @@ def filetype(filename):
         # Potentially a BundleTrajectory
         if BundleTrajectory.is_bundle(filename):
             return 'bundle'
+        elif os.path.normpath(filename) == 'states':
+            return 'eon'
         else:
             raise IOError('Directory: ' + filename)
 
@@ -590,6 +641,13 @@ def filetype(filename):
                 pass
 
     if filename.lower().endswith('.in'):
+        fileobj.seek(0)
+        while True:
+            line = fileobj.readline()
+            if not line:
+                break
+            if ('&system' in line) or ('&SYSTEM' in line):
+                return 'esp_in'
         return 'aims'
 
     if filename.lower().endswith('.cfg'):
@@ -636,10 +694,25 @@ def filetype(filename):
     if filename.lower().endswith('.gen'):
         return 'gen'
 
+    if filename.lower().endswith('.con'):
+        return 'eon'
+
     if 'ITEM: TIMESTEP\n' in lines:
         return 'lammps'
 
     if filename.lower().endswith('.gro'):
         return 'gromacs'
+
+    if filename.lower().endswith('.log'):
+        return 'gaussian_out'
+
+    if filename.lower().endswith('.com'):
+        return 'gaussian'
+
+    if filename.lower().endswith('.g96'):
+        return 'gromos'
+
+    if filename.lower().endswith('.out'):
+        return 'esp_out'
 
     return 'xyz'

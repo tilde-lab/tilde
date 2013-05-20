@@ -62,6 +62,9 @@ class Atoms(object):
     cell: 3x3 matrix
         Unit cell vectors.  Can also be given as just three
         numbers for orthorhombic cells.  Default value: [1, 1, 1].
+    celldisp: Vector
+        Unit cell displacement vector. To visualize a displaced cell
+        around the center of mass of a Systems of atoms. Default value = (0,0,0)
     pbc: one or three bool
         Periodic boundary conditions flags.  Examples: True,
         False, 0, 1, (1, 1, 0), (True, False, False).  Default
@@ -117,7 +120,7 @@ class Atoms(object):
                  tags=None, momenta=None, masses=None,
                  magmoms=None, charges=None,
                  scaled_positions=None,
-                 cell=None, pbc=None,
+                 cell=None, pbc=None, celldisp=None,
                  constraint=None,
                  calculator=None, 
                  info=None):
@@ -158,9 +161,11 @@ class Atoms(object):
             if masses is None and atoms.has('masses'):
                 masses = atoms.get_masses()
             if charges is None and atoms.has('charges'):
-                charges = atoms.get_charges()
+                charges = atoms.get_initial_charges()
             if cell is None:
                 cell = atoms.get_cell()
+            if celldisp is None:
+                celldisp = atoms.get_celldisp()
             if pbc is None:
                 pbc = atoms.get_pbc()
             if constraint is None:
@@ -191,6 +196,10 @@ class Atoms(object):
             cell = np.eye(3)
         self.set_cell(cell)
 
+        if celldisp is None:
+            celldisp = np.zeros(shape=(3,1))
+        self.set_celldisp(celldisp)
+
         if positions is None:
             if scaled_positions is None:
                 positions = np.zeros((len(self.arrays['numbers']), 3))
@@ -206,7 +215,7 @@ class Atoms(object):
         self.set_momenta(default(momenta, (0.0, 0.0, 0.0)))
         self.set_masses(default(masses, None))
         self.set_initial_magnetic_moments(default(magmoms, 0.0))
-        self.set_charges(default(charges, 0.0))
+        self.set_initial_charges(default(charges, 0.0))
         if pbc is None:
             pbc = False
         self.set_pbc(pbc)
@@ -299,9 +308,19 @@ class Atoms(object):
             self.arrays['positions'][:] = np.dot(self.arrays['positions'], M)
         self._cell = cell
 
+    def set_celldisp(self, celldisp):
+        celldisp = np.array(celldisp, float)
+        self._celldisp = celldisp
+  
+    def get_celldisp(self):
+        """Get the unit cell displacement vectors ."""
+        return self._celldisp.copy()
+
     def get_cell(self):
         """Get the three unit cell vectors as a 3x3 ndarray."""
         return self._cell.copy()
+
+
 
     def get_reciprocal_cell(self):
         """Get the three reciprocal lattice vectors as a 3x3 ndarray.
@@ -561,17 +580,30 @@ class Atoms(object):
         else:
             return 0.0
 
-    def set_charges(self, charges):
-        """Set charges."""
-        self.set_array('charges', charges, float, ())
+    def set_initial_charges(self, charges=None):
+        """Set the initial charges."""
+        
+        if charges is None:
+            self.set_array('charges', None)
+        else:
+            self.set_array('charges', charges, float, ())
 
-    def get_charges(self):
-        """Get array of charges."""
+    def get_initial_charges(self):
+        """Get array of initial charges."""
         if 'charges' in self.arrays:
             return self.arrays['charges'].copy()
         else:
             return np.zeros(len(self))
 
+    def get_charges(self):
+        """Get calculated charges."""
+        if self._calc is None:
+            raise RuntimeError('Atoms object has no calculator.')
+        try:
+            charges = self._calc.get_charges(self)
+        except AttributeError:
+            raise NotImplementedError
+        
     def set_positions(self, newpositions):
         """Set positions, honoring any constraints."""
         positions = self.arrays['positions']
@@ -704,12 +736,7 @@ class Atoms(object):
         
         if self._calc is None:
             raise RuntimeError('Atoms object has no calculator.')
-        try:
-            dipole = self._calc.get_dipole_moment(self)
-        except AttributeError:
-            raise AttributeError(
-                'Calculator object has no get_dipole_moment method.')
-        return dipole
+        return self._calc.get_dipole_moment(self)
     
     def copy(self):
         """Return a copy."""
@@ -1085,10 +1112,10 @@ class Atoms(object):
             eps = 1e-7
             if s < eps:
                 v = np.cross((0, 0, 1), v2)
-            if norm(v) < eps:
-                v = np.cross((1, 0, 0), v2)
-            assert norm(v) >= eps
-            if s > 0:
+                if norm(v) < eps:
+                    v = np.cross((1, 0, 0), v2)
+                assert norm(v) >= eps
+            elif s > 0:
                 v /= s
 
         if isinstance(center, str):
@@ -1213,7 +1240,7 @@ class Atoms(object):
         j = 0
         for i in range(len(self)):
             if mask[i]:
-                self.positions[i] = group[j].get_position()
+                self.positions[i] = group[j].position
                 j += 1
 
     def set_dihedral(self, list, angle, mask=None):
@@ -1255,7 +1282,7 @@ class Atoms(object):
     def get_angle(self, list):
         """Get angle formed by three atoms.
         
-        calculate angle between the vectors list[0]->list[1] and
+        calculate angle between the vectors list[1]->list[0] and
         list[1]->list[2], where list contains the atomic indexes in
         question."""
         # normalized vector 1->0, 1->2:
@@ -1280,7 +1307,7 @@ class Atoms(object):
             mask[list[2]] = 1
         # Compute necessary in angle change, from current value
         current = self.get_angle(list)
-        diff = current - angle
+        diff = angle - current
         # Do rotation of subgroup by copying it to temporary atoms object and
         # then rotating that
         v10 = self.positions[list[0]] - self.positions[list[1]]

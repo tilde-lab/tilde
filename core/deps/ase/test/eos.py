@@ -32,7 +32,7 @@ ref = {
     'Vinet': (31.866741599224699, -0.0096110298949974356, 0.24196956466978184),
     'AntonSchmidt': (31.745672779210317, 0.012772723347888704, 0.19905185689855259),
     # ASE3: scipy 0.7.0/numpy 1.3.0
-    'ip3': (31.867118229937798, -0.0096410046694188622, 0.23984474782755572),
+    'sjeos': (31.867118229937798, -0.0096410046694188622, 0.23984474782755572),
     #
     'taylor': (31.867114798134253, -0.0096606904384420791, 0.24112293515031302),
     'murnaghan': (31.866729811658402, -0.0096340233039666941, 0.23937322901028654),
@@ -112,7 +112,7 @@ except (ImportError, TypeError, ValueError):
 
 from ase.utils.eos import EquationOfState as eos3
 
-for e in eos_strl3 + ['ip3', 'p3']:
+for e in eos_strl3 + ['sjeos', 'p3']:
     eos = eos3(volumes, energies, eos=e.lower())
     v0, e0, B = eos.fit()
     results[e.lower()] = (v0, e0, B)

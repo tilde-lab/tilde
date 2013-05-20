@@ -1,11 +1,5 @@
 import os
 
-from ase.test.jacapo import installed
-
-assert installed()
-
-# Now Scientific 2.8 and dacapo.run should both be available
-
 from ase import Atoms, Atom
 from ase.calculators.jacapo import Jacapo
 

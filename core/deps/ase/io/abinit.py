@@ -81,27 +81,40 @@ def read_abinit(filename='abinit.in'):
             xred.append([float(tokens[index+3*i+1]),
                          float(tokens[index+3*i+2]),
                          float(tokens[index+3*i+3])])
-        atoms = Atoms(cell=rprim, scaled_positions=xred, numbers=numbers)
-        return atoms
+        atoms = Atoms(cell=rprim, scaled_positions=xred, numbers=numbers,
+                      pbc=True)
+    else:
+        if "xcart" in tokens:
+            index = tokens.index("xcart")
+            unit = units.Bohr
+        elif "xangst" in tokens:
+            unit = 1.0
+            index = tokens.index("xangst")
+        else:
+            raise IOError(
+                "No xred, xcart, or xangs keyword in abinit input file")
 
-    index = None
-    if "xcart" in tokens:
-        index = tokens.index("xcart")
-        unit = units.Bohr
-    elif "xangs" in tokens:
-        unit = 1.0
-        index = tokens.index("xangs")
-
-    if(index != None):
         xangs = []
         for i in range(natom):
             xangs.append([unit*float(tokens[index+3*i+1]),
                           unit*float(tokens[index+3*i+2]),
                           unit*float(tokens[index+3*i+3])])
-        atoms = Atoms(cell=rprim, positions=xangs, numbers=numbers)
-        return atoms
+        atoms = Atoms(cell=rprim, positions=xangs, numbers=numbers, pbc=True)
+    
+    try:
+        i = tokens.index('nsppol')
+    except ValueError:
+        nsppol = None
+    else:
+        nsppol = int(tokens[i + 1])
 
-    raise IOError("No xred, xcart, or xangs keyword in abinit input file")
+    if nsppol == 2:
+        index = tokens.index('spinat')
+        magmoms = [float(tokens[index + 3 * i + 3]) for i in range(natom)]
+        atoms.set_initial_magnetic_moments(magmoms)
+
+    return atoms
+
 
 
 def write_abinit(filename, atoms, cartesian=False, long_format=True):

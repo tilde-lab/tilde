@@ -121,8 +121,7 @@ class MoleculeTask(OptimizeTask):
         if self.fmax is not None:
             # this performs relaxation of internal degrees of freedom
             data = OptimizeTask.calculate(self, name, atoms)
-            if len(atoms) == 2:
-                data['distance'] = atoms.get_distance(0, 1)
+            data['distance'] = atoms.get_distance(0, -1)
         else:
             # no optimization
             if self.fit is None or len(atoms) != 2:

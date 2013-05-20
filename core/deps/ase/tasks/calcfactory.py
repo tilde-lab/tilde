@@ -6,25 +6,31 @@ import numpy as np
 from ase.dft.kpoints import monkhorst_pack
 
 
-def str2dict(s, namespace={}):
-    """Convert comma-separated key=vale string to dictionary.
+def str2dict(s, namespace={}, sep='='):
+    """Convert comma-separated key=value string to dictionary.
 
-    Example:
+    Examples:
 
-    >>> str2dict('a=1.2,b=True,c=abc,d=1,2,3')
-    {'a': 1.2, 'c': 'abc', 'b': True, 'd': (1, 2, 3)}
+    >>> str2dict('xc=PBE,nbands=200,parallel={band:4}')
+    {'xc': 'PBE', 'nbands': 200, 'parallel': {'band': 4}}
+    >>> str2dict('a=1.2,b=True,c=ab,d=1,2,3,e={f:42,g:cd}')
+    {'a': 1.2, 'c': 'ab', 'b': True, 'e': {'g': 'cd', 'f': 42}, 'd': (1, 2, 3)}
     """
 
     dct = {}
-    s = (s + ',').split('=')
+    s = (s + ',').split(sep)
     for i in range(len(s) - 1):
         key = s[i]
         m = s[i + 1].rfind(',')
         value = s[i + 1][:m]
-        try:
-            value = eval(value, namespace)
-        except (NameError, SyntaxError):
-            pass
+        if value[0] == '{':
+            assert value[-1] == '}'
+            value = str2dict(value[1:-1], {}, ':')
+        else:
+            try:
+                value = eval(value, namespace)
+            except (NameError, SyntaxError):
+                pass
         dct[key] = value
         s[i + 1] = s[i + 1][m + 1:]
     return dct
@@ -71,12 +77,19 @@ class CalculatorFactory:
 
         kpts = self.calculate_kpts(atoms)
         if kpts != 'no k-points':
-            self.kwargs['kpts'] = kpts
+            if self.name == 'aims':  # XXX Aims uses k_grid!
+                self.kwargs['k_grid'] = kpts
+            else:
+                self.kwargs['kpts'] = kpts
 
         if self.label is not None:
             self.kwargs[self.label] = name
-
         return self.Class(**self.kwargs)
+        
+        if self.label is None:
+            return self.Class(**self.kwargs)
+        else:
+            return self.Class(name, **self.kwargs)
 
     def add_options(self, parser):
         calc = optparse.OptionGroup(parser, 'Calculator')
@@ -110,24 +123,40 @@ class CalculatorFactory:
 
 # Recognized names of calculators sorted alphabetically:
 calcnames = ['abinit', 'aims', 'asap', 'castep', 'dftb', 'elk', 'emt',
-             'exciting', 'fleur', 'gpaw', 'hotbit', 'jacapo',
-             'lammps', 'lj', 'morse',
+             'exciting', 'fleur', 'gpaw', 'gaussian', 'hotbit', 'jacapo',
+             'lammps', 'lj', 'mopac', 'morse',
              'nwchem', 'siesta', 'turbomole', 'vasp']
 
 classnames = {'asap': 'EMT',
+              'aims': 'Aims',
               'elk': 'ELK',
               'emt': 'EMT',
               'fleur': 'FLEUR',
+              'gaussian': 'Gaussian',
               'jacapo': 'Jacapo',
               'lammps': 'LAMMPS',
               'lj': 'LennardJones',
+              'mopac': 'Mopac',
               'morse': 'MorsePotential',
-              'nwchem': 'NWchem',
+              'nwchem': 'NWChem',
               'vasp': 'Vasp'}
 
 
 def calculator_factory(name, **kwargs):
     """Create an ASE calculator factory."""
+
+    if name == 'abinit':
+        from ase.calculators.abinit import Abinit
+        return CalculatorFactory(Abinit, 'Abinit', 'label', **kwargs)
+
+    if name == 'aims':
+        from ase.calculators.aims import Aims
+        return CalculatorFactory(Aims, 'aims', 'label', **kwargs)
+
+    if name == 'nwchem':
+        from ase.calculators.nwchem import NWChem
+        return CalculatorFactory(NWChem, 'NWChem', 'label', 'no k-points',
+                                 **kwargs)
 
     if name == 'asap':
         from asap3 import EMT
@@ -135,7 +164,7 @@ def calculator_factory(name, **kwargs):
 
     if name == 'elk':
         from ase.calculators.elk import ELK
-        return CalculatorFactory(ELK, 'ELK', 'dir', **kwargs)
+        return CalculatorFactory(ELK, 'ELK', 'label', **kwargs)
 
     if name == 'fleur':
         from ase.calculators.fleur import FLEUR
@@ -162,7 +191,7 @@ def calculator_factory(name, **kwargs):
     module = __import__('ase.calculators.' + name, {}, None, [classname])
     Class = getattr(module, classname)
 
-    if name in ['emt', 'lammps', 'lj', 'morse']:
+    if name in ['emt', 'gaussian', 'lammps', 'lj', 'mopac', 'morse']:
         kpts = 'no k-points'
     else:
         kpts = None

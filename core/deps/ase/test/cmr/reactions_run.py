@@ -4,9 +4,11 @@ import warnings
 # Therefore also deprecated methods are called - and we choose to silence those warnings.
 warnings.filterwarnings('ignore', 'ase.atoms.*deprecated',)
 
+# if CMR_SETTINGS_FILE is missing, cmr raises simply
+# Exception("CMR is not configured properly. Please create the settings file with cmr --create-settings.")
 try:
     import cmr
-except ImportError:
+except (Exception, ImportError):
     raise NotAvailable('CMR is required')
 
 from ase.calculators.emt import EMT

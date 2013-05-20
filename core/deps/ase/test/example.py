@@ -1,4 +1,5 @@
 from ase.all import *
+from ase.calculators.morse import MorsePotential
 
 atoms = Atoms('H7',
               positions=[(0, 0, 0),
@@ -9,7 +10,7 @@ atoms = Atoms('H7',
                          (1, 2, 0),
                          (0.5, 0.5, 1)],
               constraint=[FixAtoms(range(6))],
-              calculator=LennardJones())
+              calculator=MorsePotential())
 
 traj = PickleTrajectory('H.traj', 'w', atoms)
 dyn = QuasiNewton(atoms, maxstep=0.2)
