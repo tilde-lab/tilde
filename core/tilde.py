@@ -88,8 +88,9 @@ if args.add:
 
 Tilde = API(db_conn=db, filter=settings['filter'], skip_if_path=settings['skip_if_path'])
 
-
-print "Only finalized:", 'YES' if settings['filter'] else 'NO', "and skip paths if start/end with any of:", settings['skip_if_path']
+if settings['filter']: finalized = 'YES'
+else: finalized = 'NO'
+print "Only finalized:", finalized, "and skip paths if start/end with any of:", settings['skip_if_path']
 
 
 for target in args.path:
