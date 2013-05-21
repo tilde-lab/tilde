@@ -17,7 +17,7 @@ DEFAULT_SETUP = {
                 'demo_regime': 0,
                 'debug_regime': 0,
                 'quick_regime': 0,
-                'filter': 1,
+                'filter': 0,
                 'skip_if_path': "-_~",
                 'title': None
                 }

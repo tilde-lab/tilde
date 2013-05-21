@@ -315,8 +315,7 @@ class Kpoints():
         if not is_hexagonal:
             num_div = [i + i % 2 for i in num_div]
             style = Kpoints.supported_modes.Monkhorst
-        comment = "pymatgen generated KPOINTS with grid density = " + \
-            "{} / atom".format(kppa)
+        comment = "pymatgen generated KPOINTS with grid density = {0} / atom".format(kppa)
         num_kpts = 0
         return Kpoints(comment, num_kpts, style, [num_div], [0, 0, 0])
 
@@ -486,7 +485,7 @@ class Incar(dict):
             if k == "MAGMOM" and isinstance(self[k], list):
                 value = []
                 for m, g in itertools.groupby(self[k]):
-                    value.append("{}*{}".format(len(tuple(g)), m))
+                    value.append("{0}*{1}".format(len(tuple(g)), m))
                 lines.append([k, " ".join(value)])
             elif isinstance(self[k], list):
                 lines.append([k, " ".join([str(i) for i in self[k]])])
@@ -555,19 +554,6 @@ class Incar(dict):
             return val.capitalize()
 
         return val.capitalize()
-
-    def __add__(self, other):
-        """
-        Add all the values of another INCAR object to this object.
-        Facilitates the use of "standard" INCARs.
-        """
-        params = {k: v for k, v in self.items()}
-        for k, v in other.items():
-            if k in self and v != self[k]:
-                raise ValueError("Incars have conflicting values!")
-            else:
-                params[k] = v
-        return Incar(params)
 
 class XML_Output(Output):
     def __init__(self, filename, ionic_step_skip=None, parse_dos=True, parse_eigen=True, parse_projected_eigen=False, **kwargs):
@@ -919,7 +905,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif name == "dynmat":                
                 self.read_dynmat = True
             elif name == "eigenvalues" and self.parse_eigen and not state["projected"]:
-                logger.debug("Reading eigenvalues. Projected = {}".format(state["projected"]))
+                logger.debug("Reading eigenvalues. Projected = {0}".format(state["projected"]))
                 self.read_eigen = True
             #elif name == "eigenvalues" and self.parse_projected_eigen and state["projected"]:
             #    logger.debug("Reading projected eigenvalues...")
@@ -934,13 +920,13 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                     state["set"] = comment
                     if comment.startswith("spin"):
                         self.eigen_spin = 'alpha' if state["set"] in ["spin 1", "spin1"] else 'beta'
-                        logger.debug("Reading spin {}".format(self.eigen_spin))
+                        logger.debug("Reading spin {0}".format(self.eigen_spin))
                     elif comment.startswith("kpoint"):
                         self.eigen_kpoint = int(comment.split(" ")[1])
-                        logger.debug("Reading kpoint {}".format(self.eigen_kpoint))
+                        logger.debug("Reading kpoint {0}".format(self.eigen_kpoint))
                     elif comment.startswith("band"):
                         self.eigen_band = int(comment.split(" ")[1])
-                        logger.debug("Reading band {}".format(self.eigen_band))
+                        logger.debug("Reading band {0}".format(self.eigen_band))
             elif self.read_dos:
                 if (name == "i" and state["i"] == "efermi") or (name == "r" and state["set"]):
                     self.read_val = True
@@ -1149,7 +1135,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                 self.e_eigvals[k] = {'alpha': self.raw_data}
             self.raw_data = []
         elif name == "eigenvalues":
-            logger.debug("Finished reading eigenvalues. No. eigen = {}".format(len(self.e_eigvals)))
+            logger.debug("Finished reading eigenvalues. No. eigen = {0}".format(len(self.e_eigvals)))
             self.read_eigen = False
 
     def endElement(self, name):

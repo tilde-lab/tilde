@@ -2,17 +2,18 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v130513
+# v210513
 
 import sys
 import os
+import subprocess
 
-if sys.version_info < (2, 7):
-    print '\n\nI cannot proceed. Your python is too old. At least version 2.7 is required!\n\n'
+if sys.version_info < (2, 6):
+    print '\n\nI cannot proceed. Your python is too old. At least version 2.6 is required!\n\n'
     sys.exit()
 
-import argparse
-import subprocess
+try: import argparse
+except ImportError: import deps.argparse as argparse
 
 try:
     from numpy import dot
@@ -45,7 +46,7 @@ parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add resu
 parser.add_argument("-r", dest="recursive", action="store", help="if PATH(S): scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-v", dest="verbose", action="store", help="if PATH(S): verbose print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save its CIF structure in \"data\" folder", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m", dest="module", action="store", help="if FILE: invoke a module over it", type=bool, nargs='?', const=False, default=False, choices=registered_modules)
+parser.add_argument("-m", dest="module", action="store", help="if FILE: invoke a module over it", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-u", dest="daemon", action="store", help="run user interface service (default, prevails over the rest commands if given)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
 
 args = parser.parse_args()
@@ -55,6 +56,7 @@ args = parser.parse_args()
 if not args.path and not args.daemon: #if not len(vars(args)):
     args.daemon = 'shell'
 if args.daemon:
+    print "\nPlease, wait a bit while Tilde application is starting.....\n"
 
     # invoke windows UI frame
     if args.daemon == 'shell' and 'win' in sys.platform:
@@ -142,3 +144,9 @@ for target in args.path:
                 print "cannot write in", DATA_DIR
             else:
                 print cif_file + " ready"
+        
+        if args.module and len(tasks) == 1:
+            hooks = Tilde.postprocess(calc)
+            if args.module not in hooks: print "Module \"" + args.module + "\" cannot be run due to restrictions in module manifest file!"
+            else: print hooks[args.module]
+        

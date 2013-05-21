@@ -6,17 +6,17 @@ Tilde (wwwtilda, ~) is an intelligent data organizer for cheminformatics and com
 Usage
 -----
 
-To use command-line interface run an appropriate script for your OS with any parameter (e.g. "--help").
-To use graphical interface run an appropriate script for your OS without any parameters.
+To use command-line interface run script for your OS with a parameter (e.g. "--help").
+To use graphical interface run script for your OS without parameters.
 To terminate graphical interface on Windows close the DOS box.
 To terminate graphical interface on Unix kill starting script.
-Please, avoid spaces and non-latin characters in the application folder name.
+Please, avoid spaces and non-latin characters in the application folder name!
 
 Prerequisites
 -------------
 
 On Windows no additional installations are required.
-On Unix/Mac you should have Python and numerical modules (Numpy) pre-installed.
+On Unix/Mac you should have Python (at least of version 2.6) and numerical modules (Numpy) pre-installed.
 
 Disclaimer
 ----------
@@ -41,4 +41,4 @@ Summary
 * Webpage: http://wwwtilda.googlecode.com/ or http://tilde.pro/
 * Version: 0.2.1
 * Maintainer: Evgeny Blokhin (eb@tilde.pro)
-* Timestamp: 17/05/2013
+* Timestamp: 21/05/2013

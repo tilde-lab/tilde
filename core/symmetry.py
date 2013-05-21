@@ -8,6 +8,7 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps'))
 sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
 
+
 if 'win' in sys.platform:
     from ase.atoms import Atoms
     import pywintypes
@@ -18,7 +19,6 @@ if 'win' in sys.platform:
     class SymmetryFinder:
         def __init__(self, tilde_obj):
             self.error = None
-            self.spacegroup = None
             ase_symbols = []
             for i in tilde_obj['structures'][-1]['atoms']:
                 adata = i[0].capitalize()
@@ -53,7 +53,6 @@ elif 'linux' in sys.platform:
     class SymmetryFinder:
         def __init__(self, tilde_obj):
             self.error = None
-            self.spacegroup = None
             self.cif = None
             input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1]['atoms'], tilde_obj['structures'][-1]['cell'])
             if error: self.error = error
@@ -114,3 +113,12 @@ elif 'linux' in sys.platform:
             return out, findsym_corr, error
             
 else: raise RuntimeError('Cannot start platform-dependent symmetry finder!')
+
+'''
+# Dummy class for testing purposes
+class SymmetryFinder:
+        def __init__(self, tilde_obj):
+            self.error = None
+            self.n = 1
+            self.i = 'P1'
+'''
