@@ -9,7 +9,7 @@ except: from pysqlite2 import dbapi2 as sqlite3
 SETTINGS_FILE = 'settings.~'
 DEFAULT_DB = 'default.db'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
-EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../examples')
+EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
 DEFAULT_SETUP = {
                 'webport': 7777,
                 'default_db': DEFAULT_DB,

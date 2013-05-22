@@ -5,9 +5,10 @@
 import os
 import sys
 
-#sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/../../'))
-from core.deps.ase.data import chemical_symbols
-from core.deps.ase.data import atomic_masses
+# deps third-party code and common routines
+# here are already available:
+from ase.data import chemical_symbols
+from ase.data import atomic_masses
 from core.common import ModuleError
 
 
@@ -26,7 +27,6 @@ class Example_app():
         for a in [atom[0] for atom in tilde_calc.structures[-1]['atoms']]:
             if not a in chemical_symbols:
                 raise ModuleError('Unexpected atom has been found!')
-
             try:
                 self.weight += atomic_masses[chemical_symbols.index(a)]
             except IndexError:

@@ -95,13 +95,14 @@
         </div>
 
         <div class="ipane" rel="scan">
-            <form id="settings_form">
+            <form id="settings_form" action="/">
                 <div><br />A working path to display<br />(e.g. <b>/home/user/work</b> or <b>D:\science</b>):</div>
                 <div><input type="text" value="" id="settings_local_path" style="border:1px solid #06c;height:30px;width:100%;" /></div>
                 <div><input type="checkbox" id="settings_quick_regime" checked="" /> <label for="settings_quick_regime">skip files > 25 Mb</label></div>
                 <div><input type="checkbox" id="settings_filter" checked="" /> <label for="settings_filter">skip uncompleted (without ending tag)</label></div>
                 <div><input type="checkbox" id="settings_skip_if_path" checked="" /> <label for="settings_skip_if_path">skip if name starts/ends with any of:</label> <input type="text" value="" maxlength="3" id="settings_skip_if_path_mask" style="border:1px solid #06c;height:30px;width:10%;float:right;" /></div>
                 <div><b>Your files will be never modified or shown to anyone without your explicit permission!</b></div>
+                <input type="submit" style="display:none" />
             </form>
             <div class="btn settings-apply" style="width:120px;margin:30px auto 0;">apply and save</div>
         </div>
@@ -243,7 +244,7 @@
         </div>
         <div class="menu_ctx_cmds" style="display:none;">
             <div class="left" style="padding:7px 0 0 8px;">With selected:</div>
-            <div class="btn left" id="chk_rerun">copy to DB</div>
+            <select id="db_copy_select"></select>
         </div>
     </div>
 

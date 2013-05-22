@@ -1,28 +1,30 @@
 
 # *includable* Tilde routines
 
-import os, sys
+import os
+import sys
 from numpy import dot
 from numpy import array
 from numpy import matrix
 
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps'))
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+# this is done to have all third-party code in deps folder
+# TODO: dealing with sys.path is malpractice
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
+from deps.ase.atoms import Atoms as ASE_atoms
+
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
 from spacegroup.cell import cell_to_cellpar
-from ase.atoms import Atoms as ASE_atoms
 
-# apps exception
+
 class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
-    def __str__(self):
-        return repr(self.value)
 
 def generate_cif(parameters, atoms, symops):
     if not parameters: parameters = [10, 10, 10, 90, 90, 90]
     reverse = matrix( cellpar_to_cell(parameters) ).I
-    cif_data = 'data_tilda_project' + "\n"
+    cif_data = 'data_tilde_project\n'
     cif_data += '_cell_length_a    ' + "%2.6f" % parameters[0] + "\n"
     cif_data += '_cell_length_b    ' + "%2.6f" % parameters[1] + "\n"
     cif_data += '_cell_length_c    ' + "%2.6f" % parameters[2] + "\n"
@@ -42,9 +44,17 @@ def generate_cif(parameters, atoms, symops):
     for i in range(0, len(atoms)):
         x, y, z = dot( array([atoms[i][1], atoms[i][2], atoms[i][3]]), reverse ).tolist()[0]
         cif_data += "%s%s   %s   % 1.8f   % 1.8f   % 1.8f\n" % (atoms[i][0], (i+1), atoms[i][0], x, y, z)
-        #cif_data += atoms[i][0] + "%s" % (i+1) + '   ' + atoms[i][0] + '   ' + "% 1.8f" % x + '  ' + "% 1.8f" % y + '  ' + "% 1.8f" % z + "\n"
     return cif_data
-
+    
+def write_cif(parameters, atoms, symops, filename):
+    cif_data = generate_cif(parameters, atoms, symops)
+    try:
+        file = open(filename, 'w')
+        file.write(cif_data)
+        file.close()
+    except IOError: return False
+    else: return True
+    
 def generate_xyz(atoms):
     xyz_data = "%s" % len(atoms) + "\nXYZ\n"
     for i in range(0, len(atoms)):
@@ -75,6 +85,6 @@ def deaseize(ase_obj):
     tilde_values = ['a', 'b', 'c', 'alpha', 'beta', 'gamma']
     atypes = ase_obj.get_chemical_symbols()
     atoms = [ [atypes[n], i[0], i[1], i[2]] for n, i in enumerate(ase_obj.positions) ]
-    cell = [ ase_obj.info[tilde_key] for tilde_key in tilde_values ] if 'hm' in ase_obj.info else cell_to_cellpar( ase_obj.cell ).tolist()
+    cell = [ float( ase_obj.info[tilde_key] ) for tilde_key in tilde_values ] if 'hm' in ase_obj.info else cell_to_cellpar( ase_obj.cell ).tolist()
     return {'cell': cell, 'atoms': atoms, 'periodicity':3} # todo  
 

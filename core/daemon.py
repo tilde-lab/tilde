@@ -27,7 +27,9 @@ from numpy import array
 try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
 
-sys.path.append(os.path.realpath(os.path.dirname(__file__)) + '/deps')
+# this is done to have all third-party code in deps folder
+# TODO: dealing with sys.path is malpractice
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__)) + '/deps')
 
 import tornado.web
 import tornado.gen
@@ -183,7 +185,8 @@ class Request_Handler:
                 data, error = Tilde.Conns[ userobj['transport'] ]['report']( userobj['path'], settings['local_dir'], Tilde )
 
         global Tilde_tags
-        if Users[session_id].cur_db in Tilde_tags: del Tilde_tags[ Users[session_id].cur_db ]
+        if Users[session_id].cur_db in Tilde_tags:
+            del Tilde_tags[ Users[session_id].cur_db ] # update tags in memory
 
         if callback: callback( (data, error) )
         else: return (data, error)
@@ -238,7 +241,7 @@ class Request_Handler:
 
                 # --compulsory part--
                 data += '<tr id=i_' + row['checksum'] + (' class=shared' if row['shared'] else '') + '>'
-                #data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
+                data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
 
                 # --dynamic part--
                 for item in Tilde_cols:
@@ -373,10 +376,14 @@ class Request_Handler:
 
             ase_obj = aseize(json.loads(row['structure'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
-            mass_center = ase_obj.get_center_of_mass()
+            ase_obj.center()
+            
+            '''mass_center = ase_obj.get_center_of_mass()
             for i in range(len(mass_center)):
                 if mass_center[i] == 0: mass_center[i] = 1
-            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
+            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]'''
+            
+            mass_center_octant = [ 1, 1, 1 ]
 
             atoms = []
             for i in ase_obj:
@@ -400,7 +407,7 @@ class Request_Handler:
     def settings(userobj, session_id):
         data, error = None, None
 
-        global Tilde, Users
+        global Tilde, Users, Tilde_tags
 
         # *server-side* settings
         if userobj['area'] == 'scan':
@@ -428,11 +435,13 @@ class Request_Handler:
                 Users[session_id].usettings[i] = userobj['settings'][i]
 
         # *server + client-side* settings
-        elif userobj['area'] == 'switch':
-            if not userobj['switch'] in Repo_pool or Users[session_id].cur_db == userobj['switch']: return (data, 'Invalid database switch!')
-            Users[session_id].cur_db = userobj['switch']
+        elif userobj['area'] == 'switching':
+            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Invalid database switching!')
+            Users[session_id].cur_db = userobj['switching']
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
-            logging.debug('Switched to ' + userobj['switch'])
+            if Users[session_id].cur_db in Tilde_tags:
+                del Tilde_tags[ Users[session_id].cur_db ] # update tags in memory
+            logging.debug('Switched to ' + userobj['switching'])
 
         else: error = 'Unknown settings context area!'
 
@@ -479,6 +488,13 @@ class Request_Handler:
         Repo_pool[userobj['newname']].commit()
         data = 1
         return (data, error)
+        
+    @staticmethod
+    def db_copy(userobj, session_id):
+        data, error = None, None
+        if settings['demo_regime']: return (data, 'Action not allowed!')
+        print userobj['tocopy']
+        return (1, error)
 
     @staticmethod
     def ph_dos(userobj, session_id):
@@ -836,7 +852,7 @@ def build_header(cols):
     # --compulsory part--
     headers_html = '<thead>'
     headers_html += '<tr>'
-    #headers_html += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
+    headers_html += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
 
     # --dynamic part--
     for item in Tilde_cols:

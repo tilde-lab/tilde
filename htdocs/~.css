@@ -78,6 +78,7 @@ div.object_ctx_left div.ipane{border-left-width:0;}
 div.object_ctx_right{float:right;width:50%;margin-right:1px;background:#fff;}
 div.object_ctx_right div.ipane{border-right-width:0;}
 div.flot_holder{width:97%;height:460px;margin:0 auto 5px;}
+#db_copy_select{width:280px;margin:5px;font-size:0.9em;}
 
 /* DATABROWSER PANE */
 div.menu_main_cmds{height:100%;display:table;}

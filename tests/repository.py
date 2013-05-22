@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+# Repo build test
+
+import os
+import sys
+import time
+
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+from core.api import API
+from core.settings import EXAMPLE_DIR, DATA_DIR, DEFAULT_DB
+
+try: import sqlite3
+except: from pysqlite2 import dbapi2 as sqlite3
+
+
+starttime = time.time()
+
+
+db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + DEFAULT_DB))
+db.row_factory = sqlite3.Row
+db.text_factory = str
+
+work = API(db_conn=db)
+
+tasks = work.savvyize(EXAMPLE_DIR, True)  # True means recursive
+
+print '\n\nRepo build test:\n\n'
+
+for task in tasks:
+    filename = os.path.basename(task)
+
+    calc, error = work.parse(task)
+    if error:
+        print filename, error
+        continue
+
+    calc, error = work.classify(calc)
+    if error:
+        print filename, error
+        continue
+
+    checksum, error = work.save(calc)
+    if error:
+        print filename, error
+        continue
+
+    print filename + " added"
+    
+print "Test repository done in %1.2f sec (on my PC ~8 sec)" % (time.time() - starttime)

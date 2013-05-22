@@ -3,9 +3,12 @@
 # their results are found to coincide in all my tests;
 # more info at http://sourceforge.net/mailarchive/forum.php?forum_name=spglib-users
 
-import os, sys
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps'))
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+import os
+import sys
+
+# this is done to have all third-party code in deps folder
+# TODO: dealing with sys.path is malpractice
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
 
 

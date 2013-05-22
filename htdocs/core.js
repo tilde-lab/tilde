@@ -108,11 +108,19 @@ function logger(message, no_wrap, clean){
     if (!no_wrap) message = "<div>" + message.replace(/ /g, "&nbsp;") + "</div>";
     $("#debug").prepend(message);
 }
-function set_repo_title(title, n){
-    $('#metablock').html( '<span class="link white">' + title + '</span>' );
-    title = 'Current repository:<br />' + title;
-    if (!!n && n > 1) title += ' (<span class=link>' + (n-1) + ' more</span>)';
+function set_repos(){
+    $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
+    
+    var title = 'Current repository:<br />' + _tilde.settings.dbs[0];
+    if (!!_tilde.settings.dbs.length && _tilde.settings.dbs.length > 1) title += ' (<span class=link>' + (_tilde.settings.dbs.length - 1) + ' more</span>)';
     $('h1').html( title );
+    
+    var options = '<option value="0" selected="selected">copy to ...</option>';
+    $.each(_tilde.settings.dbs, function(n, item){
+        if (n==0) return true;
+        options += '<option value="' + item + '">copy to ' + item + '</option>';
+    });
+    $('#db_copy_select').empty().append(options);
 }
 function set_user_settings( settings ){
     //if (_tilde.debug) logger("RECEIVED SETTINGS: " + $.toJSON(settings));
@@ -124,7 +132,7 @@ function set_user_settings( settings ){
 
     // render databases
     //
-    set_repo_title(_tilde.settings.dbs[0], _tilde.settings.dbs.length);
+    set_repos();
     var dbs_str = '', btns = '<div class="btn right db-make-active-trigger">make active</div>';
     if (!_tilde.protected) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
 
@@ -573,7 +581,7 @@ function resp__summary(req, data){
     }
 
     var html = '<div><strong>'+info.location+'</strong></div>';
-    html += '<div style="height:430px;overflow-x:visible;overflow-y:scroll;"><ul class=tags>';
+    html += '<div style="height:410px;overflow-x:visible;overflow-y:scroll;"><ul class=tags>';
     $.each(resp.tags, function(num, value){
         html += '<li><strong>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + '</strong>: <span>' + value.content.join('</span>, <span>') + '</span></li>';
     });
@@ -602,14 +610,14 @@ function resp__settings(req, data){
         if (!$('#databrowser').is(':visible')) return;
         _tilde.last_browse_request.notags = true;
         __send('browse', _tilde.last_browse_request, true);
-    } else if (req.area == 'switch'){
+    } else if (req.area == 'switching'){
         $('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
         if (!_tilde.protected) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
         $('div.ipane_db_field_active').removeClass('ipane_db_field_active');
-        $('div[rel="' + req['switch'] + '"]').addClass('ipane_db_field_active').children('div').remove();
-        _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req['switch']), 1)
-        _tilde.settings.dbs.unshift(req['switch']);
-        set_repo_title(_tilde.settings.dbs[0], _tilde.settings.dbs.length);
+        $('div[rel="' + req.switching + '"]').addClass('ipane_db_field_active').children('div').remove();
+        _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
+        _tilde.settings.dbs.unshift(req.switching);
+        set_repos();
         
         $('#category_holder').empty();
         if (document.location.hash == 'tags' || document.location.hash == '#tags') __send('tags', {tids: false, render: 'splashscreen'});
@@ -620,15 +628,20 @@ function resp__settings(req, data){
 function resp__clean(req, data){
     $('div[rel="' + req.db + '"]').remove();
     _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.db), 1);
-    set_repo_title(_tilde.settings.dbs[0], _tilde.settings.dbs.length);
+    set_repos();
     logger('DATABASE ' + req.db + ' REMOVED.');
 }
 function resp__db_create(req, data){
     req.newname += '.db'
     $('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn right db-make-active-trigger">make active</div><div class="btn btn3 right db-delete-trigger">delete</div></div>');
     _tilde.settings.dbs.push(req.newname);
-    set_repo_title(_tilde.settings.dbs[0], _tilde.settings.dbs.length);
+    set_repos();
     logger('DATABASE ' + req.newname + ' CREATED.');
+}
+function resp__db_copy(req, data){
+    $('#d_cb_all').attr('checked', false);
+    $('input.SHFT_cb').attr('checked', false);
+    $('#db_copy_select').val('0');
 }
 function resp__check_version(req, data){
     $('div[rel=check_version] div').append(data);
@@ -835,7 +848,7 @@ $(document).ready(function(){
 *
 */
     // FILETREE DIR PROCESSOR
-    $('div.filetree span.mult_read').live('click', function(){
+    $(document).on('click', 'div.filetree span.mult_read', function(){
         var $el = $(this), rel = $el.attr("rel"), rev = $el.attr("rev");
         $el.parent().children('span').hide();
         $el.after('<span rel=__read__'+rel+'>scan in progress...</span>');
@@ -856,10 +869,10 @@ $(document).ready(function(){
     });
 
     // REPORT DONE TRIGGER
-    $('span.scan_done_trigger').live('click', function(){
+    $(document).on('click', 'span.scan_done_trigger', function(){
         $('#connectors').hide();
     });
-    $('span.scan_details_trigger').live('click', function(){
+    $(document).on('click', 'span.scan_details_trigger', function(){
         $('#debug-button').trigger('click');
     });
 
@@ -876,7 +889,7 @@ $(document).ready(function(){
     });
 
     // DELETE OBJECT TAB
-    $('div._destroy').live('click', function(){
+    $(document).on('click', 'div._destroy', function(){
         var id = $(this).parent().parent().parent().attr('id').substr(2);
 
         close_obj_tab(id);
@@ -897,7 +910,7 @@ $(document).ready(function(){
     });
 
     // DATABROWSER TABLE
-    $('#databrowser tr td').live('click', function(){
+    $('#databrowser tr td').on('click', function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
         else return;
         if (_tilde.rendered[id]) {
@@ -934,7 +947,7 @@ $(document).ready(function(){
     });
 
     // DATABROWSER CHECKBOXES
-    $('input.SHFT_cb').live('click', function(event){
+    $(document).on('click', 'input.SHFT_cb', function(event){
         event.stopPropagation();
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
         else $(this).parent().parent().removeClass('shared');
@@ -946,7 +959,7 @@ $(document).ready(function(){
         if (flag) { $('div.menu_main_cmds').hide(); $('div.menu_ctx_cmds').show(); }
         else { $('div.menu_main_cmds').show(); $('div.menu_ctx_cmds').hide(); }
     });
-    $('#d_cb_all').live('click', function(){
+    $(document).on('click', '#d_cb_all', function(){
         if ($(this).is(':checked') && $('#databrowser > tbody > tr > td').length > 1) {
             $('input.SHFT_cb').attr('checked', true);
             $('tbody > tr').addClass('shared');
@@ -958,10 +971,22 @@ $(document).ready(function(){
             $('div.menu_main_cmds').show();
             $('div.menu_ctx_cmds').hide();
         }
+    });    
+    
+    // COPYING BETWEEN DATABASES
+    $('#db_copy_select').change(function(){
+        var tocopy = [], val = $(this).attr('value');
+        if (val==='0') return;
+        $('input.SHFT_cb').each(function(){
+            if ($(this).is(':checked')){
+                tocopy.push( $(this).attr('id').substr(5) ); // d_cb_
+            }
+        });
+        __send('db_copy', {tocopy: tocopy});
     });
 
     // DATABROWSER MENU
-    $('#add_trigger, span.add_trigger').live('click', function(){
+    $(document).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
         $('#connectors').css('left', (document.body.clientWidth - $('#connectors').width() )/2 + 'px').show();
         $('html, body').animate({scrollTop: 0});
@@ -992,7 +1017,7 @@ $(document).ready(function(){
     });
 
     // SPLASHSCREEN TAG COMMANDS SINGLE CLICK
-    $('#category_holder a.taglink').live('click', function(){
+    $(document).on('click', '#category_holder a.taglink', function(){
         var chosen_tags = $.grep( $('#initbox div').attr('rel').split(','), function(n){return n} );
         var cur_tag = $(this).attr('rel');
 
@@ -1010,7 +1035,7 @@ $(document).ready(function(){
         return false;
     });
     // SPLASHSCREEN TAG COMMANDS DOUBLE CLICK
-    $('#category_holder a.taglink').live('dblclick', function(){
+    $(document).on('dblclick', '#category_holder a.taglink', function(){
         var chosen_tags = $.grep( $('#initbox div').attr('rel').split(','), function(n){return n} );
         var cur_tag = $(this).attr('rel');
 
@@ -1034,7 +1059,7 @@ $(document).ready(function(){
     });
 
     // TAGCLOUD TAG COMMANDS
-    $('#tagcloud a.taglink').live('click', function(){
+    $(document).on('click', '#tagcloud a.taglink', function(){
         $('#tagcloud').hide();
         $('#tagcloud a.taglink').removeClass('ctxt').hide(); // reset context tags
         $('#tagcloud div.tagcol').hide();
@@ -1058,14 +1083,14 @@ $(document).ready(function(){
     });
 
     // SPLASHSCREEN TAGCLOUD EXPANDERS
-    $('a.tagmore').live('click', function(){
+    $(document).on('click', 'a.tagmore', function(){
         $(this).parent().removeClass('tagarea_reduced');
         $(this).remove();
         return false;
     });
 
     // IPANE COMMANDS
-    $('ul.ipane_ctrl li').live('click', function(){
+    $(document).on('click', 'ul.ipane_ctrl li', function(){
         var cmd = $(this).attr('rel');
         if (_tilde.freeze && !_tilde.tab_buffer[cmd]){ notify(_tilde.busy_msg); return; }
         var target = $(this).parents('.object_factory_holder');
@@ -1077,7 +1102,7 @@ $(document).ready(function(){
     //$('th.thsorter').click(function(){
     //    $('td.white span').removeClass('hdn');
     //});
-    $('div.ph_degenerated_trigger').live('click', function(){
+    $(document).on('click', 'div.ph_degenerated_trigger', function(){
         var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
         var capt = $(this).text();
         if (capt.indexOf('show') != -1){
@@ -1088,7 +1113,7 @@ $(document).ready(function(){
             $(this).text( capt.replace('hide', 'show') );
         }
     });
-    $('div.ph_animate_trigger').live('click', function(){
+    $(document).on('click', 'div.ph_animate_trigger', function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
         var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
         var capt = $(this).text();
@@ -1115,34 +1140,32 @@ $(document).ready(function(){
             open_ipane('admin');
         }
     });
-
     
     // SETTINGS: DATABASE MANAGEMENT
-    $('#metablock span, h1 span').live('click', function(){
+    $(document).on('click', '#metablock span, h1 span', function(){
         if ($('#profile_holder').is(':visible')){
             $('#profile_holder').hide();
         } else {
             $('#profile_holder').show();
             open_ipane('dbs');
         }
-    });
-    
+    });    
     
     // SETTINGS: CLICKS ON DATABASES
-    $('div.db-make-active-trigger').live('click', function(){
+    $(document).on('click', 'div.db-make-active-trigger', function(){
         var active_db = $(this).parent().attr('rel');
-        __send('settings',  {area: 'switch', 'switch': active_db} );
+        __send('settings',  {area: 'switching', switching: active_db} );
     });
-    $('div.db-delete-trigger').live('click', function(){
+    $(document).on('click', 'div.db-delete-trigger', function(){
         var $e = $(this);
         $e.html('confirm').removeClass('db-delete-trigger').addClass('db-delete-confirm-trigger');
         setTimeout(function(){ $e.html('delete').removeClass('db-delete-confirm-trigger').addClass('db-delete-trigger') }, 2000);
     });
-    $('div.db-delete-confirm-trigger').live('click', function(){
+    $(document).on('click', 'div.db-delete-confirm-trigger', function(){
         var db = $(this).parent().attr('rel');
         __send('clean',  {db: db} );
     });
-    $('#create-db-trigger').live('click', function(){
+    $(document).on('click', '#create-db-trigger', function(){
         $(this).before('<div class="ipane_db_field"><input type="text" value="" id="create-db-name" maxlength="18" /><span>.db</span><div class="btn right" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
         $('#create-db-name').focus();
         $('#create-db-confirm-trigger').click(function(){
@@ -1155,7 +1178,7 @@ $(document).ready(function(){
     });
 
     // SETTINGS: MAXCOLS
-    $('#ipane_cols_holder > ul > li > input').live('click', function(){
+    $(document).on('click', '#ipane_cols_holder > ul > li > input', function(){
         if ($('#ipane_cols_holder > ul > li > input:checked').length > _tilde.maxcols){
             $('#maxcols').parent().css('background-color', '#f99');
             return false;
@@ -1191,12 +1214,12 @@ $(document).ready(function(){
         }
     });
     $('#settings_form').submit(function(){
-        $('div.settings-apply').trigger("click");
+        $(this).next('div').trigger("click");
         return false;
     });
 
     // SETTINGS: UNITS
-    $('#ipane-units-holder > input').live('click', function(){
+    $(document).on('click', '#ipane-units-holder > input', function(){
         var sets = _tilde.settings.units;
         $('#ipane-units-holder > input').each(function(){
             if ($(this).is(':checked')){
@@ -1224,6 +1247,14 @@ $(document).ready(function(){
         notify('This window is not functional now.');
     });
     $('#ui-restart').click(function(){ document.location.reload() });
+    
+    // SETTINGS: USABILITY
+    $('#profile_holder').mouseleave(function(){
+        _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1500);
+    });
+    $('#profile_holder').mouseenter(function(){
+        clearTimeout(_tilde.timeout4);
+    });
     
     // ABOUT
     $('#about_trigger').click(function(){

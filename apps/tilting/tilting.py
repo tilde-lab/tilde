@@ -1,35 +1,38 @@
 
 # Perovskites octahedral tilting extraction
-# based on Surf.Sci.602 3674 (2008), initial version created in php 20.04.09
-# author: Evgeny Blokhin
-# v291212
+# based on Surf.Sci.602 3674 (2008)
+# http://dx.doi.org/10.1016/j.susc.2008.10.002
+# initial version created in php 20.04.09 by Evgeny Blokhin
+# v220513
 
 import os
 import sys
 import math
 import copy
+from numpy import dot
+from numpy import array
+from numpy import matrix
 
-#sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/../../'))
-from core.deps.ase.lattice.spacegroup.cell import cellpar_to_cell
-from core.common import ModuleError
+from ase.lattice.spacegroup.cell import cellpar_to_cell
+from core.common import ModuleError, write_cif
 
-OCTAHEDRON_BOND_LENGTH_LIMIT = 2.5           # Angstrom
-OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE = 1.7   # Angstrom
-#AXES_ROT_110_001_BY_X_CRITERIA = 0.5         # Angstrom
-#AXES_ROT_110_001_BY_DISTANCE_CRITERIA = 5    # Angstrom
-MAX_TILTING_DEGREE = 22.4                    # degree
-#SLAB_LAYER_CENTERS_MAX_Z_DIFFERENCE = 0.5    # Angstrom
-CENTER_ATOM_TYPES = ("Sc", "Y",    "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",   "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No",   "Ti", "Zr", "Hf",   "V", "Nb", "Ta",   "Cr", "Mo", "W",   "Mn", "Tc", "Re",   "Fe", "Ru", "Os",   "Co", "Rh", "Ir",   "Ni", "Pd", "Pt",   "Cu", "Ag", "Au",   "Zn", "Cd", "Hg",   "Ga", "In", "Tl",   "Ge", "Sn", "Pb")
-CORNER_ATOM_TYPES = ("F", "O", "S", "Se", "Te")
+from core.settings import DATA_DIR
+
 
 class Tilting():
+    OCTAHEDRON_BOND_LENGTH_LIMIT = 2.5           # Angstrom
+    OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE = 1.7   # Angstrom
+    MAX_TILTING_DEGREE = 22.4                    # degree
+    CENTER_ATOM_TYPES = tuple('Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', '))
+    CORNER_ATOM_TYPES = tuple('O, F'.split(', '))
+
     @staticmethod
     def cell_wrapper(obj, colnum):
         repr = ''
         selfname = __name__.split('.')[-1]
-        
+
         if not selfname in obj['apps']: return "<td rel=%s>&mdash;</td>" % colnum
-        
+
         for o in obj['apps'][selfname]:
             for i in obj['apps'][selfname][o]:
                 for j in i:
@@ -41,22 +44,60 @@ class Tilting():
     def __init__(self, tilde_calc):
         self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles
         self.angles = {}         # rounded, uniquified, one-plane angles
-        self.virtual_atoms = copy.deepcopy(tilde_calc.structures[-1]['atoms'])
         self.cell = cellpar_to_cell(tilde_calc.structures[-1]['cell'])
-        #self.rot_flag = False
-        #self.upper_octahedra_2d = []
-        self.octahedra = self.get_octahedra(tilde_calc.structures[-1]['atoms'], tilde_calc.structures[-1]['periodicity'])
+        self.virtual_atoms = copy.deepcopy(tilde_calc.structures[-1]['atoms'])
 
-        for octahedron in self.octahedra:        
+        # translate atoms around octahedra
+        centers = [[i[1], i[2], i[3]] for i in tilde_calc.structures[-1]['atoms'] if i[0] in self.CENTER_ATOM_TYPES]
+        centers = map(lambda x: sum(x)/len(x), zip(*centers))
+        centers = dot( array(centers), matrix( self.cell ).I ).tolist()[0]
+        centers = map(lambda x: 0 if abs(x) < 0.4 else int(math.copysign(1, x)), centers)
+
+        shift_dirs = []
+        ones = sum(map(abs, centers))
+        if ones == 3: # [x, x, x] 7 shift directions
+            shift_dirs.append(centers)
+            for i in range(3):
+                c = copy.deepcopy(centers)
+                c[i] = 0
+                shift_dirs.append(c)
+                c = [0, 0, 0]
+                c[i] = centers[i]
+                shift_dirs.append(c)
+        else: # [0, 0, 0] or [x, 0, 0] or [x, x, 0] 5 or 6 shift directions
+            for i in range(3):
+                if centers[i] == 0:
+                    if ones == 2:
+                        c = [0, 0, 0]
+                        c[i] = 1
+                        shift_dirs.append(c)
+                        c = [0, 0, 0]
+                        c[i] = -1
+                        shift_dirs.append(c)
+                    c = copy.deepcopy(centers)
+                    c[i] = -1
+                    shift_dirs.append(c)
+                    c = copy.deepcopy(centers)
+                    c[i] = 1
+                    shift_dirs.append(c)
+            if len(shift_dirs) < 6: shift_dirs.append(centers)
+
+        for k, i in enumerate(tilde_calc.structures[-1]['atoms']):
+            if i[0] in self.CORNER_ATOM_TYPES:
+                for dir in shift_dirs:
+                    self.translate(k, dir, self.virtual_atoms)
+        #print "------->", write_cif(tilde_calc.structures[-1]['cell'], self.virtual_atoms, ['+x,+y,+z'], DATA_DIR + "/test.cif")
+
+        # extract octahedra
+        for octahedron in self.get_octahedra(tilde_calc.structures[-1]['atoms'], tilde_calc.structures[-1]['periodicity']):
             #print 'center:', octahedron[0]+1
             #print 'corners:', [i+1 for i in octahedron[1]]
-            
             oplanes = self.get_tiltplanes(octahedron[1])
             otilting = []
             for oplane in oplanes:
                 otilting.append( self.get_tilting(oplane) )
                 self.prec_angles.update( { octahedron[0]: otilting } )
-                
+
         # uniquify and round
         u, todel = [], []
         for o in self.prec_angles:
@@ -74,7 +115,7 @@ class Tilting():
         for i in [j for j in u if u.index(j) not in todel]:
             if i[0] in self.angles: self.angles[ i[0] ].append(i[1:])
             else: self.angles[ i[0]+1 ] = [i[1:]] # atomic index is counted from zero!
-            
+
     def bisector_point(self, num_of_A, num_of_O, num_of_B, reference):
         xA = reference[num_of_A][1]
         yA = reference[num_of_A][2]
@@ -87,6 +128,7 @@ class Tilting():
         zB = reference[num_of_B][3]
         m = self.distance(num_of_O, num_of_A, self.virtual_atoms)
         n = self.distance(num_of_O, num_of_B, self.virtual_atoms)
+
         # bisector length
         l = (2*m*n*math.cos(math.radians( self.angle(num_of_A, num_of_O, num_of_B, self.virtual_atoms)/2 ))) / (m+n)
         v = math.sqrt(n*n - n*l*l/m)
@@ -97,6 +139,7 @@ class Tilting():
         if C == 0: C = 1E-10 # prevent zero division
         D = xA*(yO*zB - yB*zO) + xO*(yB*zA - yA*zB) + xB*(yA*zO - yO*zA)
         D *= -1
+
         # from surface analytical equation
         x = (xA + u*xB/v)/(1+u/v)
         y = (yA + u*yB/v)/(1+u/v)
@@ -138,72 +181,34 @@ class Tilting():
 
     def get_octahedra(self, atoms, periodicity=3):
         octahedra = []
-        for k, i in enumerate(atoms):
-            if i[0] in CORNER_ATOM_TYPES:
-                for dir in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]:
-                    self.translate(k, dir, self.virtual_atoms)
-
         if periodicity == 2:
             #z_cr = []
-            for k, i in enumerate(atoms):                
+            for k, i in enumerate(atoms):
                 found = []
-                if i[0] in CENTER_ATOM_TYPES:
+                if i[0] in self.CENTER_ATOM_TYPES:
                     #z_cr.append([k, i[3]])
                     for m, j in enumerate(self.virtual_atoms):
-                        if j[0] in CORNER_ATOM_TYPES:
-                            if self.distance(k, m, self.virtual_atoms) <= OCTAHEDRON_BOND_LENGTH_LIMIT: found.append(m)
+                        if j[0] in self.CORNER_ATOM_TYPES and self.distance(k, m, self.virtual_atoms) <= self.OCTAHEDRON_BOND_LENGTH_LIMIT:
+                            found.append(m)
                 if len(found) in [5, 6]:
                     octahedra.append([k, found])
 
-            '''# distinguish facing layer octahedral center atoms
-            z_cr = sorted(z_cr, key=lambda x: x[1])
-            z = [i[0] for i in z_cr]
-            for u in range(0, len(z)-1):
-                self.upper_octahedra_2d.append(z[u])
-                if abs(self.virtual_atoms[z[u]][3] - self.virtual_atoms[z[u+1]][3]) > SLAB_LAYER_CENTERS_MAX_Z_DIFFERENCE: break
-            # determine whether we should rotate axes for octahedral corners from 110 to 001 settings:
-            # we compare the distance between octahedral centers which are nearest by X, thus we'll be able to decide about axes directions
-            m = len(self.upper_octahedra_2d)
-            for u in range(0, m):
-                # add atoms by Y dir for reliability
-                self.translate(self.upper_octahedra_2d[u], (0, 1, 0), self.virtual_atoms)
-                self.upper_octahedra_2d.append( len(self.virtual_atoms)-1 )
-            for u in self.upper_octahedra_2d:
-                print u+1, self.virtual_atoms[u]                
-            # sort atoms by X axis value and pick the nearest ones
-            x_cr = []
-            for u in range(0, len(self.upper_octahedra_2d)):
-                x_cr.append([ self.upper_octahedra_2d[u], self.virtual_atoms[ self.upper_octahedra_2d[u] ][1] ])
-            x_cr = sorted(x_cr, key=lambda x: x[1])
-            x = [i[0] for i in x_cr]
-            print [i[0]+1 for i in x_cr]
-            print [i[1] for i in x_cr]
-            for u in range(0, len(x)-1):
-                print x[u]+1, x[u+1]+1, abs(self.virtual_atoms[x[u]][1] - self.virtual_atoms[x[u+1]][1]), self.distance(x[u], x[u+1], self.virtual_atoms)
-                if abs(self.virtual_atoms[x[u]][1] - self.virtual_atoms[x[u+1]][1]) < AXES_ROT_110_001_BY_X_CRITERIA and \
-                    self.distance(x[u], x[u+1], self.virtual_atoms) < AXES_ROT_110_001_BY_DISTANCE_CRITERIA:
-                    self.rot_flag = True
-                    break'''
-
         elif periodicity == 3:
-
             for k, i in enumerate(atoms):
                 found = []
-                if i[0] in CENTER_ATOM_TYPES:
+                if i[0] in self.CENTER_ATOM_TYPES:
                     for m, j in enumerate(self.virtual_atoms):
-                        if j[0] in CORNER_ATOM_TYPES:
-                            if self.distance(k, m, self.virtual_atoms) <= OCTAHEDRON_BOND_LENGTH_LIMIT:
-                                found.append(m)
+                        if j[0] in self.CORNER_ATOM_TYPES and self.distance(k, m, self.virtual_atoms) <= self.OCTAHEDRON_BOND_LENGTH_LIMIT:
+                            found.append(m)
                 if len(found) == 6:
                     octahedra.append([k, found])
 
-        if not len(octahedra): raise ModuleError("Cannot extract valid octahedra!")
-
+        if not len(octahedra): raise ModuleError("Cannot extract valid octahedra: not enough corner atoms found!")
         return octahedra
 
     def get_tiltplanes(self, sequence):
-        # extract tilting planes basing on distance map
 
+        # extract tilting planes basing on distance map
         distance_map = []
         tilting_planes = []
 
@@ -213,14 +218,16 @@ class Tilting():
         distance_map = sorted(distance_map, key=lambda x: x[1])
 
         if len(distance_map) == 4:
-            # semi-octahedron at surface edge has only 1 tilting plane to consider
 
+            # semi-octahedron at surface edge has only 1 tilting plane to consider
             sorted_dist = [i[0] for i in distance_map]
             if distance_map[-1][1] - distance_map[-2][1] < 0.5:
+
                 # 1st case: max diff < 0.5 Angstrom, meaning all distances to reference atom are similar,
                 # therefore the reference atom is above the searched plane and the searched plane consists of other atoms
                 tilting_planes.append( [ i[0] for i in distance_map ] )
             else:
+
                 # 2nd case: reference atom belongs to the searched plane, procedure needs to be repeated with the next atom as reference atom
                 candidates = [sequence[0], sorted_dist[-1]]
                 next_distance_map = []
@@ -256,9 +263,9 @@ class Tilting():
 
         # filter planes by Z according to octahedral spatial compound
         filtered = filter(   lambda x: \
-            abs(self.virtual_atoms[ x[0] ][3] - self.virtual_atoms[ x[1] ][3]) < OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE and \
-            abs(self.virtual_atoms[ x[1] ][3] - self.virtual_atoms[ x[2] ][3]) < OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE and \
-            abs(self.virtual_atoms[ x[2] ][3] - self.virtual_atoms[ x[3] ][3]) < OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE,   tilting_planes   )
+            abs(self.virtual_atoms[ x[0] ][3] - self.virtual_atoms[ x[1] ][3]) < self.OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE and \
+            abs(self.virtual_atoms[ x[1] ][3] - self.virtual_atoms[ x[2] ][3]) < self.OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE and \
+            abs(self.virtual_atoms[ x[2] ][3] - self.virtual_atoms[ x[3] ][3]) < self.OCTAHEDRON_ATOMS_Z_ORIENT_DIFFERENCE,   tilting_planes   )
         if len(filtered): tilting_planes = filtered
 
         #for plane in tilting_planes:
@@ -267,6 +274,7 @@ class Tilting():
         return tilting_planes
 
     def get_tilting(self, oplane):
+
         # main procedure
         surf_atom1, surf_atom2, surf_atom3, surf_atom4 = oplane
 
@@ -289,16 +297,6 @@ class Tilting():
             self.virtual_atoms[surf_atom2][3] += 1E-10
             self.virtual_atoms[surf_atom3][3] -= 1E-10
             self.virtual_atoms[surf_atom4][3] -= 1E-10
-
-        '''if self.rot_flag:
-            a = math.sqrt(0.5)
-            oplane = [surf_atom1, surf_atom2, surf_atom3, surf_atom4]
-            for u in range(0, 4):                
-                x = self.virtual_atoms[ oplane[u] ][1]
-                y = self.virtual_atoms[ oplane[u] ][2]
-                self.virtual_atoms.append([ 'Srf', a*(y-x), a*(x+y), self.virtual_atoms[ oplane[u] ][3] ])
-                oplane[u] = len(self.virtual_atoms)-1                
-            surf_atom1, surf_atom2, surf_atom3, surf_atom4 = oplane'''
 
         # new axes will be defined simply as vectors standing on 1 - 3 and 2 - 4 (they are moved into the point of origin)
         self.virtual_atoms.append([ 'Axs', self.virtual_atoms[surf_atom1][1] - self.virtual_atoms[surf_atom3][1], self.virtual_atoms[surf_atom1][2] - self.virtual_atoms[surf_atom3][2], self.virtual_atoms[surf_atom1][3] - self.virtual_atoms[surf_atom3][3] ])
@@ -358,25 +356,6 @@ class Tilting():
         beta = math.degrees(math.atan2(math.sqrt(self.virtual_atoms[tilt_z][1]*self.virtual_atoms[tilt_z][1] + self.virtual_atoms[tilt_z][2]*self.virtual_atoms[tilt_z][2]), self.virtual_atoms[tilt_z][3]))
         gamma = math.degrees(math.atan2(self.virtual_atoms[tilt_z][2], -self.virtual_atoms[tilt_z][1]))
 
-        '''# define scalar triple product sign
-        #sign = self.det3x3(0, 1, 0, self.virtual_atoms[tilt_z][1], self.virtual_atoms[tilt_z][2], self.virtual_atoms[tilt_z][3], 0, 0, 1)
-        #print "SIGN: ".sign."\n"
-        #print round(alpha, 2) . "\n"
-        #print round(beta, 2) . "\n"
-        #print round(gamma, 2) . "\n\n"
-        # Euler to tilting conversion
-        if (sign>0){
-            delta = -gamma
-            teta = beta
-            phi = alpha-delta
-        }
-        if (sign<0){
-            delta = 180-gamma
-            teta = -beta
-            phi = alpha-delta-180
-        }
-        #print alpha . " " . beta . " " . gamma'''
-
         # angles adjusting procedure
         adjust_angles = [45, 90, 135, 180, 225, 270, 315, 360]
         tilting = [alpha, beta, gamma]
@@ -385,9 +364,9 @@ class Tilting():
             if tilting[i] in adjust_angles:
                 tilting[i] = 0.0
                 continue
-            if tilting[i] > MAX_TILTING_DEGREE:
+            if tilting[i] > self.MAX_TILTING_DEGREE:
                 for checkpoint in adjust_angles:
-                    if checkpoint-MAX_TILTING_DEGREE < tilting[i] < checkpoint+MAX_TILTING_DEGREE:
+                    if checkpoint - self.MAX_TILTING_DEGREE < tilting[i] < checkpoint + self.MAX_TILTING_DEGREE:
                         tilting[i] = abs(tilting[i] - checkpoint)
                         break
         return tilting

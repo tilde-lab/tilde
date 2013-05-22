@@ -5,6 +5,7 @@ import os
 import sys
 import fractions
 
+
 # hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
 __order__ = 20
 __properties__ = [ {"category": "vacancy content", "source": "vac", "order": 13, "negative_tagging": True, "has_column": True} ]

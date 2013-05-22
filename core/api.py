@@ -1,6 +1,6 @@
 
 # Tilde project: basic routines
-# v170513
+# v210513
 # See http://wwwtilda.googlecode.com
 
 __version__ = "0.2.1"
@@ -21,12 +21,15 @@ from numpy import array
 from numpy.linalg import det
 
 from common import generate_cif
-from common import ModuleError
 from symmetry import SymmetryFinder
 
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/../'))
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/deps'))
-from ase.lattice.spacegroup.cell import cellpar_to_cell
+# this is done to simplify adding modules to Tilde according its API
+# TODO: dealing with sys.path is malpractice
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+from core.common import ModuleError
+
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+from spacegroup.cell import cellpar_to_cell
 
 class API:
     version = __version__
@@ -48,6 +51,7 @@ class API:
         for parserfile in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
             if parserfile.endswith('.py') and parserfile != '__init__.py':
                 parser_modules = __import__('parsers.' + parserfile[0:-3]) # all imported parsers will be included in this scope
+        
         for i in dir(parser_modules):
             obj = getattr(parser_modules, i)
             if inspect.ismodule(obj):
@@ -167,7 +171,7 @@ class API:
         ''' Determines which files should be processed '''
         input_string = os.path.abspath(input_string)
         tasks = []
-        restricted = [ symbol for symbol in self.skip_if_path ]
+        restricted = [ symbol for symbol in self.skip_if_path ] if self.skip_if_path else []
 
         # given folder
         if os.path.isdir(input_string):
@@ -334,10 +338,6 @@ class API:
             # scope-conditions
             if appclass['apptarget']:
                 for key in appclass['apptarget']:
-                    #if type(appclass['apptarget'][key]) is unicode: scope_prop = [ appclass['apptarget'][key] ]
-                    #elif type(appclass['apptarget'][key]) is list: scope_prop = appclass['apptarget'][key]
-                    #else: raise RuntimeError('Module API Error: apptarget for ' + appname + ' is of unknown type!')
-
                     negative = False
                     if appclass['apptarget'][key].startswith('!'):
                         negative = True
@@ -356,10 +356,11 @@ class API:
             if run_permitted:
                 apps[appname] = {'error': None, 'data': None}
                 try: AppInstance = appclass['appmodule'](calc)
-                except ModuleError, ex: apps[appname]['error'] = "%s module error: %s" % (appname, ex)
+                except ModuleError as e:
+                    apps[appname]['error'] = e.value
                 except:
                     exc_type, exc_value, exc_tb = sys.exc_info()
-                    apps[appname]['error'] = "%s module error:\n %s" % (appname, " / ".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
+                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
                 else:
                     try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
                     except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
@@ -517,7 +518,6 @@ class API:
 
     def save_tags(self, for_checksum, classified, update=False):
         ''' Saves tags with checking '''
-        #result, error = [], None
         tags = []
         cursor = self.db_conn.cursor()
         for n, i in enumerate(self.hierarchy):
@@ -536,9 +536,6 @@ class API:
                 try: found_topics.append( classified[ i['source'] ] )
                 except KeyError:
                     if 'negative_tagging' in i and not update: found_topics.append('none') # beware to add something new to an existing item!
-
-            #if 'has_column' in i and len(found_topics):
-            #    result.append()
 
             for topic in found_topics:
                 try: cursor.execute( 'SELECT tid FROM topics WHERE categ = ? AND topic = ?', (i['cid'], topic) )
