@@ -1,7 +1,14 @@
-tilde
+Tilde
 =====
 
 Tilde (wwwtilda, ~) is an intelligent data organizer for cheminformatics and computational materials science.
+
+Warning
+-------
+
+This is NOT a public release, rather an internal development code summary.
+End users are HIGHLY DISCOURAGED of using this code.
+Please, download the release version at http://tilde.pro/
 
 Usage
 -----
