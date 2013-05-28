@@ -1,18 +1,17 @@
 #!/usr/bin/env python
-# tilda project: GAUSSIAN log parser
+# tilda project: GAUSSIAN logs parser
 # based on cclib (author Noel O'Boyle, http://dx.doi.org/10.1002/jcc.20823)
-# TODO: this code needs to be rewritten in accordance to other tilde parsers
-# v050113
+# TODO: this code needs to be cleaned up
+# v230513
 
 import os
 import sys
 import re
 import math
-from parsers import Output
 
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
 from ase.data import chemical_symbols
 from ase.lattice.spacegroup.cell import cell_to_cellpar
+
 from numpy import array
 from numpy import matrix
 from numpy import ndarray
@@ -20,28 +19,28 @@ from numpy import zeros
 from numpy import dot
 from numpy import cross
 
+from parsers import Output
+
 Hartree = 27.211398
 
 class GAUSSIAN(Output):
     # this is an interface to cclib Gaussian parser
     def __init__(self, file, **kwargs):
-        Output.__init__(self)
-        self.prog = 'GAUSSIAN'
+        Output.__init__(self, file)
+        self.info['prog'] = 'GAUSSIAN'
         self.data = open(file).read().replace('\r\n', '\n').replace('\r', '\n')
 
         parts = self.data.split('\n Cite this work as:')
         if len(parts) > 2:
             self.warning('File contains several merged outputs - only the last one is taken!')
-
-        self.location = file
         
-        if '\n Normal termination ' in parts[-1]: self.finished = 1
-        else: self.finished = -1
+        if '\n Normal termination ' in parts[-1]: self.info['finished'] = 1
+        else: self.info['finished'] = -1
         
         logfile = GaussianParser(parts[-1])
         parsed = logfile.parse()
 
-        self.warns.extend(list(set(parsed.warns)))
+        self.info['warns'].extend( list(set(parsed.warns)) )
 
         if not hasattr(parsed, 'atomcoords'): raise RuntimeError('Valid geometry not found!')
         atoms, cell = [], []
@@ -55,34 +54,28 @@ class GAUSSIAN(Output):
 
         # construct missing vectors and fractionize atomic coords
         if periodicity == 0:
-            cell = [ [self.periodic_limit, 0, 0],  [0, self.periodic_limit, 0],  [0, 0, self.periodic_limit] ]
+            cell = [ [self.PERIODIC_LIMIT, 0, 0],  [0, self.PERIODIC_LIMIT, 0],  [0, 0, self.PERIODIC_LIMIT] ]
         elif periodicity == 1:
             cell.append( cross(cell[0], [ 1, 1, 1 ]) )
-            cell[1] = cell[1] * self.periodic_limit / math.sqrt( cell[1][0]**2+cell[1][1]**2+cell[1][2]**2 )
+            cell[1] = cell[1] * self.PERIODIC_LIMIT / math.sqrt( cell[1][0]**2+cell[1][1]**2+cell[1][2]**2 )
             cell.append( cross(cell[0], cell[1]) )
-            cell[2] = cell[2] * self.periodic_limit / math.sqrt( cell[2][0]**2+cell[2][1]**2+cell[2][2]**2 )
+            cell[2] = cell[2] * self.PERIODIC_LIMIT / math.sqrt( cell[2][0]**2+cell[2][1]**2+cell[2][2]**2 )
         elif periodicity == 2:
             cell.append( cross(cell[0], cell[1]) )
-            cell[2] = cell[2] * self.periodic_limit / math.sqrt( cell[2][0]**2+cell[2][1]**2+cell[2][2]**2 )
+            cell[2] = cell[2] * self.PERIODIC_LIMIT / math.sqrt( cell[2][0]**2+cell[2][1]**2+cell[2][2]**2 )
 
         cell = map(lambda x: round(x, 4), cell_to_cellpar(array( cell )).tolist())
         self.structures = [{'cell': cell, 'atoms': atoms, 'periodicity': periodicity}]
 
-        # Get basis set
-        self.bs = { 'bs': {}, 'ps': {} }
-
-        #if hasattr(parsed, 'coreelectrons'):
-        #    if sum( parsed.coreelectrons.tolist() ):
-        #        self.bs['ps'] = parsed.coreelectrons.tolist()
-        
+        # Get basis set      
         if hasattr(parsed, 'gbasis'):
             for n, i in enumerate(parsed.gbasis):
-                if not self.structures[-1]['atoms'][n][0] in self.bs['bs'].keys():
-                    self.bs['bs'][ self.structures[-1]['atoms'][n][0] ] = i
+                if not self.structures[-1]['atoms'][n][0] in self.electrons['basis_set']['bs'].keys():
+                    self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][n][0] ] = i
                 else:
-                    if self.bs['bs'][ self.structures[-1]['atoms'][n][0] ] != i:
-                        try: self.bs['bs'][ self.structures[-1]['atoms'][n][0] + '1' ]
-                        except KeyError: self.bs['bs'][ self.structures[-1]['atoms'][n][0] + '1' ] = i
+                    if self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][n][0] ] != i:
+                        try: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][n][0] + '1' ]
+                        except KeyError: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][n][0] + '1' ] = i
                         else: raise RuntimeError('More than two different basis sets for one element - not supported case!')
         else:
             if ' Standard basis:' in self.data:
@@ -90,7 +83,7 @@ class GAUSSIAN(Output):
                 for i in self.structures[-1]['atoms']:
                     if not i[0] in diff_atoms:
                         diff_atoms.append(i[0])
-                        self.bs['bs'][i[0]] = self.data.split(' Standard basis:', 1)[-1].split("\n", 1)[0].strip()
+                        self.electrons['basis_set']['bs'][i[0]] = self.data.split(' Standard basis:', 1)[-1].split("\n", 1)[0].strip()
             elif ' General basis read from cards:' in self.data:
                 sections = self.data.split(' General basis read from cards:', 1)[-1].split(" ****\n")
                 bstype, sections[0] = sections[0].split("\n", 1)
@@ -101,12 +94,12 @@ class GAUSSIAN(Output):
                         if " Centers:" in line:
                             bs_concurrency = False
                             atomn = int( line.replace("Centers:", "").split()[0] ) - 1
-                            try: self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] ]
-                            except KeyError: self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] ] = []
+                            try: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] ]
+                            except KeyError: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] ] = []
                             else:
                                 bs_concurrency = True
-                                try: self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ]
-                                except KeyError: self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ] = []
+                                try: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ]
+                                except KeyError: self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ] = []
                                 else: raise RuntimeError('More than two different basis sets for one element - not supported case!')
 
                         elif len(line) < 30:
@@ -114,16 +107,16 @@ class GAUSSIAN(Output):
                             if len(marker) > 2:
                                 # bs follows in short standard form
                                 if bs_concurrency:
-                                    self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ] = marker
+                                    self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ] = marker
                                 else:
-                                    self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] ] = marker
+                                    self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] ] = marker
                             else:
                                 # bs follows as exponent list
                                 try:
                                     if bs_concurrency:
-                                        self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ].append( [marker.upper()] )
+                                        self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ].append( [marker.upper()] )
                                     else:
-                                        self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] ].append( [marker.upper()] )
+                                        self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] ].append( [marker.upper()] )
                                 except AttributeError: # bs is mixed from short standard form and exponent list, not supported
                                     pass
 
@@ -131,17 +124,15 @@ class GAUSSIAN(Output):
                             try:
                                 e = map(  logfile.float, line.replace('Exponent=', '').replace('Coefficients=', '').split()  )
                                 if bs_concurrency:
-                                    self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ][-1].append( tuple(e) )
+                                    self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] + '1' ][-1].append( tuple(e) )
                                 else:
-                                    self.bs['bs'][ self.structures[-1]['atoms'][atomn][0] ][-1].append( tuple(e) )
+                                    self.electrons['basis_set']['bs'][ self.structures[-1]['atoms'][atomn][0] ][-1].append( tuple(e) )
                             except AttributeError: # bs is mixed from short standard form and exponent list, not supported
                                 pass
 
-        if not self.bs['bs']: raise RuntimeError( 'No basis set found!')
+        if not self.electrons['basis_set']['bs']: raise RuntimeError( 'No basis set found!')
 
-        # Get energy and method (theory level) TODO!
-        self.method = {'H': None, 'tol': None, 'k': None, 'spin': None, 'technique': {}, 'lockstate': None}
-
+        # Get energy and method (theory level) TODO!       
         E, E_mp, E_cc = None, None, None
         try: E_mp = parsed.mpenergies[-1] # Hartree
         except: pass
@@ -158,10 +149,11 @@ class GAUSSIAN(Output):
         if ene: self.energy = min(ene)
 
         # Get phonons
-        if (hasattr(parsed, 'vibfreqs') and hasattr(parsed, 'vibdisps')) and (len(parsed.vibfreqs) and len(parsed.vibdisps)):
+        if hasattr(parsed, 'vibfreqs') and hasattr(parsed, 'vibdisps') and len(parsed.vibfreqs) and len(parsed.vibdisps):
             if len(parsed.vibfreqs)/3 != len(filter(lambda x: x != -1, parsed.atomnos)): # we cannot guarantee that X-atoms are not present here (NB eigenvectors are already adjusted!)
                 raise RuntimeError('Number of frequencies is not equal to 3 * number of atoms!')
-            self.phonons, self.ph_eigvecs = {'0 0 0': parsed.vibfreqs}, {'0 0 0': parsed.vibdisps}
+            self.phonons['modes'] = {'0 0 0': parsed.vibfreqs}
+            self.phonons['ph_eigvecs'] = {'0 0 0': parsed.vibdisps}
 
     @staticmethod
     def fingerprints(test_string):
@@ -254,7 +246,6 @@ class ccData(object):
                           'natom', 'nbasis', 'nmo', 'nocoeffs',
                           'scfenergies', 'scftargets', 'scfvalues',
                           'vibdisps', 'vibfreqs', 'vibirs', 'vibramans', 'vibsyms',
-
                           'warns']
 
         # The expected types for all supported attributes.
@@ -294,7 +285,6 @@ class ccData(object):
                             "vibirs":         ndarray,
                             "vibramans":      ndarray,
                             "vibsyms":        list,
-
                             "warns":          list,
                           }
 
@@ -370,28 +360,9 @@ class ccData(object):
         return invalid
 
 class Logfile(object):
-    """Abstract class for logfile objects.
-
-    Subclasses defined by cclib:
-        ADF, GAMESS, GAMESSUK, Gaussian, Jaguar, Molpro, ORCA
-    """
-
     def __init__(self, source, datatype = ccData):
 
         self.inputfile = iter(source.splitlines())
-
-        # Set up the logger.
-        # Note that calling logging.getLogger() with one name always returns the same instance.
-        # Presently in cclib, all parser instances of the same class use the same logger,
-        #   which means that care needs to be taken not to duplicate handlers.
-        #self.loglevel = loglevel
-        #self.logname  = logname
-        #self.logger = logging.getLogger('%s %s' % (self.logname,self.filename))
-        #self.logger.setLevel(self.loglevel)
-        #if len(self.logger.handlers) == 0:
-        #        handler = logging.StreamHandler(logstream)
-        #        handler.setFormatter(logging.Formatter("[%(name)s %(levelname)s] %(message)s"))
-        #        self.logger.addHandler(handler)
 
         # Periodic table of elements.
         # self.table = utils.PeriodicTable() # by jam31, not needed

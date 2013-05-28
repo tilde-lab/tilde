@@ -2,10 +2,12 @@
 import os
 import sys
 import math
+
 from numpy import dot
 from numpy import array
 from numpy import linalg
 from numpy import arange
+
 from cubicspline import NaturalCubicSpline
 from dos import TotalDos, PartialDos
 
@@ -14,6 +16,7 @@ from dos import TotalDos, PartialDos
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
 from ase.data.colors import jmol_colors
 from ase.data import chemical_symbols
+
 
 def frac2float(num):
     if '/' in str(num):

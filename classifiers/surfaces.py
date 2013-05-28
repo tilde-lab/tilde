@@ -1,5 +1,6 @@
 
 # classifies slabs by their structure
+# v070113
 
 import os
 import sys
@@ -108,7 +109,6 @@ def classify(content_obj, tilde_obj):
         #print adsorbate
         #print content_by_layer
         #print to_delete
-        #sys.exit()
         
         # prevent all-is-adsorbent case
         if sorted(adsorbate.keys()) == sorted(content_obj['elements']) and sorted(adsorbate.values()) == sorted(content_obj['contents']): adsorbate, to_delete = {}, [] 
@@ -151,5 +151,5 @@ def classify(content_obj, tilde_obj):
     # sort according to pre-defined element order in a full slab formula
     content_obj['standard'] = "".join([x for x in content_obj['elements'] if x in slab_elements] + [x for x in slab_elements if x not in content_obj['elements']]) + " slab"
         
-    ####print content_by_layer
+    #print content_by_layer
     return content_obj

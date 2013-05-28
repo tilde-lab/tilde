@@ -116,7 +116,7 @@ for target in args.path:
             add_msg = ' added'
 
         basic_line = filename + " (E=" + str(calc.energy) + ")" + add_msg
-        if calc.warns: basic_line += " (" + " ".join(calc.warns) + ")"
+        if calc.info['warns']: basic_line += " (" + " ".join(calc.info['warns']) + ")"
 
         print basic_line
 
@@ -141,14 +141,14 @@ for target in args.path:
                 print hooks[args.module]['error'] if hooks[args.module]['error'] else hooks[args.module]['data']
             
         if args.freqs:
-            if not calc.phonons:
+            if not calc.phonons['modes']:
                 print 'No phonons here!'
                 continue
-            for bzpoint, frqset in calc.phonons.iteritems():
+            for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 print "*"*25 + bzpoint
                 compare = 0
                 for i in range(len(frqset)):
                     # if compare == frqset[i]: continue
-                    print "%d" % frqset[i] + " (" + calc['irreps'][bzpoint][i] + ")"
+                    print "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")"
                     compare = frqset[i]
         

@@ -61,10 +61,8 @@ Tilde = API()
 # Tilde_tags stores DataMap instances for opened DBs
 Users, Repo_pool, Tilde_tags = {}, {}, {}
 
-
 class User:
-    def __init__(self, uid = None):
-        self.uid = uid
+    def __init__(self):
         self.running = {}
         self.usettings = {}
         self.cur_db = settings['default_db']
@@ -76,7 +74,7 @@ class DataMap:
         self.error = None
         cursor = Repo_pool[db_name].cursor()
         try: cursor.execute( 'SELECT checksum, tid FROM tags' )
-        except: self.error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        except: self.error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
             for row in result:
@@ -128,7 +126,7 @@ class Request_Handler:
         error = None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT COUNT(*) FROM results' )
-        except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
 
@@ -142,6 +140,8 @@ class Request_Handler:
             for i in ['quick_regime', 'local_dir', 'filter', 'skip_if_path']:
                 if i in settings:
                     data['settings'][i] = settings[i]
+
+        # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
 
         data = json.dumps(data)
         return (data, error)
@@ -222,8 +222,8 @@ class Request_Handler:
             return (data, error)
 
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute('SELECT checksum, shared, structure, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
-        except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        try: cursor.execute('SELECT checksum, structure, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
             rescount = 0
@@ -240,7 +240,7 @@ class Request_Handler:
                 data_obj['apps'] = json.loads(row['apps'])
 
                 # --compulsory part--
-                data += '<tr id=i_' + row['checksum'] + (' class=shared' if row['shared'] else '') + '>'
+                data += '<tr id=i_' + row['checksum'] + '>'
                 data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
 
                 # --dynamic part--
@@ -248,6 +248,7 @@ class Request_Handler:
                     if not 'has_column' in item: continue
                     if not item['cid'] in Users[session_id].usettings['cols']: continue
                     if '#' in item['source']: continue # todo
+                    
                     if 'cell_wrapper' in item:
                         data += item['cell_wrapper'](data_obj, item['cid'])
                     else:
@@ -280,7 +281,7 @@ class Request_Handler:
         if not tids:
             cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
             try: cursor.execute( 'SELECT tid, categ, topic FROM topics' )
-            except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+            except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             else:
                 tags = []
                 result = cursor.fetchall()
@@ -310,10 +311,10 @@ class Request_Handler:
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
-            if row is None: error = 'No phonon information found!'
+            if not row: error = 'No phonon information found!'
             else: data = row['phonons']
         return (data, error)
 
@@ -322,13 +323,13 @@ class Request_Handler:
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure, energy, phonons, electrons, info, apps FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: error = 'No objects found!'
             else:
                 try: cursor.execute( 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = ?', (userobj['datahash'], ) )
-                except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+                except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
                 else:
                     tagrow = cursor.fetchall()
                     tags = []
@@ -364,7 +365,7 @@ class Request_Handler:
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure FROM results WHERE checksum = ?', (userobj['datahash'],) )
-        except: error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: return (data, 'No objects found!')
@@ -377,13 +378,11 @@ class Request_Handler:
             ase_obj = aseize(json.loads(row['structure'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
             ase_obj.center()
-            
+
             '''mass_center = ase_obj.get_center_of_mass()
             for i in range(len(mass_center)):
                 if mass_center[i] == 0: mass_center[i] = 1
             mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]'''
-            
-            mass_center_octant = [ 1, 1, 1 ]
 
             atoms = []
             for i in ase_obj:
@@ -398,7 +397,8 @@ class Request_Handler:
             cell_points = []
             if ase_obj.get_pbc().all() == True:
                 for i in ase_obj.cell:
-                    cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+                    #cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+                    cell_points.append([i[0], i[1], i[2]])
 
             data = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info})
         return (data, error)
@@ -488,21 +488,36 @@ class Request_Handler:
         Repo_pool[userobj['newname']].commit()
         data = 1
         return (data, error)
-        
+
     @staticmethod
     def db_copy(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
-        print userobj['tocopy']
-        return (1, error)
+        if not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
+        if not userobj['dest'] in Repo_pool: return (data, 'Copy destination invalid!')
 
-    @staticmethod
+        global Tilde
+        data_clause = '","'.join(  userobj['tocopy']  )
+        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
+        try: cursor.execute( 'SELECT * FROM results WHERE checksum IN ("%s")' % data_clause )
+        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        else:
+            result = cursor.fetchall()
+
+            # TODO: THIS IS I/O DANGEROUS
+            Tilde.reload( db_conn=Repo_pool[ userobj['dest'] ] )
+
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
+
+        return (data, error)
+
+    '''@staticmethod
     def ph_dos(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
-            error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
         row = cursor.fetchone()
         if row is None:
@@ -516,14 +531,6 @@ class Request_Handler:
         p = json.loads(row['phonons'])
 
         atomtypes=[i[0] for i in s[-1]['atoms']]
-
-        '''# check if fake (ghost) atoms are involved into a vibration
-        for k, atom in enumerate(atomtypes):
-            if atom == 'Xx':
-                # insert fake zero vectors
-                for setnum in range(len( p )):
-                    for n in range(len( p[setnum]['ph_eigvecs'] )):
-                        for i in range(3): p[setnum]['ph_eigvecs'][n].insert(k*3, 0)'''
 
         # gamma-projected eigenvalues and gamma-projected atomic impacts from eigenvectors
         eigenvalues, impacts = [], []
@@ -566,7 +573,7 @@ class Request_Handler:
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
-            error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
         row = cursor.fetchone()
         if row is None:
@@ -584,8 +591,13 @@ class Request_Handler:
         pitch=(val_max - val_min) / 200
 
         if 'e_proj_eigvals' in e and 'impacts' in e:
+
+            # CRYSTAL
             data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=[i[0] for i in s[-1]['atoms']], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))
+
         elif 'dos' in e:
+
+            # VASP
             # reduce values
             keep = []
             for n, i in enumerate(e['dos']['x']):
@@ -603,7 +615,7 @@ class Request_Handler:
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
-            error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
         row = cursor.fetchone()
         if row is None:
@@ -628,7 +640,7 @@ class Request_Handler:
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structure, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
-            error = 'SQLite error: ' + "%s" % sys.exc_info()[1]
+            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
         row = cursor.fetchone()
         if row is None:
@@ -637,7 +649,7 @@ class Request_Handler:
         s = json.loads(row['structure'])
         e = json.loads(row['electrons'])
 
-        if not 'e_eigvals' in e:
+        if not 'eigvals' in e:
             return (data, 'Electron information is not full: merging required!')
 
         val_min = E_LOWER_DEFAULT if not 'min' in userobj else userobj['min']
@@ -645,10 +657,10 @@ class Request_Handler:
 
         # filter values from all k-points by data in G point: first for alpha spins:
         nullstand = '0 0 0'
-        if not '0 0 0' in e['e_eigvals']: # possible case when there is no Gamma point in VASP - WTF?
-            nullstand = sorted( e['e_eigvals'].keys() )[0]
+        if not '0 0 0' in e['eigvals']: # possible case when there is no Gamma point in VASP - WTF?
+            nullstand = sorted( e['eigvals'].keys() )[0]
 
-        bz_ip_data = {nullstand: e['e_eigvals'][nullstand]['alpha']}
+        bz_ip_data = {nullstand: e['eigvals'][nullstand]['alpha']}
         save_vals = []
         for i in bz_ip_data[nullstand]:
             if val_min < i < val_max:
@@ -656,7 +668,7 @@ class Request_Handler:
         bz_ip_data[nullstand] = bz_ip_data[nullstand][ save_vals[0] : save_vals[-1] ]
         bz_ip_data[nullstand].sort()
 
-        for bz, item in e['e_eigvals'].iteritems():
+        for bz, item in e['eigvals'].iteritems():
             if bz == nullstand: continue
             bz_ip_data[bz] = item['alpha'][ save_vals[0] : save_vals[-1] ]
             bz_ip_data[bz].sort()
@@ -664,8 +676,8 @@ class Request_Handler:
         data_by_spin = plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell']))
 
         # filter values from all k-points by data in G point: then for beta spins:
-        if 'beta' in e['e_eigvals'][nullstand]:
-            bz_ip_data = {nullstand: e['e_eigvals'][nullstand]['beta']}
+        if 'beta' in e['eigvals'][nullstand]:
+            bz_ip_data = {nullstand: e['eigvals'][nullstand]['beta']}
             save_vals = []
             for i in bz_ip_data[nullstand]:
                 if val_min < i < val_max:
@@ -673,7 +685,7 @@ class Request_Handler:
             bz_ip_data[nullstand] = bz_ip_data[nullstand][ save_vals[0] : save_vals[-1] ]
             bz_ip_data[nullstand].sort()
 
-            for bz, item in e['e_eigvals'].iteritems():
+            for bz, item in e['eigvals'].iteritems():
                 if bz == nullstand: continue
                 bz = bz.replace('  ', ' ')
                 bz_ip_data[bz] = item['beta'][ save_vals[0] : save_vals[-1] ]
@@ -681,7 +693,7 @@ class Request_Handler:
 
             data_by_spin.extend(plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'])))
 
-        return (json.dumps(data_by_spin), error)
+        return (json.dumps(data_by_spin), error)'''
 
     @staticmethod
     def clean(userobj, session_id):
@@ -749,8 +761,6 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 
     @tornado.gen.engine
     def on_message(self, message):
-        #if not Users[ session_id ].uid: return data, 'Sorry, you must be logged in to perform this operation!'
-
         userobj, output = {}, {'act': '', 'req': '', 'error': '', 'data': ''}
         output['act'], output['req'] = message.split(DELIM)
 
@@ -882,51 +892,34 @@ def html_formula(string):
     if sub: html_formula += '</sub>'
     return html_formula
 
-# compiling table columns: describe additional columns that are neither hierarchy API part, nor module API part
-def col__n(obj, colnum):
-    return "<td rel=%s>%3d</td>" % (colnum, len(obj['structure'][-1]['atoms']))
-
-def col__energy(obj, colnum):
-    e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
-    return "<td rel=%s class=_e>%s</td>" % (colnum, e)
-
-def col__dims(obj, colnum):
-    dims = "%4.2f" % obj['structure'][-1]['dims'] if obj['structure'][-1]['periodicity'] in [2, 3] else '&mdash;'
-    return "<td rel=%s>%s</td>" % (colnum, dims)
-
-def col__loc(obj, colnum):
-    #if len(loc) > 50: loc = loc[0:50] + '...'
-    return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
-
-def col__finished(obj, colnum):
-    if int(obj['info']['finished']) > 0: finished = 'yes'
-    elif int(obj['info']['finished']) == 0: finished = 'n/a'
-    elif int(obj['info']['finished']) < 0: finished = 'no'
-    return "<td rel=%s>%s</td>" % (colnum, finished)
-
-
 if __name__ == "__main__":
 
-    debug = True if settings['debug_regime'] else False
-    loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
-    logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
-    #logging.basicConfig( level=loglevel, stream=sys.stdout )
-
-    for r in repositories:
-        Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
-        Repo_pool[r].row_factory = sqlite3.Row
-        Repo_pool[r].text_factory = str
-        Tilde_tags[r] = DataMap( r )
-        if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
-
-    Tilde.reload( db_conn=Repo_pool[settings['default_db']], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
-
     # compiling table columns: invoke modules through their API
-    APP_COLS, n = [], 0
+    APP_COLS = []
+    n = 0
     for appname, appclass in Tilde.Apps.iteritems():
         if not hasattr(appclass['appmodule'], 'cell_wrapper'): raise RuntimeError('Module '+appname+' has not defined a table cell')
         APP_COLS.append( {'cid': (2000+n), 'category': appclass['provides'], 'source': '', 'order': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
         n += 1
+
+    # compiling table columns: describe additional columns that are neither hierarchy API part, nor module API part
+    def col__n(obj, colnum):
+        return "<td rel=%s>%3d</td>" % (colnum, len(obj['structure'][-1]['atoms']))
+    def col__energy(obj, colnum):
+        e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
+        return "<td rel=%s class=_e>%s</td>" % (colnum, e)
+    def col__dims(obj, colnum):
+        dims = "%4.2f" % obj['structure'][-1]['dims'] if obj['structure'][-1]['periodicity'] in [2, 3] else '&mdash;'
+        return "<td rel=%s>%s</td>" % (colnum, dims)
+    def col__loc(obj, colnum):
+        #if len(loc) > 50: loc = loc[0:50] + '...'
+        return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
+    def col__finished(obj, colnum):
+        if int(obj['info']['finished']) > 0: finished = 'yes'
+        elif int(obj['info']['finished']) == 0: finished = 'n/a'
+        elif int(obj['info']['finished']) < 0: finished = 'no'
+        return "<td rel=%s>%s</td>" % (colnum, finished)
+
     ADD_COLS = [ \
     {"cid": 1001, "category": "<i>N<sub>atoms</sub></i>", "source": '', "order": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
     {"cid": 1002, "category": "<i>E<sub>el.tot</sub></i>/cell, <span class=units-energy>au</span>", "source": '', "order": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
@@ -936,6 +929,21 @@ if __name__ == "__main__":
     {"cid": 1006, "category": "Finished?", "source": '', "order": 99, "has_column": True, "cell_wrapper": col__finished}, \
     ]
     Tilde_cols = sorted(Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['order']) # NB: not to mix this order with tags order!
+
+
+    debug = True if settings['debug_regime'] else False
+    loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
+    #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
+    logging.basicConfig( level=loglevel, stream=sys.stdout )
+
+    for r in repositories:
+        Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
+        Repo_pool[r].row_factory = sqlite3.Row
+        Repo_pool[r].text_factory = str
+        Tilde_tags[r] = DataMap( r )
+        if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
+
+    Tilde.reload( db_conn=Repo_pool[settings['default_db']], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
 
     io_loop = tornado.ioloop.IOLoop.instance()
     Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling']})

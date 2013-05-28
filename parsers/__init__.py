@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # tilda project: abstract class of a generic parser
-# v241012
+# v230513
 
 import os
 import sys
@@ -8,46 +8,86 @@ import re
 import time
 from hashlib import sha224
 
+
 class Output:
-    def __init__(self):
-        ''' PARSER API obligatory attributes '''
-        self.prog = 'unknown'
-        self._coupler_ = False # special attribute for an output which should be merged with other by coinciding E_tot
-        self.classified = {}
-        self.location = '' # path to the original file
+    def __init__(self, filename=None):
+        # (I)
+        # inner Tilde objects
+        self.starttime = time.time()
+        self._coupler_ = False  # special attribute for an output which should be merged with another one by coinciding E_tot
+        self.data = ''          # file contents holder
+        self._checksum = None   # 56-symbol hash NB: do not call directly
         
-        self.method = {}
-        self.structures = [] # x, y, z are in cartesian system
+        # dict with calculation conditions, goes to *info*
+        self.method = {
+            'H':            None,
+            'tol':          None,
+            'k':            None,
+            'spin':         None,
+            'lockstate':    None,
+            'technique':    {}
+            }
+
+        # (II)
+        # Tilde ORM objects
+        # mapped onto database
+        self.energy = None
+
+        self.structures = []    # x, y, z are in cartesian system
+        self.symops = ['+x,+y,+z']
+
+        self.electrons = {
+            'basis_set':       {'bs': {}, 'ps': {}} # valence and core electrons
+        }
+        #self.electrons['eigvals'] = None
+        # NB own properties for VASP: dos, complete_dos
+        # NB own properties for CRYSTAL: impacts, proj_eigv_impacts, e_proj_eigvals
+
+        self.phonons = {
+            'modes':            {},
+            'irreps':           {},
+            'ir_active':        {},
+            'raman_active':     {},
+            'ph_eigvecs':       {},
+            'ph_k_degeneracy':  {},
+            'dfp_disps':        [],
+            'dfp_magnitude':    None
+            }
+
+        # Tilde technical info object PLUS classification
+        # API call *classify* extends it with new items
+        self.info = {
+            'warns':      [],
+            'prog':       'unknown',
+            'perf':       None,
+            'location':   filename,
+            'finished':   0  # -1 for not, 0 for n/a, +1 for yes
+            }
+
+        # Tilde modules output object
+        self.apps = {}
+
+        # (III)
+        # Tilde objects not (yet)
+        # or not fully mapped onto database
         self.charges = None
         self.input = None
-        self.energy = None
-        self.bs = None
-        
-        self.phonons = None
-        self.irreps = None
-        self.ir_active = None
-        self.raman_active = None
-        self.ph_eigvecs = None        
-        self.ph_k_degeneracy = None
-        
-        self.e_eigvals = None
-        self.e_proj_eigv_impacts = None
-        self.e_last = None
-        
         self.convergence = None
         self.ncycles = None
         self.tresholds = None
-        self.finished = 0 # -1 for not, 0 for n/a, +1 for yes
-        self.symops = ['+x,+y,+z']
-        self.periodic_limit = 50 # note: non-periodic component(s) are assigned 500 in CRYSTAL
-        
-        self.warns = []
-        self.starttime = time.time()
-        
-    def __getitem__(self, item):
+
+        # (IV)
+        # settings objects
+        self.PERIODIC_LIMIT = 50    # note: non-periodic component(s) are assigned 500 in CRYSTAL
+
+    def __getitem__(self, key):
         ''' get either by dict key or by attribute '''
-        return getattr(self, item)
+        return getattr(self, key)
         
+    def __setitem__(self, key, value):
+        ''' in-place modifying '''
+        return setattr(self, key, value)
+
     def __str__(self):
         ''' debug dumping '''
         out = ''
@@ -63,18 +103,21 @@ class Output:
                     if len(str_repr) < 2000: out += repr + ' -> ' + str_repr + "\n\n"
                     else: out += repr + ' -> ' + str_repr[:1000] + '...\n\n'
         return out
-            
+
     def warning(self, msg):
         ''' store diagnostic messages '''
-        self.warns.append(msg)
+        self.info['warns'].append(msg)
 
-    def checksum(self):
-        ''' calculate unique ID '''
-        if not self.data: return None
-        file_sha224_checksum = sha224()
-        file_sha224_checksum.update(self.data)
-        return file_sha224_checksum.hexdigest()
-        
-    def perf(self):
-        return time.time() - self.starttime
-    
+    def get_checksum(self):
+        ''' retrieve unique hash '''
+        if not self._checksum:
+            if not self.data: return None
+            file_sha224_checksum = sha224()
+            file_sha224_checksum.update(self.data)
+            return file_sha224_checksum.hexdigest()
+        else:
+            return self._checksum
+
+    def benchmark(self):
+        ''' benchmarking '''
+        self.info['perf'] = "%1.2f" % (time.time() - self.starttime)

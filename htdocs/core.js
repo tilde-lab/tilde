@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v150513
+* v230513
 *
 */
 // common flags, settings and object for their storage
@@ -9,7 +9,6 @@ var _tilde = {};
 _tilde.debug = false; // major debugging switch
 _tilde.protected = false;
 _tilde.degradation = false;
-_tilde.uid = 0;
 _tilde.hashes = [];
 _tilde.rendered = {}; // datahash:structure, ... ,
 _tilde.tab_buffer = [];
@@ -127,8 +126,6 @@ function set_user_settings( settings ){
 
     for (var attrname in settings){ _tilde.settings[attrname] = settings[attrname] }
     //if (_tilde.debug) logger("ACTUAL SETTINGS: " + $.toJSON(_tilde.settings));
-
-    _tilde.uid = 1;
 
     // render databases
     //
@@ -642,6 +639,7 @@ function resp__db_copy(req, data){
     $('#d_cb_all').attr('checked', false);
     $('input.SHFT_cb').attr('checked', false);
     $('#db_copy_select').val('0');
+    $('#databrowser > tbody > tr').removeClass('shared');
 }
 function resp__check_version(req, data){
     $('div[rel=check_version] div').append(data);
@@ -910,7 +908,7 @@ $(document).ready(function(){
     });
 
     // DATABROWSER TABLE
-    $('#databrowser tr td').on('click', function(){
+    $(document).on('click', '#databrowser > tbody tr td', function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
         else return;
         if (_tilde.rendered[id]) {
@@ -962,12 +960,12 @@ $(document).ready(function(){
     $(document).on('click', '#d_cb_all', function(){
         if ($(this).is(':checked') && $('#databrowser > tbody > tr > td').length > 1) {
             $('input.SHFT_cb').attr('checked', true);
-            $('tbody > tr').addClass('shared');
+            $('#databrowser > tbody > tr').addClass('shared');
             $('div.menu_main_cmds').hide();
             $('div.menu_ctx_cmds').show();
         } else {
             $('input.SHFT_cb').attr('checked', false);
-            $('tbody > tr').removeClass('shared');
+            $('#databrowser > tbody > tr').removeClass('shared');
             $('div.menu_main_cmds').show();
             $('div.menu_ctx_cmds').hide();
         }
@@ -982,7 +980,7 @@ $(document).ready(function(){
                 tocopy.push( $(this).attr('id').substr(5) ); // d_cb_
             }
         });
-        __send('db_copy', {tocopy: tocopy});
+        __send('db_copy', {tocopy: tocopy, dest: val});
     });
 
     // DATABROWSER MENU

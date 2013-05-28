@@ -1,28 +1,29 @@
 #!/usr/bin/env python
 # tilda project: WIEN2k scf and STRUCT parser
-# v100912
+# v230513
 
 import os
 import sys
 import re
 import math
+
 from numpy import dot
 from numpy import array
+
+from ase.lattice.spacegroup.cell import cell_to_cellpar
+import ase.io.wien2k
+
+from parsers import Output
+
 
 Bohr = 0.5291772
 Hartree = 27.211398
 Rydberg = Hartree / 2
 
-from parsers import Output
-sys.path.append(os.path.realpath(os.path.dirname(__file__)) + '/../core/deps')
-from ase.lattice.spacegroup.cell import cell_to_cellpar
-import ase.io.wien2k
-
 class SCF(Output):
     def __init__(self, file, **kwargs):
-        Output.__init__(self)
+        Output.__init__(self, file)
         self.data = open(file).readlines()
-        self.location = file
         cell = []
         atoms = []
         natoms = []
@@ -79,25 +80,9 @@ class SCF(Output):
         if mwarn: self.warning('Warning, some symmetry-equivalent atoms were not restored!')
         
         self.data = "\n".join(self.data)
-        self.prog = "WIEN2K"
+        self.info['prog'] = "WIEN2K"
 
     @staticmethod
     def fingerprints(test_string):
         if ":LAT  : " in test_string: return True # using Wien2
-        else: return False        
-
-'''class STRUCT(Output):
-    def __init__(self, file, **kwargs):
-        Output.__init__(self)
-        self.data = open(file).read()
-        self.location = file
-        self.ase_structure = ase.io.wien2k.read_struct(file)
-        atypes = self.ase_structure.get_chemical_symbols()
-        atoms = [ [atypes[n], i[0], i[1], i[2]] for n, i in enumerate(self.ase_structure.positions) ]        
-        self.structures = [{'cell': cell_to_cellpar( self.ase_structure.cell ).tolist(), 'atoms': atoms, 'periodicity':3}]
-        self.prog = "WIEN2K geometry"
-        
-    @staticmethod
-    def fingerprints(test_string):
-        if test_string.startswith("LOCAL ROT MATRIX: "): return True
-        else: return False'''
+        else: return False

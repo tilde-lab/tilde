@@ -87,4 +87,3 @@ def deaseize(ase_obj):
     atoms = [ [atypes[n], i[0], i[1], i[2]] for n, i in enumerate(ase_obj.positions) ]
     cell = [ float( ase_obj.info[tilde_key] ) for tilde_key in tilde_values ] if 'hm' in ase_obj.info else cell_to_cellpar( ase_obj.cell ).tolist()
     return {'cell': cell, 'atoms': atoms, 'periodicity':3} # todo  
-

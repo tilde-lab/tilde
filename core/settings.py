@@ -23,7 +23,7 @@ DEFAULT_SETUP = {
                 }
 DB_SCHEMA = '''
 DROP TABLE IF EXISTS "results";
-CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "uid" INTEGER NOT NULL, "shared" INTEGER DEFAULT 0, "checksum" TEXT, "structure" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structure" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
 
 DROP TABLE IF EXISTS "topics";
 CREATE TABLE "topics" ("tid" INTEGER PRIMARY KEY NOT NULL, "categ" INTEGER NOT NULL, "topic" TEXT);

@@ -1,6 +1,8 @@
 import os
 import sys
+
 from connectors import viewer_wrap
+
 
 def list(path, root):
     output = ''
@@ -19,7 +21,7 @@ def list(path, root):
     for i in dirs:
         output += viewer_wrap(i, path, 'DIR')
     for i in files:
-        output += viewer_wrap(i, path, 'FILE') 
+        output += viewer_wrap(i, path, 'FILE')
     return (output, error)
 
 def report(path, root, analyzer_obj):

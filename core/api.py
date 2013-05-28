@@ -27,16 +27,17 @@ from symmetry import SymmetryFinder
 # TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.common import ModuleError
+from parsers import Output
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
+
 
 class API:
     version = __version__
     __shared_state = {} # singleton
 
     def __init__(self, db_conn=None, filter=None, skip_if_path=None):
-
         self.__dict__ = self.__shared_state
 
         self.db_conn = db_conn
@@ -51,7 +52,7 @@ class API:
         for parserfile in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
             if parserfile.endswith('.py') and parserfile != '__init__.py':
                 parser_modules = __import__('parsers.' + parserfile[0:-3]) # all imported parsers will be included in this scope
-        
+
         for i in dir(parser_modules):
             obj = getattr(parser_modules, i)
             if inspect.ismodule(obj):
@@ -131,20 +132,32 @@ class API:
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
 
     def reload(self, db_conn=None, filter=None, skip_if_path=None):
-        ''' __init__() in another context '''
+        '''
+        Switch Tilde API object to another context
+        NB: this may be run from outside
+        @procedure
+        '''
         if db_conn: self.db_conn = db_conn
         if filter: self.filter = filter
         if skip_if_path: self.skip_if_path = skip_if_path
 
     def assign_parser(self, name):
-        ''' Restricts parsing '''
+        '''
+        Restricts parsing
+        NB: this may be run from outside
+        @procedure
+        '''
         for n, p in self.Parsers.items():
             if n != name:
                 del self.Parsers[n]
         if len(self.Parsers) != 1: raise RuntimeError('Parser cannot be assigned!')
 
     def formula(self, atom_sequence):
-        ''' Constructs standardized chemical formula '''
+        '''
+        Constructs standardized chemical formula
+        NB: this may be run from outside
+        @returns formula_str
+        '''
         formula_sequence = ['Li','Na','K','Rb','Cs',  'Be','Mg','Ca','Sr','Ba','Ra',  'Sc','Y','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb',  'Ac','Th','Pa','U','Np','Pu',  'Ti','Zr','Hf',  'V','Nb','Ta',  'Cr','Mo','W',  'Fe','Ru','Os',  'Co','Rh','Ir',  'Mn','Tc','Re',  'Ni','Pd','Pt',  'Cu','Ag','Au',  'Zn','Cd','Hg',  'B','Al','Ga','In','Tl',  'Pb','Sn','Ge','Si','C',   'N','P','As','Sb','Bi',   'H',   'Po','Te','Se','S','O',  'At','I','Br','Cl','F',  'He','Ne','Ar','Kr','Xe','Rn']
         labels = {}
         types = []
@@ -168,7 +181,11 @@ class API:
         return formula
 
     def savvyize(self, input_string, recursive=False, stemma=False):
-        ''' Determines which files should be processed '''
+        '''
+        Determines which files should be processed
+        NB: this may be run from outside
+        @returns filenames_list
+        '''
         input_string = os.path.abspath(input_string)
         tasks = []
         restricted = [ symbol for symbol in self.skip_if_path ] if self.skip_if_path else []
@@ -215,20 +232,26 @@ class API:
         return tasks
 
     def _parse(self, parsable, parser_name, **missing_props):
-        ''' Low-level parsing '''
-        error = None
-        calc = None
+        '''
+        Low-level parsing
+        @returns (Tilde_obj, error)
+        '''
+        calc, error = None, None
         try: calc = self.Parsers[parser_name](parsable, **missing_props)
-        except RuntimeError, ex: error = "routine %s parser error: %s" % ( parser_name, ex )
+        except RuntimeError as e: error = "routine %s parser error: %s" % ( parser_name, e )
         except:
             exc_type, exc_value, exc_tb = sys.exc_info()
             error = "unexpected %s parser error in %s:\n %s" % ( parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
         return (calc, error)
 
     def parse(self, file):
-        ''' High-level parsing: determines the data format and combines parent-children outputs '''
-        error = None
-        calc = None
+        ''' High-level parsing:
+        determines the data format
+        and combines parent-children outputs
+        NB: this may be run from outside
+        @returns (Tilde_obj, error)
+        '''
+        calc, error = None, None
         f = open(file, 'r')
         i = 0
         stop_read = False
@@ -246,93 +269,103 @@ class API:
         f.close()
 
         # (1) unsupported
-        if calc is None and error is None: error = 'nothing found...'
+        if not calc and not error: return (None, 'nothing found...')
 
         # (2) some CRYSTAL outputs contain not enough data -> they should be merged with other outputs
         if not error and calc._coupler_:
-            calc._coupler_ = round(calc._coupler_, 5)
+            '''calc._coupler_ = round(calc._coupler_, 5)
             if self.db_conn:
                 cursor = self.db_conn.cursor()
-                try: cursor.execute( 'SELECT id, checksum, structure, electrons, info FROM results WHERE ROUND(energy, 5) = ?', (calc._coupler_,) )
+                try:
+                    cursor.execute( 'SELECT id, checksum, structure, electrons, info FROM results WHERE ROUND(energy, 5) = ?', (calc._coupler_,) )
                 except:
-                    error = 'SQLite error: %s' % sys.exc_info()[1]
-                    return (None, error)
+                    return (None, 'Fatal error: %s' % sys.exc_info()[1])
+
                 row = cursor.fetchone()
                 if row is not None:
-                    # in-place merging
+
+                    # *in-place* merging
                     strucs = json.loads(row['structure'])
-                    e_props = json.loads(row['electrons'])
+                    old_props = json.loads(row['electrons'])
                     info = json.loads(row['info'])
 
-                    props, error = self._parse(  file, 'CRYSTOUT', basisset=e_props['basisset'], atomtypes=[i[0] for i in strucs[-1]['atoms']]  )
-                    if error: error = 'Merging of two outputs failed: ' + error
+                    new_props, error = self._parse(  file, 'CRYSTOUT', basis_set=old_props['basis_set'], atomtypes=[i[0] for i in strucs[-1]['atoms']]  )
+
+                    if error: return (None, 'Merging of two outputs failed: ' + error)
+
+                    # does merging make sense?
+                    if not 'eigvals' in old_props: old_props['eigvals'] = new_props.electrons['eigvals']
+                    if 'eigvals' in old_props and len(old_props['eigvals'].keys()) < len(new_props.electrons['eigvals'].keys()): old_props['eigvals'] = new_props.electrons['eigvals']
+
+                    if not 'e_proj_eigvals' in old_props:
+                        e_proj_eigvals, impacts = [], []
+                        for i in new_props.electrons['proj_eigv_impacts']:
+                            e_proj_eigvals.append(i['val'])
+                            impacts.append(i['impacts'])
+                        old_props['e_proj_eigvals'] = e_proj_eigvals
+                        old_props['impacts'] = impacts
+
+                        # update tags:
+                        res = self._save_tags(row['checksum'], {'calctype0':'el.structure'}, update=True)
+                        if res: return (None, 'Tags saving failed: '+res)
+
+                    del new_props
+                    old_props = json.dumps(old_props)
+                    info['prog'] = 'CRYSTAL+PROPERTIES'
+                    info = json.dumps(info)
+                    try: cursor.execute( 'UPDATE results SET electrons = ?, info = ? WHERE id = ?', (old_props, info, row['id']) )
+                    except:
+                        return (None, 'Fatal error: %s' % sys.exc_info()[1])
                     else:
-                        # does merging make sense?
-
-                        if not 'e_eigvals' in e_props: e_props['e_eigvals'] = props.e_eigvals
-                        if 'e_eigvals' in e_props and len(e_props['e_eigvals'].keys()) < len(props.e_eigvals.keys()): e_props['e_eigvals'] = props.e_eigvals
-
-                        if not 'e_proj_eigvals' in e_props:
-                            e_proj_eigvals, impacts = [], []
-                            for i in props.e_proj_eigv_impacts:
-                                e_proj_eigvals.append(i['val'])
-                                impacts.append(i['impacts'])
-                            e_props['e_proj_eigvals'] = e_proj_eigvals
-                            e_props['impacts'] = impacts
-
-                            # update tags:
-                            res = self.save_tags(row['checksum'], {'calctype0':'el.structure'}, update=True)
-                            if res: return (None, 'Tags saving failed: '+res)
-
-                        del props
-                        electrons_json = json.dumps(e_props)
-                        info['prog'] = 'CRYSTAL+PROPERTIES'
-                        info_json = json.dumps(info)
-                        try: cursor.execute( 'UPDATE results SET electrons = ?, info = ? WHERE id = ?', (electrons_json, info_json, row['id']) )
-                        except:
-                            error = 'SQLite error: %s' % sys.exc_info()[1]
-                        else:
-                            error = 'Merging of two outputs successful!' # TODO: this should not be error, but special type of msg
+                        return (None, 'Merging of two outputs successful!') # TODO: this should not be error, but special type of msg
 
                 else:
-                    # deferred merging
+                    # *deferred* merging
                     self.deferred_storage[file] = calc._coupler_
                     error = 'OK, but merging with other output is required!'
+            else:
+            '''
+            return (None, 'This file type is not supported in this usage regime!')
 
-            else: error = 'This file type is not supported in this usage regime!'
+        # (3) check if we parsed something reasonable <- should be merged?
+        if not error and calc:
 
-        # (3) check if we parsed something reasonable
-        if not error and calc is not None:
             # corrections
             if not calc.structures[-1]['periodicity']: calc.structures[-1]['cell'] = [10, 10, 10, 90, 90, 90]
 
             if not len(calc.structures) or not calc.structures[-1]['atoms']: error = 'Valid structure is not present!'
             elif 0 in calc.structures[-1]['cell']: error = 'Cell data are corrupted!' # prevent cell collapses known in CRYSTAL outputs
 
-            if calc.finished < 0: calc.warns.append( 'This calculation is not correctly finished!' )
+            if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
 
-            # (3.1) check whether a merging with some existing deferred item is required
-            elif len(self.deferred_storage) and calc.energy:
+            # check whether a merging with some existing deferred item is required
+            '''elif len(self.deferred_storage) and calc.energy:
                 if round(calc.energy, 5) in self.deferred_storage.values():
                     deferred = [k for k, v in self.deferred_storage.iteritems() if v == round(calc.energy, 5)][0]
-                    props, error = self._parse(  deferred, 'CRYSTOUT', basisset=calc.bs['bs'], atomtypes=[i[0] for i in calc.structures[-1]['atoms']]  )
+                    new_props, error = self._parse(  deferred, 'CRYSTOUT', basis_set=calc.electrons['basis_set']['bs'], atomtypes=[i[0] for i in calc.structures[-1]['atoms']]  )
                     if error: error = 'OK, but merging of two outputs failed: ' + error
                     else:
-                        # does merging make sense?
 
-                        if not calc.e_eigvals: calc.e_eigvals = props.e_eigvals
-                        if calc.e_eigvals and len(calc.e_eigvals.keys()) < len(props.e_eigvals.keys()): calc.e_eigvals = props.e_eigvals
-                        if not calc.e_proj_eigv_impacts: calc.e_proj_eigv_impacts = props.e_proj_eigv_impacts
-                        calc.prog = 'CRYSTAL+PROPERTIES'
-                    del props
-                    del self.deferred_storage[deferred]
+                        # does merging make sense?
+                        if not calc.electrons['eigvals']: calc.electrons['eigvals'] = new_props.electrons['eigvals']
+                        if calc.electrons['eigvals'] and len(calc.electrons['eigvals'].keys()) < len(new_props.electrons['eigvals'].keys()): calc.electrons['eigvals'] = new_props.electrons['eigvals']
+                        if not calc.electrons['proj_eigv_impacts']: calc.electrons['proj_eigv_impacts'] = new_props.electrons['proj_eigv_impacts']
+                        calc.info['prog'] = 'CRYSTAL+PROPERTIES'
+                    del new_props
+                    del self.deferred_storage[deferred]'''
 
         return (calc, error)
 
-    def postprocess(self, calc):
-        ''' Invokes modules (apps) API '''
+    def postprocess(self, calc, with_module=None):
+        '''
+        Invokes module(s) API
+        NB: this may be run from outside
+        @returns apps_dict
+        '''
         apps = {}
         for appname, appclass in self.Apps.iteritems():
+            if with_module and with_module != appname: continue
+
             run_permitted = False
 
             # scope-conditions
@@ -343,8 +376,8 @@ class API:
                         negative = True
                         scope_prop = appclass['apptarget'][key][1:]
                     else: scope_prop = appclass['apptarget'][key]
-                    if key in calc.classified:
-                        if (scope_prop in calc.classified[key] or scope_prop == calc.classified[key]) != negative: # true if only one, but not both
+                    if key in calc.info:
+                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
                             run_permitted = True
                         else:
                             run_permitted = False
@@ -352,7 +385,7 @@ class API:
 
             else: run_permitted = True
 
-            # running
+            # module code running
             if run_permitted:
                 apps[appname] = {'error': None, 'data': None}
                 try: AppInstance = appclass['appmodule'](calc)
@@ -367,56 +400,78 @@ class API:
         return apps
 
     def classify(self, calc):
-        ''' Invokes hierarchy API '''
+        '''
+        Invokes hierarchy API
+        NB: this may be run from outside
+        @returns (Tilde_obj, error)
+        '''
         error = None
-        dataitem = {'standard': '', 'formula': '', 'dims': 0, 'elements': [], 'contents': [], 'lack': False, 'expanded': False, 'properties': {}, 'tags': []}
+        classified = {
+            'standard':     '',
+            'formula':      self.formula( [i[0] for i in calc.structures[-1]['atoms']] ),
+            'dims':         0,
+            'elements':     [],
+            'contents':     [],
+            'lack':         False,
+            'expanded':     False,
+            'properties':   {},
+            'tags':         []
+            }
 
         # applying filter: todo
-        if calc.finished == -1 and self.filter:
+        if calc.info['finished'] < 0 and self.filter:
             return (None, 'data do not satisfy the filter')
-        
+
         xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
-        
-        dataitem['formula'] = self.formula( [i[0] for i in calc.structures[-1]['atoms']] )
-        if calc.structures[-1]['periodicity'] == 3: dataitem['dims'] = abs(det(xyz_matrix))
-        elif calc.structures[-1]['periodicity'] == 2: dataitem['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])        
-        
-        fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', dataitem['formula'])
+
+        if calc.structures[-1]['periodicity'] == 3: classified['dims'] = abs(det(xyz_matrix))
+        elif calc.structures[-1]['periodicity'] == 2: classified['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])
+
+        # this is stupid (?), TODO
+        fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', classified['formula'])
         for i in fragments:
             if i[0] == 'Xx': continue
-            dataitem['elements'].append(i[0])
-            dataitem['contents'].append(int(i[1])) if i[1] else dataitem['contents'].append(1)
+            classified['elements'].append(i[0])
+            classified['contents'].append(int(i[1])) if i[1] else classified['contents'].append(1)
+
+        # this is to extend Tilde hierarchy
+        # with modules (idea of *hierarchy API*)
         for C_obj in self.Classifiers:
-            try: dataitem = C_obj['classify'](dataitem, calc)
+            try: classified = C_obj['classify'](classified, calc)
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 error = "Fatal error during classification:\n %s" % "".join(traceback.format_exception( exc_type, exc_value, exc_tb ))
                 return (None, error)
 
         # post-processing tags
-        if not len(dataitem['standard']):
-            if len(dataitem['elements']) == 1: dataitem['expanded'] = 1
-            if not dataitem['expanded']: dataitem['expanded'] = reduce(fractions.gcd, dataitem['contents'])
-            for n, i in enumerate(map(lambda x: x/dataitem['expanded'], dataitem['contents'])):
-                if i==1: dataitem['standard'] += dataitem['elements'][n]
-                else: dataitem['standard'] += dataitem['elements'][n] + str(i)
+        if not len(classified['standard']):
+            if len(classified['elements']) == 1: classified['expanded'] = 1
+            if not classified['expanded']: classified['expanded'] = reduce(fractions.gcd, classified['contents'])
+            for n, i in enumerate(map(lambda x: x/classified['expanded'], classified['contents'])):
+                if i==1: classified['standard'] += classified['elements'][n]
+                else: classified['standard'] += classified['elements'][n] + str(i)
 
-        # calculated properties
+        # general calculation type reasoning
         calctype = []
-        if calc.phonons: calctype.append('phonons')
-        if calc.ph_k_degeneracy: calctype.append('phon.dispersion')
+        if calc.phonons['modes']: calctype.append('phonons')
+        if calc.phonons['ph_k_degeneracy']: calctype.append('phon.dispersion')
         if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calctype.append('optimization')
-        if (calc.e_proj_eigv_impacts and calc.e_eigvals) or getattr(calc, 'complete_dos', None): calctype.append('el.structure')
+        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calctype.append('el.structure')
         if calc.energy: calctype.append('total energy')
-        for n, i in enumerate(calctype): dataitem['calctype' + str(n)] = i
 
-        # getting and standardizing methods
-        if calc.method:
-            if calc.method['H']: dataitem['H'] = calc.method['H']
-            if calc.method['tol']: dataitem['tol'] = calc.method['tol']
-            if calc.method['k']: dataitem['k'] = calc.method['k']
-            if calc.method['spin']: dataitem['spin'] = 'yes'
-            if calc.method['lockstate'] is not None: dataitem['lockstate'] = calc.method['lockstate']
+        for n, i in enumerate(calctype):
+            classified['calctype' + str(n)] = i
+
+        # standardizing materials science methods
+        # this is a loooooooooooooooooong work
+        # not suitable for humans
+        # but suitable for artificial intelligence
+        if calc.method:            
+            if calc.method['H']: classified['H'] = calc.method['H']
+            if calc.method['tol']: classified['tol'] = calc.method['tol']
+            if calc.method['k']: classified['k'] = calc.method['k']
+            if calc.method['spin']: classified['spin'] = 'yes'
+            if calc.method['lockstate']: classified['lockstate'] = calc.method['lockstate']
             tech = []
             if calc.method['technique'].keys():
                 for i in calc.method['technique'].keys():
@@ -447,77 +502,86 @@ class API:
                         if calc.method['technique'][i][2] < 5: type += ' start'
                         else: type += ' defer.'
                         tech.append(i + type)
-            if 'vac' in dataitem['properties']:
+            if 'vac' in classified['properties']:
                 if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: tech.append('defect as ghost')
                 else: tech.append('defect as void space')
-            for n, i in enumerate(tech): dataitem['tech' + str(n)] = i
+            for n, i in enumerate(tech): classified['tech' + str(n)] = i
 
-        for n, i in enumerate(dataitem['elements']): dataitem['element' + str(n)] = i
-        for n, i in enumerate(dataitem['tags']): dataitem['tag' + str(n)] = i
-        dataitem['nelem'] = len(dataitem['elements'])
-        dataitem['code'] = calc.prog
-        if dataitem['expanded']: dataitem['expanded'] = str(dataitem['expanded']) + 'x'
-        else: del dataitem['expanded']
-        if calc.structures[-1]['periodicity'] == 3: dataitem['periodicity'] = '3-periodic'
-        elif calc.structures[-1]['periodicity'] == 2: dataitem['periodicity'] = '2-periodic'
-        elif calc.structures[-1]['periodicity'] == 1: dataitem['periodicity'] = '1-periodic'
-        elif calc.structures[-1]['periodicity'] == 0: dataitem['periodicity'] = 'non-periodic'
-        for k, v in dataitem['properties'].iteritems(): dataitem[k] = v
+        for n, i in enumerate(classified['elements']):
+            classified['element' + str(n)] = i
+        for n, i in enumerate(classified['tags']):
+            classified['tag' + str(n)] = i
+        classified['nelem'] = len(classified['elements'])
+        
+        if classified['expanded']: classified['expanded'] = str(classified['expanded']) + 'x'
+        else: del classified['expanded']
+        
+        if calc.structures[-1]['periodicity'] == 3: classified['periodicity'] = '3-periodic'
+        elif calc.structures[-1]['periodicity'] == 2: classified['periodicity'] = '2-periodic'
+        elif calc.structures[-1]['periodicity'] == 1: classified['periodicity'] = '1-periodic'
+        elif calc.structures[-1]['periodicity'] == 0: classified['periodicity'] = 'non-periodic'
+        for k, v in classified['properties'].iteritems():
+            classified[k] = v
 
         # invoke symmetry finder
         found = SymmetryFinder(calc)
         if found.error: return (None, found.error)
 
-        dataitem['sg'] = found.i
+        classified['sg'] = found.i
 
         # data from Bandura-Evarestov book "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
-        if   195 <= found.n <= 230: dataitem['symmetry'] = 'cubic'
-        elif 168 <= found.n <= 194: dataitem['symmetry'] = 'hexagonal'
-        elif 143 <= found.n <= 167: dataitem['symmetry'] = 'rhombohedral'
-        elif 75  <= found.n <= 142: dataitem['symmetry'] = 'tetragonal'
-        elif 16  <= found.n <= 74:  dataitem['symmetry'] = 'orthorhombic'
-        elif 3   <= found.n <= 15:  dataitem['symmetry'] = 'monoclinic'
-        elif 1   <= found.n <= 2:   dataitem['symmetry'] = 'triclinic'
-        # data from Bandura-Evarestov book "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
-        if   221 <= found.n <= 230: dataitem['pg'] = 'O<sub>h</sub>'
-        elif 215 <= found.n <= 220: dataitem['pg'] = 'T<sub>d</sub>'
-        elif 207 <= found.n <= 214: dataitem['pg'] = 'O'
-        elif 200 <= found.n <= 206: dataitem['pg'] = 'T<sub>h</sub>'
-        elif 195 <= found.n <= 199: dataitem['pg'] = 'T'
-        elif 191 <= found.n <= 194: dataitem['pg'] = 'D<sub>6h</sub>'
-        elif 187 <= found.n <= 190: dataitem['pg'] = 'D<sub>3h</sub>'
-        elif 183 <= found.n <= 186: dataitem['pg'] = 'C<sub>6v</sub>'
-        elif 177 <= found.n <= 182: dataitem['pg'] = 'D<sub>6</sub>'
-        elif 175 <= found.n <= 176: dataitem['pg'] = 'C<sub>6h</sub>'
-        elif found.n == 174:        dataitem['pg'] = 'C<sub>3h</sub>'
-        elif 168 <= found.n <= 173: dataitem['pg'] = 'C<sub>6</sub>'
-        elif 162 <= found.n <= 167: dataitem['pg'] = 'D<sub>3d</sub>'
-        elif 156 <= found.n <= 161: dataitem['pg'] = 'C<sub>3v</sub>'
-        elif 149 <= found.n <= 155: dataitem['pg'] = 'D<sub>3</sub>'
-        elif 147 <= found.n <= 148: dataitem['pg'] = 'C<sub>3i</sub>'
-        elif 143 <= found.n <= 146: dataitem['pg'] = 'C<sub>3</sub>'
-        elif 123 <= found.n <= 142: dataitem['pg'] = 'D<sub>4h</sub>'
-        elif 111 <= found.n <= 122: dataitem['pg'] = 'D<sub>2d</sub>'
-        elif 99 <= found.n <= 110:  dataitem['pg'] = 'C<sub>4v</sub>'
-        elif 89 <= found.n <= 98:   dataitem['pg'] = 'D<sub>4</sub>'
-        elif 83 <= found.n <= 88:   dataitem['pg'] = 'C<sub>4h</sub>'
-        elif 81 <= found.n <= 82:   dataitem['pg'] = 'S<sub>4</sub>'
-        elif 75 <= found.n <= 80:   dataitem['pg'] = 'C<sub>4</sub>'
-        elif 47 <= found.n <= 74:   dataitem['pg'] = 'D<sub>2h</sub>'
-        elif 25 <= found.n <= 46:   dataitem['pg'] = 'C<sub>2v</sub>'
-        elif 16 <= found.n <= 24:   dataitem['pg'] = 'D<sub>2</sub>'
-        elif 10 <= found.n <= 15:   dataitem['pg'] = 'C<sub>2h</sub>'
-        elif 6 <= found.n <= 9:     dataitem['pg'] = 'C<sub>s</sub>'
-        elif 3 <= found.n <= 5:     dataitem['pg'] = 'C<sub>2</sub>'
-        elif found.n == 2:          dataitem['pg'] = 'C<sub>i</sub>'
-        elif found.n == 1:          dataitem['pg'] = 'C<sub>1</sub>'
+        if   195 <= found.n <= 230: classified['symmetry'] = 'cubic'
+        elif 168 <= found.n <= 194: classified['symmetry'] = 'hexagonal'
+        elif 143 <= found.n <= 167: classified['symmetry'] = 'rhombohedral'
+        elif 75  <= found.n <= 142: classified['symmetry'] = 'tetragonal'
+        elif 16  <= found.n <= 74:  classified['symmetry'] = 'orthorhombic'
+        elif 3   <= found.n <= 15:  classified['symmetry'] = 'monoclinic'
+        elif 1   <= found.n <= 2:   classified['symmetry'] = 'triclinic'
+        if   221 <= found.n <= 230: classified['pg'] = 'O<sub>h</sub>'
+        elif 215 <= found.n <= 220: classified['pg'] = 'T<sub>d</sub>'
+        elif 207 <= found.n <= 214: classified['pg'] = 'O'
+        elif 200 <= found.n <= 206: classified['pg'] = 'T<sub>h</sub>'
+        elif 195 <= found.n <= 199: classified['pg'] = 'T'
+        elif 191 <= found.n <= 194: classified['pg'] = 'D<sub>6h</sub>'
+        elif 187 <= found.n <= 190: classified['pg'] = 'D<sub>3h</sub>'
+        elif 183 <= found.n <= 186: classified['pg'] = 'C<sub>6v</sub>'
+        elif 177 <= found.n <= 182: classified['pg'] = 'D<sub>6</sub>'
+        elif 175 <= found.n <= 176: classified['pg'] = 'C<sub>6h</sub>'
+        elif found.n == 174:        classified['pg'] = 'C<sub>3h</sub>'
+        elif 168 <= found.n <= 173: classified['pg'] = 'C<sub>6</sub>'
+        elif 162 <= found.n <= 167: classified['pg'] = 'D<sub>3d</sub>'
+        elif 156 <= found.n <= 161: classified['pg'] = 'C<sub>3v</sub>'
+        elif 149 <= found.n <= 155: classified['pg'] = 'D<sub>3</sub>'
+        elif 147 <= found.n <= 148: classified['pg'] = 'C<sub>3i</sub>'
+        elif 143 <= found.n <= 146: classified['pg'] = 'C<sub>3</sub>'
+        elif 123 <= found.n <= 142: classified['pg'] = 'D<sub>4h</sub>'
+        elif 111 <= found.n <= 122: classified['pg'] = 'D<sub>2d</sub>'
+        elif 99 <= found.n <= 110:  classified['pg'] = 'C<sub>4v</sub>'
+        elif 89 <= found.n <= 98:   classified['pg'] = 'D<sub>4</sub>'
+        elif 83 <= found.n <= 88:   classified['pg'] = 'C<sub>4h</sub>'
+        elif 81 <= found.n <= 82:   classified['pg'] = 'S<sub>4</sub>'
+        elif 75 <= found.n <= 80:   classified['pg'] = 'C<sub>4</sub>'
+        elif 47 <= found.n <= 74:   classified['pg'] = 'D<sub>2h</sub>'
+        elif 25 <= found.n <= 46:   classified['pg'] = 'C<sub>2v</sub>'
+        elif 16 <= found.n <= 24:   classified['pg'] = 'D<sub>2</sub>'
+        elif 10 <= found.n <= 15:   classified['pg'] = 'C<sub>2h</sub>'
+        elif 6 <= found.n <= 9:     classified['pg'] = 'C<sub>s</sub>'
+        elif 3 <= found.n <= 5:     classified['pg'] = 'C<sub>2</sub>'
+        elif found.n == 2:          classified['pg'] = 'C<sub>i</sub>'
+        elif found.n == 1:          classified['pg'] = 'C<sub>1</sub>'
 
-        calc.classified = dataitem
-
+        # extend *info* ORM object with classification tags
+        # TODO: avoid rewriting of items of native object
+        for i in classified.keys():
+            calc.info[ i ] = classified[ i ]
+                
         return (calc, error)
 
-    def save_tags(self, for_checksum, classified, update=False):
-        ''' Saves tags with checking '''
+    def _save_tags(self, for_checksum, tags_obj, update=False):
+        '''
+        Saves tags with checking
+        @returns error
+        '''
         tags = []
         cursor = self.db_conn.cursor()
         for n, i in enumerate(self.hierarchy):
@@ -525,7 +589,7 @@ class API:
             if '#' in i['source']:
                 n=0
                 while 1:
-                    try: topic = classified[ i['source'].replace('#', str(n)) ]
+                    try: topic = tags_obj[ i['source'].replace('#', str(n)) ]
                     except KeyError:
                         if 'negative_tagging' in i and n==0 and not update: found_topics.append('none') # beware to add something new to an existing item!
                         break
@@ -533,135 +597,160 @@ class API:
                         found_topics.append(topic)
                         n+=1
             else:
-                try: found_topics.append( classified[ i['source'] ] )
+                try: found_topics.append( tags_obj[ i['source'] ] )
                 except KeyError:
                     if 'negative_tagging' in i and not update: found_topics.append('none') # beware to add something new to an existing item!
 
             for topic in found_topics:
                 try: cursor.execute( 'SELECT tid FROM topics WHERE categ = ? AND topic = ?', (i['cid'], topic) )
-                except: return 'SQLite error: %s' % sys.exc_info()[1]
+                except: return 'Fatal error: %s' % sys.exc_info()[1]
                 tid = cursor.fetchone()
                 if tid: tid = tid[0]
                 else:
                     try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (?, ?)', (i['cid'], topic) )
-                    except: return 'SQLite error: %s' % sys.exc_info()[1]
+                    except: return 'Fatal error: %s' % sys.exc_info()[1]
                     tid = cursor.lastrowid
                 tags.append( (for_checksum, tid) )
 
         try: cursor.executemany( 'INSERT INTO tags (checksum, tid) VALUES (?, ?)', tags )
-        except: return 'SQLite error: %s' % sys.exc_info()[1]
+        except: return 'Fatal error: %s' % sys.exc_info()[1]
 
         return False
 
-    def save(self, calc, for_user=0):
-        ''' Prepares and saves tags and data '''
-        checksum = calc.checksum()
-
-        # check unique
-        try:
-            cursor = self.db_conn.cursor()
-            cursor.execute( 'SELECT uid FROM results WHERE checksum = ?', (checksum,) )
-            row = cursor.fetchone()
-            if row: return (checksum, None)
-        except:
-            error = 'SQLite error: %s' % sys.exc_info()[1]
-            return (None, error)
-
-        # run apps and pack their output
-        apps_json = {}
+    def _save_preacts(self, calc):
+        '''
+        Prepares all for saving: converts Output instance *calc* into json strings
+        @returns Tilde_obj
+        '''
+        # run apps and prepare their output
         for appname, output in self.postprocess(calc).iteritems():
             if output['error']:
-                calc.warns.append( output['error'] )
+                calc.warning( output['error'] )
             else:
-                apps_json[appname] = output['data']
-        apps_json = json.dumps(apps_json)
+                calc.apps[appname] = output['data']
 
-        # save tags
-        res = self.save_tags(checksum, calc.classified)
-        if res: return (None, 'Tags saving failed: '+res)
-
-        xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
-
-        # pack phonon data
-        phonons_json = None
-        if calc.phonons:
+        # prepare phonon data
+        # this is actually
+        # a dict to list conversion: TODO
+        if calc.phonons['modes']:
             phonons_json = []
+            xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
 
-            '''# check if fake (ghost) atoms are involved into a vibration
-            for k, atomi in enumerate(calc.structures[-1]['atoms']):
-                if atomi[0] == 'Xx' and len(calc.ph_eigvecs['0 0 0'])/3 != len(calc.structures[-1]['atoms']):
-                    # insert fake zero vectors
-                    for bz, item in calc.ph_eigvecs.iteritems():
-                        for n in range(len(item)):
-                            for i in range(3):
-                                calc.ph_eigvecs[bz][n].insert(k*3, 0)'''
-
-            for bzpoint, frqset in calc.phonons.iteritems():
+            for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 # re-orientate eigenvectors
-                for i in range(0, len(calc.ph_eigvecs[bzpoint])):
-                    for j in range(0, len(calc.ph_eigvecs[bzpoint][i])/3):
-                        eigv = array([calc.ph_eigvecs[bzpoint][i][j*3], calc.ph_eigvecs[bzpoint][i][j*3+1], calc.ph_eigvecs[bzpoint][i][j*3+2]])
+                for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
+                    for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])/3):
+                        eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
                         R = dot( eigv, xyz_matrix ).tolist()
-                        calc.ph_eigvecs[bzpoint][i][j*3], calc.ph_eigvecs[bzpoint][i][j*3+1], calc.ph_eigvecs[bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
-                try: irreps = calc.irreps[bzpoint]
-                except (KeyError, TypeError):
+                        calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
+
+                try: irreps = calc.phonons['irreps'][bzpoint]
+                except KeyError:
                     empty = []
                     for i in range(len(frqset)): empty.append('')
                     irreps = empty
-                phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.ph_eigvecs[bzpoint]  })
+                phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]  })
                 if bzpoint == '0 0 0':
-                    phonons_json[-1]['ir_active'] = calc['ir_active']
-                    phonons_json[-1]['raman_active'] = calc['raman_active']
-                if calc['ph_k_degeneracy']:
-                    phonons_json[-1]['ph_k_degeneracy'] = calc['ph_k_degeneracy'][bzpoint]
-            phonons_json = json.dumps(phonons_json)
+                    phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
+                    phonons_json[-1]['raman_active'] = calc.phonons['raman_active']
+                if calc.phonons['ph_k_degeneracy']:
+                    phonons_json[-1]['ph_k_degeneracy'] = calc.phonons['ph_k_degeneracy'][bzpoint]
 
-        # pack structural data
-        structure_json = []
-        #if calc['ph_k_degeneracy']: current_N_atoms = len(calc.ph_eigvecs['0 0 0'])/3 # accounted atoms are on top of the supercell
-        #structure_json['end']['xyz'] = generate_xyz( calc['end_frac_structure']['cell'], calc['end_frac_structure']['atoms'][0:current_N_atoms] )
-        structure_json.extend( calc.structures )
-        structure_json[-1]['orig_cif'] = generate_cif( calc.structures[-1]['cell'], calc.structures[-1]['atoms'], calc['symops'] )
-        structure_json[-1]['dims'] = calc.classified['dims']
-        structure_json = json.dumps(structure_json)
+            calc.phonons = phonons_json
+        else: calc.phonons = False
 
-        # pack metadata
-        info_json = {'perf': "%1.2f" % calc.perf(), 'warns': calc.warns, 'prog': calc.prog, 'location': calc.location, 'finished': calc.finished}
-        for item in self.hierarchy:
-            if 'has_column' in item:
-                if '#' in item['source']: continue # todo
-                if item['source'] in calc.classified: info_json[ item['source'] ] = calc.classified[ item['source'] ]
-        info_json = json.dumps(info_json)
+        # prepare structural data
+        calc.structures[-1]['orig_cif'] = generate_cif( calc.structures[-1]['cell'], calc.structures[-1]['atoms'], calc['symops'] )
+        calc.structures[-1]['dims'] = calc.info['dims']
 
-        # pack electronic structure data
-        electrons_json = {}
-        if calc.bs and 'bs' in calc.bs:
+        # prepare electronic structure data
+        '''electrons_json = {}
+        if calc.electrons['basis_set'] and 'bs' in calc.electrons['basis_set']:
             # this is for CRYSTAL merging
-            electrons_json.update(  {'basisset': calc.bs['bs']}  )
-        if calc.e_eigvals:
+            electrons_json.update(  {'basis_set': calc.electrons['basis_set']['bs']}  )
+        if calc.electrons['eigvals']:
             # this is for band structure plotting
-            electrons_json.update(  {'e_eigvals': calc.e_eigvals}  )
-        if calc.e_proj_eigv_impacts:
+            electrons_json.update(  {'eigvals': calc.electrons['eigvals']}  )
+        if calc.electrons['proj_eigv_impacts']:
             # this is for CRYSTAL DOS calculation and plotting
             e_proj_eigvals, impacts = [], []
-            for i in calc.e_proj_eigv_impacts:
+            for i in calc.electrons['proj_eigv_impacts']:
                 e_proj_eigvals.append(i['val'])
                 impacts.append(i['impacts'])
             electrons_json.update(  {'e_proj_eigvals': e_proj_eigvals, 'impacts': impacts}  )
         if getattr(calc, 'complete_dos', None):
             # this is for VASP DOS plotting
             electrons_json.update(  {'dos': calc.complete_dos}  )
-        electrons_json = json.dumps(electrons_json)
+        '''
+
+        calc.benchmark() # call must be at the very end!
+
+        # packing of the
+        # Tilde ORM objects
+        # NB: here they are all
+        for i in ['structures', 'phonons', 'electrons', 'info', 'apps']:
+            calc[i] = json.dumps(calc[i])
+
+        return calc
+
+    def save(self, calc, db_transfer_mode=False):
+        '''
+        Saves Tilde_obj into the database
+        NB: this may be run from outside
+        @returns (id, error)
+        '''
+        checksum = calc.get_checksum()
+
+        # save tags
+        res = self._save_tags(checksum, calc.info)
+        if res: return (None, 'Tags saving failed: '+res)
+
+        if not db_transfer_mode: calc = self._save_preacts(calc)
+
+        # check unique
+        try:
+            cursor = self.db_conn.cursor()
+            cursor.execute( 'SELECT id FROM results WHERE checksum = ?', (checksum,) )
+            row = cursor.fetchone()
+            if row: return (checksum, None)
+        except:
+            error = 'Fatal error: %s' % sys.exc_info()[1]
+            return (None, error)
 
         # save extracted data
         try:
-            cursor.execute( 'INSERT INTO results (uid, checksum, structure, energy, phonons, electrons, info, apps) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )', (for_user, checksum, structure_json, calc['energy'], phonons_json, electrons_json, info_json, apps_json) )
+            cursor.execute( 'INSERT INTO results (checksum, structure, energy, phonons, electrons, info, apps) VALUES ( ?, ?, ?, ?, ?, ?, ? )', \
+            (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
         except:
-            error = 'SQLite error: %s' % sys.exc_info()[1]
+            error = 'Fatal error: %s' % sys.exc_info()[1]
             return (None, error)
         self.db_conn.commit()
+
         del calc
-        del phonons_json
-        del structure_json
-        del electrons_json
+
         return (checksum, None)
+
+    def restore(self, db_row, db_transfer_mode=False):
+        '''
+        Restores Tilde_obj from the database
+        NB: this may be run from outside
+        @returns Tilde_obj
+        '''
+        calc = Output()
+
+        calc._checksum = db_row['checksum']
+        calc.energy = float( db_row['energy'] )
+        calc.info = json.loads(db_row['info'])
+
+        # unpacking of the
+        # Tilde ORM objects
+        # NB: here they are except *info*
+        # Why this is so?
+        # We store the redundant copy
+        # of tags marked with *has_column*
+        # in results table (info field)
+        # to speed up DB queries
+        for i in ['structures', 'phonons', 'electrons', 'apps']:
+            if not db_transfer_mode: calc[i] = json.loads(db_row[i])
+            else: calc[i] = db_row[i]
+        return calc

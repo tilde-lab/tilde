@@ -10,11 +10,11 @@ __order__ = 5
 __properties__ = [ {"category": "basis sets", "source": "bs#"} ]
 
 def classify(content_obj, tilde_obj):
-    if tilde_obj.bs is None: return content_obj
-
+    if tilde_obj.electrons['basis_set'] is None:
+        return content_obj
     ps = {}
     i=0
-    for k, v in tilde_obj.bs['ps'].iteritems():
+    for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
         if type(v) != str: # CRYSTAL
             ps[k] = ''
             for channel in v:
@@ -24,9 +24,9 @@ def classify(content_obj, tilde_obj):
             content_obj['properties']['bs' + str(i)] = k + ':' + v
             i+=1
 
-    if 'bs' in tilde_obj.bs and type(tilde_obj.bs['bs']) == dict:
+    if type(tilde_obj.electrons['basis_set']['bs']) == dict:
         i=0
-        for k, v in tilde_obj.bs['bs'].iteritems():
+        for k, v in tilde_obj.electrons['basis_set']['bs'].iteritems():
             if k == 'Xx': continue
 
             chk = "".join([a for a in k if a.isdigit()])

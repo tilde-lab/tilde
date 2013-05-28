@@ -1,5 +1,5 @@
 # Spglib interface for ASE
-# shipped with tilde
+# Author: Atsushi Togo
 
 import os, sys
 sys.path.append( os.path.realpath(os.path.dirname(__file__) + '/../windows/python') )
