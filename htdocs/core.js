@@ -438,7 +438,7 @@ function resp__list(obj, data){
         return;
     }
     if (data.length)
-        data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan recursively</span>)</li>"+data;
+        data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
 
     if (obj.path == _tilde.filetree.root){

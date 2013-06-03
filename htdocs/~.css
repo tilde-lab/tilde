@@ -143,10 +143,10 @@ a.activetag:hover{color:#fff;background:#06c;}
 #menu span{padding-left:25px;}
 
 /* USERBOX */
-#pre_user_box{position:fixed;right:250px;top:0;width:150px;padding-top:6px;height:35px;z-index:10;text-align:center;}
-#userbox{position:fixed;right:0;top:0;width:250px;z-index:10;padding-top:15px;height:30px;background:#333;border-bottom-left-radius:10px;-moz-border-radius-bottomleft:10px;-webkit-border-bottom-left-radius:10px;color:#fff;font-size:11px;text-align:center;}
+#pre_user_box{position:fixed;right:250px;top:0;width:160px;padding-top:6px;height:35px;z-index:10;text-align:center;}
+#userbox{position:fixed;right:0;top:0;width:250px;z-index:10;padding-top:13px;height:30px;background:#333;border-bottom-left-radius:10px;-moz-border-radius-bottomleft:10px;-webkit-border-bottom-left-radius:10px;color:#fff;font-size:11px;text-align:center;}
 #userinfo{float:left;width:180px;height:100%;}
-#metablock{float:left;width:170px;overflow:hidden;text-align:center;}
+#metablock{float:left;width:170px;overflow:hidden;text-align:center;font-size:1.5em;overflow-x:hidden;}
 /*#online{float:right;width:11px;height:10px;font-size:1px;background:#0cc;-webkit-border-radius:5px;-moz-border-radius:5px;border-radius:5px;margin:3px 6px 0 0;cursor:pointer;}*/
 #useract{float:right;width:70px;margin-top:-15px;padding-top:15px;height:30px;background:#06c;}
 #left_half_gear{width:10px;height:20px;background:url(images/gear.gif) no-repeat 0;margin-top:-2px;cursor:pointer;float:right;}

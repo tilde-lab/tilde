@@ -25,5 +25,6 @@ def classify(content_obj, tilde_obj):
 
         # atomic radius should be REL times less than cell dimensions
         content_obj['tags'].append('isolated atom')
+        content_obj['dims'] = False
 
     return content_obj

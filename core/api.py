@@ -409,7 +409,7 @@ class API:
         classified = {
             'standard':     '',
             'formula':      self.formula( [i[0] for i in calc.structures[-1]['atoms']] ),
-            'dims':         0,
+            'dims':         False,
             'elements':     [],
             'contents':     [],
             'lack':         False,

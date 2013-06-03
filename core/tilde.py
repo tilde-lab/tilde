@@ -107,19 +107,19 @@ for target in args.path:
         if error:
             print filename, error
             continue
+            
+        output_line = filename + " (E=" + str(calc.energy) + ")"
+        if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
 
         if args.add:
             checksum, error = Tilde.save(calc)
             if error:
                 print filename, error
                 continue
-            add_msg = ' added'
+            output_line += ' added'
 
-        basic_line = filename + " (E=" + str(calc.energy) + ")" + add_msg
-        if calc.info['warns']: basic_line += " (" + " ".join(calc.info['warns']) + ")"
-
-        print basic_line
-
+        print output_line + add_msg
+            
         if args.verbose:
             if calc.convergence:
                 print str(calc.convergence)
