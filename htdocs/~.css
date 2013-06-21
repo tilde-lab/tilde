@@ -78,10 +78,13 @@ div.object_ctx_left div.ipane{border-left-width:0;}
 div.object_ctx_right{float:right;width:50%;margin-right:1px;background:#fff;}
 div.object_ctx_right div.ipane{border-right-width:0;}
 div.flot_holder{width:97%;height:460px;margin:0 auto 5px;}
-#db_copy_select{width:240px;margin:5px;font-size:0.9em;}
 
-/* DATABROWSER PANE */
+/* DATABROWSER MENU */
 div.menu_main_cmds{height:100%;display:table;}
+div.ctx_caption{padding:7px 0 0 8px;}
+#db_copy_select{width:230px;margin:5px;font-size:0.9em;}
+
+/* DATABROWSER TABLE */
 #countbox{display:table-cell;vertical-align:middle;font-size:0.75em;padding-left:4px;}
 #data_holder{display:none;width:100%;}
 #databrowser{position:absolute;width:100%;top:53px;left:0;}
@@ -100,9 +103,9 @@ tbody td:first-child{padding-left:4px;}
 thead tr th{background:#fff;padding:4px;}
 tbody td{color:#3D3D3D;padding:2px 1px;background:#fff;vertical-align:middle;}
 tbody td.em{font-size:10px;}
-thead tr th.header{background:url(images/ascdesc.gif) no-repeat 98% center;cursor:pointer;}
-thead tr th.headerSortUp{background-image:url(images/asc.gif);}
-thead tr th.headerSortDown{background-image:url(images/desc.gif);}
+thead tr th.header{background-image:url(images/asc.gif), url(images/desc.gif);background-position:center bottom, center top;background-repeat:no-repeat;cursor:pointer;}
+thead tr th.headerSortUp{background:url(images/asc.gif) center bottom no-repeat;}
+thead tr th.headerSortDown{background:url(images/desc.gif) center top no-repeat;}
 thead tr th.headerSortDown, thead tr th.headerSortUp{background-color:#dddddd;}
 thead tr th.disabled{background:#fff;}
 tbody tr.shared td{background:#ffc;}
@@ -118,7 +121,8 @@ div.tagcol{display:none;width:100%;clear:both;}
 div.tagcapt{float:left;width:250px;padding:2px 10px 2px 10px;margin:2px;font-size:1.1em;height:22px;word-wrap:break-word;font-weight:bold;vertical-align:top;}
 div.tagarea{float:left;width:70%;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
-a.tagmore{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
+a.tagmore, a.tagless{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
+a.tagless{height:24px}
 a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;border:1px solid #06c;color:#06c;background:#fff;text-decoration:none;padding:2px;margin:2px;text-align:center;}
 a.taglink:hover{color:#fff;background:#06c;}
 a.activetag{color:#fff;background:#06c;}

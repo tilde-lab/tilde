@@ -21,10 +21,11 @@ class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
 
-def generate_cif(parameters, atoms, symops):
+def generate_cif(parameters, atoms, symops, comment=None):
     if not parameters: parameters = [10, 10, 10, 90, 90, 90]
     reverse = matrix( cellpar_to_cell(parameters) ).I
-    cif_data = 'data_tilde_project\n'
+    cif_data = "# " + comment + "\n\n" if comment else ''
+    cif_data += 'data_tilde_project\n'
     cif_data += '_cell_length_a    ' + "%2.6f" % parameters[0] + "\n"
     cif_data += '_cell_length_b    ' + "%2.6f" % parameters[1] + "\n"
     cif_data += '_cell_length_c    ' + "%2.6f" % parameters[2] + "\n"
@@ -46,8 +47,8 @@ def generate_cif(parameters, atoms, symops):
         cif_data += "%s%s   %s   % 1.8f   % 1.8f   % 1.8f\n" % (atoms[i][0], (i+1), atoms[i][0], x, y, z)
     return cif_data
     
-def write_cif(parameters, atoms, symops, filename):
-    cif_data = generate_cif(parameters, atoms, symops)
+def write_cif(parameters, atoms, symops, filename, comment=None):
+    cif_data = generate_cif(parameters, atoms, symops, comment)
     try:
         file = open(filename, 'w')
         file.write(cif_data)

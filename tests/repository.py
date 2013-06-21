@@ -8,7 +8,7 @@ import time
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.api import API
-from core.settings import EXAMPLE_DIR, DATA_DIR, DEFAULT_DB
+from core.settings import settings, EXAMPLE_DIR, DATA_DIR
 
 try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
@@ -17,7 +17,7 @@ except: from pysqlite2 import dbapi2 as sqlite3
 starttime = time.time()
 
 
-db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + DEFAULT_DB))
+db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_db']))
 db.row_factory = sqlite3.Row
 db.text_factory = str
 

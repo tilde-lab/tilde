@@ -12,9 +12,9 @@ import fractions
 __order__ = 40
 __properties__ = [ {"category": "planes number", "source": "layers", "has_column": True}, {"category": "adsorbent", "source": "adsorbent", "chem_notation": True, "has_column": True}, {"category": "surface termination", "source": "termination", "chem_notation": True, "has_column": True} ]
 
-def classify(content_obj, tilde_obj):
+def classify(tilde_obj):
     ''' determine count of layers and adsorption '''
-    if tilde_obj.structures[-1]['periodicity'] != 2: return content_obj
+    if tilde_obj.structures[-1]['periodicity'] != 2: return tilde_obj
     
     vectors = []
     for i in range(3):
@@ -43,7 +43,7 @@ def classify(content_obj, tilde_obj):
     to_delete = []
     if len(content_by_layer) <= 3:
         # we have a very thin slab with an undefined adsorption case
-        content_obj['properties']['layers'] = len(content_by_layer)
+        tilde_obj.info['properties']['layers'] = len(content_by_layer)
     else:
         # check adsorbants
         s = range(len(content_by_layer) - 1, int(math.floor( len(content_by_layer)/2 ) - 1), -1)
@@ -61,10 +61,10 @@ def classify(content_obj, tilde_obj):
                 
                 # Check 1: by content
                 for atom, content in content_by_layer[i].iteritems():
-                    #print 'content:', float(content_obj['contents'][ content_obj['elements'].index(atom) ]) / sum(content_obj['contents'])
+                    #print 'content:', float(tilde_obj.info['contents'][ tilde_obj.info['elements'].index(atom) ]) / sum(tilde_obj.info['contents'])
                     if atom == 'H': content_ratio = 0.15 # less than 15%
                     else: content_ratio = 0.1 # less than 10%
-                    if float(content_obj['contents'][ content_obj['elements'].index(atom) ]) / sum(content_obj['contents']) <= content_ratio: 
+                    if float(tilde_obj.info['contents'][ tilde_obj.info['elements'].index(atom) ]) / sum(tilde_obj.info['contents']) <= content_ratio: 
                         #print '------------>got', atom
                         try: adsorbate[atom]
                         except KeyError: adsorbate[atom] = content
@@ -111,45 +111,45 @@ def classify(content_obj, tilde_obj):
         #print to_delete
         
         # prevent all-is-adsorbent case
-        if sorted(adsorbate.keys()) == sorted(content_obj['elements']) and sorted(adsorbate.values()) == sorted(content_obj['contents']): adsorbate, to_delete = {}, [] 
+        if sorted(adsorbate.keys()) == sorted(tilde_obj.info['elements']) and sorted(adsorbate.values()) == sorted(tilde_obj.info['contents']): adsorbate, to_delete = {}, [] 
             
         for i in to_delete:
             del content_by_layer[ i[0] ][ i[1] ]
         content_by_layer = filter(None, content_by_layer)
-        content_obj['properties']['layers'] = len(content_by_layer)
+        tilde_obj.info['properties']['layers'] = len(content_by_layer)
         
         if len(adsorbate):
-            content_obj['tags'].append('adsorption')
+            tilde_obj.info['tags'].append('adsorption')
             adsorbent_formula = ''
             r = reduce(fractions.gcd, adsorbate.values())
             # sort according to pre-defined element order in a full slab formula
-            elems = [x for x in content_obj['elements'] if x in adsorbate.keys()] + [x for x in adsorbate.keys() if x not in content_obj['elements']]
+            elems = [x for x in tilde_obj.info['elements'] if x in adsorbate.keys()] + [x for x in adsorbate.keys() if x not in tilde_obj.info['elements']]
             elems_content = [ adsorbate[i] for i in elems ]
             for i, c in enumerate( map(lambda x: x/r, elems_content) ):
                 if c == 1: adsorbent_formula += elems[i]
                 else: adsorbent_formula += elems[i] + str(c)
             if r>1: adsorbent_formula = str(r) + adsorbent_formula
-            content_obj['properties']['adsorbent'] = adsorbent_formula
+            tilde_obj.info['properties']['adsorbent'] = adsorbent_formula
     
     if content_by_layer[0] == content_by_layer[-1] and len(content_by_layer) > 1:
         termination_formula = ''
         d = reduce(fractions.gcd, content_by_layer[0].values())
         # sort according to pre-defined element order in a full slab formula
-        elems = [x for x in content_obj['elements'] if x in content_by_layer[0].keys()] + [x for x in content_by_layer[0].keys() if x not in content_obj['elements']]
+        elems = [x for x in tilde_obj.info['elements'] if x in content_by_layer[0].keys()] + [x for x in content_by_layer[0].keys() if x not in tilde_obj.info['elements']]
         elems_content = [ content_by_layer[0][i] for i in elems ]
         for i, c in enumerate( map(lambda x: x/d, elems_content) ):
             if c == 1: termination_formula += elems[i]
             else: termination_formula += elems[i] + str(c)
-        content_obj['properties']['termination'] = termination_formula
+        tilde_obj.info['properties']['termination'] = termination_formula
         
-    content_obj['expanded'] = 1 # this means formula reduce is prohibited
+    tilde_obj.info['expanded'] = 1 # this means formula reduce is prohibited
     slab_elements = []
     for y in content_by_layer:
         for k, v in y.iteritems():
             if not k in slab_elements:
                 slab_elements.append(k)
     # sort according to pre-defined element order in a full slab formula
-    content_obj['standard'] = "".join([x for x in content_obj['elements'] if x in slab_elements] + [x for x in slab_elements if x not in content_obj['elements']]) + " slab"
+    tilde_obj.info['standard'] = "".join([x for x in tilde_obj.info['elements'] if x in slab_elements] + [x for x in slab_elements if x not in tilde_obj.info['elements']]) + " slab"
         
     #print content_by_layer
-    return content_obj
+    return tilde_obj

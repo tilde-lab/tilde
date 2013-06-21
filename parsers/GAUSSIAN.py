@@ -33,10 +33,10 @@ class GAUSSIAN(Output):
         parts = self.data.split('\n Cite this work as:')
         if len(parts) > 2:
             self.warning('File contains several merged outputs - only the last one is taken!')
-        
+
         if '\n Normal termination ' in parts[-1]: self.info['finished'] = 1
         else: self.info['finished'] = -1
-        
+
         logfile = GaussianParser(parts[-1])
         parsed = logfile.parse()
 
@@ -67,7 +67,7 @@ class GAUSSIAN(Output):
         cell = map(lambda x: round(x, 4), cell_to_cellpar(array( cell )).tolist())
         self.structures = [{'cell': cell, 'atoms': atoms, 'periodicity': periodicity}]
 
-        # Get basis set      
+        # Get basis set
         if hasattr(parsed, 'gbasis'):
             for n, i in enumerate(parsed.gbasis):
                 if not self.structures[-1]['atoms'][n][0] in self.electrons['basis_set']['bs'].keys():
@@ -132,15 +132,14 @@ class GAUSSIAN(Output):
 
         if not self.electrons['basis_set']['bs']: raise RuntimeError( 'No basis set found!')
 
-        # Get energy and method (theory level) TODO!       
+        # Get energy
+        # Get method (theory level) TODO
         E, E_mp, E_cc = None, None, None
         try: E_mp = parsed.mpenergies[-1] # Hartree
         except: pass
-        else: self.method['H'] = 'MP2'
 
         try: E_cc = parsed.ccenergies[-1] # Hartree
         except: pass
-        else: self.method['H'] = 'coupled clusters'
 
         try: E = parsed.scfenergies[-1] # Hartree
         except: pass
@@ -579,22 +578,22 @@ class GaussianParser(Logfile):
         #   in the event the standard orientation isn't available.
         #if not self.optfinished and line.find("Input orientation") > -1 or line.find("Z-Matrix orientation") > -1:
         if "Input orientation" in line or "Z-Matrix orientation" in line:
-        
+
             # If this is a counterpoise calculation, this output means that
             #   the supermolecule is now being considered, so we can set:
             self.counterpoise = 0
-        
+
             #if not hasattr(self, "inputcoords"):
             #    self.inputcoords = []
-            
+
             self.inputcoords = []
             self.inputatoms = []
-        
+
             hyphens = inputfile.next()
             colmNames = inputfile.next()
             colmNames = inputfile.next()
             hyphens = inputfile.next()
-        
+
             atomcoords = []
             line = inputfile.next()
             while line != hyphens:
@@ -606,9 +605,9 @@ class GaussianParser(Logfile):
                     self.inputatoms.append(broken[1])
                     atomcoords.append(map(float, broken[3:6]))
                     line = inputfile.next()
-        
+
             self.inputcoords.append(atomcoords)
-        
+
             if not hasattr(self, "atomnos"):
                 self.atomnos = array(self.inputatoms, 'i')
                 self.natom = len(self.atomnos)
@@ -652,7 +651,7 @@ class GaussianParser(Logfile):
             #if not hasattr(self, "atomcoords"):
             #    self.atomcoords = []
             self.atomcoords = []
-            
+
             hyphens = inputfile.next()
             colmNames = inputfile.next()
             colmNames = inputfile.next()
@@ -681,8 +680,8 @@ class GaussianParser(Logfile):
             #    self.atomnos = array(atomnos, 'i')
 
             self.atomnos = array(atomnos, 'i')
-            self.natom = len(self.atomnos)   
-                
+            self.natom = len(self.atomnos)
+
         # Find the targets for SCF convergence (QM calcs).
         #if line[1:44] == 'Requested convergence on RMS density matrix':
         #
@@ -762,20 +761,20 @@ class GaussianParser(Logfile):
         #            else: v = parts[-1][:-1]
         #            self.scfvalues[0].append(self.float( v ))
         #        line = inputfile.next()
-        
+
         # Note: this needs to follow the section where 'SCF Done' is used
         #   to terminate a loop when extracting SCF convergence information.
         if line[1:9] == 'SCF Done':
-        
+
             if not hasattr(self, "scfenergies"):
                 self.scfenergies = []
-        
+
             self.scfenergies.append(convertor(self.float(line.split()[4]), "hartree", "eV"))
-            
+
         # gmagoon 5/27/09: added scfenergies reading for PM3 case
         # Example line: " Energy=   -0.077520562724 NIter=  14."
         # See regression Gaussian03/QVGXLLKOCUKJST-UHFFFAOYAJmult3Fixed.out
-        
+
         if line[1:8] == 'Energy=':
             if not hasattr(self, "scfenergies"):
                 self.scfenergies = []
@@ -789,7 +788,7 @@ class GaussianParser(Logfile):
         # Example MP2 output line:
         #  E2 =    -0.9505918144D+00 EUMP2 =    -0.28670924198852D+03
         # Warning! this output line is subtly different for MP3/4/5 runs
-        
+
         if "EUMP2" in line[27:34]:
 
             if not hasattr(self, "mpenergies"):
@@ -834,7 +833,7 @@ class GaussianParser(Logfile):
         # Second order MBPT energies (MP2) are also calculated for these runs,
         #  but the output is the same as when parsing for mpenergies.
         # First turn on flag for Coupled Cluster runs.
-        
+
         if line[1:23] == "Coupled Cluster theory" or line[1:8] == "CCSD(T)":
 
             self.coupledcluster = True
@@ -844,7 +843,7 @@ class GaussianParser(Logfile):
         # Now read the consecutive correlated energies when ,
         #  but append only the last one to ccenergies.
         # Only the highest level energy is appended - ex. CCSD(T), not CCSD.
-        
+
         if self.coupledcluster and line[27:35] == "E(CORR)=":
             self.ccenergy = self.float(line.split()[3])
         if self.coupledcluster and line[1:9] == "CCSD(T)=":
@@ -1054,7 +1053,7 @@ class GaussianParser(Logfile):
         #      0.2941249355D+01 -0.9996722919D-01  0.1559162750D+00
         #      0.6834830964D+00  0.3995128261D+00  0.6076837186D+00
         #      0.2222899159D+00  0.7001154689D+00  0.3919573931D+00
-        
+
         if line[1:16] == "AO basis set in":
 
             # For counterpoise fragment calcualtions, skip these lines.

@@ -9,9 +9,9 @@ import sys
 __order__ = 5
 __properties__ = [ {"category": "basis sets", "source": "bs#"} ]
 
-def classify(content_obj, tilde_obj):
+def classify(tilde_obj):
     if tilde_obj.electrons['basis_set'] is None:
-        return content_obj
+        return tilde_obj
     ps = {}
     i=0
     for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
@@ -21,7 +21,7 @@ def classify(content_obj, tilde_obj):
                 ps[k] += channel[0].lower() + '<sup>' + str(len(channel)-1) + '</sup>'
 
         else: # VASP
-            content_obj['properties']['bs' + str(i)] = k + ':' + v
+            tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
             i+=1
 
     if type(tilde_obj.electrons['basis_set']['bs']) == dict:
@@ -33,7 +33,7 @@ def classify(content_obj, tilde_obj):
             if len(chk): continue
 
             if type(v) == str: # GAUSSIAN
-                content_obj['properties']['bs' + str(i)] = k + ':' + v
+                tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
 
             else: # CRYSTAL, GAUSSIAN
                 bs_repr, repeats = [], []
@@ -50,8 +50,8 @@ def classify(content_obj, tilde_obj):
                 bs_str = ''
                 for n in range(len(bs_repr)):
                     bs_str += '(%s)<sup>%s</sup>' % (bs_repr[n], repeats[n]) if repeats[n]>1 else bs_repr[n]
-                content_obj['properties']['bs' + str(i)] = k + ':' + pseudopotential + bs_str
+                tilde_obj.info['properties']['bs' + str(i)] = k + ':' + pseudopotential + bs_str
 
             i+=1
 
-    return content_obj
+    return tilde_obj

@@ -34,6 +34,15 @@ var atoms;
 var structure;
 var WebGLSupported = false;
 
+function calc2Dpoint(x,y,z){
+    var projector = new THREE.Projector();
+    var vector = projector.projectVector( new THREE.Vector3( x, y, z ), camera );
+    var result = {};
+    result.x = Math.round(vector.x * (renderer.domElement.width/2));
+    result.y = Math.round(vector.y * (renderer.domElement.height/2));
+    return result;
+}
+
 function render_obj3D(obj3D){
     var old = scene.getChildByName("atoms");
     if (!!old) scene.remove( old );
@@ -105,7 +114,7 @@ function render_obj3D(obj3D){
             draw_3d_line(drawing_cell[i][0], drawing_cell[i][1]);
         }
     }
-    atoms.name = "atoms";
+    atoms.name = "atoms3d";
     scene.add( atoms );
     TWEEN.removeAll();
     //vibrate_obj3D( false );
@@ -209,24 +218,12 @@ window.onload = function(){
         
         controls = new THREE.TrackballControls( camera );
         controls.staticMoving = true;
-
-        /* if (WebGLSupported){
-            var ambientLight = new THREE.AmbientLight(0x222222);
-            scene.add(ambientLight);
-            var directionalLight = new THREE.DirectionalLight(0xffffff);
-            directionalLight.position.set(1, 1, -5).normalize();
-            directionalLight.intensity = 1.5;
-            scene.add(directionalLight);
-        } */
     }
     function animate(){
         requestAnimationFrame( animate );
         controls.update();
-        render();
-        TWEEN.update();
-    }
-    function render(){
         renderer.render( scene, camera );
+        TWEEN.update();
     }
 }
 </script>

@@ -486,6 +486,9 @@ class XML_Output(Output):
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 raise RuntimeError('VASP output corrupted or not finalized: ' + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
 
+        # all below is quite nasty
+        # TODO: reorganize
+
         for k in ["vasp_version", "incar",
                 "parameters", "potcar_symbols",
                 "kpoints", "actual_kpoints", "structures",
@@ -516,6 +519,11 @@ class XML_Output(Output):
             self.phonons['modes'] = {'0 0 0': self.dynmat['freqs'] }
             self.phonons['ph_eigvecs'] = {'0 0 0': self.dynmat['eigvecs'] }
             if len(self.phonons['ph_eigvecs']['0 0 0'])/3 != len(self.structures[-1]['atoms']): raise RuntimeError('Number of frequencies is not equal to 3 * number of atoms!')
+
+            self.phonons['dfp_magnitude'] = self.incar.get("POTIM", False)
+            if not self.phonons['dfp_magnitude']:
+                self.phonons['dfp_magnitude'] = 0.02 # Standard phonon displacement in VASP for DFP method
+
         '''
         if self.e_last is None:
             self.warning('Fermi energy is missing! Electronic properties are omitted.')
@@ -540,7 +548,7 @@ class XML_Output(Output):
 
                 del self.electrons['eigvals'][i]
         '''
-        
+
     @staticmethod
     def fingerprints(test_string):
         if '<modeling>' in test_string: return True

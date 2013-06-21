@@ -25,7 +25,8 @@ class Output:
             'k':            None,
             'spin':         None,
             'lockstate':    None,
-            'technique':    {}
+            'technique':    {},
+            'perturbation': None
             }
 
         # (II)
@@ -51,17 +52,29 @@ class Output:
             'ph_eigvecs':       {},
             'ph_k_degeneracy':  {},
             'dfp_disps':        [],
-            'dfp_magnitude':    None
+            'dfp_magnitude':    None,
+            'dielectric_tensor':False
             }
 
-        # Tilde technical info object PLUS classification
-        # API call *classify* extends it with new items
+        # Tilde classification and technical info object
+        # API call *classify* extends it with the new items
         self.info = {
             'warns':      [],
             'prog':       'unknown',
             'perf':       None,
             'location':   filename,
-            'finished':   0  # -1 for not, 0 for n/a, +1 for yes
+            'finished':   0,  # -1 for not, 0 for n/a, +1 for yes
+            'duration':   None,
+            
+            'standard':   '',
+            'formula':    '',
+            'dims':       False,
+            'elements':   [],
+            'contents':   [],
+            'lack':       False,
+            'expanded':   False,
+            'properties': {},
+            'tags':       []
             }
 
         # Tilde modules output object

@@ -33,12 +33,12 @@ class Tilting():
 
         if not selfname in obj['apps']: return "<td rel=%s>&mdash;</td>" % colnum
 
-        for o in obj['apps'][selfname]:
-            for i in obj['apps'][selfname][o]:
-                for j in i:
-                    repr += str(j) + ', '
-                repr = repr[:-2] + '; '
-            repr = repr[:-2] + '<br />'
+        for k in obj['apps'][selfname]:
+            for i in obj['apps'][selfname][k]:
+                repr += str(i) + ', '
+            repr = repr[:-2]
+            if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
+            repr += '<br />'
         return "<td rel=%s><div class=sml>%s</div></td>" % (colnum, repr)
 
     def __init__(self, tilde_calc):
@@ -86,7 +86,7 @@ class Tilting():
             if i[0] in self.CORNER_ATOM_TYPES:
                 for dir in shift_dirs:
                     self.translate(k, dir, self.virtual_atoms)
-        #print "------->", write_cif(tilde_calc.structures[-1]['cell'], self.virtual_atoms, ['+x,+y,+z'], DATA_DIR + "/test.cif")
+        #print write_cif(tilde_calc.structures[-1]['cell'], self.virtual_atoms, ['+x,+y,+z'], DATA_DIR + "/test.cif")
 
         # extract octahedra
         for octahedron in self.get_octahedra(tilde_calc.structures[-1]['atoms'], tilde_calc.structures[-1]['periodicity']):
@@ -112,9 +112,8 @@ class Tilting():
                 if i[1:] == u[j][1:]:
                     todel.append(u.index(i))
                     continue
-        for i in [j for j in u if u.index(j) not in todel]:
-            if i[0] in self.angles: self.angles[ i[0] ].append(i[1:])
-            else: self.angles[ i[0]+1 ] = [i[1:]] # atomic index is counted from zero!
+        for i in [j for j in u if u.index(j) not in todel]:            
+            self.angles[ i[0]+1 ] = i[1:] # atomic index is counted from zero!
 
     def bisector_point(self, num_of_A, num_of_O, num_of_B, reference):
         xA = reference[num_of_A][1]

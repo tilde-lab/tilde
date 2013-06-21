@@ -48,6 +48,7 @@ patterns['k1'] = re.compile(r"\n\sMAX\sGRADIENT(.+?)\n")
 patterns['k2'] = re.compile(r"\n\sRMS\sGRADIENT(.+?)\n")
 patterns['k3'] = re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n")
 patterns['k4'] = re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n")
+patterns['version'] = re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL)
 
 def find_all(a_str, sub):
     start = 0
@@ -102,24 +103,23 @@ class CRYSTOUT(Output):
             if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format is similar to CRYSTAL format, it is unknown!' )
 
             if self.crystal_calc:
-                self.duration = self.get_duration()
-
+                self.info['duration'] = self.get_duration()
                 self.info['finished'] = self.is_finished()
-                self.info['prog'] = 'CRYSTAL'
 
-                self.input = self.get_input(raw_data[ 0:parts_pointer[0] ])
+                self.input, self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
                 self.molecular_case = False
                 self.energy = self.get_etot()
                 self.structures = self.get_structures()
                 self.symops = self.get_symops()
                 self.charges = self.get_charges()
-
+                
                 self.electrons['basis_set'] = self.get_bs()
 
                 self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
                 self.phonons['modes'], self.phonons['irreps'], self.phonons['ir_active'], self.phonons['raman_active'] = self.get_phonons()
                 self.phonons['ph_eigvecs'] = self.get_ph_eigvecs()
                 self.phonons['dfp_disps'], self.phonons['dfp_magnitude'] = self.get_ph_sym_disps()
+                self.phonons['dielectric_tensor'] = self.get_static_dielectric_tensor()
 
                 self.convergence, self.ncycles, self.tresholds = self.get_convergence()
 
@@ -497,7 +497,20 @@ class CRYSTOUT(Output):
         else: self.warning( 'No magmoms available!' )
         return charges
 
-    def get_input(self, inputdata):
+    def get_input_and_version(self, inputdata):
+        # get version        
+        version = patterns['version'].search(inputdata)
+        if version:
+            version = version.group().replace('*', '').split("\n")
+            major = version[0].strip()
+            minor = version[1].strip()
+            if ':' in minor: minor = minor.split(':')[1].split()[0]
+            else: minor = minor.split()[1]
+            version = major + ' ' + minor
+        else:
+            version = 'CRYSTAL0?'
+        
+        # get input data        
         inputdata = inputdata.splitlines()
         keywords = []
         keywords_flag = False
@@ -514,13 +527,13 @@ class CRYSTOUT(Output):
                 trsh_line_cnt = 0
         if not keywords:
             #self.warning( 'No d12-formatted input data in the beginning found!' )
-            return None
+            return None, version
         keywords = keywords[:-trsh_line_cnt]
         keywords = "\n".join(keywords)
-        return keywords
+        return keywords, version
 
     def is_finished(self):
-        if self.duration and not 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ERR' in self.data: return 1
+        if self.info['duration'] and not 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ERR' in self.data: return 1
         else: return -1
 
     def get_ph_sym_disps(self):
@@ -543,6 +556,10 @@ class CRYSTOUT(Output):
             if magnitude == 0: raise RuntimeError( 'Cannot find displacement magnitude in FREQCALC output!')
             if not len(disps): raise RuntimeError( 'Cannot find valid displacement data in FREQCALC output!')
             return disps, magnitude
+            
+    def get_static_dielectric_tensor(self):
+        return "\n VIBRATIONAL CONTRIBUTIONS TO THE STATIC DIELECTRIC TENSOR:\n" in self.data or \
+        "\n VIBRATIONAL CONTRIBUTIONS TO THE STATIC POLARIZABILITY TENSOR:\n" in self.data
 
     def __float(self, number):
         number = number.replace("D","E")
@@ -813,7 +830,7 @@ class CRYSTOUT(Output):
             'PERDEW-ZUNGER': 'PZ-LSD',
             'PERDEW-BURKE-ERNZERHOF': 'PBE-GGA',
             'SOGGA': 'SOGGA',
-            'PERDEW 86': 'P86-GGA',
+            'PERDEW86': 'P86-GGA',
             'PBEsol': 'PBESOL-GGA',
             'PERDEW-WANG LSD': 'PW-LSD',
             'VON BARTH-HEDIN': 'VBH-LSD',
@@ -865,8 +882,14 @@ class CRYSTOUT(Output):
             kset = self.data.split('\n SHRINK. FACT.(MONKH.) ', 1)[-1].split()
             if len(kset) < 4: self.warning( 'Unknown k-points format!' )
             self.method['k'] = "x".join( kset[:3] )
+            
+        # Perturbation part
+        if "* *        COUPLED-PERTURBED KOHN-SHAM CALCULATION (CPKS)         * *" in self.data:
+            self.method['perturbation'] = 'analytical'
+        elif "\n F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F\n" in self.data:
+            self.method['perturbation'] = 'numerical'
 
-        # Tols part
+        # Tolerances part
         if 'COULOMB OVERLAP TOL         (T1)' in self.data:
             t = []
             t.append( int( self.data.split('COULOMB OVERLAP TOL         (T1)', 1)[-1].split("\n", 1)[0].split('**')[-1] ) )
@@ -881,7 +904,7 @@ class CRYSTOUT(Output):
                     else: t[n] = -6
             self.method['tol'] = "biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>"
 
-        # Speed-ups part
+        # Speed-up tricks part
         if '\n WEIGHT OF F(I) IN F(I+1)' in self.data:
             f = int( self.data.split('\n WEIGHT OF F(I) IN F(I+1)', 1)[-1].split('%', 1)[0] )
             self.method['technique']['fmixing'] = f
@@ -900,7 +923,7 @@ class CRYSTOUT(Output):
         if '\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ' in self.data:
             f = float( self.data.split('\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ', 1)[-1].split("\n", 1)[0] )
             self.method['technique']['smear'] = f
-
+    
     def get_duration(self):
         starting = patterns['starting'].search(self.data)
         ending = patterns['ending'].search(self.data)

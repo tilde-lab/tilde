@@ -11,7 +11,6 @@ import sys
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
 
-
 if 'win' in sys.platform:
     from ase.atoms import Atoms
     import pywintypes

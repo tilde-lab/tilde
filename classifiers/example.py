@@ -9,5 +9,5 @@ import sys
 __order__ = 1000
 __properties__ = [ {"category": "demo", "source": "demo", "order": 3} ]
 
-def classify(content_obj, tilde_obj):
-    return content_obj # this means stop trying to classify object in scope of current classifier
+def classify(tilde_obj):
+    return tilde_obj # this means stop trying to classify object in scope of a current classifier

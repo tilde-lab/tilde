@@ -286,19 +286,19 @@ class Request_Handler:
                 tags = []
                 result = cursor.fetchall()
                 for item in result:
-                    o = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
+                    match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
 
-                    if 'chem_notation' in o: i = html_formula(item['topic'])
+                    if 'chem_notation' in match: i = html_formula(item['topic'])
                     else: i = item['topic']
-                    t = o['category']
 
-                    if not 'order' in o: order = 1000
-                    else: order = o['order']
+                    if not 'order' in match: order = 1000
+                    else: order = match['order']
                     for n, tag in enumerate(tags):
-                        if tag['category'] == t:
+                        if tag['category'] == match['category']:
                             tags[n]['content'].append( {'tid': item['tid'], 'topic': i} )
                             break
-                    else: tags.append({'category': t, 'order': order, 'content': [ {'tid': item['tid'], 'topic': i} ]})
+                    else: tags.append({'category': match['category'], 'order': order, 'content': [ {'tid': item['tid'], 'topic': i} ]})
+
                 tags.sort(key=lambda x: x['order'])
         else:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
@@ -370,19 +370,14 @@ class Request_Handler:
             row = cursor.fetchone()
             if row is None: return (data, 'No objects found!')
 
-            '''ph_atoms_reduce_n = None
-            if row['phonons']:
-                freqs = json.loads(row['phonons'])
-                ph_atoms_reduce_n = len(freqs[0]['freqs'])/3'''
-
             ase_obj = aseize(json.loads(row['structure'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
-            ase_obj.center()
 
-            '''mass_center = ase_obj.get_center_of_mass()
+            mass_center = ase_obj.get_center_of_mass()
+
             for i in range(len(mass_center)):
                 if mass_center[i] == 0: mass_center[i] = 1
-            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]'''
+            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
 
             atoms = []
             for i in ase_obj:
@@ -397,8 +392,7 @@ class Request_Handler:
             cell_points = []
             if ase_obj.get_pbc().all() == True:
                 for i in ase_obj.cell:
-                    #cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
-                    cell_points.append([i[0], i[1], i[2]])
+                    cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
 
             data = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info})
         return (data, error)
@@ -757,10 +751,11 @@ class Request_Handler:
 
 class DuplexConnection(tornadio2.conn.SocketConnection):
     def on_open(self, info):
+        global Users
         Users[ self.session.session_id ] = User()
 
     @tornado.gen.engine
-    def on_message(self, message):
+    def on_message(self, message):        
         userobj, output = {}, {'act': '', 'req': '', 'error': '', 'data': ''}
         output['act'], output['req'] = message.split(DELIM)
 
@@ -773,9 +768,12 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 
             # multiple-send
             if output['act'] == 'report' and userobj['transport'] == 'local' and userobj['directory'] > 0:
+                
                 if not settings['local_dir']:
                     output['error'] = 'Please, define working path!'
                     self._send(output)
+                    
+                global Users                    
                 discover = settings['local_dir'] + userobj['path']
                 recursive = True if userobj['directory'] == 2 else False
 
@@ -805,6 +803,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
                 self._send(output)
 
     def on_close(self):
+        global Users
         for event in Users[ self.session.session_id ].running.values():
             event.set()
         #time.sleep(3)
@@ -818,13 +817,15 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         self.send( answer )
 
     def _keepalive(self, output, current, timestamp):
-        if not self.session.session_id in Users: return
+        global Users
+        if not self.session.session_id in Users: return # TODO: this causes hard-tracing error if something occurs in API!
+        
         while not Users[ self.session.session_id ].running[ current ].is_set():
             Users[ self.session.session_id ].running[ current ].wait(2.5)
             if time.time() - timestamp > 4:
                 output['data'] = 1
                 self._send(output)
-        else:
+        else:            
             del Users[ self.session.session_id ].running[ current ]
             return
 
@@ -871,7 +872,7 @@ def build_header(cols):
             headers_html += '<th rel=' + str(item['cid']) + '>' + (item['category'] if 'nocap' in item else item['category'].capitalize()) + '</th>'
 
     # --compulsory part--
-    headers_html += '<th class=not-sortable>More</th>'
+    headers_html += '<th class=not-sortable>More...</th>'
     headers_html += '</tr>'
     headers_html += '</thead>'
 

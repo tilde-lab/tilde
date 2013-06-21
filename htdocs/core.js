@@ -110,7 +110,7 @@ function logger(message, no_wrap, clean){
 function set_repos(){
     $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
     
-    var title = 'Current repository:<br />' + _tilde.settings.dbs[0];
+    var title = 'Current repository: ' + _tilde.settings.dbs[0];
     if (!!_tilde.settings.dbs.length && _tilde.settings.dbs.length > 1) title += ' (<span class=link>' + (_tilde.settings.dbs.length - 1) + ' more</span>)';
     $('h1').html( title );
     
@@ -302,7 +302,8 @@ function export_data(data){
     ref.document.body.innerHTML = '<pre>' + dump + '</pre>';
 }
 function add_tag_expanders(){
-    if (!_tilde.protected || !$('#splashscreen').is(':visible')) return;
+    //if (!_tilde.protected || !$('#splashscreen').is(':visible')) return;
+    if (!$('#splashscreen').is(':visible')) return;
     $('a.tagmore').remove();
     var max_width = $('div.tagarea:first').width()-40+1;
     $('#category_holder div.tagarea_reduced').each(function(){
@@ -315,6 +316,10 @@ function add_tag_expanders(){
             }
         });
     });
+}
+function switch_menus(reverse){
+    if (reverse) { $('div.menu_main_cmds').show(); $('div.menu_ctx_cmds').hide(); }
+    else { $('div.menu_main_cmds').hide(); $('div.menu_ctx_cmds').show(); }
 }
 /**
 *
@@ -397,9 +402,10 @@ function resp__tags(req, data){
         $('#noclass_trigger').show();
     } else {
         // both tagcloud and splash-screen are re-drawn by new categories
-        var tagarea_reduced_class = _tilde.protected ? ' tagarea_reduced' : ''; // cosmetic enhancement for web
+        //var tagarea_reduced_class = _tilde.protected ? ' tagarea_reduced' : ''; // cosmetic enhancement for web
         $.each(resp, function(num, value){
-            tags_html += '<div class=tagcol><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea'+tagarea_reduced_class+'">';
+            //tags_html += '<div class=tagcol><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea'+tagarea_reduced_class+'">';
+            tags_html += '<div class=tagcol><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea tagarea_reduced">';
 
             value.content.sort(function(a, b){
                 if (a.topic < b.topic) return -1;
@@ -414,7 +420,7 @@ function resp__tags(req, data){
         if (!tags_html.length) tags_html = '&nbsp;Repository is empty!';
         $('#category_holder').empty().append(tags_html);
         $('#tagcloud').empty().append(tags_html);
-        if (_tilde.protected) $('#tagcloud div.tagarea_reduced').removeClass('tagarea_reduced');
+        //if (_tilde.protected) $('#tagcloud div.tagarea_reduced').removeClass('tagarea_reduced');
         $('div.tagcol').show();
     }
     
@@ -744,7 +750,9 @@ $(document).ready(function(){
         var anchor = _tilde.cur_anchor.substr(1);
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
-
+        
+        switch_menus(true);
+        
         if (anchor == 'start'){
             if (_tilde.protected){
                 document.location = '/static/demo.html';
@@ -830,7 +838,7 @@ $(document).ready(function(){
                         __send('summary',  {datahash: i} )
                         open_ipane('summary', i);
                         _tilde.rendered[i] = true;
-                        //_tilde.scrollmemo = $('#i_'+i).offset().top;
+                        _tilde.scrollmemo = $('#i_'+i).offset().top;
                         $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
                     }
                 });
@@ -838,7 +846,7 @@ $(document).ready(function(){
             _tilde.sortdisable = true; // sorting switch
         }
     }
-    }, 330);
+    }, 400);
 /**
 *
 *
@@ -954,20 +962,18 @@ $(document).ready(function(){
         $('input.SHFT_cb').each(function(){
             if ($(this).is(':checked')) { flag = true; return false }
         });
-        if (flag) { $('div.menu_main_cmds').hide(); $('div.menu_ctx_cmds').show(); }
-        else { $('div.menu_main_cmds').show(); $('div.menu_ctx_cmds').hide(); }
+        if (flag) switch_menus();
+        else switch_menus(true);
     });
     $(document).on('click', '#d_cb_all', function(){
         if ($(this).is(':checked') && $('#databrowser > tbody > tr > td').length > 1) {
             $('input.SHFT_cb').attr('checked', true);
             $('#databrowser > tbody > tr').addClass('shared');
-            $('div.menu_main_cmds').hide();
-            $('div.menu_ctx_cmds').show();
+            switch_menus();
         } else {
             $('input.SHFT_cb').attr('checked', false);
             $('#databrowser > tbody > tr').removeClass('shared');
-            $('div.menu_main_cmds').show();
-            $('div.menu_ctx_cmds').hide();
+            switch_menus(true);
         }
     });    
     
@@ -1082,7 +1088,13 @@ $(document).ready(function(){
 
     // SPLASHSCREEN TAGCLOUD EXPANDERS
     $(document).on('click', 'a.tagmore', function(){
-        $(this).parent().removeClass('tagarea_reduced');
+        $(this).parent().removeClass('tagarea_reduced').append('<a class=tagless href=#>&larr;</a>');
+        $(this).remove();
+        return false;
+    });
+    $(document).on('click', 'a.tagless', function(){
+        $(this).parent().addClass('tagarea_reduced');
+        add_tag_expanders();
         $(this).remove();
         return false;
     });
@@ -1247,12 +1259,12 @@ $(document).ready(function(){
     $('#ui-restart').click(function(){ document.location.reload() });
     
     // SETTINGS: USABILITY
-    $('#profile_holder').mouseleave(function(){
+    /* $('#profile_holder').mouseleave(function(){
         _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1500);
     });
     $('#profile_holder').mouseenter(function(){
         clearTimeout(_tilde.timeout4);
-    });
+    }); */
     
     // ABOUT
     $('#about_trigger').click(function(){

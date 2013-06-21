@@ -18,31 +18,31 @@ A_site_elems = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr
 B_site_elems = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', ')
 C_site_elems = 'O, F'.split(', ') # todo: add elements to C site
 
-def classify(content_obj, tilde_obj):
+def classify(tilde_obj):
     ''' classification by vacancy and substitutional defects in perovskites '''
-    if len(content_obj['elements']) == 1: return content_obj
+    if len(tilde_obj.info['elements']) == 1: return tilde_obj
 
-    C_site = [e for e in content_obj['elements'] if e in C_site_elems]
-    if not C_site: return content_obj
-    A_site = [e for e in content_obj['elements'] if e in A_site_elems]
-    B_site = [e for e in content_obj['elements'] if e in B_site_elems]
+    C_site = [e for e in tilde_obj.info['elements'] if e in C_site_elems]
+    if not C_site: return tilde_obj
+    A_site = [e for e in tilde_obj.info['elements'] if e in A_site_elems]
+    B_site = [e for e in tilde_obj.info['elements'] if e in B_site_elems]
 
     # proportional coefficient D
     AB, C = 0, 0
     for i in (A_site + B_site):
-        AB += content_obj['contents'][ content_obj['elements'].index(i) ]
+        AB += tilde_obj.info['contents'][ tilde_obj.info['elements'].index(i) ]
     for i in C_site:
-        C += content_obj['contents'][ content_obj['elements'].index(i) ]
+        C += tilde_obj.info['contents'][ tilde_obj.info['elements'].index(i) ]
 
     try: D = float(C) / AB
-    except ZeroDivisionError: return content_obj
+    except ZeroDivisionError: return tilde_obj
 
     # 2-component pseudo-perovskites
-    if content_obj['elements'][0] in ['W', 'Re'] and len(content_obj['elements']) == 2:
-        if round(D) == 3: content_obj['tags'].append('perovskite')
-        return content_obj
+    if tilde_obj.info['elements'][0] in ['W', 'Re'] and len(tilde_obj.info['elements']) == 2:
+        if round(D) == 3: tilde_obj.info['tags'].append('perovskite')
+        return tilde_obj
 
-    if not 1.3 < D < 1.9: return content_obj
+    if not 1.3 < D < 1.9: return tilde_obj
 
     # Goldschmidt tolerance factor
     # t = (rA + rC) / sqrt(2) * (rB + rC)
@@ -59,11 +59,11 @@ def classify(content_obj, tilde_obj):
                     rC = covalent_radii[chemical_symbols.index(C)]
                 except IndexError: pass
                 else:
-                    if not 0.71 <= (rA + rC) / (math.sqrt(2) * (rB + rC)) <= 1.07: return content_obj
+                    if not 0.71 <= (rA + rC) / (math.sqrt(2) * (rB + rC)) <= 1.07: return tilde_obj
 
-    content_obj['tags'].append('perovskite')
+    tilde_obj.info['tags'].append('perovskite')
 
-    if tilde_obj.structures[-1]['periodicity'] != 3: return content_obj # all below is for 3d case : TODO
+    if tilde_obj.structures[-1]['periodicity'] != 3: return tilde_obj # all below is for 3d case : TODO
 
     contents = []
     impurities = {}
@@ -71,8 +71,8 @@ def classify(content_obj, tilde_obj):
     B_hosts = {}
 
     # empirical criteria of defect: =< 25% content
-    for n, i in enumerate(content_obj['elements']):
-        contents.append( [n, i, float(content_obj['contents'][n])/sum(content_obj['contents'])] )
+    for n, i in enumerate(tilde_obj.info['elements']):
+        contents.append( [n, i, float(tilde_obj.info['contents'][n])/sum(tilde_obj.info['contents'])] )
     contents = sorted(contents, key = lambda i: i[2])
 
     for num in range(len(contents)):
@@ -81,23 +81,23 @@ def classify(content_obj, tilde_obj):
 
         # defect content differs at least 2x from the smallest content; defect partial weight <= 1/16
         if contents[num][2] <= 0.0625 and contents[num][2] / contents[num+1][2] <= 0.5:
-            impurities[ contents[num][1] ] = content_obj['contents'][ contents[num][0] ] # ex: ['Fe', 2]
+            impurities[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ] # ex: ['Fe', 2]
 
         elif contents[num][1] in A_site_elems:
-            A_hosts[ contents[num][1] ] = content_obj['contents'][ contents[num][0] ]
+            A_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
         elif contents[num][1] in B_site_elems:
-            B_hosts[ contents[num][1] ] = content_obj['contents'][ contents[num][0] ]
+            B_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
     #print impurities, A_hosts, B_hosts
 
     # A site or B site?
     n=0
     for impurity_element, content in impurities.iteritems():
-        e = content_obj['elements'].index(impurity_element)
-        content_obj['elements'].pop(e) # TODO
-        content_obj['contents'].pop(e) # TODO
-        content_obj['properties']['impurity' + str(n)] = impurity_element + str(content) if content > 1 else impurity_element
+        e = tilde_obj.info['elements'].index(impurity_element)
+        tilde_obj.info['elements'].pop(e) # TODO
+        tilde_obj.info['contents'].pop(e) # TODO
+        tilde_obj.info['properties']['impurity' + str(n)] = impurity_element + str(content) if content > 1 else impurity_element
         dist_matrix = []
         ref_coords = []
         ref_coords.extend(tilde_obj.structures[-1]['atoms'])
@@ -115,28 +115,28 @@ def classify(content_obj, tilde_obj):
 
                     if 0.12 < D_d < 0.28: #
                         # A-site with coord.number = 12
-                        if len(A_hosts) > 1: return content_obj # TODO?
+                        if len(A_hosts) > 1: return tilde_obj # TODO?
                         A_hosts[A_hosts.keys()[0]] += 1
                         break
 
                     elif D_d >= 0.28:
                         # B-site with coord.number = 6
-                        if len(B_hosts) > 1: return content_obj # TODO?
+                        if len(B_hosts) > 1: return tilde_obj # TODO?
                         B_hosts[B_hosts.keys()[0]] += 1
                         break
 
-    for n, i in enumerate(content_obj['elements']):
+    for n, i in enumerate(tilde_obj.info['elements']):
         if i in A_hosts:
-            content_obj['contents'][n] = A_hosts[i] # TODO
+            tilde_obj.info['contents'][n] = A_hosts[i] # TODO
         elif i in B_hosts:
-            content_obj['contents'][n] = B_hosts[i] # TODO
+            tilde_obj.info['contents'][n] = B_hosts[i] # TODO
 
     for i in C_site:
-        c_content = content_obj['contents'][ content_obj['elements'].index(i) ]
-        tot_content = sum(content_obj['contents'])
+        c_content = tilde_obj.info['contents'][ tilde_obj.info['elements'].index(i) ]
+        tot_content = sum(tilde_obj.info['contents'])
         D_O = float(c_content) / tot_content
         if D_O < 0.6: # C-site lack
-            content_obj['lack'] = i
+            tilde_obj.info['lack'] = i
             break # todo
 
-    return content_obj
+    return tilde_obj

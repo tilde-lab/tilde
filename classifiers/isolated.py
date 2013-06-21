@@ -15,16 +15,16 @@ __properties__ = []
 
 REL = 100
 
-def classify(content_obj, tilde_obj):
+def classify(tilde_obj):
     ''' reference single atom in vacuum:
     account of artificial 3 periodic box case '''
-    if not len(content_obj['elements']) == 1 or content_obj['contents'][0] != 1: return content_obj
+    if not len(tilde_obj.info['elements']) == 1 or tilde_obj.info['contents'][0] != 1: return tilde_obj
 
     if tilde_obj.structures[-1]['periodicity'] == 0 or \
-    float( content_obj['dims'] / covalent_radii[chemical_symbols.index(content_obj['elements'][0])] ) > REL:
+    float( tilde_obj.info['dims'] / covalent_radii[chemical_symbols.index(tilde_obj.info['elements'][0])] ) > REL:
 
         # atomic radius should be REL times less than cell dimensions
-        content_obj['tags'].append('isolated atom')
-        content_obj['dims'] = False
+        tilde_obj.info['tags'].append('isolated atom')
+        tilde_obj.info['dims'] = False
 
-    return content_obj
+    return tilde_obj

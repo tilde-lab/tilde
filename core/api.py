@@ -100,7 +100,7 @@ class API:
             {"cid": 4, "category": "periodicity", "source": "periodicity", "order": 12, "has_column": True}, \
             {"cid": 5, "category": "calculation type", "source": "calctype#", "order": 10, "has_column": True}, \
             {"cid": 6, "category": "hamiltonian", "source": "H", "order": 30, "has_column": True}, \
-            {"cid": 7, "category": "label", "source": "tag#", "order": 11, "has_column": True}, \
+            {"cid": 7, "category": "system", "source": "tag#", "order": 11, "has_column": True}, \
             {"cid": 8, "category": "result symmetry", "source": "symmetry", "negative_tagging": True, "order": 80, "has_column": True}, \
             {"cid": 9, "category": "result space group", "source": "sg", "negative_tagging": True, "order": 81, "has_column": True}, \
             {"cid": 10, "category": "result point group", "source": "pg", "negative_tagging": True, "order": 82, "has_column": True}, \
@@ -109,6 +109,8 @@ class API:
             {"cid": 94, "category": "locked magn.state", "source": "lockstate", "order": 23, "has_column": True}, \
             {"cid": 92, "category": "k-points set", "source": "k", "order": 85, "has_column": True}, \
             {"cid": 93, "category": "used techniques", "source": "tech#", "order": 84, "has_column": True}, \
+            {"cid": 95, "category": "phon.magnitude", "source": "dfp_magnitude", "order": 86, "has_column": True}, \
+            {"cid": 96, "category": "phon.k-points", "source": "n_ph_k", "order": 87, "has_column": True}, \
             #{"category": "code", "source": "code"}, \ <- this can be changed while merging!
             #{"category": "containing element", "source": "element#"}, \
         ]
@@ -306,7 +308,7 @@ class API:
                         old_props['impacts'] = impacts
 
                         # update tags:
-                        res = self._save_tags(row['checksum'], {'calctype0':'el.structure'}, update=True)
+                        res = self._save_tags(row['checksum'], {'calctype0':'electr.structure'}, update=True)
                         if res: return (None, 'Tags saving failed: '+res)
 
                     del new_props
@@ -406,17 +408,7 @@ class API:
         @returns (Tilde_obj, error)
         '''
         error = None
-        classified = {
-            'standard':     '',
-            'formula':      self.formula( [i[0] for i in calc.structures[-1]['atoms']] ),
-            'dims':         False,
-            'elements':     [],
-            'contents':     [],
-            'lack':         False,
-            'expanded':     False,
-            'properties':   {},
-            'tags':         []
-            }
+        calc.info['formula'] = self.formula( [i[0] for i in calc.structures[-1]['atoms']] )
 
         # applying filter: todo
         if calc.info['finished'] < 0 and self.filter:
@@ -424,54 +416,56 @@ class API:
 
         xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
 
-        if calc.structures[-1]['periodicity'] == 3: classified['dims'] = abs(det(xyz_matrix))
-        elif calc.structures[-1]['periodicity'] == 2: classified['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])
+        if calc.structures[-1]['periodicity'] == 3: calc.info['dims'] = abs(det(xyz_matrix))
+        elif calc.structures[-1]['periodicity'] == 2: calc.info['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])
 
         # this is stupid (?), TODO
-        fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', classified['formula'])
+        fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
             if i[0] == 'Xx': continue
-            classified['elements'].append(i[0])
-            classified['contents'].append(int(i[1])) if i[1] else classified['contents'].append(1)
+            calc.info['elements'].append(i[0])
+            calc.info['contents'].append(int(i[1])) if i[1] else calc.info['contents'].append(1)
 
-        # this is to extend Tilde hierarchy
+        # extend Tilde hierarchy
         # with modules (idea of *hierarchy API*)
         for C_obj in self.Classifiers:
-            try: classified = C_obj['classify'](classified, calc)
+            try: calc = C_obj['classify'](calc)
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 error = "Fatal error during classification:\n %s" % "".join(traceback.format_exception( exc_type, exc_value, exc_tb ))
                 return (None, error)
 
         # post-processing tags
-        if not len(classified['standard']):
-            if len(classified['elements']) == 1: classified['expanded'] = 1
-            if not classified['expanded']: classified['expanded'] = reduce(fractions.gcd, classified['contents'])
-            for n, i in enumerate(map(lambda x: x/classified['expanded'], classified['contents'])):
-                if i==1: classified['standard'] += classified['elements'][n]
-                else: classified['standard'] += classified['elements'][n] + str(i)
+        if not len(calc.info['standard']):
+            if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
+            if not calc.info['expanded']: calc.info['expanded'] = reduce(fractions.gcd, calc.info['contents'])
+            for n, i in enumerate(map(lambda x: x/calc.info['expanded'], calc.info['contents'])):
+                if i==1: calc.info['standard'] += calc.info['elements'][n]
+                else: calc.info['standard'] += calc.info['elements'][n] + str(i)
 
         # general calculation type reasoning
         calctype = []
         if calc.phonons['modes']: calctype.append('phonons')
         if calc.phonons['ph_k_degeneracy']: calctype.append('phon.dispersion')
+        if calc.phonons['dielectric_tensor']: calctype.append('static dielectric const') # CRYSTAL-only - TODO: extend
+        if calc.method['perturbation']: calctype.append('electr.field response') # CRYSTAL-only - TODO: extend
         if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calctype.append('optimization')
-        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calctype.append('el.structure')
+        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calctype.append('electr.structure')
         if calc.energy: calctype.append('total energy')
 
         for n, i in enumerate(calctype):
-            classified['calctype' + str(n)] = i
+            calc.info['calctype' + str(n)] = i
 
         # standardizing materials science methods
         # this is a loooooooooooooooooong work
         # not suitable for humans
-        # but suitable for artificial intelligence
-        if calc.method:            
-            if calc.method['H']: classified['H'] = calc.method['H']
-            if calc.method['tol']: classified['tol'] = calc.method['tol']
-            if calc.method['k']: classified['k'] = calc.method['k']
-            if calc.method['spin']: classified['spin'] = 'yes'
-            if calc.method['lockstate']: classified['lockstate'] = calc.method['lockstate']
+        # but suitable for artificial intelligence!
+        if calc.method:
+            if calc.method['H']: calc.info['H'] = calc.method['H']
+            if calc.method['tol']: calc.info['tol'] = calc.method['tol']
+            if calc.method['k']: calc.info['k'] = calc.method['k']
+            if calc.method['spin']: calc.info['spin'] = 'yes'
+            if calc.method['lockstate']: calc.info['lockstate'] = calc.method['lockstate']
             tech = []
             if calc.method['technique'].keys():
                 for i in calc.method['technique'].keys():
@@ -502,79 +496,85 @@ class API:
                         if calc.method['technique'][i][2] < 5: type += ' start'
                         else: type += ' defer.'
                         tech.append(i + type)
-            if 'vac' in classified['properties']:
-                if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: tech.append('defect as ghost')
-                else: tech.append('defect as void space')
-            for n, i in enumerate(tech): classified['tech' + str(n)] = i
 
-        for n, i in enumerate(classified['elements']):
-            classified['element' + str(n)] = i
-        for n, i in enumerate(classified['tags']):
-            classified['tag' + str(n)] = i
-        classified['nelem'] = len(classified['elements'])
-        
-        if classified['expanded']: classified['expanded'] = str(classified['expanded']) + 'x'
-        else: del classified['expanded']
-        
-        if calc.structures[-1]['periodicity'] == 3: classified['periodicity'] = '3-periodic'
-        elif calc.structures[-1]['periodicity'] == 2: classified['periodicity'] = '2-periodic'
-        elif calc.structures[-1]['periodicity'] == 1: classified['periodicity'] = '1-periodic'
-        elif calc.structures[-1]['periodicity'] == 0: classified['periodicity'] = 'non-periodic'
-        for k, v in classified['properties'].iteritems():
-            classified[k] = v
+            if 'vac' in calc.info['properties']:
+                if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: tech.append('vacancy defect: ghost')
+                else: tech.append('vacancy defect: void space')
+
+            if calc.method['perturbation']:
+                tech.append('perturbation: ' + calc.method['perturbation'])
+
+            for n, i in enumerate(tech): calc.info['tech' + str(n)] = i
+
+        for n, i in enumerate(calc.info['elements']):
+            calc.info['element' + str(n)] = i
+        for n, i in enumerate(calc.info['tags']):
+            calc.info['tag' + str(n)] = i
+        calc.info['nelem'] = len(calc.info['elements'])
+
+        if calc.info['expanded']: calc.info['expanded'] = str(calc.info['expanded']) + 'x'
+        else: del calc.info['expanded']
+
+        if calc.structures[-1]['periodicity'] == 3: calc.info['periodicity'] = '3-periodic'
+        elif calc.structures[-1]['periodicity'] == 2: calc.info['periodicity'] = '2-periodic'
+        elif calc.structures[-1]['periodicity'] == 1: calc.info['periodicity'] = '1-periodic'
+        elif calc.structures[-1]['periodicity'] == 0: calc.info['periodicity'] = 'non-periodic'
+        for k, v in calc.info['properties'].iteritems():
+            calc.info[k] = v
 
         # invoke symmetry finder
         found = SymmetryFinder(calc)
         if found.error: return (None, found.error)
 
-        classified['sg'] = found.i
+        calc.info['sg'] = found.i
 
         # data from Bandura-Evarestov book "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
-        if   195 <= found.n <= 230: classified['symmetry'] = 'cubic'
-        elif 168 <= found.n <= 194: classified['symmetry'] = 'hexagonal'
-        elif 143 <= found.n <= 167: classified['symmetry'] = 'rhombohedral'
-        elif 75  <= found.n <= 142: classified['symmetry'] = 'tetragonal'
-        elif 16  <= found.n <= 74:  classified['symmetry'] = 'orthorhombic'
-        elif 3   <= found.n <= 15:  classified['symmetry'] = 'monoclinic'
-        elif 1   <= found.n <= 2:   classified['symmetry'] = 'triclinic'
-        if   221 <= found.n <= 230: classified['pg'] = 'O<sub>h</sub>'
-        elif 215 <= found.n <= 220: classified['pg'] = 'T<sub>d</sub>'
-        elif 207 <= found.n <= 214: classified['pg'] = 'O'
-        elif 200 <= found.n <= 206: classified['pg'] = 'T<sub>h</sub>'
-        elif 195 <= found.n <= 199: classified['pg'] = 'T'
-        elif 191 <= found.n <= 194: classified['pg'] = 'D<sub>6h</sub>'
-        elif 187 <= found.n <= 190: classified['pg'] = 'D<sub>3h</sub>'
-        elif 183 <= found.n <= 186: classified['pg'] = 'C<sub>6v</sub>'
-        elif 177 <= found.n <= 182: classified['pg'] = 'D<sub>6</sub>'
-        elif 175 <= found.n <= 176: classified['pg'] = 'C<sub>6h</sub>'
-        elif found.n == 174:        classified['pg'] = 'C<sub>3h</sub>'
-        elif 168 <= found.n <= 173: classified['pg'] = 'C<sub>6</sub>'
-        elif 162 <= found.n <= 167: classified['pg'] = 'D<sub>3d</sub>'
-        elif 156 <= found.n <= 161: classified['pg'] = 'C<sub>3v</sub>'
-        elif 149 <= found.n <= 155: classified['pg'] = 'D<sub>3</sub>'
-        elif 147 <= found.n <= 148: classified['pg'] = 'C<sub>3i</sub>'
-        elif 143 <= found.n <= 146: classified['pg'] = 'C<sub>3</sub>'
-        elif 123 <= found.n <= 142: classified['pg'] = 'D<sub>4h</sub>'
-        elif 111 <= found.n <= 122: classified['pg'] = 'D<sub>2d</sub>'
-        elif 99 <= found.n <= 110:  classified['pg'] = 'C<sub>4v</sub>'
-        elif 89 <= found.n <= 98:   classified['pg'] = 'D<sub>4</sub>'
-        elif 83 <= found.n <= 88:   classified['pg'] = 'C<sub>4h</sub>'
-        elif 81 <= found.n <= 82:   classified['pg'] = 'S<sub>4</sub>'
-        elif 75 <= found.n <= 80:   classified['pg'] = 'C<sub>4</sub>'
-        elif 47 <= found.n <= 74:   classified['pg'] = 'D<sub>2h</sub>'
-        elif 25 <= found.n <= 46:   classified['pg'] = 'C<sub>2v</sub>'
-        elif 16 <= found.n <= 24:   classified['pg'] = 'D<sub>2</sub>'
-        elif 10 <= found.n <= 15:   classified['pg'] = 'C<sub>2h</sub>'
-        elif 6 <= found.n <= 9:     classified['pg'] = 'C<sub>s</sub>'
-        elif 3 <= found.n <= 5:     classified['pg'] = 'C<sub>2</sub>'
-        elif found.n == 2:          classified['pg'] = 'C<sub>i</sub>'
-        elif found.n == 1:          classified['pg'] = 'C<sub>1</sub>'
+        if   195 <= found.n <= 230: calc.info['symmetry'] = 'cubic'
+        elif 168 <= found.n <= 194: calc.info['symmetry'] = 'hexagonal'
+        elif 143 <= found.n <= 167: calc.info['symmetry'] = 'rhombohedral'
+        elif 75  <= found.n <= 142: calc.info['symmetry'] = 'tetragonal'
+        elif 16  <= found.n <= 74:  calc.info['symmetry'] = 'orthorhombic'
+        elif 3   <= found.n <= 15:  calc.info['symmetry'] = 'monoclinic'
+        elif 1   <= found.n <= 2:   calc.info['symmetry'] = 'triclinic'
+        if   221 <= found.n <= 230: calc.info['pg'] = 'O<sub>h</sub>'
+        elif 215 <= found.n <= 220: calc.info['pg'] = 'T<sub>d</sub>'
+        elif 207 <= found.n <= 214: calc.info['pg'] = 'O'
+        elif 200 <= found.n <= 206: calc.info['pg'] = 'T<sub>h</sub>'
+        elif 195 <= found.n <= 199: calc.info['pg'] = 'T'
+        elif 191 <= found.n <= 194: calc.info['pg'] = 'D<sub>6h</sub>'
+        elif 187 <= found.n <= 190: calc.info['pg'] = 'D<sub>3h</sub>'
+        elif 183 <= found.n <= 186: calc.info['pg'] = 'C<sub>6v</sub>'
+        elif 177 <= found.n <= 182: calc.info['pg'] = 'D<sub>6</sub>'
+        elif 175 <= found.n <= 176: calc.info['pg'] = 'C<sub>6h</sub>'
+        elif found.n == 174:        calc.info['pg'] = 'C<sub>3h</sub>'
+        elif 168 <= found.n <= 173: calc.info['pg'] = 'C<sub>6</sub>'
+        elif 162 <= found.n <= 167: calc.info['pg'] = 'D<sub>3d</sub>'
+        elif 156 <= found.n <= 161: calc.info['pg'] = 'C<sub>3v</sub>'
+        elif 149 <= found.n <= 155: calc.info['pg'] = 'D<sub>3</sub>'
+        elif 147 <= found.n <= 148: calc.info['pg'] = 'C<sub>3i</sub>'
+        elif 143 <= found.n <= 146: calc.info['pg'] = 'C<sub>3</sub>'
+        elif 123 <= found.n <= 142: calc.info['pg'] = 'D<sub>4h</sub>'
+        elif 111 <= found.n <= 122: calc.info['pg'] = 'D<sub>2d</sub>'
+        elif 99 <= found.n <= 110:  calc.info['pg'] = 'C<sub>4v</sub>'
+        elif 89 <= found.n <= 98:   calc.info['pg'] = 'D<sub>4</sub>'
+        elif 83 <= found.n <= 88:   calc.info['pg'] = 'C<sub>4h</sub>'
+        elif 81 <= found.n <= 82:   calc.info['pg'] = 'S<sub>4</sub>'
+        elif 75 <= found.n <= 80:   calc.info['pg'] = 'C<sub>4</sub>'
+        elif 47 <= found.n <= 74:   calc.info['pg'] = 'D<sub>2h</sub>'
+        elif 25 <= found.n <= 46:   calc.info['pg'] = 'C<sub>2v</sub>'
+        elif 16 <= found.n <= 24:   calc.info['pg'] = 'D<sub>2</sub>'
+        elif 10 <= found.n <= 15:   calc.info['pg'] = 'C<sub>2h</sub>'
+        elif 6 <= found.n <= 9:     calc.info['pg'] = 'C<sub>s</sub>'
+        elif 3 <= found.n <= 5:     calc.info['pg'] = 'C<sub>2</sub>'
+        elif found.n == 2:          calc.info['pg'] = 'C<sub>i</sub>'
+        elif found.n == 1:          calc.info['pg'] = 'C<sub>1</sub>'
 
-        # extend *info* ORM object with classification tags
-        # TODO: avoid rewriting of items of native object
-        for i in classified.keys():
-            calc.info[ i ] = classified[ i ]
-                
+        if calc.phonons['dfp_magnitude']: calc.info['dfp_magnitude'] = round(calc.phonons['dfp_magnitude'], 3)
+        if calc.phonons['modes']:
+            calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
+        
+        calc.benchmark() # this call must be at the very end of parsing
+
         return (calc, error)
 
     def _save_tags(self, for_checksum, tags_obj, update=False):
@@ -681,9 +681,7 @@ class API:
         if getattr(calc, 'complete_dos', None):
             # this is for VASP DOS plotting
             electrons_json.update(  {'dos': calc.complete_dos}  )
-        '''
-
-        calc.benchmark() # call must be at the very end!
+        '''        
 
         # packing of the
         # Tilde ORM objects
