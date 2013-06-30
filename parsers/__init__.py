@@ -69,12 +69,14 @@ class Output:
             'standard':   '',
             'formula':    '',
             'dims':       False,
-            'elements':   [],
+            'elements':   [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             'contents':   [],
             'lack':       False,
             'expanded':   False,
             'properties': {},
-            'tags':       []
+            'tags':       [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+            'calctypes':  [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+            'techs':      []  # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             }
 
         # Tilde modules output object

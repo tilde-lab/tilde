@@ -17,13 +17,13 @@ DEFAULT_SETUP = {
                 'demo_regime': 0,
                 'debug_regime': 0,
                 'quick_regime': 0,
-                'filter': 0,
+                'skip_unfinished': 0,
                 'skip_if_path': "-_~",
                 'title': None
                 }
 DB_SCHEMA = '''
 DROP TABLE IF EXISTS "results";
-CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structure" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
 
 DROP TABLE IF EXISTS "topics";
 CREATE TABLE "topics" ("tid" INTEGER PRIMARY KEY NOT NULL, "categ" INTEGER NOT NULL, "topic" TEXT);
@@ -62,16 +62,13 @@ except NameError:
     
 # CREATE DB IF NOT FOUND
 if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) ):
-    if settings['default_db'] == DEFAULT_DB:
-        conn = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) )
-        cursor = conn.cursor()
-        for i in DB_SCHEMA.splitlines():
-            cursor.execute( i )
-        conn.commit()
-        conn.close()
-        os.chmod(os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ), 0777)
-    else:
-        raise RuntimeError('The user-defined database does not exist!')
+    conn = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) )
+    cursor = conn.cursor()
+    for i in DB_SCHEMA.splitlines():
+        cursor.execute( i )
+    conn.commit()
+    conn.close()
+    os.chmod(os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ), 0777)
 
         
 # DB POOL

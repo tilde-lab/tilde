@@ -1,1 +1,1 @@
-{"onprocess": 1, "provides": "mol.weight (example)", "appdata": "weight", "apptarget": {"periodicity": "non-periodic", "symmetry": "!cubic"}}
+{"onprocess": 1, "appcaption": "mol.weight (example)", "appdata": "weight", "apptarget": {"periodicity": "non-periodic"}}

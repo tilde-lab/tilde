@@ -2,3 +2,6 @@
 debug.log
 data
 core/deps/findsym/findsym.log
+scripts
+htdocs/stats.min.js
+htdocs/three.custom.js.json

@@ -47,7 +47,8 @@ parser.add_argument("-r", dest="recursive", action="store", help="scan recursive
 parser.add_argument("-v", dest="verbose", action="store", help="verbose print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f", dest="freqs", action="store", help="if PATH(S): extract and print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze all", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m", dest="module", action="store", help="if FILE: invoke a module over FILE", nargs='?', const=False, default=False, choices=registered_modules)
+parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
+parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 
 args = parser.parse_args()
@@ -60,7 +61,7 @@ if args.daemon:
     print "\nPlease, wait a bit while Tilde application is starting.....\n"
 
     # invoke windows GUI frame
-    if args.daemon == 'shell' and 'win' in sys.platform:
+    if args.daemon == 'shell' and 'win' in sys.platform and not settings['debug_regime']:
        subprocess.Popen(sys.executable + ' ' + os.path.realpath(os.path.dirname(__file__)) + '/winui.py')
 
     # replace current process with Tilde daemon process
@@ -88,9 +89,9 @@ if args.add:
     db.text_factory = str
     print "The database used:", settings['default_db']
 
-Tilde = API(db_conn=db, filter=settings['filter'], skip_if_path=settings['skip_if_path'])
+Tilde = API(db_conn=db, skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'])
 
-if settings['filter']: finalized = 'YES'
+if settings['skip_unfinished']: finalized = 'YES'
 else: finalized = 'NO'
 print "Only finalized:", finalized, "and skip paths if start/end with any of:", settings['skip_if_path']
 
@@ -173,7 +174,13 @@ for target in args.path:
                 for i in range(len(calc.tresholds)):
                     print "%1.5f" % calc.tresholds[i][0] + " "*4 + "%1.5f" % calc.tresholds[i][1] + " "*4 + "%1.4f" % calc.tresholds[i][2] + " "*4 + "%1.4f" % calc.tresholds[i][3] + " "*8 + "E=" + "%1.4f" % calc.tresholds[i][4] + " "*8 + "("+str(calc.ncycles[i]) + ")"
 
-
+        if args.structures:
+            out = ''
+            if len(calc.structures) > 1:
+                out += str(calc.structures[0]['cell']) + ' -> '
+            out += str(calc.structures[-1]['cell'])
+            print out
+        
         if args.cif and len(tasks) == 1:
             try: calc.structures[ args.cif ]
             except IndexError: print "Warning! Structure "+args.cif+" not found!"
@@ -186,7 +193,7 @@ for target in args.path:
                     print "Warning! " + cif_file + " cannot be written!"
 
 
-        if args.module and len(tasks) == 1:
+        if args.module:
             hooks = Tilde.postprocess(calc)
             if args.module not in hooks: print "Module \"" + args.module + "\" is not suitable for this case (outside the scope defined in module manifest)!"
             else:
@@ -206,4 +213,3 @@ for target in args.path:
                     print "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")"
                     compare = frqset[i]
             print DIV
-

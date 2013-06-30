@@ -1,1 +1,1 @@
-{"onprocess": 1, "provides": "tilting (Euler &#945;,&#946;,&#947;),&#176;", "appdata": "angles", "apptarget": {"tags": "perovskite", "symmetry": "!cubic"}}
+{"onprocess": 1, "appcaption": "tilting (Euler &#945;,&#946;,&#947;),&#176;", "appdata": "angles", "apptarget": {"tags": "perovskite", "symmetry": "!cubic"}, "on3d": 1}

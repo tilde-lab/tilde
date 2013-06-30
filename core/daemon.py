@@ -29,7 +29,7 @@ except: from pysqlite2 import dbapi2 as sqlite3
 
 # this is done to have all third-party code in deps folder
 # TODO: dealing with sys.path is malpractice
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__)) + '/deps')
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
 
 import tornado.web
 import tornado.gen
@@ -137,7 +137,7 @@ class Request_Handler:
 
             # settings of specified scope
             data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
-            for i in ['quick_regime', 'local_dir', 'filter', 'skip_if_path']:
+            for i in ['quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
                 if i in settings:
                     data['settings'][i] = settings[i]
 
@@ -222,7 +222,7 @@ class Request_Handler:
             return (data, error)
 
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute('SELECT checksum, structure, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
+        try: cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
@@ -234,7 +234,7 @@ class Request_Handler:
                 # building data table rows
                 rescount += 1
                 data_obj = {}
-                data_obj['structure'] = json.loads(row['structure'])
+                data_obj['structures'] = json.loads(row['structures'])
                 data_obj['energy'] = row['energy']
                 data_obj['info'] = json.loads(row['info'])
                 data_obj['apps'] = json.loads(row['apps'])
@@ -274,7 +274,7 @@ class Request_Handler:
         if not Users[session_id].cur_db in Tilde_tags: Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
         if Tilde_tags[ Users[session_id].cur_db ].error: return (data, 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error)
 
-        if not 'render' in userobj: return (data, 'Tags rendering holder must be defined!')
+        if not 'render' in userobj: return (data, 'Tags rendering area must be defined!')
         if not 'tids' in userobj: tids = None # json may contain nulls, standardize them
         else: tids = userobj['tids']
 
@@ -314,15 +314,14 @@ class Request_Handler:
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
-            if not row: error = 'No phonon information found!'
-            else: data = row['phonons']
+            data = row['phonons']
         return (data, error)
 
     @staticmethod
     def summary(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure, energy, phonons, electrons, info, apps FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
@@ -350,27 +349,34 @@ class Request_Handler:
                                 break
                         else: tags.append({'category': cat, 'order': order, 'content': [ i ]})
                     tags.sort(key=lambda x: x['order'])
-
-                    if row['phonons']: phon_flag = 1
-                    else: phon_flag = 0
+                    
+                    phon_flag = False
+                    if len(row['phonons'])>10: phon_flag = True # avoid json.loads
+                    
                     e = json.loads(row['electrons'])
-                    if 'impacts' in e or 'dos' in e: e_flag = 1
-                    else: e_flag = 0
+                    e_flag = False
+                    #if 'impacts' in e or 'dos' in e: e_flag = True
 
-                    data = json.dumps({  'structure': row['structure'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'],  'apps': row['apps'], 'tags': tags  })
+                    data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
         return (data, error)
 
     @staticmethod
     def make3d(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure FROM results WHERE checksum = ?', (userobj['datahash'],) )
+        try: cursor.execute( 'SELECT structures, apps FROM results WHERE checksum = ?', (userobj['datahash'],) )
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: return (data, 'No objects found!')
-
-            ase_obj = aseize(json.loads(row['structure'])[-1])
+            
+            overlay_data = json.loads(row['apps'])
+            overlayed_apps = {}
+            for appkey in Tilde.Apps.keys():
+                if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
+                    overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
+            
+            ase_obj = aseize(json.loads(row['structures'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
 
             mass_center = ase_obj.get_center_of_mass()
@@ -380,21 +386,25 @@ class Request_Handler:
             mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
 
             atoms = []
-            for i in ase_obj:
+            for n, i in enumerate(ase_obj):
                 if i.symbol == 'X': radius, rgb = 0.33, '0xffff00'
                 else:
                     rgblist = (jmol_colors[ chemical_symbols.index( i.symbol ) ] * 255).tolist()
                     rgb = '0x%02x%02x%02x' % ( rgblist[0], rgblist[1], rgblist[2] )
                     if rgb == '0xffffff': rgb = '0xcccccc'
                     radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
-                atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2]} )
+                oa = {'t':i.symbol}
+                for app in overlayed_apps.keys():
+                    try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
+                    except KeyError: pass
+                atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
 
             cell_points = []
             if ase_obj.get_pbc().all() == True:
                 for i in ase_obj.cell:
                     cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
 
-            data = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info})
+            data = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info, 'overlayed': overlayed_apps})
         return (data, error)
 
     @staticmethod
@@ -416,12 +426,12 @@ class Request_Handler:
             if not userobj['settings']['local_dir'].endswith(os.sep): userobj['settings']['local_dir'] += os.sep
             settings['local_dir'] = userobj['settings']['local_dir']
             settings['quick_regime'] = userobj['settings']['quick_regime']
-            settings['filter'] = userobj['settings']['filter']
+            settings['skip_unfinished'] = userobj['settings']['skip_unfinished']
             settings['skip_if_path'] = userobj['settings']['skip_if_path']
 
             if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
 
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'] )
 
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
@@ -457,7 +467,7 @@ class Request_Handler:
         except: data = 'Could not check new version. Update server is unreachable. Please, try again later.'
         else:
             try: int(v.split('.')[0])
-            except: data = 'Could not check new version. Update server answered with something strange. Please, try again later.'
+            except: data = 'Could not check new version. Communication with update server failed. Please, try again later.'
             else: data = 'Actual version is %s. Your version is %s' % (v, API.version)
         return (data, error)
 
@@ -487,29 +497,32 @@ class Request_Handler:
     def db_copy(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
-        if not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
+        if not 'tocopy' in userobj or not 'dest' in userobj or not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
         if not userobj['dest'] in Repo_pool: return (data, 'Copy destination invalid!')
 
         global Tilde
         data_clause = '","'.join(  userobj['tocopy']  )
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT * FROM results WHERE checksum IN ("%s")' % data_clause )
+        try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % data_clause )
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
 
             # TODO: THIS IS I/O DANGEROUS
             Tilde.reload( db_conn=Repo_pool[ userobj['dest'] ] )
-
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
-
+            
+            for r in result:
+                calc = Tilde.restore(r, db_transfer_mode=True)
+                checksum, error = Tilde.save(calc, db_transfer_mode=True)
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )            
+        data = 1
         return (data, error)
 
     '''@staticmethod
     def ph_dos(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
             error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
@@ -521,7 +534,7 @@ class Request_Handler:
             error = 'No phonons for this object!'
             return (data, error)
 
-        s = json.loads(row['structure'])
+        s = json.loads(row['structures'])
         p = json.loads(row['phonons'])
 
         atomtypes=[i[0] for i in s[-1]['atoms']]
@@ -565,7 +578,7 @@ class Request_Handler:
     def e_dos(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
             error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
@@ -573,7 +586,7 @@ class Request_Handler:
         if row is None:
             error = 'No information found!'
             return (data, error)
-        s = json.loads(row['structure'])
+        s = json.loads(row['structures'])
         e = json.loads(row['electrons'])
 
         if (not 'dos' in e) and (not 'e_proj_eigvals' in e or not 'impacts' in e):
@@ -607,7 +620,7 @@ class Request_Handler:
     def ph_bands(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
             error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
@@ -619,7 +632,7 @@ class Request_Handler:
             error = 'No phonons for this object!'
             return (data, error)
 
-        s = json.loads(row['structure'])
+        s = json.loads(row['structures'])
         p = json.loads(row['phonons'])
 
         values = {}
@@ -632,7 +645,7 @@ class Request_Handler:
     def e_bands(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structure, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
         except:
             error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
             return (data, error)
@@ -640,7 +653,7 @@ class Request_Handler:
         if row is None:
             error = 'No information found!'
             return (data, error)
-        s = json.loads(row['structure'])
+        s = json.loads(row['structures'])
         e = json.loads(row['electrons'])
 
         if not 'eigvals' in e:
@@ -837,22 +850,51 @@ class MainHandler(tornado.web.RequestHandler):
 class CIFDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
         if not '/' in req_str: raise tornado.web.HTTPError(404)
-        [db, hash] = req_str.split('/')
+        items = req_str.split('/')
+        if len(items) != 2: raise tornado.web.HTTPError(404)
+        db, hash = items
         if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
+        
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT structure FROM results WHERE checksum = ?', (hash,) )
+            cursor.execute( 'SELECT structures FROM results WHERE checksum = ?', (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
             raise tornado.web.HTTPError(500)
         else:
-            struc = json.loads(row['structure'])
+            struc = json.loads(row['structures'])
             filename = Tilde.formula( [i[0] for i in struc[-1]['atoms']] )
             content = struc[-1]['orig_cif']
             self.set_header('Content-type', 'application/download;')
             self.set_header('Content-disposition', 'attachment; filename="' + filename + '.cif')
             self.write(content)
+            
+class DataExportHandler(tornado.web.RequestHandler):
+    def get(self, req_str):
+        if not '/' in req_str: raise tornado.web.HTTPError(404)
+        items = req_str.split('/')
+        if len(items) != 2: raise tornado.web.HTTPError(404)
+        db, hash = items
+        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
+        
+        try:
+            cursor = Repo_pool[ db ].cursor()
+            cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (hash,) )
+            row = cursor.fetchone()
+            if not row: raise tornado.web.HTTPError(404)
+        except:
+            raise tornado.web.HTTPError(500)
+        else:
+            info = json.loads(row['info'])
+            if os.path.exists(info['location']):
+                file = open(info['location']).read()
+                self.set_header('Content-type', 'application/download;')
+                self.set_header('Content-disposition', 'attachment; filename="' + os.path.basename(info['location']))
+                self.write(file)
+            else:
+                raise tornado.web.HTTPError(404)
+            
 
 class UpdateServiceHandler(tornado.web.RequestHandler):
     def get(self):
@@ -899,18 +941,18 @@ if __name__ == "__main__":
     APP_COLS = []
     n = 0
     for appname, appclass in Tilde.Apps.iteritems():
-        if not hasattr(appclass['appmodule'], 'cell_wrapper'): raise RuntimeError('Module '+appname+' has not defined a table cell')
-        APP_COLS.append( {'cid': (2000+n), 'category': appclass['provides'], 'source': '', 'order': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
+        if hasattr(appclass['appmodule'], 'cell_wrapper'):
+            APP_COLS.append( {'cid': (2000+n), 'category': appclass['appcaption'], 'source': '', 'order': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
         n += 1
 
     # compiling table columns: describe additional columns that are neither hierarchy API part, nor module API part
     def col__n(obj, colnum):
-        return "<td rel=%s>%3d</td>" % (colnum, len(obj['structure'][-1]['atoms']))
+        return "<td rel=%s>%3d</td>" % (colnum, len(obj['structures'][-1]['atoms']))
     def col__energy(obj, colnum):
         e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
         return "<td rel=%s class=_e>%s</td>" % (colnum, e)
     def col__dims(obj, colnum):
-        dims = "%4.2f" % obj['structure'][-1]['dims'] if obj['structure'][-1]['periodicity'] in [2, 3] else '&mdash;'
+        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structure'][-1]['periodicity'] in [2, 3] else '&mdash;'
         return "<td rel=%s>%s</td>" % (colnum, dims)
     def col__loc(obj, colnum):
         #if len(loc) > 50: loc = loc[0:50] + '...'
@@ -944,7 +986,7 @@ if __name__ == "__main__":
         Tilde_tags[r] = DataMap( r )
         if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
 
-    Tilde.reload( db_conn=Repo_pool[settings['default_db']], filter=settings['filter'], skip_if_path=settings['skip_if_path'] )
+    Tilde.reload( db_conn=Repo_pool[settings['default_db']], skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'] )
 
     io_loop = tornado.ioloop.IOLoop.instance()
     Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling']})
@@ -956,6 +998,7 @@ if __name__ == "__main__":
                 (r"/", MainHandler),
                 (r"/static/(.*)", tornado.web.StaticFileHandler),
                 (r"/cif/(.*)", CIFDownloadHandler),
+                (r"/export/(.*)", DataExportHandler),
                 (r"/VERSION", UpdateServiceHandler)
             ]),
             static_path = os.path.realpath(os.path.dirname(__file__)) + '/../htdocs',

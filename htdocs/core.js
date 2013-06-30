@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v230513
+* v290613
 *
 */
 // common flags, settings and object for their storage
@@ -24,6 +24,7 @@ _tilde.filetree.transports = [];
 _tilde.filetree.root = '';
 _tilde.filetree.load_msg = 'Requesting directory listing...';
 _tilde.busy_msg = 'Program core is now busy serving your request. Please, wait a bit and try again.';
+_tilde.cw = 0;
 
 // units
 _tilde.units = {
@@ -109,11 +110,11 @@ function logger(message, no_wrap, clean){
 }
 function set_repos(){
     $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
-    
+
     var title = 'Current repository: ' + _tilde.settings.dbs[0];
     if (!!_tilde.settings.dbs.length && _tilde.settings.dbs.length > 1) title += ' (<span class=link>' + (_tilde.settings.dbs.length - 1) + ' more</span>)';
     $('h1').html( title );
-    
+
     var options = '<option value="0" selected="selected">copy to ...</option>';
     $.each(_tilde.settings.dbs, function(n, item){
         if (n==0) return true;
@@ -137,7 +138,7 @@ function set_user_settings( settings ){
         if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
         else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
     });
-    
+
     if (!_tilde.protected) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
     $('div[rel=dbs] div').html( dbs_str );
 
@@ -158,7 +159,7 @@ function set_user_settings( settings ){
     $.each([50, 75, 100], function(n, item){
         var checked_state = '';
         if (_tilde.settings.colnum == item) checked_state = ' checked=true';
-        colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'"><label for="s_rdclnm_'+n+'"> '+item+'</label>';
+        colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'" /><label for="s_rdclnm_'+n+'"> '+item+'</label>';
     });
     $('#ipane-maxitems-holder').empty().append(colnum_str);
 
@@ -171,7 +172,7 @@ function set_user_settings( settings ){
         $.each(v, function(kk, vv){
             var checked_state = '';
             if (_tilde.settings.units[k] == kk) checked_state = ' checked=true';
-            units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'"><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
+            units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'" /><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
         });
         units_str += '<br /><br /><br />';
     });
@@ -181,7 +182,7 @@ function set_user_settings( settings ){
     //
     $('#settings_local_path').val(_tilde.settings.local_dir);
     _tilde.settings.quick_regime ? $('#settings_quick_regime').attr('checked', true) : $('#settings_quick_regime').attr('checked', false);
-    _tilde.settings.filter ? $('#settings_filter').attr('checked', true) : $('#settings_filter').attr('checked', false);
+    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').attr('checked', true) : $('#settings_skip_unfinished').attr('checked', false);
 
     if (!!_tilde.settings.skip_if_path) {
         $('#settings_skip_if_path').attr('checked', true);
@@ -233,7 +234,7 @@ function redraw_vib_links( text2link, target ){
             $('#o_'+target+' td.ph_ctrl span').removeClass('red');
             $(this).addClass('red');
             var phonons = '[' + $(this).parent().attr('rev') + ']';
-            document.getElementById('f_'+target).contentWindow.vibrate_obj3D( phonons );
+            document.getElementById('f_'+target).contentWindow.vibrate_3D( phonons );
         });
     }
 }
@@ -255,7 +256,7 @@ function dos_plotter(req, plot, divclass, axes){
     cpanel.parent().removeClass('ii');
 
     for (var i=0; i < plot.length; i++){
-        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked="checked" id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + $.toJSON(plot[i].data) + '" rel="'+plot[i].color+'">&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
+        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked="checked" id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + $.toJSON(plot[i].data) + '" rel="'+plot[i].color+'" />&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
     }
     function plot_user_choice(){
         var data_to_plot = [];
@@ -302,14 +303,13 @@ function export_data(data){
     ref.document.body.innerHTML = '<pre>' + dump + '</pre>';
 }
 function add_tag_expanders(){
-    //if (!_tilde.protected || !$('#splashscreen').is(':visible')) return;
-    if (!$('#splashscreen').is(':visible')) return;
-    $('a.tagmore').remove();
+    if (!$('#splashscreen_holder').is(':visible')) return;
+    $('a.tagmore, a.tagless').remove();
     var max_width = $('div.tagarea:first').width()-40+1;
-    $('#category_holder div.tagarea_reduced').each(function(){
+    $('#splashscreen div.tagarea_reduced').each(function(){
         var w = 0;
-        $(this).find('a.taglink').each(function(){
-            w += $(this).width()+10; // margin + border + padding are hard-coded
+        $(this).find('a.taglink').filter(':visible').each(function(){
+            w += $(this).width()+10; // margin + border + padding are hard-coded TODO
             if (w >= max_width) {
                 $(this).before('<a class=tagmore href=#>&rarr;</a>');
                 return false;
@@ -321,6 +321,22 @@ function switch_menus(reverse){
     if (reverse) { $('div.menu_main_cmds').show(); $('div.menu_ctx_cmds').hide(); }
     else { $('div.menu_main_cmds').hide(); $('div.menu_ctx_cmds').show(); }
 }
+function gather_tags(area, myself){
+    var found_tags = [];
+
+    if (myself){
+        if (myself.hasClass('activetag')){
+            myself.removeClass('activetag');
+        } else {
+            found_tags.push( myself.attr('rel') );
+        }
+    }
+    area.find('a.activetag').each(function(){
+        found_tags.push( $(this).attr('rel') );
+    });
+
+    return found_tags;
+}
 /**
 *
 *
@@ -329,13 +345,13 @@ function switch_menus(reverse){
 */
 // PROCESS RESPONCE FUNCTIONS
 function resp__login(req, data){
-    var resp = $.evalJSON(data);
+    data = $.evalJSON(data);
 
     // global switches
-    $('#version').text( resp.version );
-    document.title = resp.title;
-    if (resp.debug_regime) _tilde.debug = true;
-    if (resp.demo_regime){
+    $('#version').text( data.version );
+    document.title = data.title;
+    if (data.debug_regime) _tilde.debug = true;
+    if (data.demo_regime){
         _tilde.protected = true;
         $('div.protected, li.protected').hide();
     }
@@ -346,22 +362,16 @@ function resp__login(req, data){
         __send(action[0], action[1], true);
     }
 
-    set_user_settings(resp.settings);
+    set_user_settings(data.settings);
 
-    if (resp.amount){
-        logger('RECORDS IN DATABASE: ' + resp.amount);
+    if (data.amount){
+        logger('RECORDS IN DATABASE: ' + data.amount);
         // state restores here by anchors!
         if (!document.location.hash) document.location.hash = '#tags';
         $('#continue_trigger').removeAttr('rel');
-    }
-    else document.location.hash = '#start';
+    } else document.location.hash = '#start';
 }
 function resp__browse(req, data){
-    if ($.isEmptyObject(req)) req.tids = false;
-    // request data classification if not prohibited
-    if (!req.notags) __send('tags', {tids: req.tids, render: 'tagcloud'});
-
-    $('#splashscreen').hide();
     // we send table data in raw html (not json due to performance issues) and therefore some silly workarounds are needed
     data = data.split('||||');
     if (data.length>1) $('#countbox').empty().append(data[1]).show();
@@ -369,7 +379,7 @@ function resp__browse(req, data){
     $('#databrowser').hide().empty().append(data[0]);
 
     if (!$('#databrowser > tbody > tr').length){
-        $('#databrowser > tbody').append('<tr><td colspan=100 class=center>No data &mdash; <span class="link add_trigger">let\'s add!</span></td></tr>');
+        $('#databrowser tbody').append('<tr><td colspan=100 class=center>No data &mdash; <span class="link add_trigger">let\'s add!</span></td></tr>');
     } else $('#tagcloud_holder').show();
 
     $('td._e').each(function(){
@@ -379,32 +389,46 @@ function resp__browse(req, data){
 
     $('span.units-energy').text(_tilde.settings.units.energy);
     $('#databrowser').show();
-    if ($('#databrowser > tbody > tr > td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
+    if ($('#databrowser td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
+
+    // this is to account:
+    // (1) empty browse request in start_junction
+    // (2) any data request by hash
+    // (3) tagcloud queries
+    if ($.isEmptyObject(req)) {
+        document.location.hash = '#continue';
+    } else {
+        if (req.hashes) req = {tids: false, defer_load: true};
+        if (req.defer_load) __send('tags', {tids: req.tids, render: 'tagcloud', switchto: 'browse'});
+        else document.location.hash = '#browse';
+    }
 }
 function resp__tags(req, data){
-    var resp = $.evalJSON(data);
+    data = $.evalJSON(data);
     var tags_html = '';
 
     if (req.tids && req.tids.length){
-        // only tagcloud is dynamically updated
-        $.each(resp, function(n, i){
-            $('#tagcloud a.taglink[rel='+i+']').addClass('ctxt').show();
+        if (req.render == 'splashscreen') $('#initbox').show();
+        
+        // splashscreen or tagcloud dynamic update
+        $('a.taglink').removeClass('vi').hide(); // reset shown tags
+        $('div.tagcol').hide();
+
+        $.each(data, function(n, i){
+            $('a.taglink[rel='+i+']').addClass('vi').show();
         });
         $.each(req.tids, function(n, i){
-            $('#tagcloud a.taglink[rel='+i+']').addClass('activetag');
+            $('a.taglink[rel='+i+']').addClass('vi activetag');
         });
-        $('#tagcloud div.tagarea').each(function(){
-            if ( $(this).find('a').filter( function(index){ return $(this).hasClass('ctxt') == true } ).length ){
+        $('div.tagarea').each(function(){
+            if ( $(this).find('a').filter( function(index){ return $(this).hasClass('vi') == true } ).length ){
                 $(this).parent().show();
                 $(this).children('div').show();
             }
         });
-        $('#noclass_trigger').show();
     } else {
-        // both tagcloud and splash-screen are re-drawn by new categories
-        //var tagarea_reduced_class = _tilde.protected ? ' tagarea_reduced' : ''; // cosmetic enhancement for web
-        $.each(resp, function(num, value){
-            //tags_html += '<div class=tagcol><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea'+tagarea_reduced_class+'">';
+        // both splashscreen and tagcloud dynamic re-drawn
+        $.each(data, function(num, value){
             tags_html += '<div class=tagcol><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea tagarea_reduced">';
 
             value.content.sort(function(a, b){
@@ -413,27 +437,32 @@ function resp__tags(req, data){
                 else return 0;
             });
             $.each(value.content, function(n, i){
-                tags_html += '<a class="taglink ctxt" rel=' + i.tid + ' href=#>' + i.topic + '</a>';
+                tags_html += '<a class="taglink vi" rel=' + i.tid + ' href=#>' + i.topic + '</a>';
             });
             tags_html += '</div></div>'
         });
         if (!tags_html.length) tags_html = '&nbsp;Repository is empty!';
-        $('#category_holder').empty().append(tags_html);
+
+        $('#splashscreen').empty().append(tags_html);
         $('#tagcloud').empty().append(tags_html);
-        //if (_tilde.protected) $('#tagcloud div.tagarea_reduced').removeClass('tagarea_reduced');
+
+        $('#tagcloud div.tagarea_reduced').removeClass('tagarea_reduced');
         $('div.tagcol').show();
     }
-    
-    // show requested place with tags: i.e. splashscreed or tagcloud
-    if (!$.isEmptyObject(resp)) $('#'+req.render).show();
 
-    // anchors junction
-    if (req.render == 'splashscreen'){
-        add_tag_expanders();
-        if (!$.isEmptyObject(resp)) document.location.hash = '#tags';
-    } else if (req.render == 'tagcloud') {
-        document.location.hash = '#browse';
+    // show requested place with tags: i.e. splashscreed or tagcloud
+    if (!$.isEmptyObject(data)) {
+        $('#splashscreen').show();
+        $('#tagcloud').show();
     }
+
+    if (req.render == 'splashscreen'){        
+        $('#splashscreen_holder').show();
+        add_tag_expanders();
+    }
+
+    // junction
+    if (req.switchto) document.location.hash = '#' + req.switchto;
 }
 function resp__list(obj, data){
     if (data.substr(0, 20) == 'SETUP_NEEDED_TRIGGER'){ // bad design, fixme!!!
@@ -478,15 +507,15 @@ function resp__report(obj, data){
         }
 
         _tilde.multireceive++;
-        var resp = $.evalJSON(data);
+        data = $.evalJSON(data);
         if (!_tilde.multireceive) logger( '===========BEGIN OF SCAN '+obj.path+'===========', false, true );
 
 
-        if (resp.checksum) _tilde.hashes.push( resp.checksum );
-        if (resp.error) logger( resp.filename + ': ' + resp.error );
-        else logger( '<strong>' + resp.filename + ': OK</strong>' );
+        if (data.checksum) _tilde.hashes.push( data.checksum );
+        if (data.error) logger( data.filename + ': ' + data.error );
+        else logger( '<strong>' + data.filename + ': OK</strong>' );
 
-        if (resp.finished){
+        if (data.finished){
             // GOT RESULTS
             _tilde.freeze = false; $('#loadbox').hide();
             _tilde.multireceive = 0;
@@ -516,9 +545,10 @@ function resp__report(obj, data){
     }
 }
 function resp__phonons(req, data){
-    var resp = $.evalJSON(data);
+    data = $.evalJSON(data);
+    if (!data) { notify('No phonon information found!'); return; }
     var result = '';
-    $.each(resp, function(i, v){
+    $.each(data, function(i, v){
         for (var j=0; j<v.freqs.length; j++){
             var bz_info_header = '<span class=hdn>'+v.bzpoint+'</span>';
             var hide_class = '';
@@ -554,24 +584,24 @@ function resp__make3d(req, data){
     //$('#phonons_animate').text('animate');
 }
 function resp__summary(req, data){
-    var resp = $.evalJSON(data);
-    var info = $.evalJSON(resp.info);
-
-    if (!!resp.phonons && !_tilde.degradation){
+    data = $.evalJSON(data);
+    var info = $.evalJSON(data.info);
+    console.log(data.phonons)
+    if (data.phonons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').show();
+        //$('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
+        //$('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').show();
     } else {
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').hide();
     }
 
-    if (resp.electrons && !_tilde.degradation){
+    if (data.electrons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
     }
-    if (!resp.electrons && !_tilde.protected && info.prog.indexOf('CRYSTAL') != -1 && !_tilde.degradation){
+    /*if (!data.electrons && !_tilde.protected && info.prog.indexOf('CRYSTAL') != -1 && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
         var msg = '<div class="notice">Eigenvalues / eigenvectors are missing in CRYSTAL-only output.<br />Please, run PROPERTIES on the wavefunction file (fort.9) for the output:<div>'+info.location+'</div>using the following d3-input as a template:<div>NEWK<br><span>2 2</span><br>1 2<br>66 <span>4</span><br>67 <span>4</span><br>END<br></div>Then scan the folder with the obtained new output: if it corresponds to the current item, they would be merged and labeled CRYSTAL+PROPERTIES.</div>';
@@ -581,11 +611,11 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' div.e_dos-holder').prepend(msg);
         _tilde.tab_buffer.push(req.datahash+'_e_dos');
         $('#o_'+req.datahash+' div.ipane[rel=e_dos]').removeClass('ii');
-    }
+    }*/
 
     var html = '<div><strong>'+info.location+'</strong></div>';
     html += '<div style="height:410px;overflow-x:visible;overflow-y:scroll;"><ul class=tags>';
-    $.each(resp.tags, function(num, value){
+    $.each(data.tags, function(num, value){
         html += '<li><strong>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + '</strong>: <span>' + value.content.join('</span>, <span>') + '</span></li>';
     });
     if (info.warns){
@@ -607,11 +637,11 @@ function resp__settings(req, data){
     if (req.area == 'scan'){
         $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
         __send('list',   {path:_tilde.filetree.root, transport:'local'} );
+        $('#profile_holder').hide();
     } else if (req.area == 'cols'){
         // re-draw data table without modifying tags
         if (!_tilde.last_browse_request) return;
         if (!$('#databrowser').is(':visible')) return;
-        _tilde.last_browse_request.notags = true;
         __send('browse', _tilde.last_browse_request, true);
     } else if (req.area == 'switching'){
         $('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
@@ -621,11 +651,11 @@ function resp__settings(req, data){
         _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
         _tilde.settings.dbs.unshift(req.switching);
         set_repos();
-        
-        $('#category_holder').empty();
-        if (document.location.hash == 'tags' || document.location.hash == '#tags') __send('tags', {tids: false, render: 'splashscreen'});
+
+        $('#splashscreen').empty();
+        if (document.location.hash == 'tags' || document.location.hash == '#tags') __send('tags', {tids: false, render: 'splashscreen', switchto: false});
         else document.location.hash = '#tags';
-        $('#splashscreen').show();
+        $('#splashscreen_holder').show();
     }
 }
 function resp__clean(req, data){
@@ -645,7 +675,8 @@ function resp__db_copy(req, data){
     $('#d_cb_all').attr('checked', false);
     $('input.SHFT_cb').attr('checked', false);
     $('#db_copy_select').val('0');
-    $('#databrowser > tbody > tr').removeClass('shared');
+    $('#databrowser tr').removeClass('shared');
+    switch_menus(true);
 }
 function resp__check_version(req, data){
     $('div[rel=check_version] div').append(data);
@@ -670,10 +701,11 @@ function resp__e_bands(req, data){
 */
 // DOM loading
 $(document).ready(function(){
+    _tilde.cw = document.body.clientWidth;
     var centerables = ['notifybox', 'loadbox', 'initbox'];
     var centerize = function(){
         $.each(centerables, function(n, i){
-        document.getElementById(i).style.left = document.body.clientWidth/2 - $('#'+i).width()/2 + 'px';
+        document.getElementById(i).style.left = _tilde.cw/2 - $('#'+i).width()/2 + 'px';
         });
     };
     centerize();
@@ -685,7 +717,7 @@ $(document).ready(function(){
 
     // initialize client-side settings
     _tilde.settings = $.jStorage.get('tilde_settings', _tilde.default_settings);
-    _tilde.maxcols = Math.round(document.body.clientWidth/160) || 2;
+    _tilde.maxcols = Math.round(_tilde.cw/160) || 2;
     if (_tilde.settings.cols.length > _tilde.maxcols) _tilde.settings.cols.splice(_tilde.maxcols-1, _tilde.settings.cols.length-_tilde.maxcols+1);
 /**
 *
@@ -704,19 +736,19 @@ $(document).ready(function(){
 
     _tilde.socket.on('message', function(data){
         var split = data.split( _tilde.wsock_delim );
-        var resp = {};
-        resp.act = split[0];
-        resp.req = split[1].length ? $.evalJSON(split[1]) : {};
-        resp.error = split[2];
-        resp.data = split[3];
-        if (_tilde.debug) logger('RECEIVED: '+resp.act);
-        if (resp.act != 'report' || resp.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
-        if (resp.error && resp.error.length>1){
-            notify('Diagnostic message:<br />'+resp.error);
+        var response = {};
+        response.act = split[0];
+        response.req = split[1].length ? $.evalJSON(split[1]) : {};
+        response.error = split[2];
+        response.data = split[3];
+        if (_tilde.debug) logger('RECEIVED: '+response.act);
+        if (response.act != 'report' || response.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
+        if (response.error && response.error.length>1){
+            notify('Diagnostic message:<br />'+response.error);
             return;
         }
-        if (window['resp__' + resp.act]) window['resp__' + resp.act](resp.req, resp.data);
-        else notify('Unhandled action received: ' + resp.act);
+        if (window['resp__' + response.act]) window['resp__' + response.act](response.req, response.data);
+        else notify('Unhandled action received: ' + response.act);
     });
 
     _tilde.socket.on('error', function(data){
@@ -750,9 +782,9 @@ $(document).ready(function(){
         var anchor = _tilde.cur_anchor.substr(1);
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
-        
+
         switch_menus(true);
-        
+
         if (anchor == 'start'){
             if (_tilde.protected){
                 document.location = '/static/demo.html';
@@ -763,21 +795,27 @@ $(document).ready(function(){
                 $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
             }
         }
+        else if (anchor == 'continue'){
+            $('div.pane').hide();
+            $('#splashscreen_holder').hide();
+            $('#noclass_trigger').hide();
+            $('#data_holder').show();
+            $('#databrowser').show();
+        }
         else if (anchor == 'browse'){
             $('div.pane').hide();
-            $('#splashscreen').hide();
+            $('#splashscreen_holder').hide();
             $('#closeobj_trigger').hide();
 
             $('#data_holder').show();
-            $('#databrowser').show();
 
-            if ($('#category_holder div').length){
+            if ($('#splashscreen div').length){
                 $('#tagcloud_trigger').show();
                 $('#noclass_trigger').show();
             } else {
                 _tilde.timeout1 = setInterval(function(){
                     if (!_tilde.freeze){
-                        __send('tags', {tids: false, render: 'splashscreen'});
+                        __send('tags', {tids: false, render: 'splashscreen', switchto: 'tags'});
                         clearInterval(_tilde.timeout1);
                     }
                 }, 500);
@@ -794,17 +832,17 @@ $(document).ready(function(){
             $('#closeobj_trigger').hide();
             $('#noclass_trigger').hide();
 
-            if (!$('#category_holder div').length){
+            if (!$('#splashscreen div').length){
                 _tilde.timeout2 = setInterval(function(){
                 if (!_tilde.freeze){
-                    __send('tags', {tids: false, render: 'splashscreen'});
+                    __send('tags', {tids: false, render: 'splashscreen', switchto: 'tags'});
                     clearInterval(_tilde.timeout2);
                 }
                 }, 500);
             } else {
                 $('#data_holder').show();
-                $('#splashscreen').show();
-                add_tag_expanders();
+                $('#splashscreen_holder').show();
+                //add_tag_expanders();
             }
             _tilde.rendered = {}; // reset objects
             _tilde.tab_buffer = [];
@@ -814,7 +852,7 @@ $(document).ready(function(){
         else if (anchor.length > 55){
             $('#connectors').hide();
             $('div.pane').hide();
-            $('#splashscreen').hide();
+            $('#splashscreen_holder').hide();
 
             $('#data_holder').show();
             $('#databrowser').show();
@@ -826,7 +864,7 @@ $(document).ready(function(){
             if (!$('#databrowser td').length){
                 _tilde.timeout3 = setInterval(function(){
                     if (!_tilde.freeze){
-                        __send('browse',  {hashes: hashes} );
+                        __send('browse', {hashes: hashes} );
                         clearInterval(_tilde.timeout3);
                     }
                 }, 500);
@@ -846,7 +884,7 @@ $(document).ready(function(){
             _tilde.sortdisable = true; // sorting switch
         }
     }
-    }, 400);
+    }, 333);
 /**
 *
 *
@@ -867,7 +905,7 @@ $(document).ready(function(){
 
     // INTRO TRIGGER
     $('#continue_trigger').click(function(){
-        if ($(this).attr('rel') == 'first_run') var action = function(){ __send('browse', {}); }
+        if ($(this).attr('rel') == 'start_junction') var action = function(){ __send('browse', {}); }
         else var action = function(){ document.location.hash = '#tags'; }
 
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
@@ -916,7 +954,7 @@ $(document).ready(function(){
     });
 
     // DATABROWSER TABLE
-    $(document).on('click', '#databrowser > tbody tr td', function(){
+    $(document).on('click', '#databrowser td', function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
         else return;
         if (_tilde.rendered[id]) {
@@ -966,33 +1004,46 @@ $(document).ready(function(){
         else switch_menus(true);
     });
     $(document).on('click', '#d_cb_all', function(){
-        if ($(this).is(':checked') && $('#databrowser > tbody > tr > td').length > 1) {
-            $('input.SHFT_cb').attr('checked', true);
-            $('#databrowser > tbody > tr').addClass('shared');
+        if ($(this).is(':checked') && $('#databrowser td').length > 1) {
+            $('input.SHFT_cb').prop('checked', true);
+            $('#databrowser tr').addClass('shared');
             switch_menus();
         } else {
-            $('input.SHFT_cb').attr('checked', false);
-            $('#databrowser > tbody > tr').removeClass('shared');
+            $('input.SHFT_cb').prop('checked', false);
+            $('#databrowser tr').removeClass('shared');
             switch_menus(true);
         }
-    });    
-    
+    });
+
     // COPYING BETWEEN DATABASES
     $('#db_copy_select').change(function(){
-        var tocopy = [], val = $(this).attr('value');
+        var tocopy = [], val = $(this).val();
         if (val==='0') return;
         $('input.SHFT_cb').each(function(){
             if ($(this).is(':checked')){
                 tocopy.push( $(this).attr('id').substr(5) ); // d_cb_
             }
         });
-        __send('db_copy', {tocopy: tocopy, dest: val});
+        __send('db_copy',   {tocopy: tocopy, dest: val});
+    });
+    
+    // CANCEL CONTEXT MENU
+    $('#cancelctx_trigger').click(function(){
+        $('input.SHFT_cb, #d_cb_all').prop('checked', false);
+        $('#databrowser tr').removeClass('shared');
+        switch_menus(true);
+    });
+    
+    // EXPORT DATA FUNCTIONALITY
+    $('#export_trigger').click(function(){
+        var id = $('#databrowser tr.shared').attr('id').substr(2);
+        iframe_download( 'export', _tilde.settings.dbs[0], id );
     });
 
-    // DATABROWSER MENU
+    // DATABROWSER MENU ADD
     $(document).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
-        $('#connectors').css('left', (document.body.clientWidth - $('#connectors').width() )/2 + 'px').show();
+        $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
         $('html, body').animate({scrollTop: 0});
         open_ipane('conn-local');
         if (!_tilde.filetree.transports['local']){
@@ -1003,6 +1054,7 @@ $(document).ready(function(){
     $('#noclass_trigger').click(function(){
         $('#tagcloud_trigger').hide();
         $(this).hide();
+        $('#splashscreen').empty();
         document.location.hash = '#tags';
     });
     $('#closeobj_trigger').click(function(){
@@ -1020,72 +1072,6 @@ $(document).ready(function(){
         else $('#tagcloud_holder').animate({ height: 'show' }, { duration: 250, queue: false });
     });
 
-    // SPLASHSCREEN TAG COMMANDS SINGLE CLICK
-    $(document).on('click', '#category_holder a.taglink', function(){
-        var chosen_tags = $.grep( $('#initbox div').attr('rel').split(','), function(n){return n} );
-        var cur_tag = $(this).attr('rel');
-
-        if ($(this).hasClass('activetag')){
-            chosen_tags.splice(chosen_tags.indexOf(cur_tag), 1);
-            if (!chosen_tags.length) $('#initbox').hide();
-            $(this).removeClass('activetag'); //.parent().find('a.taglink').show();
-        } else {
-            chosen_tags.push(cur_tag);
-            $(this).addClass('activetag'); //.parent().find('a:not(.activetag)').hide();
-            $('#initbox').show();
-        }
-
-        $('#initbox div').attr('rel', chosen_tags.join(','));
-        return false;
-    });
-    // SPLASHSCREEN TAG COMMANDS DOUBLE CLICK
-    $(document).on('dblclick', '#category_holder a.taglink', function(){
-        var chosen_tags = $.grep( $('#initbox div').attr('rel').split(','), function(n){return n} );
-        var cur_tag = $(this).attr('rel');
-
-        chosen_tags.push(cur_tag);
-        $('#initbox div').attr('rel', chosen_tags.join(',')).trigger('click');
-        return false;
-    });
-
-    // SPLASHSCREEN INIT TAG QUERY
-    $('#initbox div').click(function(){
-        $('a.activetag').removeClass('activetag'); // prevent context mixing
-        $('#tagcloud a.taglink').removeClass('ctxt').hide(); // reset context tags
-        $('#tagcloud div.tagcol').hide();
-
-        var tids = $(this).attr('rel').split(',');
-        $(this).attr('rel', '');
-        __send('browse', {tids: tids});
-        _tilde.rendered = {}; // reset objects
-        _tilde.tab_buffer = [];
-        $('#initbox').hide();
-    });
-
-    // TAGCLOUD TAG COMMANDS
-    $(document).on('click', '#tagcloud a.taglink', function(){
-        $('#tagcloud').hide();
-        $('#tagcloud a.taglink').removeClass('ctxt').hide(); // reset context tags
-        $('#tagcloud div.tagcol').hide();
-
-        var tids = [];
-        if (!$(this).hasClass('activetag')){
-            tids.push( $(this).attr('rel') );
-        }
-        $(this).removeClass('activetag');
-        $('#tagcloud').find('a.activetag').each(function(){
-            tids.push( $(this).attr('rel') );
-        });
-        //console.log('compiled req:'+tids)
-
-        if (tids.length){
-            __send('browse', {tids: tids});
-            _tilde.rendered = {}; // reset objects
-            _tilde.tab_buffer = [];
-        } else document.location.hash = '#tags';
-        return false;
-    });
-
     // SPLASHSCREEN TAGCLOUD EXPANDERS
     $(document).on('click', 'a.tagmore', function(){
         $(this).parent().removeClass('tagarea_reduced').append('<a class=tagless href=#>&larr;</a>');
@@ -1097,6 +1083,53 @@ $(document).ready(function(){
         add_tag_expanders();
         $(this).remove();
         return false;
+    });
+
+
+    // TAGCLOUD TAG COMMANDS SINGLE CLICK
+    // immediate data request and consequent tags request
+    $(document).on('click', '#tagcloud a.taglink', function(){
+        $('#tagcloud').hide();
+
+        var tags = gather_tags($('#tagcloud'), $(this));
+        if (tags.length){
+            __send('browse', {tids: tags, defer_load: true});
+            _tilde.rendered = {}; // reset objects
+            _tilde.tab_buffer = [];
+        } else {
+            $('#splashscreen').empty();
+            document.location.hash = '#tags';
+        }
+        return false;
+    });
+
+    // SPLASHSCREEN TAG COMMANDS SINGLE CLICK
+    // immediate tags request and ability for consequent data request
+    $(document).on('click', '#splashscreen a.taglink', function(){
+        var tags = gather_tags($('#splashscreen'), $(this));
+        if (tags.length){
+            __send('tags', {tids: tags, render: 'splashscreen', switchto: false});
+        } else {
+            __send('tags', {tids: false, render: 'splashscreen', switchto: false});
+            $('#initbox').hide();
+        }
+        return false;
+    });
+
+    // SPLASHSCREEN TAG COMMANDS DOUBLE CLICK
+    /* $(document).on('dblclick', '#splashscreen a.taglink', function(){
+        $(this).addClass('activetag');
+        $('#init_trigger').trigger('click');
+        return false;
+    }); */
+
+    // SPLASHSCREEN INIT TAG QUERY
+    $('#init_trigger').click(function(){
+        var tags = gather_tags($('#splashscreen'));
+        __send('browse', {tids: tags});
+        _tilde.rendered = {}; // reset objects
+        _tilde.tab_buffer = [];
+        $('#initbox').hide();
     });
 
     // IPANE COMMANDS
@@ -1129,13 +1162,13 @@ $(document).ready(function(){
         var capt = $(this).text();
         if (capt.indexOf('stop') != -1){
             redraw_vib_links( false, target );
-            document.getElementById('f_'+target).contentWindow.vibrate_obj3D( false );
+            document.getElementById('f_'+target).contentWindow.vibrate_3D( false );
             $(this).text( 'animate' );
         } else {
             open_ipane('3dview', target);
             redraw_vib_links( true, target );
             var phonons = '[' + $('#o_'+target+' td.ph_ctrl:first').attr('rev') + ']';
-            document.getElementById('f_'+target).contentWindow.vibrate_obj3D( phonons );
+            document.getElementById('f_'+target).contentWindow.vibrate_3D( phonons );
             $('#o_'+target+' td.ph_ctrl span:first').addClass('red');
             $(this).html( '&nbsp;stop&nbsp;' );
         }
@@ -1150,7 +1183,7 @@ $(document).ready(function(){
             open_ipane('admin');
         }
     });
-    
+
     // SETTINGS: DATABASE MANAGEMENT
     $(document).on('click', '#metablock span, h1 span', function(){
         if ($('#profile_holder').is(':visible')){
@@ -1159,8 +1192,8 @@ $(document).ready(function(){
             $('#profile_holder').show();
             open_ipane('dbs');
         }
-    });    
-    
+    });
+
     // SETTINGS: CLICKS ON DATABASES
     $(document).on('click', 'div.db-make-active-trigger', function(){
         var active_db = $(this).parent().attr('rel');
@@ -1176,7 +1209,7 @@ $(document).ready(function(){
         __send('clean',  {db: db} );
     });
     $(document).on('click', '#create-db-trigger', function(){
-        $(this).before('<div class="ipane_db_field"><input type="text" value="" id="create-db-name" maxlength="18" /><span>.db</span><div class="btn right" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
+        $(this).before('<div class="ipane_db_field"><form action="/" class="_hotkeyable"><input type="text" value="" id="create-db-name" maxlength="18" /><input type="submit" style="display:none" /></form><span>.db</span><div class="btn right _hotkey" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
         $('#create-db-name').focus();
         $('#create-db-confirm-trigger').click(function(){
             var newname = $('#create-db-name').val();
@@ -1203,7 +1236,7 @@ $(document).ready(function(){
             // SETTINGS: SCAN
             _tilde.settings.local_dir = $('#settings_local_path').val();
             $('#settings_quick_regime').is(':checked')  ? _tilde.settings.quick_regime = 1 : _tilde.settings.quick_regime = 0;
-            $('#settings_filter').is(':checked')        ? _tilde.settings.filter = 1 : _tilde.settings.filter = 0;
+            $('#settings_skip_unfinished').is(':checked')        ? _tilde.settings.skip_unfinished = 1 : _tilde.settings.skip_unfinished = 0;
             $('#settings_skip_if_path').is(':checked')  ? _tilde.settings.skip_if_path = $('#settings_skip_if_path_mask').val() : _tilde.settings.skip_if_path = 0;
 
             __send('settings',  {area: 'scan', settings: _tilde.settings} );
@@ -1221,10 +1254,13 @@ $(document).ready(function(){
                 }
             });
             __send('settings', {area: 'cols', settings: _tilde.settings} );
-        }
+            $('#profile_holder').hide();
+        }        
     });
-    $('#settings_form').submit(function(){
-        $(this).next('div').trigger("click");
+
+    // UNIVERSAL ENTER HOTKEY: NOTE ACTION BUTTON *UNDER THE SAME DIV* WITH THE FORM
+    $(document).on('submit', 'form._hotkeyable', function(){
+        $(this).parent().children('div._hotkey').trigger("click");
         return false;
     });
 
@@ -1257,7 +1293,7 @@ $(document).ready(function(){
         notify('This window is not functional now.');
     });
     $('#ui-restart').click(function(){ document.location.reload() });
-    
+
     // SETTINGS: USABILITY
     /* $('#profile_holder').mouseleave(function(){
         _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1500);
@@ -1265,18 +1301,20 @@ $(document).ready(function(){
     $('#profile_holder').mouseenter(function(){
         clearTimeout(_tilde.timeout4);
     }); */
-    
+
     // ABOUT
     $('#about_trigger').click(function(){
         document.location.hash = '#start';
-        if ($('#category_holder div').length) $('#continue_trigger').removeAttr('rel');
+        if ($('#splashscreen div').length) $('#continue_trigger').removeAttr('rel');
     });
 
     // RESIZE
     $(window).resize(function(){
+        if (Math.abs(_tilde.cw - document.body.clientWidth) < 30) return; // width of scrollbar
+        _tilde.cw = document.body.clientWidth;
         centerize();
         add_tag_expanders();
-        _tilde.maxcols = Math.round(document.body.clientWidth/160) || 2;
+        _tilde.maxcols = Math.round(_tilde.cw/160) || 2;
         $('#maxcols').html(_tilde.maxcols);
     });
 

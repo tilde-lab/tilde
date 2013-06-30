@@ -9,6 +9,7 @@ import os
 import sys
 import math
 import copy
+
 from numpy import dot
 from numpy import array
 from numpy import matrix
@@ -37,7 +38,7 @@ class Tilting():
             for i in obj['apps'][selfname][k]:
                 repr += str(i) + ', '
             repr = repr[:-2]
-            if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
+            #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
             repr += '<br />'
         return "<td rel=%s><div class=sml>%s</div></td>" % (colnum, repr)
 

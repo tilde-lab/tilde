@@ -1,6 +1,6 @@
 
 # determines perovskite structure
-# v220513
+# v280613
 
 import os
 import sys
@@ -41,6 +41,8 @@ def classify(tilde_obj):
     if tilde_obj.info['elements'][0] in ['W', 'Re'] and len(tilde_obj.info['elements']) == 2:
         if round(D) == 3: tilde_obj.info['tags'].append('perovskite')
         return tilde_obj
+    # all other 2-component systems are not perovskites
+    if not A_site or not B_site: return tilde_obj
 
     if not 1.3 < D < 1.9: return tilde_obj
 

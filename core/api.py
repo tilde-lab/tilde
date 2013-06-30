@@ -37,11 +37,11 @@ class API:
     version = __version__
     __shared_state = {} # singleton
 
-    def __init__(self, db_conn=None, filter=None, skip_if_path=None):
+    def __init__(self, db_conn=None, skip_unfinished=None, skip_if_path=None):
         self.__dict__ = self.__shared_state
 
         self.db_conn = db_conn
-        self.filter = filter
+        self.skip_unfinished = skip_unfinished
         self.skip_if_path = skip_if_path
 
         self.deferred_storage = {}
@@ -65,9 +65,10 @@ class API:
         # Tilde module (app) is simply a subfolder (%appfolder%) of apps folder containing manifest.json and %appfolder%.py files
         # The following tags in manifest matter:
         # *onprocess* - invoking during processing (therefore %appfolder%.py must provide the class called %Appfolder%)
-        # *provides* - column caption in data table
+        # *appcaption* - module caption (used as column caption in data table, as atomic structure rendering pane overlay caption)
         # *appdata* - a new property defined by app
         # *apptarget* - whether an app should be executed (based on hierarchy API)
+        # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
         for appname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../apps' ):
             if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
@@ -76,11 +77,10 @@ class API:
 
                 # tags processing
                 if not 'appdata' in appmanifest: raise RuntimeError('Module API Error: no appdata tag for ' + appname + '!')
-                if not 'apptarget' in appmanifest: appmanifest['apptarget'] = None
                 if 'onprocess' in appmanifest:
                     try: app = __import__('apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
-                    except ImportError: raise RuntimeError('Module API Error: module ' + appname + ' code is invalid or not found!')
-                    self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest['apptarget'], 'provides': appmanifest['provides']}
+                    except ImportError: raise RuntimeError('Module API Error: module ' + appname + ' is invalid or not found!')
+                    self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
 
         # *connector API*
         # Every connector implements reading methods *list* (if applicable) and *report* (obligatory)
@@ -133,14 +133,14 @@ class API:
                     'class': classifier})
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
 
-    def reload(self, db_conn=None, filter=None, skip_if_path=None):
+    def reload(self, db_conn=None, skip_unfinished=None, skip_if_path=None):
         '''
         Switch Tilde API object to another context
         NB: this may be run from outside
         @procedure
         '''
         if db_conn: self.db_conn = db_conn
-        if filter: self.filter = filter
+        if skip_unfinished: self.skip_unfinished = skip_unfinished
         if skip_if_path: self.skip_if_path = skip_if_path
 
     def assign_parser(self, name):
@@ -279,7 +279,7 @@ class API:
             if self.db_conn:
                 cursor = self.db_conn.cursor()
                 try:
-                    cursor.execute( 'SELECT id, checksum, structure, electrons, info FROM results WHERE ROUND(energy, 5) = ?', (calc._coupler_,) )
+                    cursor.execute( 'SELECT id, checksum, structures, electrons, info FROM results WHERE ROUND(energy, 5) = ?', (calc._coupler_,) )
                 except:
                     return (None, 'Fatal error: %s' % sys.exc_info()[1])
 
@@ -287,7 +287,7 @@ class API:
                 if row is not None:
 
                     # *in-place* merging
-                    strucs = json.loads(row['structure'])
+                    strucs = json.loads(row['structures'])
                     old_props = json.loads(row['electrons'])
                     info = json.loads(row['info'])
 
@@ -377,8 +377,10 @@ class API:
                     if appclass['apptarget'][key].startswith('!'):
                         negative = True
                         scope_prop = appclass['apptarget'][key][1:]
-                    else: scope_prop = appclass['apptarget'][key]
-                    if key in calc.info:
+                    else:
+                        scope_prop = appclass['apptarget'][key]
+
+                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
                         if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
                             run_permitted = True
                         else:
@@ -411,7 +413,7 @@ class API:
         calc.info['formula'] = self.formula( [i[0] for i in calc.structures[-1]['atoms']] )
 
         # applying filter: todo
-        if calc.info['finished'] < 0 and self.filter:
+        if calc.info['finished'] < 0 and self.skip_unfinished:
             return (None, 'data do not satisfy the filter')
 
         xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
@@ -444,47 +446,42 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
 
         # general calculation type reasoning
-        calctype = []
-        if calc.phonons['modes']: calctype.append('phonons')
-        if calc.phonons['ph_k_degeneracy']: calctype.append('phon.dispersion')
-        if calc.phonons['dielectric_tensor']: calctype.append('static dielectric const') # CRYSTAL-only - TODO: extend
-        if calc.method['perturbation']: calctype.append('electr.field response') # CRYSTAL-only - TODO: extend
-        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calctype.append('optimization')
-        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calctype.append('electr.structure')
-        if calc.energy: calctype.append('total energy')
+        if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
+        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phon.dispersion')
+        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
+        if calc.method['perturbation']: calc.info['calctypes'].append('electr.field response') # CRYSTAL-only - TODO: extend
+        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
+        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calc.info['calctypes'].append('electr.structure')
+        if calc.energy: calc.info['calctypes'].append('total energy')
 
-        for n, i in enumerate(calctype):
-            calc.info['calctype' + str(n)] = i
+        for n, i in enumerate(calc.info['calctypes']):
+            calc.info['calctype' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
 
         # standardizing materials science methods
-        # this is a loooooooooooooooooong work
-        # not suitable for humans
-        # but suitable for artificial intelligence!
         if calc.method:
             if calc.method['H']: calc.info['H'] = calc.method['H']
             if calc.method['tol']: calc.info['tol'] = calc.method['tol']
             if calc.method['k']: calc.info['k'] = calc.method['k']
             if calc.method['spin']: calc.info['spin'] = 'yes'
             if calc.method['lockstate']: calc.info['lockstate'] = calc.method['lockstate']
-            tech = []
             if calc.method['technique'].keys():
                 for i in calc.method['technique'].keys():
-                    if i=='anderson': tech.append(i)
+                    if i=='anderson': calc.info['techs'].append(i)
                     elif i=='fmixing':
-                        if 0<calc.method['technique'][i]<=25:    tech.append(i + '<25%')
-                        elif 25<calc.method['technique'][i]<=50: tech.append(i + ' 25-50%')
-                        elif 50<calc.method['technique'][i]<=75: tech.append(i + ' 50-75%')
-                        elif 75<calc.method['technique'][i]<=90: tech.append(i + ' 75-90%')
-                        elif 90<calc.method['technique'][i]:     tech.append(i + '>90%')
+                        if 0<calc.method['technique'][i]<=25:    calc.info['techs'].append(i + '<25%')
+                        elif 25<calc.method['technique'][i]<=50: calc.info['techs'].append(i + ' 25-50%')
+                        elif 50<calc.method['technique'][i]<=75: calc.info['techs'].append(i + ' 50-75%')
+                        elif 75<calc.method['technique'][i]<=90: calc.info['techs'].append(i + ' 75-90%')
+                        elif 90<calc.method['technique'][i]:     calc.info['techs'].append(i + '>90%')
                     elif i=='shifter':
-                        if 0<calc.method['technique'][i]<=0.5:   tech.append(i + '<0.5au')
-                        elif 0.5<calc.method['technique'][i]<=1: tech.append(i + ' 0.5-1au')
-                        elif 1<calc.method['technique'][i]<=2.5: tech.append(i + ' 1-2.5au')
-                        elif 2.5<calc.method['technique'][i]:    tech.append(i + '>2.5au')
+                        if 0<calc.method['technique'][i]<=0.5:   calc.info['techs'].append(i + '<0.5au')
+                        elif 0.5<calc.method['technique'][i]<=1: calc.info['techs'].append(i + ' 0.5-1au')
+                        elif 1<calc.method['technique'][i]<=2.5: calc.info['techs'].append(i + ' 1-2.5au')
+                        elif 2.5<calc.method['technique'][i]:    calc.info['techs'].append(i + '>2.5au')
                     elif i=='smear':
-                        if 0<calc.method['technique'][i]<=0.005:      tech.append(i + '<0.005au')
-                        elif 0.005<calc.method['technique'][i]<=0.01: tech.append(i + ' 0.005-0.01au')
-                        elif 0.01<calc.method['technique'][i]:        tech.append(i + '>0.01au')
+                        if 0<calc.method['technique'][i]<=0.005:      calc.info['techs'].append(i + '<0.005au')
+                        elif 0.005<calc.method['technique'][i]<=0.01: calc.info['techs'].append(i + ' 0.005-0.01au')
+                        elif 0.01<calc.method['technique'][i]:        calc.info['techs'].append(i + '>0.01au')
                     elif i=='broyden':
                         if 0<calc.method['technique'][i][0]<=25:    type='<25%'
                         elif 25<calc.method['technique'][i][0]<=50: type=' 25-50%'
@@ -495,21 +492,22 @@ class API:
                         else: type += ' ('+str(round(calc.method['technique'][i][1], 5))+')'
                         if calc.method['technique'][i][2] < 5: type += ' start'
                         else: type += ' defer.'
-                        tech.append(i + type)
+                        calc.info['techs'].append(i + type)
 
             if 'vac' in calc.info['properties']:
-                if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: tech.append('vacancy defect: ghost')
-                else: tech.append('vacancy defect: void space')
+                if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: calc.info['techs'].append('vacancy defect: ghost')
+                else: calc.info['techs'].append('vacancy defect: void space')
 
             if calc.method['perturbation']:
-                tech.append('perturbation: ' + calc.method['perturbation'])
+                calc.info['techs'].append('perturbation: ' + calc.method['perturbation'])
 
-            for n, i in enumerate(tech): calc.info['tech' + str(n)] = i
+            for n, i in enumerate(calc.info['techs']):
+                calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
 
         for n, i in enumerate(calc.info['elements']):
-            calc.info['element' + str(n)] = i
+            calc.info['element' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         for n, i in enumerate(calc.info['tags']):
-            calc.info['tag' + str(n)] = i
+            calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         calc.info['nelem'] = len(calc.info['elements'])
 
         if calc.info['expanded']: calc.info['expanded'] = str(calc.info['expanded']) + 'x'
@@ -685,8 +683,13 @@ class API:
 
         # packing of the
         # Tilde ORM objects
-        # NB: here they are all
-        for i in ['structures', 'phonons', 'electrons', 'info', 'apps']:
+        # NB: here they are except *info*
+        # Why this is so?
+        # We store the redundant copy
+        # of tags marked with *has_column*
+        # in results table (info field)
+        # to speed up DB queries
+        for i in ['structures', 'phonons', 'electrons', 'apps']:
             calc[i] = json.dumps(calc[i])
 
         return calc
@@ -702,8 +705,9 @@ class API:
         # save tags
         res = self._save_tags(checksum, calc.info)
         if res: return (None, 'Tags saving failed: '+res)
-
+        
         if not db_transfer_mode: calc = self._save_preacts(calc)
+        calc.info = json.dumps(calc.info)
 
         # check unique
         try:
@@ -717,7 +721,7 @@ class API:
 
         # save extracted data
         try:
-            cursor.execute( 'INSERT INTO results (checksum, structure, energy, phonons, electrons, info, apps) VALUES ( ?, ?, ?, ?, ?, ?, ? )', \
+            cursor.execute( 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( ?, ?, ?, ?, ?, ?, ? )', \
             (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
         except:
             error = 'Fatal error: %s' % sys.exc_info()[1]
@@ -737,7 +741,10 @@ class API:
         calc = Output()
 
         calc._checksum = db_row['checksum']
-        calc.energy = float( db_row['energy'] )
+        
+        try: calc.energy = float( db_row['energy'] )
+        except TypeError: pass
+        
         calc.info = json.loads(db_row['info'])
 
         # unpacking of the
