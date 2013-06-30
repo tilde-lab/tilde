@@ -188,6 +188,10 @@ function set_user_settings( settings ){
         $('#settings_skip_if_path').attr('checked', true);
         $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
     } else $('#settings_skip_if_path').attr('checked', false);
+    
+    // render export settings
+    //
+    if (settings.exportability) $('#export_trigger').show();
 }
 function open_ipane(cmd, target){
     if (!!target) var current = $('#o_'+target+' ul.ipane_ctrl li[rel='+cmd+']');
@@ -354,7 +358,7 @@ function resp__login(req, data){
     if (data.demo_regime){
         _tilde.protected = true;
         $('div.protected, li.protected').hide();
-    }
+    }    
 
     // something was not completed in production mode
     if (_tilde.last_request){
@@ -586,7 +590,6 @@ function resp__make3d(req, data){
 function resp__summary(req, data){
     data = $.evalJSON(data);
     var info = $.evalJSON(data.info);
-    console.log(data.phonons)
     if (data.phonons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
         //$('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
@@ -680,6 +683,9 @@ function resp__db_copy(req, data){
 }
 function resp__check_version(req, data){
     $('div[rel=check_version] div').append(data);
+}
+function resp__check_export(req, data){
+    iframe_download( 'export', req.db, req.id );
 }
 function resp__ph_dos(req, data){
     dos_plotter(req, data, 'ph_dos-holder', {x: 'Frequency, cm<sup>-1</sup>', y: 'DOS, states/cm<sup>-1</sup>'});
@@ -1036,8 +1042,10 @@ $(document).ready(function(){
     
     // EXPORT DATA FUNCTIONALITY
     $('#export_trigger').click(function(){
-        var id = $('#databrowser tr.shared').attr('id').substr(2);
-        iframe_download( 'export', _tilde.settings.dbs[0], id );
+        if ($('#databrowser tr.shared').length == 1){
+            var id = $('#databrowser tr.shared').attr('id').substr(2);
+            __send('check_export', {id: id, db: _tilde.settings.dbs[0]});
+        } else notify('Batch export is not implemented.');
     });
 
     // DATABROWSER MENU ADD
@@ -1115,13 +1123,6 @@ $(document).ready(function(){
         }
         return false;
     });
-
-    // SPLASHSCREEN TAG COMMANDS DOUBLE CLICK
-    /* $(document).on('dblclick', '#splashscreen a.taglink', function(){
-        $(this).addClass('activetag');
-        $('#init_trigger').trigger('click');
-        return false;
-    }); */
 
     // SPLASHSCREEN INIT TAG QUERY
     $('#init_trigger').click(function(){

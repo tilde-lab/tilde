@@ -137,7 +137,7 @@ class Request_Handler:
 
             # settings of specified scope
             data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
-            for i in ['quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
+            for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
                 if i in settings:
                     data['settings'][i] = settings[i]
 
@@ -248,7 +248,7 @@ class Request_Handler:
                     if not 'has_column' in item: continue
                     if not item['cid'] in Users[session_id].usettings['cols']: continue
                     if '#' in item['source']: continue # todo
-                    
+
                     if 'cell_wrapper' in item:
                         data += item['cell_wrapper'](data_obj, item['cid'])
                     else:
@@ -349,10 +349,10 @@ class Request_Handler:
                                 break
                         else: tags.append({'category': cat, 'order': order, 'content': [ i ]})
                     tags.sort(key=lambda x: x['order'])
-                    
+
                     phon_flag = False
                     if len(row['phonons'])>10: phon_flag = True # avoid json.loads
-                    
+
                     e = json.loads(row['electrons'])
                     e_flag = False
                     #if 'impacts' in e or 'dos' in e: e_flag = True
@@ -369,13 +369,13 @@ class Request_Handler:
         else:
             row = cursor.fetchone()
             if row is None: return (data, 'No objects found!')
-            
+
             overlay_data = json.loads(row['apps'])
             overlayed_apps = {}
             for appkey in Tilde.Apps.keys():
                 if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
                     overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
-            
+
             ase_obj = aseize(json.loads(row['structures'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
 
@@ -472,6 +472,25 @@ class Request_Handler:
         return (data, error)
 
     @staticmethod
+    def check_export(userobj, session_id):
+        data, error = None, None
+        # this is doubling of DataExportHandler
+        # in order to give a message if a data cannot be exported
+        # could it be done within the sole DataExportHandler?
+        if not 'id' in userobj or not 'db' in userobj or not userobj['id'] or not userobj['db']: return (data, 'Action invalid!')
+        if len(userobj['id']) != 56 or not userobj['db'] in Repo_pool: return (data, 'Action invalid!')
+        cursor = Repo_pool[ userobj['db'] ].cursor()
+        cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (userobj['id'],) )
+        row = cursor.fetchone()
+        if not row: return (data, 'Object not found!')
+        else:
+            info = json.loads(row['info'])
+            if os.path.exists(info['location']):
+                data = 1
+                return (data, error)
+            else: return (data, 'Sorry, i have no access to source file anymore!')
+
+    @staticmethod
     def db_create(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
@@ -498,7 +517,7 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         if not 'tocopy' in userobj or not 'dest' in userobj or not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
-        if not userobj['dest'] in Repo_pool: return (data, 'Copy destination invalid!')
+        if not userobj['dest'] in Repo_pool: return (data, 'Copying destination invalid!')
 
         global Tilde
         data_clause = '","'.join(  userobj['tocopy']  )
@@ -510,11 +529,11 @@ class Request_Handler:
 
             # TODO: THIS IS I/O DANGEROUS
             Tilde.reload( db_conn=Repo_pool[ userobj['dest'] ] )
-            
+
             for r in result:
                 calc = Tilde.restore(r, db_transfer_mode=True)
                 checksum, error = Tilde.save(calc, db_transfer_mode=True)
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )            
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
         data = 1
         return (data, error)
 
@@ -768,7 +787,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         Users[ self.session.session_id ] = User()
 
     @tornado.gen.engine
-    def on_message(self, message):        
+    def on_message(self, message):
         userobj, output = {}, {'act': '', 'req': '', 'error': '', 'data': ''}
         output['act'], output['req'] = message.split(DELIM)
 
@@ -781,12 +800,12 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 
             # multiple-send
             if output['act'] == 'report' and userobj['transport'] == 'local' and userobj['directory'] > 0:
-                
+
                 if not settings['local_dir']:
                     output['error'] = 'Please, define working path!'
                     self._send(output)
-                    
-                global Users                    
+
+                global Users
                 discover = settings['local_dir'] + userobj['path']
                 recursive = True if userobj['directory'] == 2 else False
 
@@ -832,13 +851,13 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
     def _keepalive(self, output, current, timestamp):
         global Users
         if not self.session.session_id in Users: return # TODO: this causes hard-tracing error if something occurs in API!
-        
+
         while not Users[ self.session.session_id ].running[ current ].is_set():
             Users[ self.session.session_id ].running[ current ].wait(2.5)
             if time.time() - timestamp > 4:
                 output['data'] = 1
                 self._send(output)
-        else:            
+        else:
             del Users[ self.session.session_id ].running[ current ]
             return
 
@@ -854,7 +873,7 @@ class CIFDownloadHandler(tornado.web.RequestHandler):
         if len(items) != 2: raise tornado.web.HTTPError(404)
         db, hash = items
         if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
-        
+
         try:
             cursor = Repo_pool[ db ].cursor()
             cursor.execute( 'SELECT structures FROM results WHERE checksum = ?', (hash,) )
@@ -869,15 +888,16 @@ class CIFDownloadHandler(tornado.web.RequestHandler):
             self.set_header('Content-type', 'application/download;')
             self.set_header('Content-disposition', 'attachment; filename="' + filename + '.cif')
             self.write(content)
-            
+
 class DataExportHandler(tornado.web.RequestHandler):
     def get(self, req_str):
+        if not settings['exportability']: raise tornado.web.HTTPError(404)
         if not '/' in req_str: raise tornado.web.HTTPError(404)
         items = req_str.split('/')
         if len(items) != 2: raise tornado.web.HTTPError(404)
         db, hash = items
         if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
-        
+
         try:
             cursor = Repo_pool[ db ].cursor()
             cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (hash,) )
@@ -894,7 +914,6 @@ class DataExportHandler(tornado.web.RequestHandler):
                 self.write(file)
             else:
                 raise tornado.web.HTTPError(404)
-            
 
 class UpdateServiceHandler(tornado.web.RequestHandler):
     def get(self):

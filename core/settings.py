@@ -14,6 +14,7 @@ DEFAULT_SETUP = {
                 'webport': 7777,
                 'default_db': DEFAULT_DB,
                 'local_dir': None,
+                'exportability': True,
                 'demo_regime': 0,
                 'debug_regime': 0,
                 'quick_regime': 0,
