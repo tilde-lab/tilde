@@ -44,6 +44,7 @@ parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / mat
 parser.add_argument("-u", dest="daemon", action="store", help="run user interface service (default, prevails over the rest commands if given)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
 parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to current repository", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-v", dest="verbose", action="store", help="verbose print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f", dest="freqs", action="store", help="if PATH(S): extract and print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze all", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -110,7 +111,8 @@ for target in args.path:
 
         calc, error = Tilde.parse(task)
         if error:
-            print filename, error
+            if args.terse and 'nothing found' in error: continue
+            else: print filename, error
             continue
 
         calc, error = Tilde.classify(calc)

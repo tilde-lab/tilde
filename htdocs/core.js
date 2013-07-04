@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v290613
+* v040713
 *
 */
 // common flags, settings and object for their storage
@@ -243,7 +243,7 @@ function redraw_vib_links( text2link, target ){
     }
 }
 function close_obj_tab(tab_id){
-    if (delete _tilde.rendered[tab_id]) $('#i_'+tab_id).next('tr').remove();
+    if (delete _tilde.rendered[tab_id] && $('#i_'+tab_id).next('tr').hasClass('obj_holder')) $('#i_'+tab_id).next('tr').remove();
     _tilde.tab_buffer = $.grep(_tilde.tab_buffer, function(val, index){
         if (val.indexOf(tab_id) == -1) return true;
     });
@@ -623,7 +623,7 @@ function resp__summary(req, data){
     });
     if (info.warns){
         for (var i=0; i<info.warns.length; i++){
-            html += '<li style="background:#f99;">'+info.warns[i]+'</li>';
+            html += '<li class=warn>'+info.warns[i]+'</li>';
         }
     }
     html += '</ul></div>';
@@ -631,7 +631,7 @@ function resp__summary(req, data){
     open_ipane('3dview', req.datahash);
     if (!_tilde.degradation) __send('make3d',  {datahash: req.datahash} );
     else {
-        $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('ii').append('<br /><br />Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.<br /><br />');
+        $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('ii').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
     }
 }
 function resp__settings(req, data){
@@ -1321,6 +1321,11 @@ $(document).ready(function(){
 
     // ESC KEY
     $(document).keyup(function(e){
-        if (e.keyCode == 27){ $('div._closable').hide(); }
+        if (e.keyCode == 27){
+            $('div._closable').hide();
+            if (!$.isEmptyObject(_tilde.rendered)){
+                $('#closeobj_trigger').trigger('click'); // bad design TODO
+            }
+        }
     });
 });
