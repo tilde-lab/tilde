@@ -70,20 +70,27 @@
         <div class="cross _close"></div>
 
         <ul id="settings-menu" class="ipane_ctrl">
-            <li rel="cols">table</li>
+            <li rel="cols">columns</li>
+            <li rel="table">table</li>
             <li rel="units">units</li>
-            <li rel="scan" class="protected">scan</li>
+            <li rel="scan" class="protected">scanning</li>
             <li rel="admin">manage</li>
             <li rel="dbs">repositories</li>
-            <li rel="check_version" class="protected">update</li>
         </ul>
 
         <div class="ipane" rel="cols">
             <div>Columns to display <b>(max. <span id="maxcols"></span>)</b>:</div>
             <div id="ipane_cols_holder"><ul></ul></div>
+            
+            <div class="clear"></div>
 
+            <div class="btn settings-apply" style="width:120px;margin:0 auto;">apply and save</div>
+        </div>
+        
+        <div class="ipane" rel="table">
             <div class="left" style="clear:none;width:60%;margin-left:25px">Max. number of items in table:</div>
             <div id="ipane-maxitems-holder" class="right" style="clear:none;width:30%;margin-right:25px"></div>
+            
             <div class="clear"></div>
 
             <div class="btn settings-apply" style="width:120px;margin:0 auto;">apply and save</div>
@@ -117,11 +124,6 @@
             <div style="width:100%">
             </div>
         </div>
-
-        <div class="ipane" rel="check_version">
-            <div></div>
-        </div>
-
     </div>
     </div>
 </div>

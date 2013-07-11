@@ -202,14 +202,6 @@ function open_ipane(cmd, target){
     current.css('border-bottom-color', '#fff').parent().parent().children( 'div.ipane' ).hide();
     current.parent().parent().find( 'div[rel='+cmd+']' ).show();
 
-    if (!target){
-        switch(cmd){
-            case 'check_version':
-                $('div[rel=check_version] div').empty();
-                __send('check_version');
-                break;
-        }
-        return; }
     if (_tilde.tab_buffer.indexOf(target+'_'+cmd) != -1) return;
 
     switch(cmd){
@@ -680,9 +672,6 @@ function resp__db_copy(req, data){
     $('#db_copy_select').val('0');
     $('#databrowser tr').removeClass('shared');
     switch_menus(true);
-}
-function resp__check_version(req, data){
-    $('div[rel=check_version] div').append(data);
 }
 function resp__check_export(req, data){
     iframe_download( 'export', req.db, req.id );
@@ -1249,6 +1238,12 @@ $(document).ready(function(){
                 if ($(this).is(':checked')) sets.push( parseInt( $(this).attr('value') ) );
             });
             _tilde.settings.cols = sets;
+
+            __send('settings', {area: 'cols', settings: _tilde.settings} );
+            $('#profile_holder').hide();
+        } else if ($('#ipane-maxitems-holder').is(':visible')){
+        
+            // SETTINGS: TABLE
             $('#ipane-maxitems-holder > input').each(function(){
                 if ($(this).is(':checked')){
                     _tilde.settings.colnum = parseInt( $(this).attr('value') );
@@ -1256,7 +1251,7 @@ $(document).ready(function(){
             });
             __send('settings', {area: 'cols', settings: _tilde.settings} );
             $('#profile_holder').hide();
-        }        
+        }
     });
 
     // UNIVERSAL ENTER HOTKEY: NOTE ACTION BUTTON *UNDER THE SAME DIV* WITH THE FORM

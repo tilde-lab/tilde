@@ -104,7 +104,8 @@ class API:
             {"cid": 8, "category": "result symmetry", "source": "symmetry", "negative_tagging": True, "order": 80, "has_column": True}, \
             {"cid": 9, "category": "result space group", "source": "sg", "negative_tagging": True, "order": 81, "has_column": True}, \
             {"cid": 10, "category": "result point group", "source": "pg", "negative_tagging": True, "order": 82, "has_column": True}, \
-            {"cid": 90, "category": "main tolerances", "source": "tol", "order": 83, "has_column": True}, \
+            {"cid": 11, "category": "result space group (num)", "source": "ng", "order": 90}, \
+            {"cid": 90, "category": "main tolerances", "source": "tol", "order": 84, "has_column": True}, \
             {"cid": 91, "category": "spin-polarized", "source": "spin", "negative_tagging": True, "order": 22, "has_column": True}, \
             {"cid": 94, "category": "locked magn.state", "source": "lockstate", "order": 23, "has_column": True}, \
             {"cid": 92, "category": "k-points set", "source": "k", "order": 85, "has_column": True}, \
@@ -525,6 +526,7 @@ class API:
         if found.error: return (None, found.error)
 
         calc.info['sg'] = found.i
+        calc.info['ng'] = found.n
 
         # data from Bandura-Evarestov book "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
         if   195 <= found.n <= 230: calc.info['symmetry'] = 'cubic'

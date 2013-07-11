@@ -2,6 +2,7 @@
 # Tilde project: platform-dependent symmetry finder for 3D-systems, wrapping Spglib and Findsym codes;
 # their results are found to coincide in all my tests;
 # more info at http://sourceforge.net/mailarchive/forum.php?forum_name=spglib-users
+# v110713
 
 import os
 import sys
@@ -11,15 +12,18 @@ import sys
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 from spacegroup.cell import cellpar_to_cell
 
+# recommended accuracy value = 0.0001
+ACCURACY=1e-04
+
 if 'win' in sys.platform:
     from ase.atoms import Atoms
     import pywintypes
     import pythoncom
     import win32api
     from pyspglib import spglib
-    
+
     class SymmetryFinder:
-        def __init__(self, tilde_obj):
+        def __init__(self, tilde_obj, accuracy=ACCURACY):
             self.error = None
             ase_symbols = []
             for i in tilde_obj['structures'][-1]['atoms']:
@@ -33,8 +37,8 @@ if 'win' in sys.platform:
                     magmoms.append(j[2])
             xyz_matrix = cellpar_to_cell(tilde_obj['structures'][-1]['cell'])
             ase_positions = [(i[1], i[2], i[3]) for i in tilde_obj['structures'][-1]['atoms']]
-            ase_obj = Atoms(symbols=ase_symbols, positions=ase_positions, cell=xyz_matrix, pbc=True, magmoms=magmoms)        
-            try: symmetry = spglib.get_spacegroup(ase_obj, 1e-04)
+            ase_obj = Atoms(symbols=ase_symbols, positions=ase_positions, cell=xyz_matrix, pbc=True, magmoms=magmoms)
+            try: symmetry = spglib.get_spacegroup(ase_obj, accuracy)
             except Exception, ex:
                 self.error = 'Symmetry finder error: %s' % ex
             else:
@@ -48,15 +52,15 @@ elif 'linux' in sys.platform:
     from numpy import dot
     from numpy import array
     from numpy import matrix
-    
+
     if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym', os.X_OK):
         os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym' )), 0777)
-    
+
     class SymmetryFinder:
-        def __init__(self, tilde_obj):
+        def __init__(self, tilde_obj, accuracy=ACCURACY):
             self.error = None
             self.cif = None
-            input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1]['atoms'], tilde_obj['structures'][-1]['cell'])
+            input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1]['atoms'], tilde_obj['structures'][-1]['cell'], accuracy)
             if error: self.error = error
             else:
                 tmp = tempfile.NamedTemporaryFile(delete=False)
@@ -66,7 +70,7 @@ elif 'linux' in sys.platform:
                 p = subprocess.Popen('cd ' + os.path.realpath(os.path.dirname(__file__) + '/deps/findsym/') + ' && ./findsym < ' + tmp.name + ' 2>&1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 foundsym = p.communicate()[0]
                 os.remove(tmp.name)
-                
+
                 if not "------------------------------------------" in foundsym:
                     self.error = 'FINDSYM program failed to run!'
                 else:
@@ -78,8 +82,8 @@ elif 'linux' in sys.platform:
                         symmetry = out[1].splitlines()[1].replace("Space Group ", "")
                         self.n, self.s, self.i = symmetry.split()
                         self.n = int( self.n )
-            
-        def findsym_input(self, atoms, parameters, accuracy=1e-04): # recommended value = 0.0001
+
+        def findsym_input(self, atoms, parameters, accuracy):
             error = None
             findsym_atoms = 'ABCDEFGHIJKLMNOPQRSTYVWXYZ'
             out = "~\n" + "%s" % accuracy + "   accuracy\n2 form of lattice parameters lengths(angstrom) and angles\n"
@@ -89,7 +93,7 @@ elif 'linux' in sys.platform:
             coords = ''
             atomtypes = []
             atomlabels = {}
-            N = 0            
+            N = 0
             reverse = matrix( cellpar_to_cell(parameters) ).I
             for i in atoms:
                 fracs = dot( array([i[1], i[2], i[3]]), reverse ).tolist()[0]
@@ -113,7 +117,7 @@ elif 'linux' in sys.platform:
                 try: findsym_corr[v.capitalize()] = findsym_atoms[i-1]
                 except IndexError: error = 'Too many atom types for FINDSYM!'
             return out, findsym_corr, error
-            
+
 else: raise RuntimeError('Cannot start platform-dependent symmetry finder!')
 
 '''

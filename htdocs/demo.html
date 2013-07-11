@@ -27,8 +27,8 @@ $(document).ready(function(){
     }, 330);
 
 
-    $('#download_trigger').click(function(){
-        document.location = 'http://code.google.com/p/wwwtilda/downloads';
+    $('#redirect_trigger').click(function(){
+        document.location = 'http://wwwtilda.googlecode.com';
     });
     $('#continue_trigger').click(function(){
         document.location = '/static/frontend.html';
@@ -65,10 +65,10 @@ if (location.hostname == 'tilde.pro'){
         <div id="welcome">
             <p>Welcome to Tilde, the knowledge-management system for computational materials science. In a nutshell, it is an application, which creates the systemized repository from raw scientific modeling data.</p>
 
-            <p>Tilde is an open-source project of Max-Planck Institute for Solid State Research (Stuttgart, Germany) and Saint&nbsp;Petersburg State University (Russia). See more info at <a href="http://wwwtilda.googlecode.com" style="color:#06c;white-space:nowrap">http://wwwtilda.googlecode.com</a></p>
+            <p>Tilde is an open-source project of Max-Planck Institute for Solid State Research (Germany) and St.&nbsp;Petersburg State University (Russia).</p>
 
-            <div id="download_trigger" class="btn left" style="font-size:1.2em;margin:10px 1px 25px 27px;line-height:1.3em;">Download (all OS) <span style="font-size:2.2em;line-height:0.6em;">&darr;</span></div>
-            <div id="continue_trigger" class="btn btn2 right" style="font-size:1.2em;margin:10px 27px 25px 1px;line-height:1.3em;">Online repository <span style="font-size:2.2em;line-height:0.6em;">&rarr;</span></div>
+            <div id="redirect_trigger" class="btn left" style="font-size:1.2em;margin:10px 1px 25px 53px;line-height:1.3em;"><span style="font-size:2.2em;line-height:0.6em;">&larr;</span> See more info</div>
+            <div id="continue_trigger" class="btn btn2 right" style="font-size:1.2em;margin:10px 53px 25px 1px;line-height:1.3em;">Online repository <span style="font-size:2.2em;line-height:0.6em;">&rarr;</span></div>
             <div class="clear"></div>
 
         </div>

@@ -1,32 +1,26 @@
 Tilde
 =====
 
-Tilde (wwwtilda, ~) is an intelligent data organizer for cheminformatics and computational materials science.
+Tilde (or wwwtilda or ~) is an intelligent data organizer for cheminformatics and computational materials science.
 
 Warning
 -------
 
-This is NOT a public release, rather a development code summary for internal needs.
+This is NOT a public release, rather a proof-of-concept code summary for internal needs.
+It is not fully tested and may work unstable.
 End users are HIGHLY DISCOURAGED of using this code.
-Please, download the release version at http://tilde.pro/
-
-Disclaimer
-----------
-
-This program is not fully tested and may work unstable.
-It represents a "proof-of-concept" and only barely used in production.
-However the user data are sacred and never affected.
+However the user data are sacred and will be never affected.
 
 Usage
 -----
 
-Please, avoid spaces and non-latin characters in the application folder name!
+Please, avoid spaces and non-latin characters in the application folder name.
 The main script is called "tilde.bat" (for Windows) or "tilde.sh" (for Unix).
-All user commands should be executed through this main script.
+All user commands should be executed through this main script:
 To use command-line interface run main script with a parameter (e.g. "--help").
 To start graphical interface run main script without parameters.
-To terminate running graphical interface on Windows close the DOS box.
-To terminate running graphical interface on Unix kill main script.
+To terminate graphical interface on Windows close the DOS box.
+To terminate graphical interface on Unix kill main script.
 
 Prerequisites
 -------------
@@ -43,12 +37,11 @@ This means everybody is welcomed to use it for own needs or modify and adopt its
 Feedback and bugreports
 -----------------------
 
-Your feedback and bugreports are very welcomed at eb@tilde.pro
+Your feedback and bugreports are very anticipated at eb@tilde.pro or in GitHub http://github.com/jam31/wwwtilda
 
 Summary
 -------
 
-* Webpage: http://wwwtilda.googlecode.com/ or http://tilde.pro/
-* Version: 0.2.1
+* Webpage: http://tilde.pro or http://wwwtilda.googlecode.com
 * Maintainer: Evgeny Blokhin (eb@tilde.pro)
-* Timestamp: 21/05/2013
+* Timestamp: 11/07/2013

@@ -258,7 +258,7 @@ class Request_Handler:
                             data += '<td rel=' + str(item['cid']) + '>&mdash;</td>'
 
                 # --compulsory part--
-                data += "<td><div class=tiny>click by row</div></td>"
+                data += "<td><strong>click by row</strong></td>"
                 data += '</tr>'
             data += '</tbody>'
             if not rescount: error = 'No objects match!'
@@ -450,25 +450,6 @@ class Request_Handler:
         else: error = 'Unknown settings context area!'
 
         data = 1
-        return (data, error)
-
-    @staticmethod
-    def check_version(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.settimeout(2.5)
-            s.connect(UPDATE_SERVER)
-            s.send("GET /VERSION HTTP/1.0\r\n\r\n")
-            data = s.recv(1024)
-            s.close()
-            v = data.split('\r\n')[-1].strip()
-        except: data = 'Could not check new version. Update server is unreachable. Please, try again later.'
-        else:
-            try: int(v.split('.')[0])
-            except: data = 'Could not check new version. Communication with update server failed. Please, try again later.'
-            else: data = 'Actual version is %s. Your version is %s' % (v, API.version)
         return (data, error)
 
     @staticmethod
@@ -955,6 +936,24 @@ def html_formula(string):
     return html_formula
 
 if __name__ == "__main__":
+    
+    # check new version
+    if not settings['demo_regime']:
+        updatemsg = ''
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.settimeout(2)
+            s.connect(UPDATE_SERVER)
+            s.send("GET /VERSION HTTP/1.0\r\n\r\n")
+            data = s.recv(1024)
+            s.close()
+            v = data.split('\r\n')[-1].strip()
+        except: updatemsg = 'Could not check new version. Update server is unreachable.'
+        else:
+            try: int(v.split('.')[0])
+            except: updatemsg = 'Could not check new version. Communication with update server failed.'
+            else: updatemsg = 'Actual version is %s. Your version is %s' % (v, API.version)
+        print updatemsg
 
     # compiling table columns: invoke modules through their API
     APP_COLS = []
