@@ -508,7 +508,7 @@ class CRYSTOUT(Output):
             else: minor = minor.split()[1]
             version = major + ' ' + minor
         else:
-            version = 'CRYSTAL0?'
+            version = 'CRYSTAL-?'
         
         # get input data        
         inputdata = inputdata.splitlines()
@@ -537,20 +537,19 @@ class CRYSTOUT(Output):
         else: return -1
 
     def get_ph_sym_disps(self):
-        if not self.phonons['modes']: return None, None
         symdisps = patterns['symdisps'].search(self.data)
         if symdisps is None: return None, None
         else:
             lines = symdisps.group().splitlines()
             plusminus = False
-            if 'NUMERICAL GRADIENT COMPUTED WITH A SINGLE DISPLACEMENT (+-dx) FOR EACH' in self.data and "NUMDERIV\n2" in self.data: plusminus = True
+            if 'NUMERICAL GRADIENT COMPUTED WITH A SINGLE DISPLACEMENT (+-dx) FOR EACH' in self.data: plusminus = True
             disps, magnitude = [], 0
             for n in lines:
-                r=patterns['needed_disp'].search(n)
+                r=patterns['needed_disp'].search(n)                
                 if r:
-                    disps.append([r.group(1), r.group(2).replace('D', '')])
+                    disps.append([ int(r.group(1)), r.group(2).replace('D', '').lower() ])
                     if plusminus:
-                        disps.append([r.group(1), r.group(2).replace('D', '-')])
+                        disps.append([ int(r.group(1)), r.group(2).replace('D', '-').lower() ])
                 elif 'dx=' in n:
                     magnitude = float(n.replace('dx=', ''))
             if magnitude == 0: raise RuntimeError( 'Cannot find displacement magnitude in FREQCALC output!')

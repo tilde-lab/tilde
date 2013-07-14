@@ -15,10 +15,10 @@ DEFAULT_SETUP = {
                 'default_db': DEFAULT_DB,
                 'local_dir': None,
                 'exportability': True,
-                'demo_regime': 0,
-                'debug_regime': 0,
-                'quick_regime': 0,
-                'skip_unfinished': 0,
+                'demo_regime': False,
+                'debug_regime': False,
+                'quick_regime': False,
+                'skip_unfinished': False,
                 'skip_if_path': "-_~",
                 'title': None
                 }

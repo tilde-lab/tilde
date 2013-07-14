@@ -34,7 +34,7 @@ _tilde.units = {
 _tilde.unit_capts = {'energy':'Total electronic energy', 'phonons':'Phonon frequencies'};
 _tilde.default_settings = {};
 _tilde.default_settings.units = {'energy':'au', 'phonons':'cm<sup>-1</sup>'};
-_tilde.default_settings.cols = [1, 1001, 1002, 1005, 1006, 6]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
+_tilde.default_settings.cols = [1, 1001, 1002, 1005, 1006, 10]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
 _tilde.default_settings.colnum = 75;
 
 // IE indexOf()
@@ -1170,7 +1170,7 @@ $(document).ready(function(){
             $('#profile_holder').hide();
         } else {
             $('#profile_holder').show();
-            open_ipane('admin');
+            open_ipane('cols');
         }
     });
 
@@ -1225,9 +1225,9 @@ $(document).ready(function(){
 
             // SETTINGS: SCAN
             _tilde.settings.local_dir = $('#settings_local_path').val();
-            $('#settings_quick_regime').is(':checked')  ? _tilde.settings.quick_regime = 1 : _tilde.settings.quick_regime = 0;
-            $('#settings_skip_unfinished').is(':checked')        ? _tilde.settings.skip_unfinished = 1 : _tilde.settings.skip_unfinished = 0;
-            $('#settings_skip_if_path').is(':checked')  ? _tilde.settings.skip_if_path = $('#settings_skip_if_path_mask').val() : _tilde.settings.skip_if_path = 0;
+            _tilde.settings.quick_regime = $('#settings_quick_regime').is(':checked');
+            _tilde.settings.skip_unfinished = $('#settings_skip_unfinished').is(':checked');
+            _tilde.settings.skip_if_path = $('#settings_skip_if_path').is(':checked') ? $('#settings_skip_if_path_mask').val() : false;
 
             __send('settings',  {area: 'scan', settings: _tilde.settings} );
         } else if ($('#ipane_cols_holder').is(':visible')){

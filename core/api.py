@@ -21,7 +21,7 @@ from numpy import array
 from numpy.linalg import det
 
 from common import generate_cif
-from symmetry import SymmetryFinder
+from symmetry import SymmetryHandler
 
 # this is done to simplify adding modules to Tilde according its API
 # TODO: dealing with sys.path is malpractice
@@ -37,12 +37,11 @@ class API:
     version = __version__
     __shared_state = {} # singleton
 
-    def __init__(self, db_conn=None, skip_unfinished=None, skip_if_path=None):
+    def __init__(self, db_conn=None, settings=None):
         self.__dict__ = self.__shared_state
 
         self.db_conn = db_conn
-        self.skip_unfinished = skip_unfinished
-        self.skip_if_path = skip_if_path
+        self.settings = settings
 
         self.deferred_storage = {}
 
@@ -94,24 +93,28 @@ class API:
         # *hierarchy API*
         # This is used while building topics (displayed at the splashscreen and tagcloud)
         self.hierarchy = [ \
-            {"cid": 1, "category": "formula", "source": "standard", "chem_notation": True, "order": 1, "has_column": True}, \
-            {"cid": 2, "category": "host elements number", "source": "nelem", "order": 13}, \
-            {"cid": 3, "category": "supercell", "source": "expanded", "order": 29, "has_column": True}, \
-            {"cid": 4, "category": "periodicity", "source": "periodicity", "order": 12, "has_column": True}, \
-            {"cid": 5, "category": "calculation type", "source": "calctype#", "order": 10, "has_column": True}, \
-            {"cid": 6, "category": "hamiltonian", "source": "H", "order": 30, "has_column": True}, \
-            {"cid": 7, "category": "system", "source": "tag#", "order": 11, "has_column": True}, \
-            {"cid": 8, "category": "result symmetry", "source": "symmetry", "negative_tagging": True, "order": 80, "has_column": True}, \
-            {"cid": 9, "category": "result space group", "source": "sg", "negative_tagging": True, "order": 81, "has_column": True}, \
-            {"cid": 10, "category": "result point group", "source": "pg", "negative_tagging": True, "order": 82, "has_column": True}, \
-            {"cid": 11, "category": "result space group (num)", "source": "ng", "order": 90}, \
-            {"cid": 90, "category": "main tolerances", "source": "tol", "order": 84, "has_column": True}, \
-            {"cid": 91, "category": "spin-polarized", "source": "spin", "negative_tagging": True, "order": 22, "has_column": True}, \
-            {"cid": 94, "category": "locked magn.state", "source": "lockstate", "order": 23, "has_column": True}, \
-            {"cid": 92, "category": "k-points set", "source": "k", "order": 85, "has_column": True}, \
-            {"cid": 93, "category": "used techniques", "source": "tech#", "order": 84, "has_column": True}, \
-            {"cid": 95, "category": "phon.magnitude", "source": "dfp_magnitude", "order": 86, "has_column": True}, \
-            {"cid": 96, "category": "phon.k-points", "source": "n_ph_k", "order": 87, "has_column": True}, \
+            {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "order": 1, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 2, "category": "host elements number",  "source": "nelem", "order": 13, "descr": ""}, \
+            {"cid": 3, "category": "supercell",             "source": "expanded", "order": 29, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 4, "category": "periodicity",           "source": "periodicity", "order": 12, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 5, "category": "calculation type",      "source": "calctype#", "order": 10, "has_label": True, "descr": ""}, \
+            {"cid": 6, "category": "hamiltonian",           "source": "H", "order": 30, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 7, "category": "system",                "source": "tag#", "order": 11, "has_label": True, "descr": ""}, \
+            
+            {"cid": 8, "category": "symmetry",              "source": "symmetry", "order": 80, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 9, "category": "space group (Schon.)",  "source": "sg", "order": 81, "has_column": True, "descr": "Result space group (Schoenflis notation)"}, \
+            {"cid": 10,"category": "point group",           "source": "pg", "order": 82, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 11,"category": "space group (intl.)",   "source": "ng", "order": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
+            {"cid": 12,"category": "layer group (intl.)",   "source": "dg", "order": 91, "has_column": True, "descr": ""}, \
+            
+            {"cid": 13,"category": "main tolerances",       "source": "tol", "order": 84, "has_column": True, "descr": ""}, \
+            {"cid": 14,"category": "spin-polarized",        "source": "spin", "negative_tagging": True, "order": 22, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 15,"category": "locked magn.state",     "source": "lockstate", "order": 23, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 16,"category": "k-points set",          "source": "k", "order": 85, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 17,"category": "used techniques",       "source": "tech#", "order": 84, "has_label": True, "descr": ""}, \
+            {"cid": 18,"category": "phon.magnitude",        "source": "dfp_magnitude", "order": 86, "has_column": True, "descr": ""}, \
+            {"cid": 19,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
+            {"cid": 20,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
             #{"category": "code", "source": "code"}, \ <- this can be changed while merging!
             #{"category": "containing element", "source": "element#"}, \
         ]
@@ -134,15 +137,14 @@ class API:
                     'class': classifier})
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
 
-    def reload(self, db_conn=None, skip_unfinished=None, skip_if_path=None):
+    def reload(self, db_conn=None, settings=None):
         '''
-        Switch Tilde API object to another context
+        Switch Tilde API object to another context, if provided
         NB: this may be run from outside
         @procedure
         '''
         if db_conn: self.db_conn = db_conn
-        if skip_unfinished: self.skip_unfinished = skip_unfinished
-        if skip_if_path: self.skip_if_path = skip_if_path
+        if settings: self.settings = settings
 
     def assign_parser(self, name):
         '''
@@ -191,7 +193,10 @@ class API:
         '''
         input_string = os.path.abspath(input_string)
         tasks = []
-        restricted = [ symbol for symbol in self.skip_if_path ] if self.skip_if_path else []
+        
+        try: self.settings['skip_if_path']
+        except ValueError: restricted = []
+        else: restricted = [ symbol for symbol in self.settings['skip_if_path'] ] if self.settings['skip_if_path'] else []
 
         # given folder
         if os.path.isdir(input_string):
@@ -207,15 +212,19 @@ class API:
                     dirs[:] = [x for x in dirs if x not in to_filter] # keep reference
                     for filename in files:
                         # skip_if_path directive
-                        for rs in restricted:
-                            if filename.startswith(rs) or filename.endswith(rs): break
+                        if restricted:
+                            for rs in restricted:
+                                if filename.startswith(rs) or filename.endswith(rs): break
+                            else: tasks.append(root + os.sep + filename)
                         else: tasks.append(root + os.sep + filename)
             else:
                 for filename in os.listdir(input_string):
                     if os.path.isfile(input_string + os.sep + filename):
                         # skip_if_path directive
-                        for rs in restricted:
-                            if filename.startswith(rs) or filename.endswith(rs): break
+                        if restricted:
+                            for rs in restricted:
+                                if filename.startswith(rs) or filename.endswith(rs): break
+                            else: tasks.append(input_string + os.sep + filename)
                         else: tasks.append(input_string + os.sep + filename)
 
         # given full filename
@@ -229,8 +238,10 @@ class API:
                 for filename in os.listdir(parent):
                     if input_string in parent + os.sep + filename and not os.path.isdir(parent + os.sep + filename):
                         # skip_if_path directive
-                        for rs in restricted:
-                            if filename.startswith(rs) or filename.endswith(rs): break
+                        if restricted:
+                            for rs in restricted:
+                                if filename.startswith(rs) or filename.endswith(rs): break
+                            else: tasks.append(parent + os.sep + filename)
                         else: tasks.append(parent + os.sep + filename)
         return tasks
 
@@ -404,7 +415,7 @@ class API:
                     except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
         return apps
 
-    def classify(self, calc):
+    def classify(self, calc, symprec=None):
         '''
         Invokes hierarchy API
         NB: this may be run from outside
@@ -414,8 +425,11 @@ class API:
         calc.info['formula'] = self.formula( [i[0] for i in calc.structures[-1]['atoms']] )
 
         # applying filter: todo
-        if calc.info['finished'] < 0 and self.skip_unfinished:
-            return (None, 'data do not satisfy the filter')
+        try: self.settings['skip_unfinished']
+        except: pass
+        else:
+            if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
+                return (None, 'data do not satisfy the filter')
 
         xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
 
@@ -522,54 +536,17 @@ class API:
             calc.info[k] = v
 
         # invoke symmetry finder
-        found = SymmetryFinder(calc)
-        if found.error: return (None, found.error)
-
+        found = SymmetryHandler(calc, symprec)
+        if found.error:
+            return (None, found.error)
         calc.info['sg'] = found.i
         calc.info['ng'] = found.n
-
-        # data from Bandura-Evarestov book "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
-        if   195 <= found.n <= 230: calc.info['symmetry'] = 'cubic'
-        elif 168 <= found.n <= 194: calc.info['symmetry'] = 'hexagonal'
-        elif 143 <= found.n <= 167: calc.info['symmetry'] = 'rhombohedral'
-        elif 75  <= found.n <= 142: calc.info['symmetry'] = 'tetragonal'
-        elif 16  <= found.n <= 74:  calc.info['symmetry'] = 'orthorhombic'
-        elif 3   <= found.n <= 15:  calc.info['symmetry'] = 'monoclinic'
-        elif 1   <= found.n <= 2:   calc.info['symmetry'] = 'triclinic'
-        if   221 <= found.n <= 230: calc.info['pg'] = 'O<sub>h</sub>'
-        elif 215 <= found.n <= 220: calc.info['pg'] = 'T<sub>d</sub>'
-        elif 207 <= found.n <= 214: calc.info['pg'] = 'O'
-        elif 200 <= found.n <= 206: calc.info['pg'] = 'T<sub>h</sub>'
-        elif 195 <= found.n <= 199: calc.info['pg'] = 'T'
-        elif 191 <= found.n <= 194: calc.info['pg'] = 'D<sub>6h</sub>'
-        elif 187 <= found.n <= 190: calc.info['pg'] = 'D<sub>3h</sub>'
-        elif 183 <= found.n <= 186: calc.info['pg'] = 'C<sub>6v</sub>'
-        elif 177 <= found.n <= 182: calc.info['pg'] = 'D<sub>6</sub>'
-        elif 175 <= found.n <= 176: calc.info['pg'] = 'C<sub>6h</sub>'
-        elif found.n == 174:        calc.info['pg'] = 'C<sub>3h</sub>'
-        elif 168 <= found.n <= 173: calc.info['pg'] = 'C<sub>6</sub>'
-        elif 162 <= found.n <= 167: calc.info['pg'] = 'D<sub>3d</sub>'
-        elif 156 <= found.n <= 161: calc.info['pg'] = 'C<sub>3v</sub>'
-        elif 149 <= found.n <= 155: calc.info['pg'] = 'D<sub>3</sub>'
-        elif 147 <= found.n <= 148: calc.info['pg'] = 'C<sub>3i</sub>'
-        elif 143 <= found.n <= 146: calc.info['pg'] = 'C<sub>3</sub>'
-        elif 123 <= found.n <= 142: calc.info['pg'] = 'D<sub>4h</sub>'
-        elif 111 <= found.n <= 122: calc.info['pg'] = 'D<sub>2d</sub>'
-        elif 99 <= found.n <= 110:  calc.info['pg'] = 'C<sub>4v</sub>'
-        elif 89 <= found.n <= 98:   calc.info['pg'] = 'D<sub>4</sub>'
-        elif 83 <= found.n <= 88:   calc.info['pg'] = 'C<sub>4h</sub>'
-        elif 81 <= found.n <= 82:   calc.info['pg'] = 'S<sub>4</sub>'
-        elif 75 <= found.n <= 80:   calc.info['pg'] = 'C<sub>4</sub>'
-        elif 47 <= found.n <= 74:   calc.info['pg'] = 'D<sub>2h</sub>'
-        elif 25 <= found.n <= 46:   calc.info['pg'] = 'C<sub>2v</sub>'
-        elif 16 <= found.n <= 24:   calc.info['pg'] = 'D<sub>2</sub>'
-        elif 10 <= found.n <= 15:   calc.info['pg'] = 'C<sub>2h</sub>'
-        elif 6 <= found.n <= 9:     calc.info['pg'] = 'C<sub>s</sub>'
-        elif 3 <= found.n <= 5:     calc.info['pg'] = 'C<sub>2</sub>'
-        elif found.n == 2:          calc.info['pg'] = 'C<sub>i</sub>'
-        elif found.n == 1:          calc.info['pg'] = 'C<sub>1</sub>'
+        calc.info['symmetry'] = found.symmetry
+        calc.info['pg'] = found.pg
+        calc.info['dg'] = found.dg        
 
         if calc.phonons['dfp_magnitude']: calc.info['dfp_magnitude'] = round(calc.phonons['dfp_magnitude'], 3)
+        if calc.phonons['dfp_disps']: calc.info['dfp_disps'] = len(calc.phonons['dfp_disps'])
         if calc.phonons['modes']:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
         
@@ -702,6 +679,8 @@ class API:
         NB: this may be run from outside
         @returns (id, error)
         '''
+        if not self.db_conn: return (None, 'Database is not connected!')
+        
         checksum = calc.get_checksum()
 
         # save tags

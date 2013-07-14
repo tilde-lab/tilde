@@ -42,7 +42,7 @@ parser = argparse.ArgumentParser(prog="[tilde_script]", usage="%(prog)s [positio
 
 parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-u", dest="daemon", action="store", help="run user interface service (default, prevails over the rest commands if given)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
-parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to current repository", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to current repository", type=str, metavar="", nargs='?', const='DIALOG', default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-v", dest="verbose", action="store", help="verbose print", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -51,6 +51,7 @@ parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze
 parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
+parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default 1e-04)", type=float, metavar="", nargs='?', const=None, default=None)
 
 args = parser.parse_args()
 
@@ -85,16 +86,22 @@ if args.cif:
 # if there are commands, run command-line text interface
 db = None
 if args.add:
-    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_db']))
+    if args.add == 'DIALOG':
+        userchoice = raw_input("Which database to use?\nPlease, input one of the possible options: " + " ".join(repositories) + "\n")
+    else:
+        userchoice = args.add
+    while userchoice not in repositories:
+        userchoice = raw_input("Please, input one of the possible options: " + " ".join(repositories) + "\n")
+    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + userchoice))
     db.row_factory = sqlite3.Row
     db.text_factory = str
-    print "The database used:", settings['default_db']
+    print "The database selected:", settings['default_db']
 
-Tilde = API(db_conn=db, skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'])
+Tilde = API(db_conn=db, settings=settings)
 
 if settings['skip_unfinished']: finalized = 'YES'
 else: finalized = 'NO'
-print "Only finalized:", finalized, "and skip paths if start/end with any of:", settings['skip_if_path']
+print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
 
 
 def html2str(i):
@@ -115,7 +122,7 @@ for target in args.path:
             else: print filename, error
             continue
 
-        calc, error = Tilde.classify(calc)
+        calc, error = Tilde.classify(calc, args.symprec)
         if error:
             print filename, error
             continue

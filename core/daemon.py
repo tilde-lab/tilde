@@ -138,8 +138,7 @@ class Request_Handler:
             # settings of specified scope
             data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
             for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
-                if i in settings:
-                    data['settings'][i] = settings[i]
+                if i in settings: data['settings'][i] = settings[i]
 
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
 
@@ -287,7 +286,9 @@ class Request_Handler:
                 result = cursor.fetchall()
                 for item in result:
                     match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
-
+                    
+                    if not 'has_label' in match: continue
+                    
                     if 'chem_notation' in match: i = html_formula(item['topic'])
                     else: i = item['topic']
 
@@ -431,7 +432,7 @@ class Request_Handler:
 
             if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
 
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'] )
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], settings=settings )
 
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
@@ -728,7 +729,10 @@ class Request_Handler:
     @staticmethod
     def restart(userobj=None, session_id=None):
         data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
+        
+        # TODO: WARNING!!!
+        #if settings['demo_regime']: return (data, 'Action not allowed!')
+        
         # this is borrowed from tornado autoreload
         if sys.platform == 'win32':
             # os.execv is broken on Windows and can't properly parse command line
@@ -842,7 +846,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
             del Users[ self.session.session_id ].running[ current ]
             return
 
-class MainHandler(tornado.web.RequestHandler):
+class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         if settings['demo_regime']: self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/demo.html")
         else: self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
@@ -989,7 +993,7 @@ if __name__ == "__main__":
     {"cid": 1005, "category": "Source file", "source": '', "order": 98, "has_column": True, "cell_wrapper": col__loc}, \
     {"cid": 1006, "category": "Finished?", "source": '', "order": 99, "has_column": True, "cell_wrapper": col__finished}, \
     ]
-    Tilde_cols = sorted(Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['order']) # NB: not to mix this order with tags order!
+    Tilde_cols = sorted( Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['order'] ) # NB: not to mix this order with tags order!
 
 
     debug = True if settings['debug_regime'] else False
@@ -1004,7 +1008,7 @@ if __name__ == "__main__":
         Tilde_tags[r] = DataMap( r )
         if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
 
-    Tilde.reload( db_conn=Repo_pool[settings['default_db']], skip_unfinished=settings['skip_unfinished'], skip_if_path=settings['skip_if_path'] )
+    Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 
     io_loop = tornado.ioloop.IOLoop.instance()
     Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling']})
@@ -1013,7 +1017,7 @@ if __name__ == "__main__":
     try:
         application = tornado.web.Application(
             Router.apply_routes([
-                (r"/", MainHandler),
+                (r"/", IndexHandler),
                 (r"/static/(.*)", tornado.web.StaticFileHandler),
                 (r"/cif/(.*)", CIFDownloadHandler),
                 (r"/export/(.*)", DataExportHandler),
