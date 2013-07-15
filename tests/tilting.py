@@ -17,20 +17,20 @@ test_data = {
     'check_last_point.cryst.out': {
         'comment': 'Source (1), Table 1, calculated, Euler notation',
         'data': {
-            5: [[0.04, 12.26, 7.93]]
+            5: [0.04, 12.26, 7.93]
             }
     },
     'y4h4srhfo3_62_pbe0_9hf_cis_go.cryst.out': {
         'comment': 'Source (2), Table 10, HfO2-terminated, dissociative water adsorption, monolayer coverage, Euler notation (bare slab reference data: delta=1.9, phi=9.729, psi=1.867)',
         'data': {
-            17: [[1.56, 15.07, 8.91]]
+            17: [1.56, 15.07, 8.91]
             }
     },
     'srhfo3_62_pbe0_110_9sr_go.cryst.out': {
         'comment': 'Source (1), Table 5, SrO termination, 110 surface, relaxed, Euler notation',
         'data': {
-            13: [[14.73, 12.03, 5.24]],
-            15: [[1.54, 8.74, 12.48]],
+            13: [14.73, 12.03, 5.24],
+            15: [1.54, 8.74, 12.48],
             }
     }
 }

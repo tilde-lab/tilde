@@ -13,7 +13,7 @@ if sys.version_info < (2, 6):
     sys.exit()
 
 try: import argparse
-except ImportError: import deps.argparse as argparse
+except ImportError: from deps.argparse import argparse
 
 try:
     from numpy import dot
@@ -42,7 +42,7 @@ parser = argparse.ArgumentParser(prog="[tilde_script]", usage="%(prog)s [positio
 
 parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-u", dest="daemon", action="store", help="run user interface service (default, prevails over the rest commands if given)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
-parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to current repository", type=str, metavar="", nargs='?', const='DIALOG', default=False)
+parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to repository", type=str, metavar="REPOSITORY", nargs='?', const='DIALOG', default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-v", dest="verbose", action="store", help="verbose print", type=bool, metavar="", nargs='?', const=True, default=False)

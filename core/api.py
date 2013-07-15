@@ -195,7 +195,7 @@ class API:
         tasks = []
         
         try: self.settings['skip_if_path']
-        except ValueError: restricted = []
+        except (TypeError, KeyError): restricted = []
         else: restricted = [ symbol for symbol in self.settings['skip_if_path'] ] if self.settings['skip_if_path'] else []
 
         # given folder
