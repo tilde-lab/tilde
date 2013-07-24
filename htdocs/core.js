@@ -1,13 +1,13 @@
 /**
 *
 * Tilde project: client core
-* v040713
+* v150713
 *
 */
 // common flags, settings and object for their storage
 var _tilde = {};
 _tilde.debug = false; // major debugging switch
-_tilde.protected = false;
+_tilde.demo_regime = false;
 _tilde.degradation = false;
 _tilde.hashes = [];
 _tilde.rendered = {}; // datahash:structure, ... ,
@@ -108,6 +108,13 @@ function logger(message, no_wrap, clean){
     if (!no_wrap) message = "<div>" + message.replace(/ /g, "&nbsp;") + "</div>";
     $("#debug").prepend(message);
 }
+function console(show){
+    if (show){
+        $('#console_holder').animate({ height: 'show' }, { duration: 250, queue: false });
+    } else {
+        $('#console_holder').animate({ height: 'hide' }, { duration: 250, queue: false });
+    }
+}
 function set_repos(){
     $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
 
@@ -132,14 +139,14 @@ function set_user_settings( settings ){
     //
     set_repos();
     var dbs_str = '', btns = '<div class="btn right db-make-active-trigger">make active</div>';
-    if (!_tilde.protected) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
+    if (!_tilde.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
 
     $.each(_tilde.settings.dbs, function(n, item){
         if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
         else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
     });
 
-    if (!_tilde.protected) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
+    if (!_tilde.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
     $('div[rel=dbs] div').html( dbs_str );
 
     // render columns settings (depend on server + client state)
@@ -348,7 +355,7 @@ function resp__login(req, data){
     document.title = data.title;
     if (data.debug_regime) _tilde.debug = true;
     if (data.demo_regime){
-        _tilde.protected = true;
+        _tilde.demo_regime = true;
         $('div.protected, li.protected').hide();
     }    
 
@@ -411,10 +418,10 @@ function resp__tags(req, data){
         $('div.tagcol').hide();
 
         $.each(data, function(n, i){
-            $('a.taglink[rel='+i+']').addClass('vi').show();
+            $('a._tag'+i).addClass('vi').show();
         });
         $.each(req.tids, function(n, i){
-            $('a.taglink[rel='+i+']').addClass('vi activetag');
+            $('a._tag'+i).addClass('vi activetag');
         });
         $('div.tagarea').each(function(){
             if ( $(this).find('a').filter( function(index){ return $(this).hasClass('vi') == true } ).length ){
@@ -433,7 +440,7 @@ function resp__tags(req, data){
                 else return 0;
             });
             $.each(value.content, function(n, i){
-                tags_html += '<a class="taglink vi" rel=' + i.tid + ' href=#>' + i.topic + '</a>';
+                tags_html += '<a class="taglink vi _tag' + i.tid + '" rel="' + i.tid + '" href=#>' + i.topic + '</a>';
             });
             tags_html += '</div></div>'
         });
@@ -492,9 +499,7 @@ function resp__report(obj, data){
             _tilde.freeze = false; $('#loadbox').hide();
             _tilde.multireceive = 0;
 
-            setTimeout(function(){
-                $('#debug-holder').animate({ height: 'hide' }, { duration: 250, queue: false });
-            }, 1000);
+            setTimeout(function(){ console(false) }, 1000);
             return;
         } else if (parseInt(data) == 1){
             // KEEP-ALIVE RESULTS
@@ -529,9 +534,7 @@ function resp__report(obj, data){
 
             logger( '===========END OF SCAN '+obj.path+'===========' );
 
-            setTimeout(function(){
-                $('#debug-holder').hide();
-            }, 750);
+            setTimeout(function(){ console(false) }, 1000);
         }
     } else {
         _tilde.freeze = false; $('#loadbox').hide();
@@ -596,7 +599,7 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
     }
-    /*if (!data.electrons && !_tilde.protected && info.prog.indexOf('CRYSTAL') != -1 && !_tilde.degradation){
+    /*if (!data.electrons && !_tilde.demo_regime && info.prog.indexOf('CRYSTAL') != -1 && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
         var msg = '<div class="notice">Eigenvalues / eigenvectors are missing in CRYSTAL-only output.<br />Please, run PROPERTIES on the wavefunction file (fort.9) for the output:<div>'+info.location+'</div>using the following d3-input as a template:<div>NEWK<br><span>2 2</span><br>1 2<br>66 <span>4</span><br>67 <span>4</span><br>END<br></div>Then scan the folder with the obtained new output: if it corresponds to the current item, they would be merged and labeled CRYSTAL+PROPERTIES.</div>';
@@ -640,7 +643,7 @@ function resp__settings(req, data){
         __send('browse', _tilde.last_browse_request, true);
     } else if (req.area == 'switching'){
         $('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
-        if (!_tilde.protected) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
+        if (!_tilde.demo_regime) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
         $('div.ipane_db_field_active').removeClass('ipane_db_field_active');
         $('div[rel="' + req.switching + '"]').addClass('ipane_db_field_active').children('div').remove();
         _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
@@ -781,14 +784,10 @@ $(document).ready(function(){
         switch_menus(true);
 
         if (anchor == 'start'){
-            if (_tilde.protected){
-                document.location = '/static/demo.html';
-            } else {
-                $('div.pane').hide();
-                $('#landing_holder').show();
-                $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
-                $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
-            }
+            $('div.pane').hide();
+            $('#landing_holder').show();
+            $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
+            $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
         }
         else if (anchor == 'continue'){
             $('div.pane').hide();
@@ -895,7 +894,7 @@ $(document).ready(function(){
         if (rev) __send('report',  {path: rel, directory: 2, transport:'local'} );
         else     __send('report',  {path: rel, directory: 1, transport:'local'} );
         $('#tagcloud_holder').hide();
-        $('#debug-holder').show();
+        console(true);
     });
 
     // INTRO TRIGGER
@@ -942,10 +941,8 @@ $(document).ready(function(){
     });
 
     // DEBUG CONSOLE
-    $('#debug-button').click(function(){
-        $('#tagcloud_holder').hide();
-        if ($('#debug-holder').is(':visible')) $('#debug-holder').animate({ height: 'hide' }, { duration: 250, queue: false });
-        else $('#debug-holder').animate({ height: 'show' }, { duration: 250, queue: false });
+    $('#console_trigger').click(function(){
+        console(true);
     });
 
     // DATABROWSER TABLE
@@ -1064,7 +1061,7 @@ $(document).ready(function(){
         $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
     $('#tagcloud_trigger').click(function(){
-        $('#debug-holder').hide();
+        console(false);
         if ($('#tagcloud_holder').is(':visible')) $('#tagcloud_holder').animate({ height: 'hide' }, { duration: 250, queue: false });
         else $('#tagcloud_holder').animate({ height: 'show' }, { duration: 250, queue: false });
     });
@@ -1237,6 +1234,10 @@ $(document).ready(function(){
             $('#ipane_cols_holder > ul > li > input').each(function(){
                 if ($(this).is(':checked')) sets.push( parseInt( $(this).attr('value') ) );
             });
+            if (!sets.length){
+                notify('Please, choose at least anything to display.');
+                return;
+            }
             _tilde.settings.cols = sets;
 
             __send('settings', {area: 'cols', settings: _tilde.settings} );

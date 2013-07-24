@@ -21,6 +21,11 @@ class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
 
+def u(obj, encoding='utf-8'):
+    if not isinstance(obj, unicode):
+        return unicode(obj, encoding)
+    else: return obj
+        
 def generate_cif(parameters, atoms, symops, comment=None):
     if not parameters: parameters = [10, 10, 10, 90, 90, 90]
     reverse = matrix( cellpar_to_cell(parameters) ).I

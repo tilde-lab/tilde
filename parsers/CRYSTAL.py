@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Tilde project: CRYSTAL outputs parser
-# v230513
+# v190713
 
 import os
 import sys
@@ -124,7 +124,11 @@ class CRYSTOUT(Output):
                 self.convergence, self.ncycles, self.tresholds = self.get_convergence()
 
                 self.set_method()
-
+                
+                # extract zero-point energy, depending on phonons presence
+                if self.phonons['modes']:                    
+                    self.phonons['zpe'] = self.get_zpe()
+                
                 # format ph_k_degeneracy
                 if self.phonons['ph_k_degeneracy']:
                     bz, d = [], []
@@ -859,6 +863,8 @@ class CRYSTOUT(Output):
             try: ex = hamiltonians[ex]
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
             self.method['H'] = "pure %s" % ex
+        if not self.method['H']:
+            raise RuntimeError( 'Hamiltonian not found, probably the data is not regularly formatted' )
         if '\n HYBRID EXCHANGE ' in self.data:
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))
@@ -1000,7 +1006,15 @@ class CRYSTOUT(Output):
             for i in range(0, len(criteria[0])):
                 tresholds.append([ criteria[0][i], criteria[1][i], criteria[2][i], criteria[3][i], energies[i] ])
         return convergdata, ncycles, tresholds
-
+    
+    def get_zpe(self):
+        if "\n E0            :" in self.data:
+            zpe = self.data.split("\n E0            :")[1].split("\n", 1)[0].split()[0] # AU
+            try: zpe = float(zpe)
+            except ValueError: return None
+            else: return zpe #*Hartree
+        else: return None
+    
     def get_e_last(self):
         if "TOP OF VALENCE BANDS" in self.pdata:
             foundv = []

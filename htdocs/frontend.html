@@ -31,7 +31,6 @@
 <!-- SETTINGS / USER BOX: ALWAYS VISIBLE! -->
 <div id="pre_user_box">
     <div id="settings_trigger" class="btn left">settings</div>
-    <div id="debug-button" class="btn left">console</div>
 </div>
 <div id="userbox">
     <div id="userinfo">
@@ -114,7 +113,7 @@
             <div class="btn settings-apply _hotkey" style="width:120px;margin:30px auto 0;">apply and save</div>
         </div>
 
-        <div class="ipane" rel="admin">
+        <div class="ipane" rel="admin" class="protected">
             <div id="ui-restart" class="btn" style="width:200px;margin:75px auto 0;">restart user interface</div>
             <div id="core-restart" class="btn" style="width:200px;margin:25px auto 0;">restart program core</div>
             <div id="core-terminate" class="btn btn3 protected" style="width:200px;margin:25px auto;">stop program core</div>
@@ -128,11 +127,12 @@
     </div>
 </div>
 
-<!-- DEBUG WINDOW -->
-<div id="debug-holder" class="_closable downscreen" style="display:none;">
+<!-- CONSOLE WINDOW -->
+<div id="console_holder" class="_closable downscreen" style="display:none;">
     <div class="downscreen_close _close"></div>
     <div id="debug"></div>
 </div>
+<div id="console_trigger">&uarr;</div>
 
 <!-- CLONABLE OBJECT LAYOUT -->
 <div id="object_factory" class="object_factory_holder shadow">
@@ -240,7 +240,7 @@
         <div class="menu_main_cmds">
             <div class="btn left protected" id="add_trigger">add outputs</div>
             <div class="btn btn2 left" id="noclass_trigger">show all topics</div>
-            <div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">classifier</div>
+            <!--<div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">classifier</div>-->
             <div class="btn btn3 left" id="closeobj_trigger" style="display:none;">hide all details</div>
             <div id="countbox"></div>
         </div>

@@ -2,12 +2,12 @@
 #
 # Tilde project: daemon
 # (currently acting as the UI service)
-# Provides a user interface to manage database
+# Provides a user interface for database management
 #
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
 #
 # See http://wwwtilda.googlecode.com
-# v170513
+# v150713
 
 import os
 import sys
@@ -16,6 +16,7 @@ import json
 import socket
 import tempfile
 import time
+from datetime import timedelta
 import math
 import random
 import threading
@@ -251,7 +252,7 @@ class Request_Handler:
                     if 'cell_wrapper' in item:
                         data += item['cell_wrapper'](data_obj, item['cid'])
                     else:
-                        if item['source'] in data_obj['info']:
+                        if item['source'] in data_obj['info'] and data_obj['info'][item['source']]:
                             data += '<td rel=' + str(item['cid']) + '>' + (  html_formula(data_obj['info'][ item['source'] ]) if 'chem_notation' in item else str(data_obj['info'][ item['source'] ])  ) + '</td>'
                         else:
                             data += '<td rel=' + str(item['cid']) + '>&mdash;</td>'
@@ -385,7 +386,9 @@ class Request_Handler:
             for i in range(len(mass_center)):
                 if mass_center[i] == 0: mass_center[i] = 1
             mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
-
+            
+            # make player.html format below
+            # TODO: make pure CIF parsing
             atoms = []
             for n, i in enumerate(ase_obj):
                 if i.symbol == 'X': radius, rgb = 0.33, '0xffff00'
@@ -730,8 +733,7 @@ class Request_Handler:
     def restart(userobj=None, session_id=None):
         data, error = None, None
         
-        # TODO: WARNING!!!
-        #if settings['demo_regime']: return (data, 'Action not allowed!')
+        if settings['demo_regime']: return (data, 'Action not allowed!')
         
         # this is borrowed from tornado autoreload
         if sys.platform == 'win32':
@@ -770,6 +772,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
     def on_open(self, info):
         global Users
         Users[ self.session.session_id ] = User()
+        #tornado.ioloop.IOLoop.instance().add_timeout(timedelta(seconds=4), self._test)
 
     @tornado.gen.engine
     def on_message(self, message):
@@ -841,15 +844,19 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
             Users[ self.session.session_id ].running[ current ].wait(2.5)
             if time.time() - timestamp > 4:
                 output['data'] = 1
+                sys.stdout.write('.')
                 self._send(output)
         else:
             del Users[ self.session.session_id ].running[ current ]
             return
+            
+    def _test(self):
+        answer = "%s%s%s%s%s%s%s" % ('test', DELIM, 'req', DELIM, '123', DELIM, '321')
+        self.send( answer )
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        if settings['demo_regime']: self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/demo.html")
-        else: self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
+        self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
 
 class CIFDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -974,7 +981,7 @@ if __name__ == "__main__":
         e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
         return "<td rel=%s class=_e>%s</td>" % (colnum, e)
     def col__dims(obj, colnum):
-        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structure'][-1]['periodicity'] in [2, 3] else '&mdash;'
+        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
         return "<td rel=%s>%s</td>" % (colnum, dims)
     def col__loc(obj, colnum):
         #if len(loc) > 50: loc = loc[0:50] + '...'
@@ -1013,6 +1020,8 @@ if __name__ == "__main__":
     io_loop = tornado.ioloop.IOLoop.instance()
     Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling']})
     config = {"debug": debug}
+    #def tester():
+    #io_loop.add_timeout(timedelta(seconds=2), tester)
 
     try:
         application = tornado.web.Application(

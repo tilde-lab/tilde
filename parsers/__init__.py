@@ -34,7 +34,10 @@ class Output:
         # mapped onto database
         self.energy = None
 
-        self.structures = []    # x, y, z are in cartesian system
+        self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity} dicts
+                               # *list* cell is [a, b, c, alpha, beta, gamma]
+                               # *list* atoms has lists of atoms with coordinates in cartesian system
+                               # *int* periodicity determination is a responsibility of parser
         self.symops = ['+x,+y,+z']
 
         self.electrons = {
@@ -53,7 +56,8 @@ class Output:
             'ph_k_degeneracy':  {},
             'dfp_disps':        [],
             'dfp_magnitude':    None,
-            'dielectric_tensor':False
+            'dielectric_tensor':False,
+            'zpe':              None
             }
 
         # Tilde classification and technical info object

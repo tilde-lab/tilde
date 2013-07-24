@@ -1,7 +1,8 @@
 *.py[co]
 debug.log
 data
-core/deps/findsym/findsym.log
 scripts
+utils
 htdocs/stats.min.js
 htdocs/three.custom.js.json
+apps/vibtd

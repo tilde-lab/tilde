@@ -1,12 +1,15 @@
 
 # Tilde project:
 #
-# *SymmetryFinder*: platform-dependent symmetry finder for 3D-systems, wrapping Spglib and Findsym codes;
-# their results are found to coincide in all my tests for DEFAULT_ACCURACY=1e-04;
+# *SymmetryFinder*: platform-dependent symmetry finder for 3D-systems, wrapping Spglib and FINDSYM codes:
+# FINDSYM is written by H. T. Stokes and D. M. Hatch: http://dx.doi.org/10.1107/S0021889804031528
+# Spglib is written by Atsushi Togo: http://spglib.sourceforge.net
+# their results are found to coincide in all my tests at DEFAULT_ACCURACY=1e-04;
 # more info at http://sourceforge.net/mailarchive/forum.php?forum_name=spglib-users
 #
 # *SymmetryHandler*: symmetry inferences basing on known mapping
-# v130713
+#
+# v210713
 
 import os
 import sys
@@ -59,6 +62,10 @@ elif 'linux' in sys.platform:
 
     if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym', os.X_OK):
         os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym' )), 0777)
+    # TODO:
+    # How to suppress creation of log and redundant I/O?
+    if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym.log', os.X_OK):
+        os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym.log' )), 0777)
 
     class SymmetryFinder:
         def __init__(self, tilde_obj, accuracy):
@@ -82,7 +89,15 @@ elif 'linux' in sys.platform:
                     if len(out) != 3:
                         self.error = 'FINDSYM reported error:', out[-1]
                     else:
-                        self.cif = out[2] # <- CIF
+                        # prepare CIF
+                        out[2] = out[2].replace("data_ findsym-output", "data_findsym-output") # problems here with CIF grammar (tracked thanks to Materials Studio!)
+                        # replace A, B, C etc. in output on real atoms
+                        parts = out[2].split("_atom_site_type_symbol")
+                        for symbol, letter in findsym_corr.iteritems():
+                            parts[1] = parts[1].replace(letter, symbol)
+                        self.cif = parts[0] + "_atom_site_type_symbol" + parts[1]
+                        
+                        # prepare main output
                         symmetry = out[1].splitlines()[1].replace("Space Group ", "")
                         self.n, self.s, self.i = symmetry.split()
                         self.n = int( self.n )
@@ -134,7 +149,7 @@ class SymmetryFinder:
 '''
 
 class SymmetryHandler(SymmetryFinder):
-    def __init__(self, tilde_obj, accuracy):
+    def __init__(self, tilde_obj, accuracy=None):
         self.i = None
         self.s = None
         self.n = None

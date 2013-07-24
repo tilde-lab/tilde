@@ -51,7 +51,7 @@ parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze
 parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
-parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default 1e-04)", type=float, metavar="", nargs='?', const=None, default=None)
+parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default 1e-04)", type=float, metavar="N", nargs='?', const=None, default=None)
 
 args = parser.parse_args()
 
@@ -176,7 +176,7 @@ for target in args.path:
             print DIV
 
 
-        if args.verbose and not args.info:
+        if args.verbose:
             if calc.convergence:
                 print str(calc.convergence)
             if calc.tresholds:
@@ -188,6 +188,7 @@ for target in args.path:
             if len(calc.structures) > 1:
                 out += str(calc.structures[0]['cell']) + ' -> '
             out += str(calc.structures[-1]['cell'])
+            out += " V=" + str(calc.info['dims'])
             print out
         
         if args.cif and len(tasks) == 1:

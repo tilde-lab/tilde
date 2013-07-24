@@ -11,7 +11,6 @@ from numpy import dot
 from numpy import array
 
 from ase.lattice.spacegroup.cell import cell_to_cellpar
-import ase.io.wien2k
 
 from parsers import Output
 

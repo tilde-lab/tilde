@@ -20,7 +20,7 @@ from numpy import dot
 from numpy import array
 from numpy.linalg import det
 
-from common import generate_cif
+from common import generate_cif, u
 from symmetry import SymmetryHandler
 
 # this is done to simplify adding modules to Tilde according its API
@@ -149,6 +149,7 @@ class API:
     def assign_parser(self, name):
         '''
         Restricts parsing
+        **name** is a name of the parser class
         NB: this may be run from outside
         @procedure
         '''
@@ -184,7 +185,7 @@ class API:
             else: n = str(n)
             formula += atom + n
         return formula
-
+        
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
         Determines which files should be processed
@@ -205,6 +206,7 @@ class API:
                     # skip_if_path directive
                     to_filter = []
                     for dir in dirs:
+                        dir = u(dir)
                         for rs in restricted:
                             if dir.startswith(rs) or dir.endswith(rs):
                                 to_filter.append(dir)
@@ -212,6 +214,7 @@ class API:
                     dirs[:] = [x for x in dirs if x not in to_filter] # keep reference
                     for filename in files:
                         # skip_if_path directive
+                        filename = u(filename)
                         if restricted:
                             for rs in restricted:
                                 if filename.startswith(rs) or filename.endswith(rs): break
@@ -219,6 +222,7 @@ class API:
                         else: tasks.append(root + os.sep + filename)
             else:
                 for filename in os.listdir(input_string):
+                    filename = u(filename)
                     if os.path.isfile(input_string + os.sep + filename):
                         # skip_if_path directive
                         if restricted:
@@ -236,6 +240,7 @@ class API:
             if stemma:
                 parent = os.path.dirname(input_string)
                 for filename in os.listdir(parent):
+                    filename = u(filename)
                     if input_string in parent + os.sep + filename and not os.path.isdir(parent + os.sep + filename):
                         # skip_if_path directive
                         if restricted:
