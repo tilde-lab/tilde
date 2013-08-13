@@ -247,7 +247,7 @@ function close_obj_tab(tab_id){
         if (val.indexOf(tab_id) == -1) return true;
     });
 }
-function iframe_download( request, scope, hash ){ // used by player
+function iframe_download( request, scope, hash ){
     $('body').append('<form style="display:none;" id="data-download-form" action="/' + request + '/' + scope + '/' + hash + '" target="file-process" method="get"></form>');
     $('#data-download-form').submit().remove();
 }
@@ -577,11 +577,6 @@ function resp__phonons(req, data){
     });
     $('span.units-phonons').html(_tilde.settings.units.phonons);
 }
-function resp__make3d(req, data){
-    _tilde.rendered[req.datahash] = data;
-    $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#'+req.datahash+'"></iframe>');
-    //$('#phonons_animate').text('animate');
-}
 function resp__summary(req, data){
     data = $.evalJSON(data);
     var info = $.evalJSON(data.info);
@@ -624,8 +619,11 @@ function resp__summary(req, data){
     html += '</ul></div>';
     $('#o_'+req.datahash + ' div[rel=summary]').empty().append('<div class=summary>'+html+'</div>');
     open_ipane('3dview', req.datahash);
-    if (!_tilde.degradation) __send('make3d',  {datahash: req.datahash} );
-    else {
+    if (!_tilde.degradation){
+        _tilde.rendered[req.datahash] = true;
+        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash+'"></iframe>');
+        //$('#phonons_animate').text('animate');
+    } else {
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('ii').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
     }
 }
@@ -911,7 +909,7 @@ $(document).ready(function(){
         $('#connectors').hide();
     });
     $(document).on('click', 'span.scan_details_trigger', function(){
-        $('#debug-button').trigger('click');
+        $('#console_trigger').trigger('click');
     });
 
     // CLOSE OR REMOVE CONTEXT WINDOW

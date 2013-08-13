@@ -94,6 +94,8 @@ class API:
         # This is used while building topics (displayed at the splashscreen and tagcloud)
         self.hierarchy = [ \
             {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "order": 1, "has_column": True, "has_label": True, "descr": ""}, \
+            
+            {"cid": 22,"category": "containing element",    "source": "element#", "order": 14, "descr": ""}, \
             {"cid": 2, "category": "host elements number",  "source": "nelem", "order": 13, "descr": ""}, \
             {"cid": 3, "category": "supercell",             "source": "expanded", "order": 29, "has_column": True, "has_label": True, "descr": ""}, \
             {"cid": 4, "category": "periodicity",           "source": "periodicity", "order": 12, "has_column": True, "has_label": True, "descr": ""}, \
@@ -116,7 +118,6 @@ class API:
             {"cid": 19,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
             {"cid": 20,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
             #{"category": "code", "source": "code"}, \ <- this can be changed while merging!
-            #{"category": "containing element", "source": "element#"}, \
         ]
         self.Classifiers = []
         for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):
@@ -398,6 +399,7 @@ class API:
                         scope_prop = appclass['apptarget'][key]
 
                     if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
+                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
                         if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
                             run_permitted = True
                         else:
@@ -466,6 +468,7 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
 
         # general calculation type reasoning
+        if calc.charges: calc.info['calctypes'].append('charges')
         if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phon.dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend

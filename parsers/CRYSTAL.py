@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Tilde project: CRYSTAL outputs parser
-# v190713
+# v090813
 
 import os
 import sys
@@ -87,7 +87,9 @@ class CRYSTOUT(Output):
 
             # determine whether to deal with CRYSTAL or PROPERTIES output formats
             if len(parts_pointer) > 1:
-                if not self.is_properties(raw_data[ parts_pointer[1]: ]): raise RuntimeError( 'File contains several merged outputs - currently not supported!' )
+                if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
+                len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs
+                    raise RuntimeError( 'File contains several merged outputs - currently not supported!' )
                 else:
                     self.data = raw_data[ parts_pointer[0] : parts_pointer[1] ]
                     self.pdata = raw_data[ parts_pointer[1]: ]
@@ -205,7 +207,8 @@ class CRYSTOUT(Output):
             for i in range(2, 14):
                 try: elems[i] = float(elems[i])
                 except ValueError:
-                    raise RuntimeError( 'Sym info contains invalid rotational matrix!' )
+                    if i==2: break
+                    else: raise RuntimeError( 'Sym info contains invalid rotational matrix!' )
             for i in range(2, 11):
                 if elems[i] != 0:
                     if elems[i]>0: s = '+'
@@ -864,7 +867,8 @@ class CRYSTOUT(Output):
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
             self.method['H'] = "pure %s" % ex
         if not self.method['H']:
-            raise RuntimeError( 'Hamiltonian not found, probably the data is not regularly formatted' )
+            self.warning( 'Hamiltonian not found!' )
+            self.method['H'] = "none"
         if '\n HYBRID EXCHANGE ' in self.data:
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))

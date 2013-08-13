@@ -218,7 +218,7 @@ class SymmetryHandler(SymmetryFinder):
             tilde_obj.structures[-1]['cell'][5] != 90:
                 DIPERIODIC_MAPPING.update({1:1, 2:2, 3:3, 6:4, 7:5, 10:6, 13:7})
             try: self.dg = DIPERIODIC_MAPPING[self.n]
-            except KeyError: tilde_obj.warning('No diperiodical group found as rotational axes in this object are inconsistent with 2d translations!')
+            except KeyError: tilde_obj.warning('No diperiodical group found because rotational axes inconsistent with 2d translations!')
             else:
                 if   65 <= self.dg <= 80: self.symmetry = 'hexagonal'
                 elif 49 <= self.dg <= 64: self.symmetry = 'square'

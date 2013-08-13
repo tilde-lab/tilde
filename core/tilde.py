@@ -2,7 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v210513
+# v060813
 
 import sys
 import os
@@ -92,10 +92,12 @@ if args.add:
         userchoice = args.add
     while userchoice not in repositories:
         userchoice = raw_input("Please, input one of the possible options: " + " ".join(repositories) + "\n")
+    if not os.access(os.path.abspath(DATA_DIR + os.sep + userchoice), os.W_OK):
+        raise RuntimeError("Sorry, database file is write-protected!")
     db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + userchoice))
     db.row_factory = sqlite3.Row
     db.text_factory = str
-    print "The database selected:", settings['default_db']
+    print "The database selected:", userchoice
 
 Tilde = API(db_conn=db, settings=settings)
 

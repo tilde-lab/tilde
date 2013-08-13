@@ -247,8 +247,29 @@ THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototy
 <script type="text/javascript">
 var container, stats, camera, scene, renderer, controls, atoms;
 var forced_labels=false, active_overlay="", overlay_backup="";
-var sample = '{"atoms": [{"x": "0", "y": "0", "z": "0", "c": "0x000000", "r": "1.25", "o": {"m": 130, "mm": -0.000022, "t": "Uuo"}}, {"x": "1.25", "y": "1.25", "z": "1.25", "c": "0xFF0000", "r": "1", "o": {"m": 8, "t": "O"}}], "cell": [[3, 0, 0], [0, 3, 0], [0, 0, 3]], "descr": {"a": 3, "b": 3, "c": 3, "alpha": 90, "beta": 90, "gamma": 90}, "overlayed": {"m": "atomic ambivalence", "mm": "my property"}}';
+var sample = '{"atoms": [{"x": "0", "y": "0", "z": "0", "c": "0x000000", "r": "1.25", "o": {"m": 130, "mm": -0.000022, "t": "Uuo"}}, {"x": "1.25", "y": "1.25", "z": "1.25", "c": "0xFF0000", "r": "1", "o": {"m": 8, "t": "O"}}], "cell": [[3, 0, 0], [0, 3, 0], [0, 0, 3]], "descr": {"a": 3.00, "b": 3.00, "c": 3.00, "alpha": 90, "beta": 90, "gamma": 90}, "overlayed": {"m": "atomic ambivalence", "mm": "my test property"}}';
 
+function iframe_download( request, scope, hash ){
+    var dl = document.createElement( 'form' );
+    dl.method = "GET";
+    dl.action = '/' + request + '/' + scope + '/' + hash;
+    dl.target = "file-process";
+    dl.style.display = "none";
+    document.body.appendChild(dl);
+    dl.submit();
+}
+function json_download(request){
+    var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+    xmlhttp.onreadystatechange = function(){
+        if ((xmlhttp.readyState == 4) && (xmlhttp.status == 200)){
+            window.obj_3D = xmlhttp.responseText;
+            init_3D();
+        }
+    }
+    xmlhttp.open("GET", '/' + request);
+    xmlhttp.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
+    xmlhttp.send(1);
+}
 function calc_2D_pos(vector){
     var projector = new THREE.Projector();
     vector = projector.projectVector( new THREE.Vector3( vector.x, vector.y, vector.z ), camera );
@@ -404,7 +425,7 @@ function vibrate_3D(objPH){
             var equil_pos = { x: x, y: y, z: z };
             var tweenBack = new TWEEN.Tween( atoms.children[i].position ).to(equil_pos, 750);
             tweenBack.start();
-        }        
+        }
         window.active_overlay = window.overlay_backup;
         add_2D_labels();
     } else {
@@ -426,26 +447,9 @@ function vibrate_3D(objPH){
         window.overlay_backup = window.active_overlay;
         window.active_overlay = "";
         remove_2D_labels();
-    }    
-}
-function animate(){
-    requestAnimationFrame( animate );
-    renderer.render( scene, camera );
-    controls.update();
-    TWEEN.update();
-    //stats.update();
-}
-
-
-window.onload = function(){
-    window.addEventListener('DOMMouseScroll', rescale, false);
-    window.addEventListener('mousewheel', rescale, false);
-
-    var obj_3D = window.sample;
-    if (!!window.parent._tilde && document.location.hash.length){
-        if (document.location.hash.substr(1) in window.parent._tilde.rendered) obj_3D = window.parent._tilde.rendered[document.location.hash.substr(1)];
     }
-
+}
+function init_3D(){
     container = document.createElement( 'div' );
     container.style.backgroundColor='#ffffff';
     document.body.appendChild( container );
@@ -471,14 +475,16 @@ window.onload = function(){
         if (!e) e = window.event;
         if (e.cancelBubble) e.cancelBubble = true;
         else e.stopPropagation();
-
-        var cur = this, totalY = 0, y = (e.pageY) ? e.pageY : e.clientY, c = window.innerHeight/window.innerWidth;
-        do{ totalY += cur.offsetTop - cur.scrollTop } while(cur = cur.offsetParent);
-        if (y>110){
-            if (!!window.parent._tilde && document.location.hash.length) window.parent.iframe_download( 'cif', window.parent._tilde.settings.dbs[0], document.location.hash.substr(1) );
+        var y = (e.pageY) ? e.pageY : e.clientY;        
+        if (y<44){
+            var uri = document.location.hash.substr(1).split('/');
+            if (uri.length == 2){
+                if (!!window.parent._tilde) window.parent.location = '/static/player.html#' + uri[0] + '/' + uri[1];
+                else window.history.back();
+            }
             return;
         }
-        var fov = (y > 50) ? -100 : 100;
+        var fov = (y > 99) ? -100 : 100, c = window.innerHeight/window.innerWidth;
         camera.left += fov;
         camera.right -= fov;
         camera.top += fov*c;
@@ -489,10 +495,28 @@ window.onload = function(){
     controls = new THREE.TrackballControls( camera );
     controls.staticMoving = true;
 
-    render_3D(obj_3D);
+    window.obj_3D ? render_3D(window.obj_3D) : render_3D(window.sample);
     animate();
+}
+function animate(){
+    requestAnimationFrame( animate );
+    renderer.render( scene, camera );
+    controls.update();
+    TWEEN.update();
+    //stats.update();
+}
+
+
+window.onload = function(){
+    window.addEventListener('DOMMouseScroll', rescale, false);
+    window.addEventListener('mousewheel', rescale, false);
+
+    if (document.location.hash.length){
+        var uri = document.location.hash.substr(1).split('/');
+        if (uri.length == 2) json_download( 'json3d/' + uri.join('/') );
+    } else init_3D();
 }
 </script>
 </head>
-<body id="body"></body>
+<body id="body"><iframe id="file-process" name="file-process" width="1px" height="1px" src="" style="display:none;"></iframe></body>
 </html>

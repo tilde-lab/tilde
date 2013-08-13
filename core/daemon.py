@@ -363,55 +363,6 @@ class Request_Handler:
         return (data, error)
 
     @staticmethod
-    def make3d(userobj, session_id):
-        data, error = None, None
-        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, apps FROM results WHERE checksum = ?', (userobj['datahash'],) )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-        else:
-            row = cursor.fetchone()
-            if row is None: return (data, 'No objects found!')
-
-            overlay_data = json.loads(row['apps'])
-            overlayed_apps = {}
-            for appkey in Tilde.Apps.keys():
-                if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
-                    overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
-
-            ase_obj = aseize(json.loads(row['structures'])[-1])
-            if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
-
-            mass_center = ase_obj.get_center_of_mass()
-
-            for i in range(len(mass_center)):
-                if mass_center[i] == 0: mass_center[i] = 1
-            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
-            
-            # make player.html format below
-            # TODO: make pure CIF parsing
-            atoms = []
-            for n, i in enumerate(ase_obj):
-                if i.symbol == 'X': radius, rgb = 0.33, '0xffff00'
-                else:
-                    rgblist = (jmol_colors[ chemical_symbols.index( i.symbol ) ] * 255).tolist()
-                    rgb = '0x%02x%02x%02x' % ( rgblist[0], rgblist[1], rgblist[2] )
-                    if rgb == '0xffffff': rgb = '0xcccccc'
-                    radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
-                oa = {'t':i.symbol}
-                for app in overlayed_apps.keys():
-                    try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
-                    except KeyError: pass
-                atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
-
-            cell_points = []
-            if ase_obj.get_pbc().all() == True:
-                for i in ase_obj.cell:
-                    cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
-
-            data = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info, 'overlayed': overlayed_apps})
-        return (data, error)
-
-    @staticmethod
     def settings(userobj, session_id):
         data, error = None, None
 
@@ -880,6 +831,62 @@ class CIFDownloadHandler(tornado.web.RequestHandler):
             self.set_header('Content-type', 'application/download;')
             self.set_header('Content-disposition', 'attachment; filename="' + filename + '.cif')
             self.write(content)
+            
+class JSON3DDownloadHandler(tornado.web.RequestHandler):
+    def get(self, req_str):
+        if not '/' in req_str: raise tornado.web.HTTPError(404)
+        items = req_str.split('/')
+        if len(items) != 2: raise tornado.web.HTTPError(404)
+        db, hash = items
+        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)        
+        
+        try:
+            cursor = Repo_pool[ db ].cursor()
+            cursor.execute( 'SELECT structures, apps FROM results WHERE checksum = ?', (hash,) )
+            row = cursor.fetchone()
+            if not row: raise tornado.web.HTTPError(404)
+        except:
+            raise tornado.web.HTTPError(500)
+        else:
+            overlay_data = json.loads(row['apps'])
+            overlayed_apps = {}
+            for appkey in Tilde.Apps.keys():
+                if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
+                    overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
+
+            ase_obj = aseize(json.loads(row['structures'])[-1])
+            if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
+
+            mass_center = ase_obj.get_center_of_mass()
+
+            for i in range(len(mass_center)):
+                if mass_center[i] == 0: mass_center[i] = 1
+            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
+            
+            # make player.html format below
+            # TODO: make pure CIF understanding
+            atoms = []
+            for n, i in enumerate(ase_obj):
+                if i.symbol == 'X': radius, rgb = 0.66, '0xffff00'
+                else:
+                    rgblist = (jmol_colors[ chemical_symbols.index( i.symbol ) ] * 255).tolist()
+                    rgb = '0x%02x%02x%02x' % ( rgblist[0], rgblist[1], rgblist[2] )
+                    if rgb == '0xffffff': rgb = '0xcccccc'
+                    radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
+                oa = {'t':i.symbol}
+                for app in overlayed_apps.keys():
+                    try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
+                    except KeyError: pass
+                atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
+
+            cell_points = []
+            if ase_obj.get_pbc().all() == True:
+                for i in ase_obj.cell:
+                    cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+
+            content = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info, 'overlayed': overlayed_apps})
+            self.set_header('Content-type', 'application/json')
+            self.write(content)
 
 class DataExportHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -1029,6 +1036,7 @@ if __name__ == "__main__":
                 (r"/", IndexHandler),
                 (r"/static/(.*)", tornado.web.StaticFileHandler),
                 (r"/cif/(.*)", CIFDownloadHandler),
+                (r"/json3d/(.*)", JSON3DDownloadHandler),
                 (r"/export/(.*)", DataExportHandler),
                 (r"/VERSION", UpdateServiceHandler)
             ]),
