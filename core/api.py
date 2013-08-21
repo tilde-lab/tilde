@@ -1,4 +1,3 @@
-
 # Tilde project: basic routines
 # v210513
 # See http://wwwtilda.googlecode.com
@@ -691,13 +690,6 @@ class API:
         
         checksum = calc.get_checksum()
 
-        # save tags
-        res = self._save_tags(checksum, calc.info)
-        if res: return (None, 'Tags saving failed: '+res)
-        
-        if not db_transfer_mode: calc = self._save_preacts(calc)
-        calc.info = json.dumps(calc.info)
-
         # check unique
         try:
             cursor = self.db_conn.cursor()
@@ -707,6 +699,13 @@ class API:
         except:
             error = 'Fatal error: %s' % sys.exc_info()[1]
             return (None, error)
+
+        # save tags
+        res = self._save_tags(checksum, calc.info)
+        if res: return (None, 'Tags saving failed: '+res)
+        
+        if not db_transfer_mode: calc = self._save_preacts(calc)
+        calc.info = json.dumps(calc.info)
 
         # save extracted data
         try:
