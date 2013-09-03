@@ -8,6 +8,8 @@ import re
 import time
 from hashlib import sha224
 
+from numpy import array
+
 
 class Output:
     def __init__(self, filename=None):
@@ -32,7 +34,9 @@ class Output:
         # (II)
         # Tilde ORM objects
         # mapped onto database
-        self.energy = None
+        self.energy = None # in eV
+        
+        self.forces = array([])
 
         self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity} dicts
                                # *list* cell is [a, b, c, alpha, beta, gamma]

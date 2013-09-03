@@ -11,13 +11,9 @@ from numpy import dot
 from numpy import array
 
 from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.units import Bohr, Hartree, Rydberg
 
 from parsers import Output
-
-
-Bohr = 0.5291772
-Hartree = 27.211398
-Rydberg = Hartree / 2
 
 class SCF(Output):
     def __init__(self, file, **kwargs):

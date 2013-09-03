@@ -25,6 +25,9 @@ def u(obj, encoding='utf-8'):
     if not isinstance(obj, unicode):
         return unicode(obj, encoding)
     else: return obj
+    
+def html2str(i):
+    return str(i).replace('<sub>', '_').replace('</sub>', '').replace('<sup>', '^').replace('</sup>', '')
         
 def generate_cif(parameters, atoms, symops, comment=None):
     if not parameters: parameters = [10, 10, 10, 90, 90, 90]
@@ -92,4 +95,24 @@ def deaseize(ase_obj):
     atypes = ase_obj.get_chemical_symbols()
     atoms = [ [atypes[n], i[0], i[1], i[2]] for n, i in enumerate(ase_obj.positions) ]
     cell = [ float( ase_obj.info[tilde_key] ) for tilde_key in tilde_values ] if 'hm' in ase_obj.info else cell_to_cellpar( ase_obj.cell ).tolist()
-    return {'cell': cell, 'atoms': atoms, 'periodicity':3} # todo  
+    return {'cell': cell, 'atoms': atoms, 'periodicity':3} # todo
+
+def userchoice(options, choice=None):
+	''' Auxiliary procedure to simplify UI '''
+	if not choice:
+		suggest = ''
+		for n, i in enumerate(options):
+			suggest += i + " (" + str(n+1) + ") "
+		choice = raw_input("Which database to use? Please, input one possible option: " + suggest + "\n")
+	try: choice = int(choice)
+	except ValueError:
+		if choice not in options:
+			return userchoice()
+		else:
+			return choice
+	else:
+		try: choice = options[choice-1]
+		except IndexError:
+			return userchoice()
+		else:
+			return choice

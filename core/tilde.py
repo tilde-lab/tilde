@@ -30,6 +30,7 @@ except ImportError:
         sys.exit()
 
 from settings import settings, repositories, DATA_DIR
+from common import userchoice, html2str
 from api import API
 
 
@@ -57,6 +58,7 @@ args = parser.parse_args()
 
 # GUI:
 # run GUI service daemon if no commands are given
+
 if not args.path and not args.daemon: #if not len(vars(args)):
     args.daemon = 'shell'
 if args.daemon:
@@ -84,20 +86,20 @@ if args.cif:
 
 # CLI:
 # if there are commands, run command-line text interface
+	
 db = None
 if args.add:
     if args.add == 'DIALOG':
-        userchoice = raw_input("Which database to use?\nPlease, input one of the possible options: " + " ".join(repositories) + "\n")
+        uc = userchoice(repositories)
     else:
-        userchoice = args.add
-    while userchoice not in repositories:
-        userchoice = raw_input("Please, input one of the possible options: " + " ".join(repositories) + "\n")
-    if not os.access(os.path.abspath(DATA_DIR + os.sep + userchoice), os.W_OK):
+        uc = userchoice(repositories, args.add)
+
+    if not os.access(os.path.abspath(DATA_DIR + os.sep + uc), os.W_OK):
         raise RuntimeError("Sorry, database file is write-protected!")
-    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + userchoice))
+    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
     db.row_factory = sqlite3.Row
     db.text_factory = str
-    print "The database selected:", userchoice
+    print "The database selected:", uc
 
 Tilde = API(db_conn=db, settings=settings)
 
@@ -105,9 +107,6 @@ if settings['skip_unfinished']: finalized = 'YES'
 else: finalized = 'NO'
 print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
 
-
-def html2str(i):
-    return str(i).replace('<sub>', '_').replace('</sub>', '').replace('<sup>', '^').replace('</sup>', '')
 DIV = "~"*75
 
 for target in args.path:
@@ -129,11 +128,8 @@ for target in args.path:
             print filename, error
             continue
 
-        output_line = filename + " (E=" + str(calc.energy) + ")"
+        output_line = filename + " (E=" + str(calc.energy) + " eV)"
         if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
-
-        print output_line + add_msg
-
 
         if args.add:
             checksum, error = Tilde.save(calc)
@@ -141,9 +137,8 @@ for target in args.path:
                 print filename, error
                 continue
             output_line += ' added'
-            continue
-            # NB. STOP HERE
 
+        print output_line + add_msg
 
         if args.info:
             found_topics = []

@@ -20,11 +20,10 @@ from numpy import zeros
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.data import atomic_numbers, chemical_symbols
 from ase.atoms import Atoms
+from ase.units import Hartree
 
 from parsers import Output
 
-
-Hartree = 27.211398
 VaspToCm = 521.47083
 
 def reverse_readline(m_file, blk_size=4096):

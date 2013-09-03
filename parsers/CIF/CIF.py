@@ -10,13 +10,12 @@ from ase.lattice.spacegroup.cell import cellpar_to_cell
 from PyCifRW import CifFile
 
 from parsers import Output
-
 from common import deaseize
 
 class CIF(Output):
 	def __init__(self, file, **kwargs):
 		Output.__init__(self, file)
-		self.data = open(file).readlines()
+		self.data = open(file).read()
 		CIF_instance = CifFile.ReadCif(file)
 		main = CIF_instance.first_block()
 		
@@ -65,11 +64,11 @@ class CIF(Output):
 			i = i.encode('ascii').capitalize()
 			if i == 'Xx': i = 'X'
 			ase_symbols.append(i)
-
-		if format_keys[0] == '_atom_site_fract_x':
-			ase_structure = ASE_atoms(symbols=ase_symbols, scaled_positions=ase_positions, cell=xyz_matrix, pbc=True)
-		else:
-			ase_structure = ASE_atoms(symbols=ase_symbols, positions=ase_positions, cell=xyz_matrix, pbc=True)	
+		
+		ase_structure = ASE_atoms(symbols=ase_symbols, cell=xyz_matrix, pbc=True)
+		
+		if format_keys[0] == '_atom_site_fract_x': ase_structure.set_scaled_positions(ase_positions)
+		else: ase_structure.set_positions(ase_positions)
 		
 		self.structures = [deaseize(ase_structure)]
 		

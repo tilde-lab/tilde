@@ -16,11 +16,10 @@ from numpy import append
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.lattice.spacegroup.cell import cellpar_to_cell
+from ase.units import Hartree
 
 from parsers import Output
 
-
-Hartree = 27.211398
 patterns = {}
 patterns['Etot'] = re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL)
 patterns['pEtot'] = re.compile(r"\n\sTOTAL ENERGY\s(.+?)\sCONVERGENCE")

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 #
 # Tilde project: daemon
-# (currently acting as the UI service)
+# (currently acting as a GUI service)
 # Provides a user interface for database management
 #
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
 #
 # See http://wwwtilda.googlecode.com
-# v150713
+# v040913
 
 import os
 import sys
@@ -1056,7 +1056,7 @@ if __name__ == "__main__":
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "\nWelcome to " + EDITION + " UI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
+        print "\nWelcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: io_loop.start()
         except KeyboardInterrupt:
