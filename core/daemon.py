@@ -51,11 +51,11 @@ from common import aseize
 
 DELIM = '~#~#~'
 EDITION = settings['title'] if settings['title'] else 'Tilde ' + API.version
-UPDATE_SERVER = ('tilde.pro', 80)
 E_LOWER_DEFAULT = -7.0
 E_UPPER_DEFAULT = 7.0
 
 Tilde = API()
+
 # NB:
 # Users stores User objects associated with their sessions
 # Repo_pool stores opened DB handles
@@ -956,12 +956,12 @@ def html_formula(string):
 if __name__ == "__main__":
     
     # check new version
-    if not settings['demo_regime']:
+    if not settings['demo_regime'] and 'update_server' in settings:
         updatemsg = ''
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.settimeout(2)
-            s.connect(UPDATE_SERVER)
+            s.connect(settings['update_server'])
             s.send("GET /VERSION HTTP/1.0\r\n\r\n")
             data = s.recv(1024)
             s.close()
@@ -1042,6 +1042,7 @@ if __name__ == "__main__":
             ]),
             static_path = os.path.realpath(os.path.dirname(__file__)) + '/../htdocs',
             socket_io_port = settings['webport'],
+            socket_io_address = '0.0.0.0',
             **config)
         tornadio2.server.SocketServer(application, io_loop=io_loop, auto_start=False)
     except:
@@ -1055,6 +1056,9 @@ if __name__ == "__main__":
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "\nWelcome to " + EDITION + " UI service\nPlease, open http://" + address + "/ in your browser\n"
+        print "\nWelcome to " + EDITION + " UI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
-        io_loop.start()
+        try: io_loop.start()
+        except KeyboardInterrupt:
+			print "\nBye-bye."
+			sys.exit()

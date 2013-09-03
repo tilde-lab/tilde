@@ -20,7 +20,8 @@ DEFAULT_SETUP = {
                 'quick_regime': False,
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
-                'title': None
+                'title': None,
+                'update_server': ('tilde.pro', 80)
                 }
 DB_SCHEMA = '''
 DROP TABLE IF EXISTS "results";

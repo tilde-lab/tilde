@@ -78,7 +78,7 @@ elif 'linux' in sys.platform:
                 tmp.write(input)
                 tmp.seek(0)
                 tmp.close()
-                p = subprocess.Popen('cd ' + os.path.realpath(os.path.dirname(__file__) + '/deps/findsym/') + ' && ./findsym < ' + tmp.name + ' 2>&1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                p = subprocess.Popen('export ISODATA=' + os.path.realpath(os.path.dirname(__file__)) + '/deps/findsym/ && cd $ISODATA && ./findsym < ' + tmp.name + ' 2>&1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 foundsym = p.communicate()[0]
                 os.remove(tmp.name)
 

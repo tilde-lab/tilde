@@ -469,12 +469,13 @@ function resp__tags(req, data){
 }
 function resp__list(obj, data){
     if (data.substr(0, 20) == 'SETUP_NEEDED_TRIGGER'){ // bad design, fixme!!!
-        //$('#connectors').hide();
+		$('#connectors').hide();
         $('#profile_holder').show();
         open_ipane('scan');
         $('#settings_local_path').val( data.substr(20) ).focus();
         return;
     }
+    $('#connectors').show();
     if (data.length)
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
