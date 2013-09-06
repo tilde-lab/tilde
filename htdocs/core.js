@@ -28,7 +28,7 @@ _tilde.cw = 0;
 
 // units
 _tilde.units = {
-    'energy': {'au':1, 'eV':27.2113834, 'Ry':13.6056991},
+    'energy': {'au':0.03674932601, 'eV':1, 'Ry':0.07349861206},
     'phonons': {'cm<sup>-1</sup>':1, 'THz':0.029979}
 };
 _tilde.unit_capts = {'energy':'Total electronic energy', 'phonons':'Phonon frequencies'};
@@ -118,7 +118,7 @@ function console(show){
 function set_repos(){
     $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
 
-    var title = 'Current repository: ' + _tilde.settings.dbs[0];
+    var title = 'Current DB: ' + _tilde.settings.dbs[0];
     if (!!_tilde.settings.dbs.length && _tilde.settings.dbs.length > 1) title += ' (<span class=link>' + (_tilde.settings.dbs.length - 1) + ' more</span>)';
     $('h1').html( title );
 
@@ -444,7 +444,7 @@ function resp__tags(req, data){
             });
             tags_html += '</div></div>'
         });
-        if (!tags_html.length) tags_html = '&nbsp;Repository is empty!';
+        if (!tags_html.length) tags_html = '&nbsp;DB is empty!';
 
         $('#splashscreen').empty().append(tags_html);
         $('#tagcloud').empty().append(tags_html);
@@ -475,7 +475,7 @@ function resp__list(obj, data){
         $('#settings_local_path').val( data.substr(20) ).focus();
         return;
     }
-    $('#connectors').show();
+    $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
     if (data.length)
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
@@ -708,7 +708,7 @@ $(document).ready(function(){
     centerize();
     if (navigator.appName == 'Microsoft Internet Explorer'){
         _tilde.degradation = true;
-        //notify('Microsoft Internet Explorer doesn\'t work properly with this page.<br />Please, try to use Chrome, Firefox, Safari or Opera browser.<br />Thank you in advance and sorry for inconvenience.');
+        //notify('Microsoft Internet Explorer doesn\'t work properly with this page.<br />Please, use Chrome, Firefox, Safari or Opera browser.<br />Thank you in advance and sorry for inconvenience.');
     }
     $('#notifybox').hide();
 

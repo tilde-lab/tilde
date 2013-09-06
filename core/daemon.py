@@ -43,7 +43,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cellpar_to_cell
 
-from settings import settings, write_settings, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA
+from settings import settings, write_settings, write_db, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA
 from api import API
 from plotter import plotter
 from common import aseize
@@ -430,22 +430,20 @@ class Request_Handler:
     def db_create(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
-        if not len(userobj['newname']) or not re.match('^[\w-]+$', userobj['newname']): return (data, 'Invalid name!')
-
+        
         global Repo_pool
-        userobj['newname'] = userobj['newname'].replace('../', '') + '.db'
-        if len(userobj['newname']) > 21: return (data, 'Please, do not use long names for the databases!')
+        
         if len(Repo_pool) == 6: return (data, 'Due to memory limits cannot manage more than 6 databases!')
-        if os.path.exists(DATA_DIR + os.sep + userobj['newname']) or not os.access(DATA_DIR, os.W_OK): return (data, 'Cannot write database file, please, check the path ' + DATA_DIR + os.sep + userobj['newname'])
-
-        Repo_pool[userobj['newname']] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + userobj['newname']  ) )
-        Repo_pool[userobj['newname']].row_factory = sqlite3.Row
-        Repo_pool[userobj['newname']].text_factory = str
-        cursor = Repo_pool[userobj['newname']].cursor()
-        for i in DB_SCHEMA.splitlines():
-            cursor.execute( i )
-        Repo_pool[userobj['newname']].commit()
-        data = 1
+        
+        error = write_db(userobj['newname'])
+        userobj['newname'] += '.db'
+        
+        if not error:
+            Repo_pool[userobj['newname']] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + userobj['newname']  ) )
+            Repo_pool[userobj['newname']].row_factory = sqlite3.Row
+            Repo_pool[userobj['newname']].text_factory = str
+            data, error = 1, None
+        
         return (data, error)
 
     @staticmethod
@@ -1060,5 +1058,5 @@ if __name__ == "__main__":
 
         try: io_loop.start()
         except KeyboardInterrupt:
-			print "\nBye-bye."
-			sys.exit()
+            print "\nBye-bye."
+            sys.exit()

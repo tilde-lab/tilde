@@ -1,6 +1,7 @@
 
 import sys
 import os
+import re
 import json
 
 try: import sqlite3
@@ -16,7 +17,7 @@ DEFAULT_SETUP = {
                 'local_dir': None,
                 'exportability': True,
                 'demo_regime': False,
-                'debug_regime': False,
+                'debug_regime': True,
                 'quick_regime': False,
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
@@ -35,6 +36,10 @@ CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL, FOREIGN KEY(tid) R
 '''
 
 
+#
+# those routines, which involve Tilde API and schema, are here : TODO
+#
+
 def write_settings(settings):
     if not os.access(DATA_DIR, os.W_OK): return False
     try:
@@ -45,6 +50,68 @@ def write_settings(settings):
         return False
     else:
         return True
+        
+def write_db(name):
+	if not len(name) or not re.match('^[\w-]+$', name):
+		return 'Invalid name!'
+
+	name = name.replace('../', '') + '.db'
+	
+	if len(name) > 21:
+		return 'Please, do not use long names for the databases!'
+	
+	if os.path.exists(DATA_DIR + os.sep + name) or not os.access(DATA_DIR, os.W_OK):
+		return 'Cannot write database file, please, check the path ' + DATA_DIR + os.sep + name
+
+	conn = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + name  ) )
+
+	cursor = conn.cursor()
+	for i in DB_SCHEMA.splitlines():
+		cursor.execute( i )
+	conn.commit()
+	conn.close()
+	
+	return False
+
+def userdbchoice(options, choice=None, add_msg="", create_allowed=True):
+	''' Auxiliary procedure to simplify UI '''
+	if choice is None:
+		suggest = " (0) create new" if create_allowed else ""
+		for n, i in enumerate(options):
+			suggest += " (" + str(n+1) + ") " + i
+		choice = raw_input(add_msg + "Which database to use?\nPlease, input one of the options:" + suggest + "\n")
+		add_msg = ""
+	
+	try: choice = int(choice)
+	
+	# Not numeric
+	except ValueError:
+		if choice not in options:
+			return userdbchoice(options, add_msg="Invalid choice!\n")
+		else:
+			return choice
+	
+	# Numeric
+	else:
+		# invoke creation subroutine
+		if choice == 0:
+			if not create_allowed: return userdbchoice(options, add_msg="Invalid choice!\n")
+				
+			choice = raw_input(add_msg + "Please, input name without \".db\" extension:\n")
+			add_msg = ""
+			
+			error = write_db(choice)
+			if error:
+				return userdbchoice(options, choice=0, add_msg=error + "\n")				
+			else:
+				return choice + '.db'
+		
+		# choice by index		
+		try: choice = options[choice-1]
+		except IndexError:
+			return userdbchoice(options, add_msg="Invalid choice!\n")
+		else:
+			return choice
 
 
 # INSTALL MODE

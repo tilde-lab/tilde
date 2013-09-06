@@ -81,6 +81,8 @@ elif 'linux' in sys.platform:
                 p = subprocess.Popen('export ISODATA=' + os.path.realpath(os.path.dirname(__file__)) + '/deps/findsym/ && cd $ISODATA && ./findsym < ' + tmp.name + ' 2>&1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 foundsym = p.communicate()[0]
                 os.remove(tmp.name)
+                
+                #print foundsym
 
                 if not "------------------------------------------" in foundsym:
                     self.error = 'FINDSYM program failed to run!'

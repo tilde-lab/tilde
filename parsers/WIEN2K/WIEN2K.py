@@ -36,7 +36,7 @@ class SCF(Output):
                 adata = line.replace(':POS', '').replace('\r', '').replace('\n', '').split(':')
                 try: poses[ int(adata[0]) ]
                 except KeyError:
-                    atom = filter(None, adata[1][22:47].split(' '))
+                    atom = adata[1][22:47].split()
                     atom = [float(i) for i in atom]
                     poses[ int(adata[0]) ] = [atom[0], atom[1], atom[2]]
 
@@ -69,12 +69,12 @@ class SCF(Output):
             R = dot( array([i[1], i[2], i[3]]), cell )
             xyz_atoms.append( [i[0], R[0], R[1], R[2]] )
         
-        self.structures = [{'cell': cell_to_cellpar( cell ).tolist(), 'atoms': xyz_atoms, 'periodicity':3}]
+        self.structures = [{'cell': cell_to_cellpar( cell ).tolist(), 'atoms': xyz_atoms, 'periodicity': 3}]
 
         self.warning('Warning, at the moment only cells with the direct angles are supported!')
         if mwarn: self.warning('Warning, some symmetry-equivalent atoms were not restored!')
         
-        self.data = "\n".join(self.data)
+        self.data = "".join(self.data)
         self.info['prog'] = "WIEN2K"
 
     @staticmethod

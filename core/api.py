@@ -69,7 +69,7 @@ class API:
 			for name, cls in inspect.getmembers(module):
 				if inspect.isclass(cls):
 					if inspect.isclass(cls) and hasattr(cls, 'fingerprints'):
-						self.Parsers[parser] = cls
+						self.Parsers[cls.__name__] = cls
 
 		# *module API*
 		# Tilde module (app) is simply a subfolder (%appfolder%) of apps folder containing manifest.json and %appfolder%.py files
@@ -267,7 +267,7 @@ class API:
 		'''
 		calc, error = None, None
 		try: calc = self.Parsers[parser_name](parsable, **missing_props)
-		except RuntimeError as e: error = "routine %s parser error: %s" % ( parser_name, e )
+		except RuntimeError as e: error = "routine %s parser error in %s: %s" % ( parser_name, parsable, e )
 		except:
 			exc_type, exc_value, exc_tb = sys.exc_info()
 			error = "unexpected %s parser error in %s:\n %s" % ( parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )

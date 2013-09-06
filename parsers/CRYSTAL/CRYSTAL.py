@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v090813
+# v050913
 
 import os
 import sys
@@ -107,7 +107,7 @@ class CRYSTOUT(Output):
                 self.info['duration'] = self.get_duration()
                 self.info['finished'] = self.is_finished()
 
-                self.input, self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
+                self.comment, self.input, self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
                 self.molecular_case = False
                 self.energy = self.get_etot()
                 self.structures = self.get_structures()
@@ -295,12 +295,12 @@ class CRYSTOUT(Output):
 
     def get_etot(self):
         e = patterns['Etot'].search(self.data)
-        if e is not None: return float(e.groups()[0])
+        if e is not None: return float(e.groups()[0]) * Hartree
         else:
             if '  CENTRAL POINT ' in self.data:
                 phonon_e = self.data.split('  CENTRAL POINT ')[-1].split("\n", 1)[0]
                 phonon_e = phonon_e.split()[0]
-                return float(phonon_e)
+                return float(phonon_e) * Hartree
             else:
                 self.warning( 'No energy in CRYSTAL output!' )
                 return None
@@ -533,10 +533,11 @@ class CRYSTOUT(Output):
                 trsh_line_cnt = 0
         if not keywords:
             #self.warning( 'No d12-formatted input data in the beginning found!' )
-            return None, version
+            return None, None, version
         keywords = keywords[:-trsh_line_cnt]
+        comment = keywords[0]
         keywords = "\n".join(keywords)
-        return keywords, version
+        return comment, keywords, version
 
     def is_finished(self):
         if self.info['duration'] and not 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ERR' in self.data: return 1
@@ -961,10 +962,11 @@ class CRYSTOUT(Output):
             for i in zpcycs:
                 numdata = i.split(" DETOT ")
                 num = numdata[1].split()
-                try: f = float(num[0])
+                try: f = float(num[0]) * Hartree
                 except ValueError: f = 0
                 if f != 0 and not math.isnan(f): convergdata.append(   int( math.floor( math.log( abs( f ), 10 ) ) )   )
         else: self.warning( 'SCF not found!' )
+        
         enes = patterns['enes'].findall(self.data)
         if enes is not None:
             for i in enes:
@@ -974,7 +976,7 @@ class CRYSTOUT(Output):
                 else: s=int(s)
                 ncycles.append(s)
                 ene = i[1].split("DE")[0].strip()
-                try: ene = float(ene)
+                try: ene = float(ene) * Hartree
                 except ValueError: ene = None
                 energies.append(ene)
         n = 0
@@ -1001,7 +1003,7 @@ class CRYSTOUT(Output):
                 criteria[3].insert(0, 0)
                 criteria[3].append(criteria[3][-1])
             if len(criteria[0]) - len(energies) == 1: # WTF?
-                self.warning( 'Energy was not printed at some step, so the correspondence is partly lost (tried to fix)!' )
+                self.warning( 'Energy was not printed at intermediate step, so the correspondence is partly lost (tried to fix)!' )
                 energies.insert(0, energies[0])
                 ncycles.insert(0, ncycles[0])
             if len(criteria[1]) - len(criteria[2]) > 1: # WTF???
@@ -1015,7 +1017,7 @@ class CRYSTOUT(Output):
             zpe = self.data.split("\n E0            :")[1].split("\n", 1)[0].split()[0] # AU
             try: zpe = float(zpe)
             except ValueError: return None
-            else: return zpe #*Hartree
+            else: return zpe * Hartree
         else: return None
     
     def get_e_last(self):
@@ -1061,7 +1063,7 @@ class CRYSTOUT(Output):
         #shifter = self.pdata.split("ENERGY LEVEL SHIFTING")[1]
         #shifter = float( shifter.split("\n", 1)[0] )
         #e_last += shifter
-        return e_last*Hartree
+        return e_last * Hartree
 
     def get_e_eigvals(self):
         if not " EIGENVALUES - " in self.pdata: return None

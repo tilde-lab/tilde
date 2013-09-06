@@ -34,10 +34,8 @@ class Output:
         # (II)
         # Tilde ORM objects
         # mapped onto database
-        self.energy = None # in eV
+        self.energy = None # in eV      
         
-        self.forces = array([])
-
         self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity} dicts
                                # *list* cell is [a, b, c, alpha, beta, gamma]
                                # *list* atoms has lists of atoms with coordinates in cartesian system
@@ -93,11 +91,13 @@ class Output:
         # (III)
         # Tilde objects not (yet)
         # or not fully mapped onto database
+        self.forces = array([])
         self.charges = None
         self.input = None
-        self.convergence = None
-        self.ncycles = None
-        self.tresholds = None
+        self.convergence = []
+        self.ncycles = []
+        self.tresholds = []
+        self.comment = None
 
         # (IV)
         # settings objects
