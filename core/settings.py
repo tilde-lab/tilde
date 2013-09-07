@@ -17,7 +17,7 @@ DEFAULT_SETUP = {
                 'local_dir': None,
                 'exportability': True,
                 'demo_regime': False,
-                'debug_regime': True,
+                'debug_regime': False,
                 'quick_regime': False,
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",

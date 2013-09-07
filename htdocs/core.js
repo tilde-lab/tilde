@@ -33,7 +33,7 @@ _tilde.units = {
 };
 _tilde.unit_capts = {'energy':'Total electronic energy', 'phonons':'Phonon frequencies'};
 _tilde.default_settings = {};
-_tilde.default_settings.units = {'energy':'au', 'phonons':'cm<sup>-1</sup>'};
+_tilde.default_settings.units = {'energy':'eV', 'phonons':'cm<sup>-1</sup>'};
 _tilde.default_settings.cols = [1, 1001, 1002, 1005, 1006, 10]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
 _tilde.default_settings.colnum = 75;
 
@@ -476,6 +476,7 @@ function resp__list(obj, data){
         return;
     }
     $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
+    open_ipane('conn-local');
     if (data.length)
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
@@ -1036,8 +1037,8 @@ $(document).ready(function(){
     // DATABROWSER MENU ADD
     $(document).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
-        $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
         $('html, body').animate({scrollTop: 0});
+        $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();        
         open_ipane('conn-local');
         if (!_tilde.filetree.transports['local']){
             $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
@@ -1256,6 +1257,7 @@ $(document).ready(function(){
 
     // UNIVERSAL ENTER HOTKEY: NOTE ACTION BUTTON *UNDER THE SAME DIV* WITH THE FORM
     $(document).on('submit', 'form._hotkeyable', function(){
+        alert($(this).parent().children('div._hotkey').value())
         $(this).parent().children('div._hotkey').trigger("click");
         return false;
     });

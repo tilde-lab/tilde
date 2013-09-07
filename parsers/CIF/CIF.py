@@ -10,7 +10,7 @@ from ase.lattice.spacegroup.cell import cellpar_to_cell
 from PyCifRW import CifFile
 
 from parsers import Output
-from common import deaseize
+from core.common import deaseize
 
 class CIF(Output):
 	def __init__(self, file, **kwargs):

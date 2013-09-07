@@ -116,11 +116,11 @@ class API:
 			
 			{"cid": 8, "category": "symmetry",              "source": "symmetry", "order": 80, "has_column": True, "has_label": True, "descr": ""}, \
 			{"cid": 9, "category": "space group (Schon.)",  "source": "sg", "order": 81, "has_column": True, "descr": "Result space group (Schoenflis notation)"}, \
-			{"cid": 10,"category": "point group",           "source": "pg", "order": 82, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 10,"category": "point group",           "source": "pg", "order": 82, "has_column": True, "has_label": True, "descr": "Result point group"}, \
 			{"cid": 11,"category": "space group (intl.)",   "source": "ng", "order": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
-			{"cid": 12,"category": "layer group (intl.)",   "source": "dg", "order": 91, "has_column": True, "descr": ""}, \
+			{"cid": 12,"category": "layer group (intl.)",   "source": "dg", "order": 91, "has_column": True, "descr": "Result layer group (international notation)"}, \
 			
-			{"cid": 13,"category": "main tolerances",       "source": "tol", "order": 84, "has_column": True, "descr": ""}, \
+			{"cid": 13,"category": "main tolerance",       "source": "tol", "order": 84, "has_column": True, "has_label": True, "descr": ""}, \
 			{"cid": 14,"category": "spin-polarized",        "source": "spin", "negative_tagging": True, "order": 22, "has_column": True, "has_label": True, "descr": ""}, \
 			{"cid": 15,"category": "locked magn.state",     "source": "lockstate", "order": 23, "has_column": True, "has_label": True, "descr": ""}, \
 			{"cid": 16,"category": "k-points set",          "source": "k", "order": 85, "has_column": True, "has_label": True, "descr": ""}, \
@@ -128,7 +128,7 @@ class API:
 			{"cid": 18,"category": "phon.magnitude",        "source": "dfp_magnitude", "order": 86, "has_column": True, "descr": ""}, \
 			{"cid": 19,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
 			{"cid": 20,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
-			#{"category": "code", "source": "code"}, \ <- this can be changed while merging!
+			{"cid": 21,"category": "Program", 				"source": 'prog', "order": 89, "has_column": True, "has_label": True, "descr": ""},
 		]
 		self.Classifiers = []
 		for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):

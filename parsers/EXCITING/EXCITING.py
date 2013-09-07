@@ -16,7 +16,7 @@ from ase.units import Bohr, Hartree
 from parsers import Output
 
 # INFO.OUT parser
-
+Hartree=1
 class INFOOUT(Output):
 	def __init__(self, file, **kwargs):
 		Output.__init__(self, file)
@@ -33,6 +33,7 @@ class INFOOUT(Output):
 		first_cycle_lithium, opt_flag = True, False
 		
 		H_mapping = {
+		3: 'LSDAPerdew-Wang',
 		22: 'PBEsol',
 		20: 'PBE-GGA/PBE-GGA',
 		100:'PBE-GGA/PBE-GGA'
@@ -82,10 +83,10 @@ class INFOOUT(Output):
 				self.method['k'] = "x".join(line.split(":")[-1].split())
 				
 			elif 'Smallest muffin-tin radius times maximum |G+k|' in line: # Lithium
-				self.method['tol'] = 'Rkmax=%s' % float(line.split(":")[-1].strip())
+				self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
 				
 			elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
-				self.method['tol'] = 'Rkmax=%s' % float(line.split(":")[-1].strip())
+				self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
 				
 			elif 'Exchange-correlation type :' in line:
 				h = int(line.split(":")[-1])

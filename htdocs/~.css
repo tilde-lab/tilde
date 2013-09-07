@@ -132,11 +132,11 @@ a.activetag:hover{color:#fff;background:#06c;}
 /* PROFILE DYNPANE */
 #profile_holder{display:none;z-index:500;position:fixed;right:3px;top:56px;width:550px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
 #profile_holder div.ipane{border-width:0;border-top:1px solid #06c;}
+#ipane_cols_holder ul{width:100%;}
+#ipane_cols_holder ul li{list-style:none;line-height:22px;float:left;width:49%;}
 #settings_frame{z-index:101;width:550px;background:url(images/top-corner-black.gif) 91% top no-repeat;margin:-20px 0 25px;padding-top:28px;}
 #settings_holder{padding-top:1px !important;}
 #settings_holder div.ipane div{width:90%;margin:0 auto;padding-top:30px;line-height:1.4;}
-#ipane_cols_holder ul{width:100%;}
-#ipane_cols_holder ul li{list-style:none;line-height:22px;float:left;width:49%;}
 
 /* CONNECTORS DYNPANE */
 #connectors{display:none;z-index:15;position:absolute;width:700px;top:46px;padding-top:10px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}

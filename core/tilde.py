@@ -57,7 +57,7 @@ parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): s
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
-parser.add_argument("-d", dest="datamining", action="store", help="datamining query", type=str, metavar="QUERY", nargs='?', const='SELECT COUNT(*) FROM results', default=None)
+parser.add_argument("-d", dest="datamining", action="store", help="datamining query", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 
 args = parser.parse_args()
 
@@ -130,20 +130,43 @@ if args.path:
 
 if args.datamining:
     N = 10
-    output = {}
     cursor = db.cursor()
-    #try: cursor.execute( 'SELECT info, energy, apps FROM results WHERE energy IN (SELECT energy FROM results WHERE energy != "" ORDER BY energy LIMIT '+str(N)+')' )
-    try: cursor.execute( args.datamining )
-    except: print 'Fatal error: ' + "%s" % sys.exc_info()[1]
-    else:
-        result = cursor.fetchall()        
-        for row in result:
-            for key in row.keys():
-                if not key in output: output[key] = []
-                output[key].append( row[key] )
-    #output = sorted(output, key=lambda x: x[0])
+
+    #args.datamining = 'SELECT info, energy, apps FROM results WHERE energy IN (SELECT energy FROM results WHERE energy != "" ORDER BY energy LIMIT '+str(N)+')'
     
-    pprint.pprint( output )
+    clause, statement = [], []
+    input = args.datamining.split()
+    for word in input:
+        if '=' in word or '>' in word or '<' in word:
+            clause.append(word)
+        else:
+            statement.append(word)
+    
+    statement = ", ".join(statement) if len(statement) else 'COUNT(*)'
+    statement = 'SELECT ' + statement + ' FROM results'
+    clause = ' WHERE ' + " AND ".join(clause) if len(clause) else ""
+    query = statement + clause
+    
+    print 'Query: ' + query
+    
+    try: cursor.execute( query )
+    except: print 'Error for query: ' + "%s" % sys.exc_info()[1]
+    else:
+        result = cursor.fetchall()
+        postmessage = ''
+        L = len(result)
+        if L > 50:
+			result = result[:50]
+			postmessage = "\n...\n%s more" % (L-50)
+        out = ''
+        i=0        
+        for row in result:
+            if i==0: out += "   ".join( row.keys() ) + "\n"
+            for k in row.keys():
+                out += str(row[k]) + "   "
+            out += "\n"
+            i+=1
+    print out + postmessage
     print DIV    
     sys.exit()
 

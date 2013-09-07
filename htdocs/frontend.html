@@ -3,7 +3,7 @@
 <head>
 <title></title>
 <meta charset="utf-8" />
-<link type="text/css" href="/static/~.css?31" rel="stylesheet" media="screen" />
+<link type="text/css" href="/static/~.css" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="/static/jquery.json.min.js"></script>
 <script type="text/javascript" src="/static/socket.io.min.js"></script>
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
@@ -54,12 +54,12 @@
     <div class="ipane" rel="conn-local">
         <div id="tilda-local-filetree" class="filetree"></div>
     </div>
-    <div class="ipane" rel="conn-upload">
+    <!--<div class="ipane" rel="conn-upload">
         <form id="upload_form" action="/upload" target="file-process" method="post" enctype="multipart/form-data" style="margin:50px 30px;">
             <input type="file" name="file" size="52" value="" />
             <input type="submit" value="Upload" id="upload_start" />
         </form>
-    </div>
+    </div>-->
 </div>
 
 <!-- USER PROFILE AND SETTINGS WINDOW -->
@@ -240,7 +240,7 @@
         <div class="menu_main_cmds">
             <div class="btn left protected" id="add_trigger">add data</div>
             <div class="btn btn2 left" id="noclass_trigger">show all topics</div>
-            <!--<div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">classifier</div>-->
+            <div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">classify</div>
             <div class="btn btn3 left" id="closeobj_trigger" style="display:none;">hide all details</div>
             <div id="countbox"></div>
         </div>

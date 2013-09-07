@@ -998,10 +998,9 @@ if __name__ == "__main__":
         return "<td rel=%s>%s</td>" % (colnum, finished)
 
     ADD_COLS = [ \
-    {"cid": 1001, "category": "<i>N<sub>atoms</sub></i>", "source": '', "order": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
-    {"cid": 1002, "category": "<i>E<sub>el.tot</sub></i>/cell, <span class=units-energy>au</span>", "source": '', "order": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
+    {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "order": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
+    {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>au</span>", "source": '', "order": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
     {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "order": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims}, \
-    {"cid": 1004, "category": "Program", "source": 'prog', "order": 97, "has_column": True}, \
     {"cid": 1005, "category": "Source file", "source": '', "order": 98, "has_column": True, "cell_wrapper": col__loc}, \
     {"cid": 1006, "category": "Finished?", "source": '', "order": 99, "has_column": True, "cell_wrapper": col__finished}, \
     ]
