@@ -90,18 +90,23 @@
             <div class="left" style="clear:none;width:60%;margin-left:25px">Max. number of items in table:</div>
             <div id="ipane-maxitems-holder" class="right" style="clear:none;width:30%;margin-right:25px"></div>
             
+            <div><br /><input type="checkbox" id="settings_objects_expand" checked="" /> <label for="settings_objects_expand">click by row shows more info</label></div>
+            
             <div class="clear"></div>
 
             <div class="btn settings-apply" style="width:120px;margin:0 auto;">apply and save</div>
         </div>
 
         <div class="ipane" rel="units">
-            <div>New settings will be applied for the newly requested portions of data.</div>
-            <div id="ipane-units-holder"></div>
+			<form class="_hotkeyable" method="post" action="/">
+				<br /><br />
+				<div id="ipane-units-holder"></div>
+			</form>
+            <div class="btn settings-apply _hotkey" style="width:120px;margin:30px auto 0;">apply and save</div>
         </div>
 
         <div class="ipane" rel="scan">
-            <form class="_hotkeyable" action="/">
+            <form class="_hotkeyable" method="post" action="/">
                 <div><br />Path to display (e.g. /home/user or D:\science):</div>
                 <div><input type="text" value="" id="settings_local_path" style="border:1px solid #06c;height:30px;width:100%;" /></div>
                 <div><input type="checkbox" id="settings_quick_regime" checked="" /> <label for="settings_quick_regime">skip files > 25 Mb</label></div>

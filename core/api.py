@@ -128,7 +128,9 @@ class API:
 			{"cid": 18,"category": "phon.magnitude",        "source": "dfp_magnitude", "order": 86, "has_column": True, "descr": ""}, \
 			{"cid": 19,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
 			{"cid": 20,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
-			{"cid": 21,"category": "Program", 				"source": 'prog', "order": 89, "has_column": True, "has_label": True, "descr": ""},
+			{"cid": 21,"category": "code", 					"source": 'prog', "order": 89, "has_column": True, "has_label": True, "descr": ""},
+			
+			{"cid": 22,"category": "modeling time, hr", 	"source": 'duration', "order": 90, "has_column": True, "has_label": False, "descr": ""},
 		]
 		self.Classifiers = []
 		for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):

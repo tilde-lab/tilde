@@ -88,7 +88,11 @@ class INFOOUT(Output):
 			elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
 				self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
 				
-			elif 'Exchange-correlation type :' in line:
+			elif 'orrelation type :' in line:
+				
+				#if 'Correlation type :' in line:					
+				#if 'Exchange-correlation type :' in line:					
+				
 				h = int(line.split(":")[-1])
 				try: self.method['H'] = H_mapping[h]
 				except KeyError: self.method['H'] = h
@@ -144,14 +148,32 @@ class INFOOUT(Output):
 								fracts_holder[-1].append([a[2]])
 								fracts_holder[-1][-1].extend( map(float, a[4:]) )
 							else: break
-						break						
+						break
+						
+			elif 'Timings (CPU seconds) ' in line: # Lithium
+				while 1:
+					n += 1
+					if ' total ' in self.data[n]:
+						self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
+						break
+					elif len(self.data[n]) < 4: break
+				self.info['duration']
+				
+			elif 'Total time spent ' in line: # Beryllium
+				self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
 		
 		if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
 		
 		if energies_opt: self.energy = energies_opt[-1]
 		else: self.energy = energies[-1]
 		
-		if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Non-correlated convergence!")
+		if not self.convergence:
+			# First cycle convergence statuses
+			for n in range(len(energies)):
+				try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
+				except IndexError: pass
+		
+		if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Unexpected convergence data format!")
 		else:
 			for n in range(len(energies_opt)):
 				self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
@@ -166,7 +188,7 @@ class INFOOUT(Output):
 				xyz_atoms.append( [i[0], R[0], R[1], R[2]] )
 			self.structures.append({'cell': cell_to_cellpar( cell ).tolist(), 'atoms': xyz_atoms, 'periodicity': 3})
 		
-		# Check if convergence achieved right away from the first cycle
+		# Check if convergence achieved right away from the first cycle and account that
 		if opt_flag and len(self.structures) == 1:
 			self.structures.append(self.structures[-1])
 			self.tresholds.append([0.0, 0.0, 0.0, 0.0, energies[-1]])

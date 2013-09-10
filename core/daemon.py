@@ -43,7 +43,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cellpar_to_cell
 
-from settings import settings, write_settings, write_db, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA
+from settings import settings, write_settings, write_db, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
 from api import API
 from plotter import plotter
 from common import aseize
@@ -106,13 +106,14 @@ class DataMap:
 class Request_Handler:
     @staticmethod
     def login(userobj, session_id):
+        
         # *client-side* settings
         if userobj['settings']['colnum'] not in [50, 75, 100]: userobj['settings']['colnum'] = 75
         if type(userobj['settings']['cols']) is not list or not 1 <= len(userobj['settings']['cols']) <= 25: return (None, 'Invalid settings!')
 
         global Users
-        Users[session_id].usettings['cols'] = userobj['settings']['cols']
-        Users[session_id].usettings['colnum'] = userobj['settings']['colnum']
+        for i in ['cols', 'colnum', 'objects_expand']:
+            Users[session_id].usettings[i] = userobj['settings'][i]
 
         # all available columns are compiled here and sent to user for him to select between them
         avcols = []
@@ -217,7 +218,7 @@ class Request_Handler:
 
         else:
             # building data table header (for an empty table)
-            data = build_header( Users[session_id].usettings['cols'] )
+            data = build_header( Users[session_id].usettings['cols'], Users[session_id].usettings['objects_expand'] )
             data += '<tbody></tbody>'
             return (data, error)
 
@@ -228,7 +229,7 @@ class Request_Handler:
             result = cursor.fetchall()
             rescount = 0
             # building data table header
-            data = build_header( Users[session_id].usettings['cols'] )
+            data = build_header( Users[session_id].usettings['cols'], Users[session_id].usettings['objects_expand'] )
             data += '<tbody>'
             for row in result:
                 # building data table rows
@@ -258,7 +259,7 @@ class Request_Handler:
                             data += '<td rel=' + str(item['cid']) + '>&mdash;</td>'
 
                 # --compulsory part--
-                data += "<td><strong>click by row</strong></td>"
+                if Users[session_id].usettings['objects_expand']: data += "<td class=objects_expand><strong>click by row</strong></td>"
                 data += '</tr>'
             data += '</tbody>'
             if not rescount: error = 'No objects match!'
@@ -390,7 +391,7 @@ class Request_Handler:
 
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
-            for i in ['cols', 'colnum']:
+            for i in ['cols', 'colnum', 'objects_expand']:
                 Users[session_id].usettings[i] = userobj['settings'][i]
 
         # *server + client-side* settings
@@ -433,7 +434,7 @@ class Request_Handler:
         
         global Repo_pool
         
-        if len(Repo_pool) == 6: return (data, 'Due to memory limits cannot manage more than 6 databases!')
+        if len(Repo_pool) == MAX_CONCURRENT_DBS: return (data, 'Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
         
         error = write_db(userobj['newname'])
         userobj['newname'] += '.db'
@@ -917,7 +918,7 @@ class UpdateServiceHandler(tornado.web.RequestHandler):
         logging.critical("Client " + self.request.remote_ip + " has requested an update.")
         self.write(API.version)
 
-def build_header(cols):
+def build_header(cols, col_objects_expand):
     # --compulsory part--
     headers_html = '<thead>'
     headers_html += '<tr>'
@@ -930,7 +931,7 @@ def build_header(cols):
             headers_html += '<th rel=' + str(item['cid']) + '>' + (item['category'] if 'nocap' in item else item['category'].capitalize()) + '</th>'
 
     # --compulsory part--
-    headers_html += '<th class=not-sortable>More...</th>'
+    if col_objects_expand: headers_html += '<th class="not-sortable">More...</th>'
     headers_html += '</tr>'
     headers_html += '</thead>'
 

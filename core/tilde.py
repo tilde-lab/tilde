@@ -156,8 +156,8 @@ if args.datamining:
         postmessage = ''
         L = len(result)
         if L > 50:
-			result = result[:50]
-			postmessage = "\n...\n%s more" % (L-50)
+            result = result[:50]
+            postmessage = "\n...\n%s more" % (L-50)
         out = ''
         i=0        
         for row in result:
@@ -221,9 +221,7 @@ for target in args.path:
                     except KeyError:
                         if 'negative_tagging' in i: found_topics.append( [ i['category'], 'none' ] )
 
-            found_topics.append( ['code', calc.info['prog']] )
-            if calc.info['duration']: found_topics.append( ['modeling time', calc.info['duration'] + ' hour(s)'] )
-            if calc.info['perf']: found_topics.append( ['parsing time', calc.info['perf'] + ' sec(s)'] )
+            if calc.info['perf']: found_topics.append( ['parsing time, sc', calc.info['perf']] )
 
             j, out = 0, ''
             for t in found_topics:

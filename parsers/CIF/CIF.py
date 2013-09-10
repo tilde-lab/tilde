@@ -2,7 +2,10 @@
 # Tilde project: PyCIfRW CIF outputs parser
 # v030913
 
+import os
+import sys
 import re
+import StringIO
 
 from ase.atoms import Atoms as ASE_atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell
@@ -16,7 +19,10 @@ class CIF(Output):
 	def __init__(self, file, **kwargs):
 		Output.__init__(self, file)
 		self.data = open(file).read()
-		CIF_instance = CifFile.ReadCif(file)
+		
+		CIF = StringIO.StringIO(self.data)
+		CIF.seek(0)
+		CIF_instance = CifFile.CifFile(CIF)
 		main = CIF_instance.first_block()
 		
 		try: main['_atom_site_occupancy']

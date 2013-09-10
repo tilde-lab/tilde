@@ -11,6 +11,7 @@ SETTINGS_FILE = 'settings.~'
 DEFAULT_DB = 'default.db'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
+MAX_CONCURRENT_DBS = 10
 DEFAULT_SETUP = {
                 'webport': 7777,
                 'default_db': DEFAULT_DB,
@@ -146,8 +147,8 @@ for file in os.listdir( os.path.realpath(DATA_DIR) ):
     if file[-3:] == '.db':
         if len(file) > 21: raise RuntimeError('Please, do not use long names for the databases!')
         repositories.append(file)
-if len(repositories) > 6:
-    raise RuntimeError('Due to memory limits cannot manage more than 6 databases!')
+if len(repositories) > MAX_CONCURRENT_DBS:
+    raise RuntimeError('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
 
     
 # SETTINGS COMBINATIONS
