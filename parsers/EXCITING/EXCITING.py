@@ -165,13 +165,15 @@ class INFOOUT(Output):
 		if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
 		
 		if energies_opt: self.energy = energies_opt[-1]
-		else: self.energy = energies[-1]
+		else:
+			try: self.energy = energies[-1]
+			except IndexError: pass
 		
 		if not self.convergence:
 			# First cycle convergence statuses
 			for n in range(len(energies)):
 				try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-				except IndexError: pass
+				except (IndexError, ValueError): pass
 		
 		if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Unexpected convergence data format!")
 		else:
@@ -208,6 +210,6 @@ class INFOOUT(Output):
 		
 	@staticmethod
 	def fingerprints(test_string):
-		if 'All units are atomic (Hartree, Bohr, etc.)' in test_string: return True
+		if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True
 		else: return False
 		

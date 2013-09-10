@@ -8,7 +8,10 @@ import sys
 import os
 import subprocess
 import json
+import time
 import pprint
+
+starttime = time.time() # benchmarking
 
 if sys.version_info < (2, 6):
     print '\n\nI cannot proceed. Your python is too old. At least version 2.6 is required!\n\n'
@@ -182,21 +185,21 @@ for target in args.path:
         calc, error = Tilde.parse(task)
         if error:
             if args.terse and 'nothing found' in error: continue
-            else: print filename, error
+            else: print task, error
             continue
 
         calc, error = Tilde.classify(calc, args.symprec)
         if error:
-            print filename, error
+            print task, error
             continue
 
-        output_line = filename + " (E=" + str(calc.energy) + " eV)"
+        output_line = task + " (E=" + str(calc.energy) + " eV)"
         if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
 
         if args.add:
             checksum, error = Tilde.save(calc)
             if error:
-                print filename, error
+                print task, error
                 continue
             output_line += ' added'
 
@@ -253,7 +256,7 @@ for target in args.path:
             try: calc.structures[ args.cif ]
             except IndexError: print "Warning! Structure "+args.cif+" not found!"
             else:
-                comment = calc.info['formula'] + " extracted from " + filename + " (structure no." + str(args.cif) + ")"
+                comment = calc.info['formula'] + " extracted from " + task + " (structure no." + str(args.cif) + ")"
                 cif_file = os.path.realpath(os.path.abspath(DATA_DIR + os.sep + filename)) + '_' + str(args.cif) + '.cif'
                 if write_cif(calc.structures[ args.cif ]['cell'], calc.structures[ args.cif ]['atoms'], calc['symops'], cif_file, comment):
                     print cif_file + " ready"
@@ -284,3 +287,6 @@ for target in args.path:
                     print "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")"
                     compare = frqset[i]
             print DIV
+
+
+print "Done in %1.2f sc" % (time.time() - starttime)
