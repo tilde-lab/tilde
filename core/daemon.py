@@ -290,6 +290,7 @@ class Request_Handler:
                     match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
                     
                     if not 'has_label' in match: continue
+                    if not match['has_label']: continue
                     
                     if 'chem_notation' in match: i = html_formula(item['topic'])
                     else: i = item['topic']
@@ -359,7 +360,7 @@ class Request_Handler:
                     e = json.loads(row['electrons'])
                     e_flag = False
                     #if 'impacts' in e or 'dos' in e: e_flag = True
-
+                                  
                     data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
         return (data, error)
 
@@ -855,15 +856,16 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
 
             ase_obj = aseize(json.loads(row['structures'])[-1])
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
-
+            
+            #ase_obj.center() # NB: check for slabs!
+            
             mass_center = ase_obj.get_center_of_mass()
 
             for i in range(len(mass_center)):
                 if mass_center[i] == 0: mass_center[i] = 1
             mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
             
-            # make player.html format below
-            # TODO: make pure CIF understanding
+            # player.html JSON format
             atoms = []
             for n, i in enumerate(ase_obj):
                 if i.symbol == 'X': radius, rgb = 0.66, '0xffff00'
@@ -879,7 +881,7 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
                 atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
 
             cell_points = []
-            if ase_obj.get_pbc().all() == True:
+            if ase_obj.get_pbc().all():
                 for i in ase_obj.cell:
                     cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
 

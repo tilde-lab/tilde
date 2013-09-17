@@ -35,7 +35,7 @@ except ImportError:
         sys.exit()
 
 from settings import settings, userdbchoice, repositories, DATA_DIR
-from common import html2str
+from common import write_cif, html2str
 from symmetry import DEFAULT_ACCURACY
 from api import API
 
@@ -52,12 +52,13 @@ parser.add_argument("-u", dest="daemon", action="store", help="run GUI service (
 parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to repository", type=str, metavar="REPOSITORY", nargs='?', const='DIALOG', default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-v", dest="verbose", action="store", help="verbose print", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-v", dest="convergence", action="store", help="convergence print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f", dest="freqs", action="store", help="if PATH(S): extract and print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze all", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
+parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-d", dest="datamining", action="store", help="datamining query", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
@@ -88,9 +89,7 @@ if not args.path and not args.datamining:
     parser.print_help()
     sys.exit()
 
-if args.cif:
-    from core.common import write_cif
-
+if args.shortcut: args.recursive, args.convergence, args.info, args.terse = True, True, True, True
 
 # CLI:
 # if there are commands, run command-line text interface
@@ -123,8 +122,6 @@ if args.datamining:
 
 Tilde = API(db_conn=db, settings=settings)
 
-DIV = "~"*75
-
 if args.path:
     if settings['skip_unfinished']: finalized = 'YES'
     else: finalized = 'NO'
@@ -148,6 +145,7 @@ if args.datamining:
     statement = ", ".join(statement) if len(statement) else 'COUNT(*)'
     statement = 'SELECT ' + statement + ' FROM results'
     clause = ' WHERE ' + " AND ".join(clause) if len(clause) else ""
+    out, postmessage = '', ''
     query = statement + clause
     
     print 'Query: ' + query
@@ -160,8 +158,7 @@ if args.datamining:
         L = len(result)
         if L > 50:
             result = result[:50]
-            postmessage = "\n...\n%s more" % (L-50)
-        out = ''
+            postmessage = "\n...\n%s more" % (L-50)        
         i=0        
         for row in result:
             if i==0: out += "   ".join( row.keys() ) + "\n"
@@ -170,17 +167,20 @@ if args.datamining:
             out += "\n"
             i+=1
     print out + postmessage
-    print DIV    
     sys.exit()
 
 
 for target in args.path:
+    
+    if not os.path.exists(target):
+        print 'Target does not exist: ' + target
+        continue
 
     tasks = Tilde.savvyize(target, recursive=args.recursive, stemma=True)
 
     for task in tasks:
         filename = os.path.basename(task)
-        add_msg = ''
+        output_lines, add_msg = '', ''
 
         calc, error = Tilde.parse(task)
         if error:
@@ -193,18 +193,9 @@ for target in args.path:
             print task, error
             continue
 
-        output_line = task + " (E=" + str(calc.energy) + " eV)"
+        header_line = task + " (E=" + str(calc.energy) + " eV)"
         if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
-
-        if args.add:
-            checksum, error = Tilde.save(calc)
-            if error:
-                print task, error
-                continue
-            output_line += ' added'
-
-        print output_line + add_msg
-
+        
         if args.info:
             found_topics = []
             for n, i in enumerate(Tilde.hierarchy):
@@ -232,16 +223,14 @@ for target in args.path:
                 out += "  " + t[0] + ': ' + ', '.join(t[1:])
                 out += "\t" if not j%2 else "\n"
                 j+=1
-            print out[:-1]
-            print DIV
+            output_lines += out[:-1] + "\n"
 
-        if args.verbose:
+        if args.convergence:
             if calc.convergence:
-                print str(calc.convergence)
+                output_lines += str(calc.convergence) + "\n"
             if calc.tresholds:
                 for i in range(len(calc.tresholds)):
-                    print "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "("+str(calc.ncycles[i]) + ")"
-                print DIV
+                    output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
             
         if args.structures:
             out = ''
@@ -249,44 +238,51 @@ for target in args.path:
                 out += str(calc.structures[0]['cell']) + ' -> '
             out += str(calc.structures[-1]['cell'])
             out += " V=" + str(calc.info['dims'])
-            print out
-            print DIV
+            output_lines += out + "\n"
         
-        if args.cif and len(tasks) == 1:
+        if args.cif:
             try: calc.structures[ args.cif ]
-            except IndexError: print "Warning! Structure "+args.cif+" not found!"
+            except IndexError: output_lines += "Warning! Structure "+args.cif+" not found!" + "\n"
             else:
-                comment = calc.info['formula'] + " extracted from " + task + " (structure no." + str(args.cif) + ")"
+                N = args.cif if args.cif>0 else len(calc.structures) + 1 + args.cif
+                comment = calc.info['formula'] + " extracted from " + task + " (structure N " + str(N) + ")"
                 cif_file = os.path.realpath(os.path.abspath(DATA_DIR + os.sep + filename)) + '_' + str(args.cif) + '.cif'
-                if write_cif(calc.structures[ args.cif ]['cell'], calc.structures[ args.cif ]['atoms'], calc['symops'], cif_file, comment):
-                    print cif_file + " ready"
+                if write_cif(cif_file, calc.structures[ args.cif ]['cell'], calc.structures[ args.cif ]['atoms'], calc['symops'], calc.structures[ args.cif ]['ab_normal'], calc.structures[ args.cif ]['a_direction'], comment):
+                    output_lines += cif_file + " ready" + "\n"
                 else:
-                    print "Warning! " + cif_file + " cannot be written!"
-            print DIV
-
+                    output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"
+        
         if args.module:
             hooks = Tilde.postprocess(calc)
-            if args.module not in hooks: print "Module \"" + args.module + "\" is not suitable for this case (outside the scope defined in module manifest)!"
+            if args.module not in hooks: output_lines += "Module \"" + args.module + "\" is not suitable for this case (outside the scope defined in module manifest)!" + "\n"
             else:
-                print hooks[args.module]['error'] if hooks[args.module]['error'] else hooks[args.module]['data']
-            print DIV
+                out = str(hooks[args.module]['error']) if hooks[args.module]['error'] else str(hooks[args.module]['data'])
+                output_lines += out + "\n"
             
         if args.xdebug:
-            print calc
-            print DIV
+            output_lines += calc + "\n"
 
         if args.freqs:
             if not calc.phonons['modes']:
-                print 'No phonons here!'
+                print task, ' has no phonons!'
                 continue
             for bzpoint, frqset in calc.phonons['modes'].iteritems():
-                print "\tK-POINT:", bzpoint
+                output_lines += "\tK-POINT: " + bzpoint + "\n"
                 compare = 0
                 for i in range(len(frqset)):
                     # if compare == frqset[i]: continue
-                    print "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")"
+                    output_lines += "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")" + "\n"
                     compare = frqset[i]
-            print DIV
+                    
+        if args.add:
+            checksum, error = Tilde.save(calc)
+            if error:
+                print task, error
+                continue
+            header_line += ' added'
 
+        print header_line + add_msg
+        print output_lines
+        # NB: from here the calc instance is not functional anymore!
 
 print "Done in %1.2f sc" % (time.time() - starttime)

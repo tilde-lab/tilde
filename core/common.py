@@ -3,9 +3,9 @@
 
 import os
 import sys
-from numpy import dot
-from numpy import array
-from numpy import matrix
+import math
+
+from numpy import dot, array, matrix, cross, trace, sum
 
 # this is done to have all third-party code in deps folder
 # TODO: dealing with sys.path is malpractice
@@ -13,13 +13,19 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
 from deps.ase.atoms import Atoms as ASE_atoms
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
-from spacegroup.cell import cellpar_to_cell
-from spacegroup.cell import cell_to_cellpar
+from spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 
 
 class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
+
+def metric(v):
+    ''' Get direction of vector '''
+    # return map(lambda x: int(math.copysign(1, x)) if x else 0, v)
+    # This is to prevent a bug in cart->frac atomic coords conversion using cellpar_to_cell ASE routine
+    # TODO
+    return map(lambda x: 1 if x else 0, v)
 
 def u(obj, encoding='utf-8'):
     if not isinstance(obj, unicode):
@@ -29,9 +35,9 @@ def u(obj, encoding='utf-8'):
 def html2str(i):
     return str(i).replace('<sub>', '_').replace('</sub>', '').replace('<sup>', '^').replace('</sup>', '')
         
-def generate_cif(parameters, atoms, symops, comment=None):
+def generate_cif(parameters, atoms, symops, ab_normal, a_direction, comment=None):
     if not parameters: parameters = [10, 10, 10, 90, 90, 90]
-    reverse = matrix( cellpar_to_cell(parameters) ).I
+    reverse = matrix( cellpar_to_cell(parameters, ab_normal, a_direction) ).I
     cif_data = "# " + comment + "\n\n" if comment else ''
     cif_data += 'data_tilde_project\n'
     cif_data += '_cell_length_a    ' + "%2.6f" % parameters[0] + "\n"
@@ -40,7 +46,7 @@ def generate_cif(parameters, atoms, symops, comment=None):
     cif_data += '_cell_angle_alpha ' + "%2.6f" % parameters[3] + "\n"
     cif_data += '_cell_angle_beta  ' + "%2.6f" % parameters[4] + "\n"
     cif_data += '_cell_angle_gamma ' + "%2.6f" % parameters[5] + "\n"
-    cif_data += "_symmetry_space_group_name_H-M ' '" + "\n"
+    cif_data += "_symmetry_space_group_name_H-M 'P1'" + "\n"
     cif_data += 'loop_' + "\n"
     cif_data += '_symmetry_equiv_pos_as_xyz' + "\n"
     for i in range(0, len(symops)): cif_data += symops[i] + "\n"
@@ -55,8 +61,8 @@ def generate_cif(parameters, atoms, symops, comment=None):
         cif_data += "%s%s   %s   % 1.8f   % 1.8f   % 1.8f\n" % (atoms[i][0], (i+1), atoms[i][0], x, y, z)
     return cif_data
     
-def write_cif(parameters, atoms, symops, filename, comment=None):
-    cif_data = generate_cif(parameters, atoms, symops, comment)
+def write_cif(filename, parameters, atoms, symops, ab_normal, a_direction, comment=None):
+    cif_data = generate_cif(parameters, atoms, symops, ab_normal, a_direction, comment)
     try:
         file = open(filename, 'w')
         file.write(cif_data)
@@ -81,12 +87,13 @@ def aseize(tilde_struc):
     ase_positions = [(i[1], i[2], i[3]) for i in tilde_struc['atoms']]
     if tilde_struc['periodicity']>0:
         pbc=True
-        xyz_matrix = cellpar_to_cell(tilde_struc['cell'])
+        xyz_matrix = cellpar_to_cell(tilde_struc['cell'], tilde_struc['ab_normal'], tilde_struc['a_direction'])
         descr = {'hm': None, 'a': "%2.3f" % tilde_struc['cell'][0], 'b': "%2.3f" % tilde_struc['cell'][1], 'c': "%2.3f" % tilde_struc['cell'][2], 'alpha': "%2.3f" % tilde_struc['cell'][3], 'beta': "%2.3f" % tilde_struc['cell'][4], 'gamma': "%2.3f" % tilde_struc['cell'][5]} # NB: this is used by player
     else:
         pbc=None
         xyz_matrix=None
         descr=None
+        
     return ASE_atoms(symbols=ase_symbols, positions=ase_positions, cell=xyz_matrix, pbc=pbc, info=descr)
 
 def deaseize(ase_obj):
@@ -95,4 +102,6 @@ def deaseize(ase_obj):
     atypes = ase_obj.get_chemical_symbols()
     atoms = [ [atypes[n], i[0], i[1], i[2]] for n, i in enumerate(ase_obj.positions) ]
     cell = [ float( ase_obj.info[tilde_key] ) for tilde_key in tilde_values ] if 'hm' in ase_obj.info else cell_to_cellpar( ase_obj.cell ).tolist()
-    return {'cell': cell, 'atoms': atoms, 'periodicity':3} # todo
+    ab_normal = metric(cross(ase_obj.cell[0], ase_obj.cell[1]))
+    a_direction = metric(ase_obj.cell[0])
+    return {'cell': cell, 'atoms': atoms, 'periodicity':3, 'ab_normal': ab_normal, 'a_direction': a_direction} # todo

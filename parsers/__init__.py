@@ -36,10 +36,13 @@ class Output:
         # mapped onto database
         self.energy = None # in eV      
         
-        self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity} dicts
+        self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity, 'ab_normal': vector, 'a_direction': vector} dicts
                                # *list* cell is [a, b, c, alpha, beta, gamma]
                                # *list* atoms has lists of atoms with coordinates in cartesian system
                                # *int* periodicity determination is a responsibility of parser
+                               # *vector* ab_normal, *vector* a_direction are needed for correct cell parameters manipulations
+                               # TODO: switch to ASE system?
+
         self.symops = ['+x,+y,+z']
 
         self.electrons = {

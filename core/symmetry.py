@@ -9,7 +9,7 @@
 #
 # *SymmetryHandler*: symmetry inferences basing on known mapping
 #
-# v210713
+# v170913
 
 import os
 import sys
@@ -55,33 +55,28 @@ if 'win' in sys.platform:
 
 elif 'linux' in sys.platform:
     import subprocess
-    import tempfile
     from numpy import dot
     from numpy import array
     from numpy import matrix
-
-    if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym', os.X_OK):
-        os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym' )), 0777)
-    # TODO:
-    # How to suppress creation of log and redundant I/O?
-    if not os.access(os.path.dirname(__file__) + '/deps/findsym/findsym.log', os.X_OK):
-        os.chmod(os.path.abspath( os.path.realpath( os.path.dirname(__file__) + '/deps/findsym/findsym.log' )), 0777)
+    
+    isodata_path = os.path.realpath(os.path.dirname(__file__)) + '/deps/findsym'
+    findsym = os.path.join(isodata_path, 'findsym')
+    myenv = {'ISODATA': isodata_path + os.sep}
+    
+    if not os.access(findsym, os.X_OK): os.chmod(findsym, 0777)    
+    if not os.access(os.path.join(isodata_path, 'findsym.log'), os.X_OK): os.chmod(os.path.join(isodata_path, 'findsym.log'), 0777) # TODO: how to suppress creation of log and redundant I/O?
 
     class SymmetryFinder:
         def __init__(self, tilde_obj, accuracy):
             self.error = None
-            self.cif = None
-            input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1]['atoms'], tilde_obj['structures'][-1]['cell'], accuracy)
+            self.cif = None            
+            input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1], accuracy)
+            #print input
+            
             if error: self.error = error
             else:
-                tmp = tempfile.NamedTemporaryFile(delete=False)
-                tmp.write(input)
-                tmp.seek(0)
-                tmp.close()
-                p = subprocess.Popen('export ISODATA=' + os.path.realpath(os.path.dirname(__file__)) + '/deps/findsym/ && cd $ISODATA && ./findsym < ' + tmp.name + ' 2>&1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                foundsym = p.communicate()[0]
-                os.remove(tmp.name)
-                
+                p = subprocess.Popen([findsym], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=myenv)
+                foundsym = p.communicate(input)[0]                
                 #print foundsym
 
                 if not "------------------------------------------" in foundsym:
@@ -104,19 +99,18 @@ elif 'linux' in sys.platform:
                         self.n, self.s, self.i = symmetry.split()
                         self.n = int( self.n )
 
-        def findsym_input(self, atoms, parameters, accuracy):
+        def findsym_input(self, tilde_obj, accuracy):
             error = None
             findsym_atoms = 'ABCDEFGHIJKLMNOPQRSTYVWXYZ'
             out = "~\n" + "%s" % accuracy + "   accuracy\n2 form of lattice parameters lengths(angstrom) and angles\n"
-            out += "%3.8f" % parameters[0] + "   " + "%3.8f" % parameters[1] + "   " + "%3.8f" % parameters[2] + "   "
-            out += "%3.8f" % parameters[3] + "   " + "%3.8f" % parameters[4] + "   " + "%3.8f" % parameters[5] + "\n"
-            out += " 1\n1 0 0\n0 1 0\n0 0 1\n " + "%s" % len(atoms) + "\n"
+            out += "%3.8f   %3.8f   %3.8f   %3.8f   %3.8f   %3.8f\n" % tuple(tilde_obj['cell'])
+            out += " 2\n P\n " + "%s" % len(tilde_obj['atoms']) + "\n"
             coords = ''
             atomtypes = []
             atomlabels = {}
             N = 0
-            reverse = matrix( cellpar_to_cell(parameters) ).I
-            for i in atoms:
+            reverse = matrix( cellpar_to_cell(tilde_obj['cell'], tilde_obj['ab_normal'], tilde_obj['a_direction']) ).I
+            for i in tilde_obj['atoms']:
                 fracs = dot( array([i[1], i[2], i[3]]), reverse ).tolist()[0]
                 coords += "   " + "% 3.8f" % fracs[0] + "   " + "% 3.8f" % fracs[1] + "   " + "% 3.8f" % fracs[2] + "\n"
                 if i[0] in atomlabels.values():

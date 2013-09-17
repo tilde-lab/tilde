@@ -5,19 +5,13 @@ Brigham Young University
 ~
 Tolerance:    0.00010
 Lattice parameters, a,b,c,alpha,beta,gamma:
-   3.90480   3.90480   3.90480  90.00000  90.00000  90.00000
-Vectors defining the unit cell (dimensionless coordinates):
-   1.00000   0.00000   0.00000
-   0.00000   1.00000   0.00000
-   0.00000   0.00000   1.00000
+   4.41538   4.41538   4.41538  60.00000  60.00000  60.00000
+Centering: P
 Number of atoms in unit cell:
-  5
+  2
 Type of each atom:
-1 2 3*3 
+1 2 
 Position of each atom (dimensionless coordinates)
    1   0.00000   0.00000   0.00000
-   2   0.50000   0.50000   0.50000
-   3   0.00000   0.50000   0.50000
-   4   0.50000   0.00000   0.50000
-   5   0.50000   0.50000   0.00000
+   2   0.83333   0.83333  -0.50000
 ------------------------------------------

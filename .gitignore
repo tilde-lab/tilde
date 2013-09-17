@@ -6,3 +6,13 @@ utils
 htdocs/stats.min.js
 htdocs/three.custom.js.json
 apps/vibtd
+parsers/CIF
+parsers/CIF/*
+parsers/CRYSTAL
+parsers/CRYSTAL/*
+parsers/VASP
+parsers/VASP/*
+parsers/GAUSSIAN
+parsers/GAUSSIAN/*
+parsers/WIEN2K
+parsers/WIEN2K/*

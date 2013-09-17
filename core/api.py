@@ -106,31 +106,31 @@ class API:
 		self.hierarchy = [ \
 			{"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "order": 1, "has_column": True, "has_label": True, "descr": ""}, \
 			
-			{"cid": 22,"category": "containing element",    "source": "element#", "order": 14, "descr": ""}, \
-			{"cid": 2, "category": "host elements number",  "source": "nelem", "order": 13, "descr": ""}, \
-			{"cid": 3, "category": "supercell",             "source": "expanded", "order": 29, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 4, "category": "periodicity",           "source": "periodicity", "order": 12, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 5, "category": "calculation type",      "source": "calctype#", "order": 10, "has_label": True, "descr": ""}, \
-			{"cid": 6, "category": "hamiltonian",           "source": "H", "order": 30, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 7, "category": "system",                "source": "tag#", "order": 11, "has_label": True, "descr": ""}, \
+			{"cid": 2, "category": "containing element",    "source": "element#", "order": 14, "descr": ""}, \
+			{"cid": 3, "category": "host elements number",  "source": "nelem", "order": 13, "descr": ""}, \
+			{"cid": 4, "category": "supercell",             "source": "expanded", "order": 29, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 5, "category": "periodicity",           "source": "periodicity", "order": 12, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 6, "category": "calculation type",      "source": "calctype#", "order": 10, "has_label": True, "descr": ""}, \
+			{"cid": 7, "category": "hamiltonian",           "source": "H", "order": 30, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 8, "category": "system",                "source": "tag#", "order": 11, "has_label": True, "descr": ""}, \
 			
-			{"cid": 8, "category": "symmetry",              "source": "symmetry", "order": 80, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 9, "category": "space group (Schon.)",  "source": "sg", "order": 81, "has_column": True, "descr": "Result space group (Schoenflis notation)"}, \
-			{"cid": 10,"category": "point group",           "source": "pg", "order": 82, "has_column": True, "has_label": True, "descr": "Result point group"}, \
-			{"cid": 11,"category": "space group (intl.)",   "source": "ng", "order": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
-			{"cid": 12,"category": "layer group (intl.)",   "source": "dg", "order": 91, "has_column": True, "descr": "Result layer group (international notation)"}, \
+			{"cid": 9, "category": "symmetry",              "source": "symmetry", "order": 80, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 10,"category": "space group (Schon.)",  "source": "sg", "order": 81, "has_column": True, "descr": "Result space group (Schoenflis notation)"}, \
+			{"cid": 11,"category": "point group",           "source": "pg", "order": 82, "has_column": True, "has_label": True, "descr": "Result point group"}, \
+			{"cid": 12,"category": "space group (intl.)",   "source": "ng", "order": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
+			{"cid": 13,"category": "layer group (intl.)",   "source": "dg", "order": 91, "has_column": True, "descr": "Result layer group (international notation)"}, \
 			
-			{"cid": 13,"category": "main tolerance",       "source": "tol", "order": 84, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 14,"category": "spin-polarized",        "source": "spin", "negative_tagging": True, "order": 22, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 15,"category": "locked magn.state",     "source": "lockstate", "order": 23, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 16,"category": "k-points set",          "source": "k", "order": 85, "has_column": True, "has_label": True, "descr": ""}, \
-			{"cid": 17,"category": "used techniques",       "source": "tech#", "order": 84, "has_label": True, "descr": ""}, \
-			{"cid": 18,"category": "phon.magnitude",        "source": "dfp_magnitude", "order": 86, "has_column": True, "descr": ""}, \
-			{"cid": 19,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
-			{"cid": 20,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
-			{"cid": 21,"category": "code", 					"source": 'prog', "order": 89, "has_column": True, "has_label": True, "descr": ""},
+			{"cid": 14,"category": "main tolerance",        "source": "tol", "order": 84, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 15,"category": "spin-polarized",        "source": "spin", "negative_tagging": True, "order": 22, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 16,"category": "locked magn.state",     "source": "lockstate", "order": 23, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 17,"category": "k-point set",           "source": "k", "order": 85, "has_column": True, "has_label": True, "descr": ""}, \
+			{"cid": 18,"category": "used techniques",       "source": "tech#", "order": 84, "has_label": True, "descr": ""}, \
+			{"cid": 19,"category": "phon.magnitude",        "source": "dfp_magnitude", "order": 86, "has_column": True, "descr": ""}, \
+			{"cid": 20,"category": "phon.disp.number",      "source": "dfp_disps", "order": 87, "has_column": True, "descr": ""}, \
+			{"cid": 21,"category": "phon.k-points",         "source": "n_ph_k", "order": 88, "has_column": True, "descr": ""}, \
+			{"cid": 22,"category": "code", 					"source": 'prog', "order": 89, "has_column": True, "has_label": True, "descr": ""},
 			
-			{"cid": 22,"category": "modeling time, hr", 	"source": 'duration', "order": 90, "has_column": True, "has_label": False, "descr": ""},
+			{"cid": 23,"category": "modeling time, hr", 	"source": 'duration', "order": 90, "has_column": True, "has_label": False, "descr": ""},
 		]
 		self.Classifiers = []
 		for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):
@@ -299,7 +299,7 @@ class API:
 			i += 1
 		f.close()
 
-		# (1) unsupported
+		# (1) unsupported data occured
 		if not calc and not error: return (None, 'nothing found...')
 
 		# (2) some CRYSTAL outputs contain not enough data -> they should be merged with other outputs
@@ -368,6 +368,8 @@ class API:
 			elif 0 in calc.structures[-1]['cell']: error = 'Cell data are corrupted!' # prevent cell collapses known in CRYSTAL outputs
 
 			if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
+			
+			if sum(calc.structures[-1]['ab_normal']) == 0 or sum(calc.structures[-1]['a_direction']) == 0 or calc.structures[-1]['ab_normal']==calc.structures[-1]['a_direction']: return (None, 'Unexpected problems with cell vectors mutual orientation!')
 
 			# check whether a merging with some existing deferred item is required
 			'''elif len(self.deferred_storage) and calc.energy:
@@ -446,7 +448,7 @@ class API:
 		if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
 				return (None, 'data do not satisfy the filter')
 
-		xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
+		xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'])
 
 		if calc.structures[-1]['periodicity'] == 3: calc.info['dims'] = abs(det(xyz_matrix))
 		elif calc.structures[-1]['periodicity'] == 2: calc.info['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])
@@ -524,6 +526,8 @@ class API:
 						if calc.method['technique'][i][2] < 5: type += ' start'
 						else: type += ' defer.'
 						calc.info['techs'].append(i + type)
+					elif i=='vacuum2d':
+						calc.info['techs'].append('vacuum %s A' % calc.method['technique'][i])
 
 			if 'vac' in calc.info['properties']:
 				if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: calc.info['techs'].append('vacancy defect: ghost')
@@ -627,7 +631,7 @@ class API:
 		# a dict to list conversion: TODO
 		if calc.phonons['modes']:
 			phonons_json = []
-			xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'])
+			xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'])
 
 			for bzpoint, frqset in calc.phonons['modes'].iteritems():
 				# re-orientate eigenvectors
@@ -653,7 +657,7 @@ class API:
 		else: calc.phonons = False
 
 		# prepare structural data
-		calc.structures[-1]['orig_cif'] = generate_cif( calc.structures[-1]['cell'], calc.structures[-1]['atoms'], calc['symops'] )
+		calc.structures[-1]['orig_cif'] = generate_cif( calc.structures[-1]['cell'], calc.structures[-1]['atoms'], calc['symops'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'] )
 		calc.structures[-1]['dims'] = calc.info['dims']
 
 		# prepare electronic structure data

@@ -1350,5 +1350,6 @@ $(document).ready(function(){
                 $('#closeobj_trigger').trigger('click'); // bad design TODO
             }
         }
+        return false;
     });
 });
