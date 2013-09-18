@@ -8,8 +8,6 @@ htdocs/three.custom.js.json
 apps/vibtd
 parsers/CIF
 parsers/CIF/*
-parsers/CRYSTAL
-parsers/CRYSTAL/*
 parsers/VASP
 parsers/VASP/*
 parsers/GAUSSIAN

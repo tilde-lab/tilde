@@ -25,8 +25,7 @@ Prerequisites
 -------------
 
 On Windows no additional installations are required.
-On Unix/Mac you should have Python (at least of version 2.6), numerical modules (Numpy) and sqlite3 python module pre-installed.
-Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors).
+On Unix/Mac you should have Python (at least of version 2.6), numerical modules (Numpy) and sqlite3 python module pre-installed. Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors). Python 3 was not tested though.
 
 License and distribution
 ------------------------
