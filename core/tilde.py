@@ -281,8 +281,7 @@ for target in args.path:
                 continue
             header_line += ' added'
 
-        print header_line + add_msg
-        print output_lines
+        print header_line + add_msg + output_lines
         # NB: from here the calc instance is not functional anymore!
 
 print "Done in %1.2f sc" % (time.time() - starttime)

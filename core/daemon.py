@@ -121,7 +121,7 @@ class Request_Handler:
             if 'has_column' in item:
                 if '#' in item['source']: continue # todo
                 enabled = True if item['cid'] in userobj['settings']['cols'] else False
-                avcols.append({ 'cid': item['cid'], 'category': (item['category'] if 'nocap' in item else item['category'].capitalize()), 'order': item['order'], 'enabled': enabled })
+                avcols.append({ 'cid': item['cid'], 'category': (item['category'] if 'nocap' in item else item['category'].capitalize()), 'sort': item['sort'], 'enabled': enabled })
 
         # *server-side* settings
         data = { 'title': EDITION, 'version': API.version }
@@ -295,15 +295,15 @@ class Request_Handler:
                     if 'chem_notation' in match: i = html_formula(item['topic'])
                     else: i = item['topic']
 
-                    if not 'order' in match: order = 1000
-                    else: order = match['order']
+                    if not 'sort' in match: sort = 1000
+                    else: sort = match['sort']
                     for n, tag in enumerate(tags):
                         if tag['category'] == match['category']:
                             tags[n]['content'].append( {'tid': item['tid'], 'topic': i} )
                             break
-                    else: tags.append({'category': match['category'], 'order': order, 'content': [ {'tid': item['tid'], 'topic': i} ]})
+                    else: tags.append({'category': match['category'], 'sort': sort, 'content': [ {'tid': item['tid'], 'topic': i} ]})
 
-                tags.sort(key=lambda x: x['order'])
+                tags.sort(key=lambda x: x['sort'])
         else:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
             tags = Tilde_tags[ Users[session_id].cur_db ].t_by_c( *data_clause )
@@ -345,14 +345,14 @@ class Request_Handler:
                         if 'chem_notation' in o: i = html_formula(t['topic'])
                         else: i = t['topic']
 
-                        if not 'order' in o: order = 1000
-                        else: order = o['order']
+                        if not 'sort' in o: sort = 1000
+                        else: sort = o['sort']
                         for n, tag in enumerate(tags):
                             if tag['category'] == cat:
                                 tags[n]['content'].append( i )
                                 break
-                        else: tags.append({'category': cat, 'order': order, 'content': [ i ]})
-                    tags.sort(key=lambda x: x['order'])
+                        else: tags.append({'category': cat, 'sort': sort, 'content': [ i ]})
+                    tags.sort(key=lambda x: x['sort'])
 
                     phon_flag = False
                     if len(row['phonons'])>10: phon_flag = True # avoid json.loads
@@ -593,7 +593,7 @@ class Request_Handler:
         values = {}
         for set in p: values[ set['bzpoint'] ] = set['freqs']
 
-        data = json.dumps(plotter(task = 'bands', values = values, xyz_matrix = cellpar_to_cell(s[-1]['cell'])))
+        data = json.dumps(plotter(task = 'bands', values = values, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction'])))
         return (data, error)
 
     @staticmethod
@@ -635,7 +635,7 @@ class Request_Handler:
             bz_ip_data[bz] = item['alpha'][ save_vals[0] : save_vals[-1] ]
             bz_ip_data[bz].sort()
 
-        data_by_spin = plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell']))
+        data_by_spin = plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction']))
 
         # filter values from all k-points by data in G point: then for beta spins:
         if 'beta' in e['eigvals'][nullstand]:
@@ -653,7 +653,7 @@ class Request_Handler:
                 bz_ip_data[bz] = item['beta'][ save_vals[0] : save_vals[-1] ]
                 bz_ip_data[bz].sort()
 
-            data_by_spin.extend(plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'])))
+            data_by_spin.extend(plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction'])))
 
         return (json.dumps(data_by_spin), error)'''
 
@@ -979,7 +979,7 @@ if __name__ == "__main__":
     n = 0
     for appname, appclass in Tilde.Apps.iteritems():
         if hasattr(appclass['appmodule'], 'cell_wrapper'):
-            APP_COLS.append( {'cid': (2000+n), 'category': appclass['appcaption'], 'source': '', 'order': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
+            APP_COLS.append( {'cid': (2000+n), 'category': appclass['appcaption'], 'source': '', 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
         n += 1
 
     # compiling table columns: describe additional columns that are neither hierarchy API part, nor module API part
@@ -1001,13 +1001,13 @@ if __name__ == "__main__":
         return "<td rel=%s>%s</td>" % (colnum, finished)
 
     ADD_COLS = [ \
-    {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "order": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
-    {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>au</span>", "source": '', "order": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
-    {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "order": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims}, \
-    {"cid": 1005, "category": "Source file", "source": '', "order": 98, "has_column": True, "cell_wrapper": col__loc}, \
-    {"cid": 1006, "category": "Finished?", "source": '', "order": 99, "has_column": True, "cell_wrapper": col__finished}, \
+    {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "sort": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
+    {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>au</span>", "source": '', "sort": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
+    {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "sort": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims}, \
+    {"cid": 1005, "category": "Source file", "source": '', "sort": 98, "has_column": True, "cell_wrapper": col__loc}, \
+    {"cid": 1006, "category": "Finished?", "source": '', "sort": 99, "has_column": True, "cell_wrapper": col__finished}, \
     ]
-    Tilde_cols = sorted( Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['order'] ) # NB: not to mix this order with tags order!
+    Tilde_cols = sorted( Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['sort'] )
 
 
     debug = True if settings['debug_regime'] else False

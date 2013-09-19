@@ -1,11 +1,8 @@
 *.py[co]
 debug.log
+core/deps/findsym/findsym.log
 data
 scripts
-utils
-htdocs/stats.min.js
-htdocs/three.custom.js.json
-apps/vibtd
 parsers/CIF
 parsers/CIF/*
 parsers/VASP

@@ -45,7 +45,7 @@ class Tilting():
     def __init__(self, tilde_calc):
         self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles
         self.angles = {}         # rounded, uniquified, one-plane angles
-        self.cell = cellpar_to_cell(tilde_calc.structures[-1]['cell'])
+        self.cell = cellpar_to_cell(tilde_calc.structures[-1]['cell'], tilde_calc.structures[-1]['ab_normal'], tilde_calc.structures[-1]['a_direction'])
         self.virtual_atoms = copy.deepcopy(tilde_calc.structures[-1]['atoms'])
 
         # translate atoms around octahedra

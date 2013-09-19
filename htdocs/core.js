@@ -155,8 +155,8 @@ function set_user_settings( settings ){
     $('#maxcols').html(_tilde.maxcols);
     $('#ipane_cols_holder > ul').empty();
     _tilde.settings.avcols.sort(function(a, b){
-        if (a.order < b.order) return -1;
-        else if (a.order > b.order) return 1;
+        if (a.sort < b.sort) return -1;
+        else if (a.sort > b.sort) return 1;
         else return 0;
     });
     $.each(_tilde.settings.avcols, function(n, item){

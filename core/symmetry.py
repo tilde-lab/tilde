@@ -42,7 +42,7 @@ if 'win' in sys.platform:
             if tilde_obj.charges:
                 for j in tilde_obj.charges:
                     magmoms.append(j[2])
-            xyz_matrix = cellpar_to_cell(tilde_obj['structures'][-1]['cell'])
+            xyz_matrix = cellpar_to_cell(tilde_obj['structures'][-1]['cell'], tilde_obj['structures'][-1]['ab_normal'], tilde_obj['structures'][-1]['a_direction'])
             ase_positions = [(i[1], i[2], i[3]) for i in tilde_obj['structures'][-1]['atoms']]
             ase_obj = Atoms(symbols=ase_symbols, positions=ase_positions, cell=xyz_matrix, pbc=True, magmoms=magmoms)
             try: symmetry = spglib.get_spacegroup(ase_obj, accuracy)
@@ -63,8 +63,15 @@ elif 'linux' in sys.platform:
     findsym = os.path.join(isodata_path, 'findsym')
     myenv = {'ISODATA': isodata_path + os.sep}
     
-    if not os.access(findsym, os.X_OK): os.chmod(findsym, 0777)    
-    if not os.access(os.path.join(isodata_path, 'findsym.log'), os.X_OK): os.chmod(os.path.join(isodata_path, 'findsym.log'), 0777) # TODO: how to suppress creation of log and redundant I/O?
+    if not os.access(findsym, os.X_OK): os.chmod(findsym, 0777)
+    if not os.access(isodata_path, os.W_OK): raise RuntimeError('My home folder is write-protected!')
+    # TODO: how to suppress creation of log and redundant I/O?
+    log = os.path.join(isodata_path, 'findsym.log')
+    if not os.path.exists(log):
+		fhandle = file(log, 'a')
+		try: os.utime(log, None)
+		finally: fhandle.close()
+    if not os.access(log, os.X_OK): os.chmod(log, 0777)
 
     class SymmetryFinder:
         def __init__(self, tilde_obj, accuracy):

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# This is used for autostarting of Tilde GUI service on production server 195.19.233.2
+# NB on Debian must be located at:
+# /etc/init.d/autotilde
+# loaded for autostart by command:
+# update-rc.d autotilde defaults
+
+### BEGIN INIT INFO
+# Provides:          tilde
+# Short-Description: Tilde UI service
+# Description:       Tilde UI service
+### END INIT INFO
+
+/usr/bin/env python /var/wwwtilde/core/daemon.py
+exit 0

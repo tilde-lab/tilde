@@ -12,7 +12,7 @@ from core.deps.ase.data import covalent_radii
 
 # hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
 __order__ = 10
-__properties__ = [ {"category": "impurity", "source": "impurity#", "negative_tagging": True, "chem_notation": True, "has_label": True, "order": 14, "descr": ""} ]
+__properties__ = [ {"category": "impurity", "source": "impurity#", "negative_tagging": True, "chem_notation": True, "has_label": True, "sort": 14, "descr": ""} ]
 
 A_site_elems = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Ag, Pb, Bi, Th'.split(', ')
 B_site_elems = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', ')

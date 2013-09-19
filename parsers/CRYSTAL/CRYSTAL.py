@@ -111,8 +111,8 @@ class CRYSTOUT(Output):
                 
                 # this is to account correct cart->frac atomic coords conversion using cellpar_to_cell ASE routine
                 cell = self.get_cart2frac()
-                self.ab_normal = metric(cross(cell[0], cell[1]))
-                self.a_direction = metric(cell[0])
+                self.ab_normal = [0,0,1] if self.molecular_case else metric(cross(cell[0], cell[1]))
+                self.a_direction = None if self.molecular_case else metric(cell[0])
                 
                 self.energy = self.get_etot()
                 self.structures = self.get_structures()
@@ -252,6 +252,7 @@ class CRYSTOUT(Output):
                 matrix.append( vector )
         else:
             if not self.molecular_case: raise RuntimeError( 'Unable to extract cartesian vectors!' )
+        
         return matrix
 
     def get_structures(self):
@@ -524,17 +525,19 @@ class CRYSTOUT(Output):
         return charges
 
     def get_input_and_version(self, inputdata):
-        # get version        
-        version = patterns['version'].search(inputdata)
-        if version:
-            version = version.group().replace('*', '').split("\n")
-            major = version[0].strip()
-            minor = version[1].strip()
-            if ':' in minor: minor = minor.split(':')[1].split()[0]
-            else: minor = minor.split()[1]
-            version = major + ' ' + minor
-        else:
-            version = 'CRYSTAL-?'
+        # get version
+        version = 'CRYSTAL'
+        v = patterns['version'].search(inputdata)
+        if v:
+            v = v.group().split("\n")
+            major, minor = v[0], v[1]
+            # beware of MPI inclusions!
+            if '*' in major: version = major.replace('*', '').strip()
+            if '*' in minor:
+				minor = minor.replace('*', '').strip()
+				if ':' in minor: minor = minor.split(':')[1].split()[0]
+				else: minor = minor.split()[1]
+				version += ' ' + minor
         
         # get input data        
         inputdata = inputdata.splitlines()

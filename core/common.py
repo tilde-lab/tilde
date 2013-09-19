@@ -22,7 +22,6 @@ class ModuleError(Exception):
 
 def metric(v):
     ''' Get direction of vector '''
-    # return map(lambda x: int(math.copysign(1, x)) if x else 0, v)
     # This is to prevent a bug in cart->frac atomic coords conversion using cellpar_to_cell ASE routine
     # TODO
     return map(lambda x: 1 if x else 0, v)

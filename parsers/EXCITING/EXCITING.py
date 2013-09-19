@@ -60,7 +60,7 @@ class INFOOUT(Output):
                 
             elif 'Lattice vectors' in line:
                 for i in range(n+1, n+4):
-                    cell.append(  array(map(lambda x: float(x) * Bohr, self.data[i].split()))  )                
+                    cell.append(  array(map(lambda x: float(x) * Bohr, self.data[i].split()))  )
                 ab_normal = metric(cross(cell[0], cell[1]))
                 a_direction = metric(cell[0])
                 n += 3
@@ -81,8 +81,17 @@ class INFOOUT(Output):
                         break
                     #elif 'muffin-tin radius' in self.data[n]:
                 
-            #elif 'Spin treatment ' in line:
-            #   self.method['spin'] = "x".join(line.split(":")[-1].split())
+            elif 'Spin treatment ' in line:
+                mark = line.split(":")[-1].strip()
+                if len(mark): # Beryllium
+                    if 'spin-polarised' in mark:
+                        self.method['spin'] = True
+                        if 'orbit coupling' in self.data[n+1]: self.method['technique'].update({'spin-orbit':True})
+                        
+                else: # Lithium
+                    if 'spin-polarised' in self.data[n+1]:
+                        self.method['spin'] = True
+                        if 'orbit coupling' in self.data[n+2]: self.method['technique'].update({'spin-orbit':True})
                 
             elif 'k-point grid ' in line:
                 self.method['k'] = "x".join(line.split(":")[-1].split())
@@ -184,6 +193,12 @@ class INFOOUT(Output):
         else:
             for n in range(len(energies_opt)):
                 self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
+        
+        # special structural case adjusting (WTF?)
+        if ab_normal == metric(cell[2]):
+            # Default `a_direction` is (1,0,0), unless this is parallel to
+            # `ab_normal`, in which case default `a_direction` is (0,0,1).
+            a_direction = None
             
         # de-fractionize
         # lattice is always the same
@@ -212,7 +227,7 @@ class INFOOUT(Output):
         # account periodicity (vacuum creation method)
         # TODO
         if self.structures[-1]['cell'][2] > 2 * self.structures[-1]['cell'][0] * self.structures[-1]['cell'][1]:
-            self.method['technique'] = {'vacuum2d': int(round(self.structures[-1]['cell'][2]))}
+            self.method['technique'].update({'vacuum2d': int(round(self.structures[-1]['cell'][2]))})
             for i in range(len(self.structures)):
                 self.structures[i]['periodicity'] = 2
             
