@@ -16,7 +16,7 @@ import subprocess
 import json
 from string import letters
 
-from numpy import dot, array, cross, count_nonzero
+from numpy import dot, array, cross
 from numpy.linalg import det, norm
 
 from common import generate_cif, u
@@ -369,8 +369,8 @@ class API:
 
             if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
             
-            # check normals            
-            if not count_nonzero(calc.structures[-1]['ab_normal']) or calc.structures[-1]['ab_normal']==calc.structures[-1]['a_direction']: return (None, 'Unexpected problems with cell vectors mutual orientation!')
+            # check normals on emptyness and equality
+            if not (array(calc.structures[-1]['ab_normal']) != 0).sum() or calc.structures[-1]['ab_normal']==calc.structures[-1]['a_direction']: return (None, 'Unexpected problems with cell vectors mutual orientation!')
                         
             # check whether a merging with some existing deferred item is required
             '''elif len(self.deferred_storage) and calc.energy:
