@@ -13,7 +13,7 @@ __properties__ = [ {"category": "vacancy content", "source": "vac", "sort": 13, 
 def classify(tilde_obj):
     ''' detect vacant places of host atoms '''
     if len(tilde_obj.info['elements']) < 2: return tilde_obj
-    elif tilde_obj.structures[-1]['periodicity'] in [0, 1, 2]: return tilde_obj
+    elif tilde_obj.structures[-1].periodicity in [0, 1, 2]: return tilde_obj
     tilde_obj.info['expanded'] = reduce(fractions.gcd, tilde_obj.info['contents'])
     if sum(tilde_obj.info['contents']) / tilde_obj.info['expanded'] < 15: return tilde_obj # check for >= 15-atoms
     

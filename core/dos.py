@@ -2,7 +2,7 @@
 # Tilde project: phonon and electron DOS plotter
 # v271112
 #
-# Inspired by DOS implementation by A.Togo in Phonopy 0.7 code (dos.py)
+# Based mainly on DOS implementation by A.Togo in Phonopy 0.7 code (dos.py)
 # http://phonopy.sf.net/
 
 import os

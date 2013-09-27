@@ -13,11 +13,12 @@ from fractions import Fraction
 from numpy import dot, array, cross, append
 
 from ase.data import chemical_symbols, atomic_numbers
-from ase.lattice.spacegroup.cell import cellpar_to_cell
+from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 from ase.units import Hartree
+from ase import Atoms
 
 from parsers import Output
-from common import metric
+from core.common import metric
 
 patterns = {}
 patterns['Etot'] = re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL)
@@ -83,7 +84,7 @@ class CRYSTOUT(Output):
             raw_data = open(file).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
             parts_pointer = list(find_all(raw_data, "*                              MAIN AUTHORS"))
 
-            # determine whether to deal with CRYSTAL or PROPERTIES output formats
+            # determine whether to deal with CRYSTAL and / or PROPERTIES output formats
             if len(parts_pointer) > 1:
                 if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
                 len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs
@@ -107,9 +108,10 @@ class CRYSTOUT(Output):
                 self.info['finished'] = self.is_finished()
 
                 self.comment, self.input, self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
-                self.molecular_case = False if not '\n MOLECULAR CALCULATION\n' in self.data else True
+                self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
                 
                 # this is to account correct cart->frac atomic coords conversion using cellpar_to_cell ASE routine
+                # 3x3 cell is used only here to obtain ab_normal and a_direction
                 cell = self.get_cart2frac()
                 self.ab_normal = [0,0,1] if self.molecular_case else metric(cross(cell[0], cell[1]))
                 self.a_direction = None if self.molecular_case else metric(cell[0])
@@ -117,7 +119,8 @@ class CRYSTOUT(Output):
                 self.energy = self.get_etot()
                 self.structures = self.get_structures()
                 self.symops = self.get_symops()
-                self.charges = self.get_charges()
+                
+                self.set_charges()
                 
                 self.electrons['basis_set'] = self.get_bs()
 
@@ -148,7 +151,7 @@ class CRYSTOUT(Output):
             if self.properties_calc and not self.crystal_calc and not missing_props:
                 raise RuntimeError( 'PROPERTIES with insufficient information omitted!' )
 
-            if self.properties_calc:
+            '''if self.properties_calc:
                 if not missing_props:
                     missing_props = {
                         'atomtypes': [i[0] for i in self.structures[-1]['atoms']],
@@ -163,6 +166,7 @@ class CRYSTOUT(Output):
 
                 #if self.electrons['proj_eigv_impacts'] and self.crystal_calc:
                 #    self.info['prog'] += '+PROPERTIES'
+            '''
 
     @staticmethod
     def fingerprints(test_string):
@@ -265,14 +269,15 @@ class CRYSTOUT(Output):
         if not strucs: raise RuntimeError( 'No structure was found!' )
 
         for crystal_data in strucs:
-            parameters, atoms, periodicity = [], [], 3
+            symbols, parameters, atoms, periodicity = [], [], [], 3
+            
             if self.molecular_case: periodicity = 0
 
             crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
 
             oth = patterns['crystallographic_cell'].search(crystal_data)
             if oth is not None: crystal_data = crystal_data.replace(oth.group(), "") # delete other cells info except primitive cell
-
+            
             lines = crystal_data.splitlines()
             for li in range(len(lines)):
                 if 'ALPHA      BETA       GAMMA' in lines[li]:
@@ -282,36 +287,37 @@ class CRYSTOUT(Output):
                 elif patterns['at_str'].search(lines[li]):
                     atom = lines[li].split()
                     if len(atom) in [7, 8] and len(atom[-2]) > 7:
-                        #print ">", atom
                         for i in range(4, 7):
                             try: atom[i] = round(float(atom[i]), 10)
                             except ValueError: raise RuntimeError('Atomic coordinates are invalid!')
-                        # Warning: cut non-equivalency in the same atom types, denoted by integer! For magmoms refer to corresp. property!
-                        atom[3] = ''.join([letter for letter in atom[3] if not letter.isdigit()])
-                        atom[3] = atom[3].capitalize()
-                        atomdata = atom[3:7]
-                        atomdata.append(atom[1]) # irreducible (T or F)
+                        
+                        # Warning: we lose non-equivalency in the same atom types, denoted by integer! For magmoms refer to corresp. property!
+                        atom[3] = ''.join([letter for letter in atom[3] if not letter.isdigit()]).capitalize()
+                        if atom[3] == 'Xx': atom[3] = 'X'
+                        symbols.append( atom[3] )
+                        atomdata = atom[4:7]
+                        #atomdata.append(atom[1]) # irreducible (T or F)
                         atoms.append(atomdata)
-            if len(atoms) == 0: raise RuntimeError( 'Cell info is corrupted!' )
-
-            # check whether angstroms are used instead of fractions and fractionize
+                        
+            if len(atoms) == 0: raise RuntimeError('No atoms found, cell info is corrupted!')
+            if 0 in parameters: raise RuntimeError('Zero-vector found, cell info is corrupted!') # prevent cell collapses known in CRYSTAL RESTART outputs
+            
+            # check whether angstroms are used instead of fractions
             if periodicity:
                 for i in range(0, 3):
                     if parameters[i] > self.PERIODIC_LIMIT:
                         parameters[i] = self.PERIODIC_LIMIT
                         periodicity -= 1
+                        
+                        # TODO : account case with not direct angles
                         for j in range(0, len(atoms)):
-                            atoms[j][i+1] = atoms[j][i+1] / self.PERIODIC_LIMIT
-                # de-fractionize
-                xyz_atoms = []
-                xyz_matrix = cellpar_to_cell(parameters, self.ab_normal, self.a_direction)
-                for i in atoms:
-                    R = dot( array([i[1], i[2], i[3]]), xyz_matrix )
-                    xyz_atoms.append( [i[0], R[0], R[1], R[2], i[4]] )
-            else:
-                xyz_atoms = atoms
+                            atoms[j][i] /= self.PERIODIC_LIMIT
 
-            structures.append(  {'cell': parameters, 'atoms': xyz_atoms, 'periodicity': periodicity, 'ab_normal': self.ab_normal, 'a_direction': self.a_direction}  )
+                matrix = cellpar_to_cell(parameters, self.ab_normal, self.a_direction) # TODO : ab_normal, a_direction may belong to completely other structure
+                structures.append(Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=periodicity))
+            else:
+                structures.append(Atoms(symbols=symbols, positions=atoms, pbc=False))
+                
         return structures
 
     def get_etot(self):
@@ -404,7 +410,7 @@ class CRYSTOUT(Output):
                 eigvecdata.append( bzpoint.split("FREQ(CM**-1)") )
         else: return None
 
-        natseq = range(1, len(self.structures[-1]['atoms'])+1)
+        natseq = range(1, len(self.structures[-1])+1)
         bz_eigvecs, kpoints = {}, []
         for set in eigvecdata:
             ph_eigvecs = []
@@ -480,15 +486,16 @@ class CRYSTOUT(Output):
             k_degeneracy_data[ orig_coords[vi] ] = { 'bzpoint' : " ".join(norm_coord), 'degeneracy' : degenerated[vi] }
         return k_degeneracy_data
 
-    def get_charges(self):
-        ''' format: [ Atomtype , charge , magmom (if any) ] '''
-        charges = []
+    def set_charges(self):
+        charges, magmoms = [], []
         atomcharges = patterns['charges'].search(self.data)
         atommagmoms = patterns['magmoms'].search(self.data)
+        
+        if not atomcharges and self.properties_calc: atomcharges = patterns['charges'].search(self.pdata)
+        if not atommagmoms and self.properties_calc: atommagmoms = patterns['magmoms'].search(self.pdata)
 
         # obtain formal charges from pseudopotentials
         iatomcharges = patterns['icharges'].findall(self.data)
-        #print iatomcharges
         pseudo_charges = copy.deepcopy(atomic_numbers)
         for i in range(len(iatomcharges)):
             try:
@@ -496,7 +503,7 @@ class CRYSTOUT(Output):
                 P = float( iatomcharges[i][1].strip() )
             except: raise RuntimeError('Error in pseudopotential info: ' + sys.exc_info()[1] )
             p_element = [key for key, value in pseudo_charges.iteritems() if value == Z]
-            if len(p_element): pseudo_charges[p_element[0]] = P
+            if len(p_element): pseudo_charges[p_element[0].capitalize()] = P
         symbols = pseudo_charges.keys()
 
         if atomcharges is not None:
@@ -509,20 +516,20 @@ class CRYSTOUT(Output):
                     val[3] = val[3][:6] # erroneous by stars
                     if val[1] in symbols: val[3] = pseudo_charges[val[1]] - float(val[3])
                     elif val[1] == 'Xx': val[3] = -float(val[3])
-                    charges.append([val[1], val[3], 0.0])
+                    charges.append(val[3])
+            self.structures[-1].set_initial_charges(charges)
         else: self.warning( 'No charges available!' )
+        
         if atommagmoms is not None:
             parts = atommagmoms.group().split("ATOM    Z CHARGE  SHELL POPULATION")
             chargedata = parts[1].splitlines()
-            n=0
             for i in chargedata:
                 if patterns['at_str'].match(i):
                     val = i.split()
                     val[3] = val[3][:6] # erroneous by stars
-                    charges[n][2] = float(val[3])
-                    n+=1
+                    magmoms.append(float(val[3]))
+            self.structures[-1].set_initial_magnetic_moments(magmoms)
         else: self.warning( 'No magmoms available!' )
-        return charges
 
     def get_input_and_version(self, inputdata):
         # get version
@@ -534,10 +541,10 @@ class CRYSTOUT(Output):
             # beware of MPI inclusions!
             if '*' in major: version = major.replace('*', '').strip()
             if '*' in minor:
-				minor = minor.replace('*', '').strip()
-				if ':' in minor: minor = minor.split(':')[1].split()[0]
-				else: minor = minor.split()[1]
-				version += ' ' + minor
+                minor = minor.replace('*', '').strip()
+                if ':' in minor: minor = minor.split(':')[1].split()[0]
+                else: minor = minor.split()[1]
+                version += ' ' + minor
         
         # get input data        
         inputdata = inputdata.splitlines()
@@ -686,7 +693,7 @@ class CRYSTOUT(Output):
         # sometimes ghost basis set is printed without exponents and we should determine what atom was replaced
         if 'Xx' in gbasis['bs'] and not len(gbasis['bs']['Xx']):
             replaced = atom_order[ atom_order.index('Xx') - 1 ]
-            gbasis['bs']['Xx'] = copy.deepcopy(gbasis['bs'][replaced])
+            gbasis['bs']['X'] = copy.deepcopy(gbasis['bs'][replaced])
 
         return self.__correct_bs_ghost(gbasis)
 
@@ -765,7 +772,7 @@ class CRYSTOUT(Output):
                 else:
                     # this is ---- atom
                     if len(parts[0]) > 2: parts[0] = parts[0][-2:]
-                    if int(parts[0]) == 0: atom_type = 'Xx'
+                    if int(parts[0]) == 0: atom_type = 'X'
                     else: atom_type = chemical_symbols[ int(parts[0]) ]
                     #print atom_type
                     try: gbasis['bs'][ atom_type ]
@@ -811,17 +818,14 @@ class CRYSTOUT(Output):
 
     def __correct_bs_ghost(self, gbasis):
         # ghost cannot be in pseudopotential
-        if not len(self.structures): raise RuntimeError('Structure is not present!')
-
         atoms = []
-        for atom in self.structures[-1]['atoms']:
-            if not atom[0] in atoms: atoms.append( atom[0] )
-
+        for atom in self.structures[-1].get_chemical_symbols():
+            if not atom in atoms: atoms.append( atom )
 
         for k, v in gbasis['bs'].iteritems():
             # sometimes no BS for host atom is printed when it is replaced by Xx: account it
-            if not len(v) and k != 'Xx' and 'Xx' in gbasis['bs']:
-                gbasis['bs'][k] = copy.deepcopy(gbasis['bs']['Xx'])
+            if not len(v) and k != 'X' and 'X' in gbasis['bs']:
+                gbasis['bs'][k] = copy.deepcopy(gbasis['bs']['X'])
 
         # actually no GHOST deletion will be performed as it breaks orbitals order for band structure plotting!
         '''cmp_atoms = []

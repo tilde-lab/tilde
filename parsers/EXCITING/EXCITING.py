@@ -1,21 +1,19 @@
 
 # tilda project: EXCITING calculations parser
-# v060913
+# v250913
 
 import os
 import sys
 import math
 
-from numpy import dot
-from numpy import array
-from numpy import matrix
-from numpy import cross
+from lxml import etree
 
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.units import Bohr, Hartree
+from ase import Atoms
 
 from parsers import Output
-from common import metric
+from core.electron_structure import Edos, Ebands
 
 # INFO.OUT parser
 
@@ -60,13 +58,11 @@ class INFOOUT(Output):
                 
             elif 'Lattice vectors' in line:
                 for i in range(n+1, n+4):
-                    cell.append(  array(map(lambda x: float(x) * Bohr, self.data[i].split()))  )
-                ab_normal = metric(cross(cell[0], cell[1]))
-                a_direction = metric(cell[0])
+                    cell.append(  map(lambda x: float(x) * Bohr, self.data[i].split())  )
                 n += 3
                     
             elif 'Species : ' in line:              
-                symb = line.split('(')[-1][:-2]
+                symb = line.split('(')[-1][:-2].encode('ascii')
                 while 1:                    
                     n += 1
                     if 'atomic positions (lattice)' in self.data[n]:
@@ -175,6 +171,12 @@ class INFOOUT(Output):
                 
             elif 'Total time spent ' in line: # Beryllium
                 self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
+                
+            elif line.startswith(' Fermi '):
+                e_last = float(self.data[n].split(":")[-1]) * Hartree
+                
+            elif 'Number of empty states' in line:
+                self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
         
         if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
         
@@ -195,19 +197,19 @@ class INFOOUT(Output):
                 self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
         
         # special structural case adjusting (WTF?)
-        if ab_normal == metric(cell[2]):
+        '''if ab_normal == metric(cell[2]):
             # Default `a_direction` is (1,0,0), unless this is parallel to
             # `ab_normal`, in which case default `a_direction` is (0,0,1).
-            a_direction = None
+            a_direction = None'''
             
-        # de-fractionize
         # lattice is always the same
-        for fract in fracts_holder:
-            xyz_atoms = []
-            for i in fract:
-                R = dot( array([i[1], i[2], i[3]]), cell )
-                xyz_atoms.append( [i[0], R[0], R[1], R[2]] )
-            self.structures.append({'cell': cell_to_cellpar( cell ).tolist(), 'atoms': xyz_atoms, 'periodicity': 3, 'ab_normal': ab_normal, 'a_direction': a_direction})
+        for structure in fracts_holder:
+            symbols = []
+            pos = []
+            for a in structure:
+                symbols.append(a[0])
+                pos.append(a[1:])
+            self.structures.append(Atoms(symbols=symbols, cell=cell, scaled_positions=pos, pbc=True))
         
         # Check if convergence achieved right away from the first cycle and account that
         if opt_flag and len(self.structures) == 1:
@@ -224,17 +226,105 @@ class INFOOUT(Output):
         #   # Warning(charge)
         #   self.warning( " ".join(w) )
         
+        # special slab case
         # account periodicity (vacuum creation method)
         # TODO
-        if self.structures[-1]['cell'][2] > 2 * self.structures[-1]['cell'][0] * self.structures[-1]['cell'][1]:
-            self.method['technique'].update({'vacuum2d': int(round(self.structures[-1]['cell'][2]))})
+        cellpar = cell_to_cellpar( cell ).tolist()
+        if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
+            self.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
             for i in range(len(self.structures)):
-                self.structures[i]['periodicity'] = 2
+                self.structures[i].set_pbc((True, True, False))
+                    
+        # Electronic properties
+        if os.path.exists(os.path.join(os.path.dirname(file), 'dos.xml')):
+            f = open(os.path.join(os.path.dirname(file), 'dos.xml'),'r')
+            self.electrons['dos'] = Edos(parse_dosxml(f, e_last))
+            f.close()
             
-        self.data = "".join(self.data)
+        if os.path.exists(os.path.join(os.path.dirname(file), 'bandstructure.xml')):
+            f = open(os.path.join(os.path.dirname(file), 'bandstructure.xml'),'r')
+            self.electrons['bands'] = Ebands(parse_bandsxml(f, e_last))
+            f.close()
         
     @staticmethod
     def fingerprints(test_string):
         if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True
         else: return False
+
+
+def parse_dosxml(fp, e_last):
+    dos_obj = {'x': [],}
+    dos = []    
+    first_cyc, new_part = True, True
         
+    context = etree.iterparse(fp, events=('end',))
+    
+    for action, elem in context:
+        if elem.tag=='totaldos':
+            if len(dos) != len(dos_obj['x']): raise RuntimeError("Data in dos.xml are mismatched!")
+            dos_obj['total'] = dos
+            dos, new_part = [], True
+            
+        elif elem.tag=='partialdos':
+            target_atom = elem.attrib['speciessym']
+            if not target_atom: raise RuntimeError("Fatal lack of info occured: speciessym tag in dos.xml is empty!")
+            if not target_atom in dos_obj: dos_obj[target_atom] = dos
+            else:
+                if len(dos) != len(dos_obj[target_atom]): raise RuntimeError("Unexpected data format in dos.xml!")
+                dos_obj[target_atom] = [sum(s) for s in zip( dos_obj[target_atom], dos )]
+            dos, new_part = [], True
+            
+        elif elem.tag=='interstitialdos':
+            dos_obj['interstitial'] = dos
+            dos, new_part = [], True
+            
+        elif elem.tag=='diagram':
+            if not new_part:
+                # orbital contributions are merged : TODO
+                # spins are merged : TODO
+                dos = [sum(s) for s in zip( dos[ : len(dos)/2], dos[len(dos)/2 : ] )]
+            
+            #spin = {1: 'alpha', 2: 'beta'}         
+            #target_spin = spin[ int( elem.attrib['nspin'] ) ]
+            #if 'n' in elem.attrib: print 'n =', elem.attrib['n']
+            #if 'l' in elem.attrib: print 'l =', elem.attrib['l']
+            
+            first_cyc, new_part = False, False
+            
+        elif elem.tag=='point':
+            if first_cyc: dos_obj['x'].append( float(elem.attrib['e']) * Hartree  )
+            dos.append(float(elem.attrib['dos']))
+            
+        elem.clear()        
+        while elem.getprevious() is not None:
+            del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
+            
+    return dos_obj
+    
+def parse_bandsxml(fp, e_last):
+    band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
+    first_cyc = True
+    
+    context = etree.iterparse(fp, events=('end',))
+    
+    for action, elem in context:
+        if elem.tag=='band':
+            band_obj['stripes'].append([])          
+            first_cyc = False
+            
+        elif elem.tag=='point':
+            if first_cyc: band_obj['abscissa'].append( float(elem.attrib['distance']) )
+            band_obj['stripes'][-1].append(float(elem.attrib['eval']) * Hartree)
+            
+        elif elem.tag=='vertex':
+            band_obj['ticks'].append( [ float(elem.attrib['distance']), elem.attrib['label'] ] ) # NB : elem.attrib['coord']
+                        
+        elem.clear()
+        while elem.getprevious() is not None:
+            try: del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
+            except TypeError: break
+    
+    if band_obj['ticks'][0][0] != band_obj['abscissa'][0] or band_obj['ticks'][-1][0] != band_obj['abscissa'][-1]: raise RuntimeError("Unexpected data format in bandstructure.xml!")
+    band_obj['stripes'].pop() # last []
+        
+    return band_obj

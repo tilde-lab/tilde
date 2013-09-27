@@ -7,18 +7,16 @@
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
 #
 # See http://wwwtilda.googlecode.com
-# v040913
+# v220913
 
 import os
 import sys
-import re
 import json
 import socket
-import tempfile
 import time
 from datetime import timedelta
+from itertools import ifilter
 import math
-import random
 import threading
 import logging
 
@@ -41,12 +39,12 @@ import tornadio2.server
 
 from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
-from ase.lattice.spacegroup.cell import cellpar_to_cell
+from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 from settings import settings, write_settings, write_db, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
 from api import API
+from common import dict2ase
 from plotter import plotter
-from common import aseize
 
 
 DELIM = '~#~#~'
@@ -289,8 +287,7 @@ class Request_Handler:
                 for item in result:
                     match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
                     
-                    if not 'has_label' in match: continue
-                    if not match['has_label']: continue
+                    if not 'has_label' in match or not match['has_label']: continue
                     
                     if 'chem_notation' in match: i = html_formula(item['topic'])
                     else: i = item['topic']
@@ -355,12 +352,13 @@ class Request_Handler:
                     tags.sort(key=lambda x: x['sort'])
 
                     phon_flag = False
-                    if len(row['phonons'])>10: phon_flag = True # avoid json.loads
+                    if len(row['phonons'])>10: phon_flag = True # avoids json.loads
 
-                    e = json.loads(row['electrons'])
-                    e_flag = False
-                    #if 'impacts' in e or 'dos' in e: e_flag = True
-                                  
+                    e_flag = {'dos': True, 'bands': True}
+                    # avoids json.loads
+                    if '"dos": {}' in row['electrons']: e_flag['dos'] = False
+                    if '"bands": {}' in row['electrons']: e_flag['bands'] = False
+
                     data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
         return (data, error)
 
@@ -469,30 +467,26 @@ class Request_Handler:
             for r in result:
                 calc = Tilde.restore(r, db_transfer_mode=True)
                 checksum, error = Tilde.save(calc, db_transfer_mode=True)
+                
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
         data = 1
         return (data, error)
-
-    '''@staticmethod
-    def ph_dos(userobj, session_id):
+    
+    # TODO: delegate content of these four methods to plotter!
+    
+    @staticmethod
+    def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except:
-            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-            return (data, error)
+        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        
         row = cursor.fetchone()
-        if row is None:
-            error = 'No information found!'
-            return (data, error)
-        if row['phonons'] is None:
-            error = 'No phonons for this object!'
-            return (data, error)
+        if row is None: return (data, 'No information found!')
+        if row['phonons'] is None: return (data, 'No phonons for this object!')
 
         s = json.loads(row['structures'])
         p = json.loads(row['phonons'])
-
-        atomtypes=[i[0] for i in s[-1]['atoms']]
 
         # gamma-projected eigenvalues and gamma-projected atomic impacts from eigenvectors
         eigenvalues, impacts = [], []
@@ -509,10 +503,10 @@ class Request_Handler:
                 c = []
                 for f in range(len(item)/3):
                     c.append( math.sqrt( float(item[f*3])**2 + float(item[f*3 + 1])**2 + float(item[f*3 + 2])**2 ) )
-                s = sum(c)
-                if s == 0: s=1 # e.g. when eigenvectors are unknown
+                sm = sum(c)
+                if sm == 0: sm=1 # e.g. when eigenvectors are unknown
                 h = []
-                for j in c: h.append( j/s )
+                for j in c: h.append( j/sm )
                 for d in range(0, degeneracy_repeat): impacts.append(h)
 
         # sorting with order preserving
@@ -526,66 +520,19 @@ class Request_Handler:
         val_max = eigenvalues[-1] + 25
         pitch = 3
 
-        data = json.dumps(plotter(task = 'dos', eigenvalues=eigenvalues, impacts=impacts, atomtypes=atomtypes, sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))
-        return (data, error)
-
+        return (json.dumps(plotter(task = 'dos', eigenvalues=eigenvalues, impacts=impacts, atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
+        
     @staticmethod
-    def e_dos(userobj, session_id):
-        data, error = None, None
-        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except:
-            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-            return (data, error)
-        row = cursor.fetchone()
-        if row is None:
-            error = 'No information found!'
-            return (data, error)
-        s = json.loads(row['structures'])
-        e = json.loads(row['electrons'])
-
-        if (not 'dos' in e) and (not 'e_proj_eigvals' in e or not 'impacts' in e):
-            return (data, 'Electron information is not full: plotting impossible!')
-
-        sigma = 0.05
-        val_min = E_LOWER_DEFAULT if not 'min' in userobj else userobj['min']
-        val_max = E_UPPER_DEFAULT if not 'max' in userobj else userobj['max']
-        pitch=(val_max - val_min) / 200
-
-        if 'e_proj_eigvals' in e and 'impacts' in e:
-
-            # CRYSTAL
-            data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=[i[0] for i in s[-1]['atoms']], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))
-
-        elif 'dos' in e:
-
-            # VASP
-            # reduce values
-            keep = []
-            for n, i in enumerate(e['dos']['x']):
-                if val_min <= i <= val_max:
-                    keep.append(n)
-            for k in e['dos'].keys():
-                e['dos'][k] = e['dos'][k][keep[0] : keep[-1]+1]
-
-            data = json.dumps(plotter(task = 'dos', precomputed = e['dos']))
-        return (data, error)
-
-    @staticmethod
-    def ph_bands(userobj, session_id):
+    def ph_bands(userobj, session_id): # currently supported for: CRYSTAL, "VASP"
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except:
-            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-            return (data, error)
+        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        
         row = cursor.fetchone()
-        if row is None:
-            error = 'No information found!'
-            return (data, error)
-        if row['phonons'] is None:
-            error = 'No phonons for this object!'
-            return (data, error)
+        
+        if row is None: return (data, 'No information found!')
+        if row['phonons'] is None: return (data, 'No phonons for this object!')
 
         s = json.loads(row['structures'])
         p = json.loads(row['phonons'])
@@ -593,69 +540,66 @@ class Request_Handler:
         values = {}
         for set in p: values[ set['bzpoint'] ] = set['freqs']
 
-        data = json.dumps(plotter(task = 'bands', values = values, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction'])))
-        return (data, error)
+        return (json.dumps(plotter( task = 'bands', values = values, xyz_matrix = s[-1]['cell'] )), error)
 
     @staticmethod
-    def e_bands(userobj, session_id):
+    def e_dos(userobj, session_id): # currently supported for: EXCITING, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
-        except:
-            error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-            return (data, error)
+        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        
         row = cursor.fetchone()
-        if row is None:
-            error = 'No information found!'
-            return (data, error)
+        
+        if row is None: return (data, 'No information found!')            
+            
         s = json.loads(row['structures'])
         e = json.loads(row['electrons'])
 
-        if not 'eigvals' in e:
-            return (data, 'Electron information is not full: merging required!')
+        if not len(e['dos']): return (data, 'Electron information is not full: plotting impossible!') # and (not 'e_proj_eigvals' in e or not 'impacts' in e):
+
+        sigma = 0.05
+        val_min = E_LOWER_DEFAULT if not 'min' in userobj else userobj['min']
+        val_max = E_UPPER_DEFAULT if not 'max' in userobj else userobj['max']
+        pitch=(val_max - val_min) / 200
+
+        '''if 'e_proj_eigvals' in e and 'impacts' in e:
+            # CRYSTAL
+            data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))'''
+
+        # VASP
+        # EXCITING
+        # reduce values
+        keep = []
+        for n, i in enumerate(e['dos']['x']):
+            if val_min <= i <= val_max:
+                keep.append(n)
+        for k in e['dos'].keys():
+            e['dos'][k] = e['dos'][k][keep[0] : keep[-1]+1]        
+        
+        return (json.dumps(plotter(task = 'dos', precomputed = e['dos'])), error)
+
+    @staticmethod
+    def e_bands(userobj, session_id): # currently supported for: EXCITING
+        data, error = None, None
+        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
+        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        
+        row = cursor.fetchone()
+        if row is None: return (data, 'No information found!')
+        
+        #s = json.loads(row['structures'])
+        e = json.loads(row['electrons'])
+
+        if not len(e['bands']): return (data, 'Band structure is missing!')
 
         val_min = E_LOWER_DEFAULT if not 'min' in userobj else userobj['min']
         val_max = E_UPPER_DEFAULT if not 'max' in userobj else userobj['max']
-
-        # filter values from all k-points by data in G point: first for alpha spins:
-        nullstand = '0 0 0'
-        if not '0 0 0' in e['eigvals']: # possible case when there is no Gamma point in VASP - WTF?
-            nullstand = sorted( e['eigvals'].keys() )[0]
-
-        bz_ip_data = {nullstand: e['eigvals'][nullstand]['alpha']}
-        save_vals = []
-        for i in bz_ip_data[nullstand]:
-            if val_min < i < val_max:
-                save_vals.append( bz_ip_data[nullstand].index(i) )
-        bz_ip_data[nullstand] = bz_ip_data[nullstand][ save_vals[0] : save_vals[-1] ]
-        bz_ip_data[nullstand].sort()
-
-        for bz, item in e['eigvals'].iteritems():
-            if bz == nullstand: continue
-            bz_ip_data[bz] = item['alpha'][ save_vals[0] : save_vals[-1] ]
-            bz_ip_data[bz].sort()
-
-        data_by_spin = plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction']))
-
-        # filter values from all k-points by data in G point: then for beta spins:
-        if 'beta' in e['eigvals'][nullstand]:
-            bz_ip_data = {nullstand: e['eigvals'][nullstand]['beta']}
-            save_vals = []
-            for i in bz_ip_data[nullstand]:
-                if val_min < i < val_max:
-                    save_vals.append( bz_ip_data[nullstand].index(i) )
-            bz_ip_data[nullstand] = bz_ip_data[nullstand][ save_vals[0] : save_vals[-1] ]
-            bz_ip_data[nullstand].sort()
-
-            for bz, item in e['eigvals'].iteritems():
-                if bz == nullstand: continue
-                bz = bz.replace('  ', ' ')
-                bz_ip_data[bz] = item['beta'][ save_vals[0] : save_vals[-1] ]
-                bz_ip_data[bz].sort()
-
-            data_by_spin.extend(plotter(task = 'bands', values = bz_ip_data, xyz_matrix = cellpar_to_cell(s[-1]['cell'], s[-1]['ab_normal'], s[-1]['a_direction'])))
-
-        return (json.dumps(data_by_spin), error)'''
+            
+        e['bands']['stripes'] = ifilter(lambda value: val_min < sum(value)/len(value) < val_max, e['bands']['stripes'])
+        
+        return (json.dumps(plotter( task = 'bands', precomputed = e['bands'] )), error)
 
     @staticmethod
     def clean(userobj, session_id):
@@ -809,7 +753,7 @@ class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
 
-class CIFDownloadHandler(tornado.web.RequestHandler):
+'''class CIFDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
         if not '/' in req_str: raise tornado.web.HTTPError(404)
         items = req_str.split('/')
@@ -830,7 +774,7 @@ class CIFDownloadHandler(tornado.web.RequestHandler):
             content = struc[-1]['orig_cif']
             self.set_header('Content-type', 'application/download;')
             self.set_header('Content-disposition', 'attachment; filename="' + filename + '.cif')
-            self.write(content)
+            self.write(content)'''
             
 class JSON3DDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -842,7 +786,7 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
         
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT structures, apps FROM results WHERE checksum = ?', (hash,) )
+            cursor.execute( 'SELECT structures, info, apps FROM results WHERE checksum = ?', (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
@@ -854,18 +798,22 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
                 if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
                     overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
 
-            ase_obj = aseize(json.loads(row['structures'])[-1])
+            symmetry = json.loads(row['info'])
+            symmetry = symmetry['ng']
+            
+            ase_obj = dict2ase(json.loads(row['structures'])[-1])                        
+                        
+            #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
+            
             if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
             
-            #ase_obj.center() # NB: check for slabs!
+            #ase_obj.center() # NB: check for slabs!            
+            #mass_center = ase_obj.get_center_of_mass()
+            #for i in range(len(mass_center)):
+            #    if mass_center[i] == 0: mass_center[i] = 1
+            #mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
             
-            mass_center = ase_obj.get_center_of_mass()
-
-            for i in range(len(mass_center)):
-                if mass_center[i] == 0: mass_center[i] = 1
-            mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
-            
-            # player.html JSON format
+            # player.html atoms JSON format
             atoms = []
             for n, i in enumerate(ase_obj):
                 if i.symbol == 'X': radius, rgb = 0.66, '0xffff00'
@@ -880,12 +828,18 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
                     except KeyError: pass
                 atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
 
+            # player.html cell depiction
             cell_points = []
             if ase_obj.get_pbc().all():
-                for i in ase_obj.cell:
-                    cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+                for i in ase_obj.cell.tolist():
+                    #cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+                    cell_points.append(i)
 
-            content = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': ase_obj.info, 'overlayed': overlayed_apps})
+            # player.html info area
+            cellpar = cell_to_cellpar( ase_obj.cell ).tolist()
+            descr = {'a': "%2.3f" % cellpar[0], 'b': "%2.3f" % cellpar[1], 'c': "%2.3f" % cellpar[2], 'alpha': "%2.3f" % cellpar[3], 'beta': "%2.3f" % cellpar[4], 'gamma': "%2.3f" % cellpar[5]}
+            
+            content = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': descr, 'overlayed': overlayed_apps})
             self.set_header('Content-type', 'application/json')
             self.write(content)
 
@@ -974,7 +928,8 @@ if __name__ == "__main__":
             else: updatemsg = 'Actual version is %s. Your version is %s' % (v, API.version)
         print updatemsg
 
-    # compiling table columns: invoke modules through their API
+    # compiling table columns:
+    # invoke modules through their API
     APP_COLS = []
     n = 0
     for appname, appclass in Tilde.Apps.iteritems():
@@ -982,18 +937,25 @@ if __name__ == "__main__":
             APP_COLS.append( {'cid': (2000+n), 'category': appclass['appcaption'], 'source': '', 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
         n += 1
 
-    # compiling table columns: describe additional columns that are neither hierarchy API part, nor module API part
+    # compiling table columns
+    # describe additional columns
+    # that are neither hierarchy API part,
+    # nor module API part
     def col__n(obj, colnum):
-        return "<td rel=%s>%3d</td>" % (colnum, len(obj['structures'][-1]['atoms']))
+        return "<td rel=%s>%3d</td>" % (colnum, len( obj['structures'][-1]['symbols'] ))
+        
     def col__energy(obj, colnum):
         e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
         return "<td rel=%s class=_e>%s</td>" % (colnum, e)
+        
     def col__dims(obj, colnum):
         dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
         return "<td rel=%s>%s</td>" % (colnum, dims)
+        
     def col__loc(obj, colnum):
         #if len(loc) > 50: loc = loc[0:50] + '...'
         return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
+        
     def col__finished(obj, colnum):
         if int(obj['info']['finished']) > 0: finished = 'yes'
         elif int(obj['info']['finished']) == 0: finished = 'n/a'
@@ -1020,7 +982,7 @@ if __name__ == "__main__":
         Repo_pool[r].row_factory = sqlite3.Row
         Repo_pool[r].text_factory = str
         Tilde_tags[r] = DataMap( r )
-        if Tilde_tags[r].error: raise RuntimeError('DataMap creation error: ' + Tilde_tags[r].error)
+        if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
 
     Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 
@@ -1035,7 +997,7 @@ if __name__ == "__main__":
             Router.apply_routes([
                 (r"/", IndexHandler),
                 (r"/static/(.*)", tornado.web.StaticFileHandler),
-                (r"/cif/(.*)", CIFDownloadHandler),
+                #(r"/cif/(.*)", CIFDownloadHandler),
                 (r"/json3d/(.*)", JSON3DDownloadHandler),
                 (r"/export/(.*)", DataExportHandler),
                 (r"/VERSION", UpdateServiceHandler)
@@ -1060,5 +1022,6 @@ if __name__ == "__main__":
 
         try: io_loop.start()
         except KeyboardInterrupt:
-            print "\nBye-bye."
-            sys.exit()
+            io_loop.stop()
+            io_loop.close()
+            sys.exit("\nBye-bye.")

@@ -1,30 +1,30 @@
 
 # classifies slabs by their structure
-# v070113
+# v220913
 
 import os
 import sys
 import math
 import fractions
 
-
 # hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
 __order__ = 40
 __properties__ = [ {"category": "planes number", "source": "layers", "has_column": True, "has_label": True, "descr": ""}, {"category": "adsorbent", "source": "adsorbent", "chem_notation": True, "has_column": True, "has_label": True, "descr": ""}, {"category": "surface termination", "source": "termination", "chem_notation": True, "has_column": True, "has_label": True, "descr": ""} ]
 
-def classify(tilde_obj):
+def classify(tilde_obj):    
     ''' determine count of layers and adsorption '''
-    if tilde_obj.structures[-1]['periodicity'] != 2: return tilde_obj
+    
+    if tilde_obj.structures[-1].periodicity != 2: return tilde_obj
     
     vectors = []
     for i in range(3):
-        vectors.append([i, tilde_obj.structures[-1]['cell'][i]])
+        vectors.append([i, tilde_obj.info['cellpar'][i]])
     z_axis = sorted(vectors, key = lambda k: k[1])[-1][0]
     
-    z_coords = []    
-    for i in tilde_obj.structures[-1]['atoms']:
-        if i[0] == 'Xx': continue
-        z_coords.append([i[0], i[z_axis+1]])
+    z_coords = []
+    for i in tilde_obj.structures[-1]:
+        if i.symbol == 'X': continue
+        z_coords.append([ i.symbol, i.position[z_axis] ])
     z_coords = sorted(z_coords, key = lambda k: k[1])
     
     content_by_layer = [{}]
@@ -42,6 +42,7 @@ def classify(tilde_obj):
     adsorbate = {}
     to_delete = []
     if len(content_by_layer) <= 3:
+        # TODO
         # we have a very thin slab with an undefined adsorption case
         tilde_obj.info['properties']['layers'] = len(content_by_layer)
     else:
@@ -49,6 +50,7 @@ def classify(tilde_obj):
         s = range(len(content_by_layer) - 1, int(math.floor( len(content_by_layer)/2 ) - 1), -1)
         sides = [range(0, int(math.floor( len(content_by_layer)/2 )))] + [s]
         side_chk, inversed = False, False
+        
         # run over layers till the middle from both sides
         #print 'SIDES:   ', sides
         for side in sides:
@@ -59,7 +61,8 @@ def classify(tilde_obj):
                 #print 'layer:', i                
                 ref_layer = {}
                 
-                # Check 1: by content
+                # Check 1:
+                # by content
                 for atom, content in content_by_layer[i].iteritems():
                     #print 'content:', float(tilde_obj.info['contents'][ tilde_obj.info['elements'].index(atom) ]) / sum(tilde_obj.info['contents'])
                     if atom == 'H': content_ratio = 0.15 # less than 15%
@@ -76,7 +79,9 @@ def classify(tilde_obj):
                         
                 if not len(ref_layer): continue
                 
-                # Check 2: by comparing with next layers (WARNING! Collision is possible when an adsorbate and host layer have the same atomic content!)
+                # Check 2:
+                # by comparing with next layers
+                # WARNING! Collision is possible when an adsorbate and host layer have the same atomic content!
                 if not inversed: cmp_chk_lr = range(i + 1, len(content_by_layer) - i - 1) # from upside down
                 else:
                     cmp_chk_lr, k = [], 1

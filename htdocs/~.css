@@ -94,7 +94,9 @@ div.ctx_caption{padding:7px 0 0 8px;}
 #collapser_menu ul li{list-style-type:none;width:132px;height:24px;padding-left:4px;font-size:13px;cursor:pointer;}
 #collapser_menu ul li:hover{background:#000;color:#fff;}
 #databrowser > tbody > tr > td{cursor:pointer;}
-table td, table th{line-height:18px;border-top:1px solid #000;}
+table td{line-height:18px;border-top:1px solid #eeeeee;}
+table th{line-height:18px;border-top:1px solid #000;}
+table tr:first-child td{border-top:1px solid #000;}
 table tr:last-child td{border-bottom:1px solid #000;}
 table{width:100%;text-align:left;border-spacing:0;font-size:0.9em;}
 /*table.tablesorter thead{position:fixed;width:100%;height:28px;right:0;top:52px;}

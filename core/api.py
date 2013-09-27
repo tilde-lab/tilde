@@ -19,7 +19,9 @@ from string import letters
 from numpy import dot, array, cross
 from numpy.linalg import det, norm
 
-from common import generate_cif, u
+from common import u, is_binary_string
+from common import ase2dict, dict2ase
+from common import generate_cif
 from symmetry import SymmetryHandler
 
 # this is done to simplify adding modules to Tilde according its API
@@ -28,9 +30,10 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.common import ModuleError
 from parsers import Output
 from settings import DEFAULT_SETUP
+from core.deps.ase import Atoms
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
-from spacegroup.cell import cellpar_to_cell
+from spacegroup.cell import cell_to_cellpar
 
 
 class API:
@@ -71,10 +74,11 @@ class API:
                         self.Parsers[cls.__name__] = cls
 
         # *module API*
-        # Tilde module (app) is simply a subfolder (%appfolder%) of apps folder containing manifest.json and %appfolder%.py files
-        # The following tags in manifest matter:
-        # *onprocess* - invoking during processing (therefore %appfolder%.py must provide the class called %Appfolder%)
-        # *appcaption* - module caption (used as column caption in data table, as atomic structure rendering pane overlay caption)
+        # Tilde module (app) is simply a subfolder (%appfolder%) of apps folder
+        # contains manifest.json and %appfolder%.py files
+        # the following tags in manifest matter:
+        # *onprocess* - invoking during processing (therefore %appfolder%.py must provide the class %Appfolder%)
+        # *appcaption* - module caption (used as column caption in data table & as atomic structure rendering pane overlay caption)
         # *appdata* - a new property defined by app
         # *apptarget* - whether an app should be executed (based on hierarchy API)
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
@@ -92,7 +96,8 @@ class API:
                     self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
 
         # *connector API*
-        # Every connector implements reading methods *list* (if applicable) and *report* (obligatory)
+        # Every connector implements reading methods:
+        # *list* (if applicable) and *report* (obligatory)
         self.Conns = {}
         for connectname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../connectors' ):
             if connectname.endswith('.py') and connectname != '__init__.py':
@@ -101,7 +106,8 @@ class API:
                 self.Conns[connectname] = {'list': getattr(getattr(conn, connectname), 'list'), 'report': getattr(getattr(conn, connectname), 'report')}
 
         # *hierarchy API*
-        # This is used while building topics (displayed at the splashscreen and tagcloud)
+        # This is used while building topics
+        # (displayed at the splashscreen and tagcloud)
         self.hierarchy = [ \
             {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "sort": 1, "has_column": True, "has_label": True, "descr": ""}, \
             
@@ -130,7 +136,12 @@ class API:
             {"cid": 22,"category": "code",                  "source": 'prog', "sort": 89, "has_column": True, "has_label": True, "descr": ""},
             
             {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "has_label": False, "descr": ""},
+            
+            {"cid": 24,"category": "conductivity",          "source": 'etype', "sort": 5, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
+            {"cid": 25,"category": "Min. band gap, eV",     "source": 'bandgap', "sort": 6, "unknown_tagging": True, "has_column": True, "has_label": False, "descr": "", "nocap": True},
+            {"cid": 26,"category": "band gap type",         "source": 'bandgaptype', "sort": 31, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
         ]
+        
         self.Classifiers = []
         for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):
             if classifier.endswith('.py') and classifier != '__init__.py':
@@ -285,11 +296,14 @@ class API:
         try: f = open(file, 'r')
         except IOError: return (None, 'read error!')
         i = 0
-        stop_read = False
+        stop_read, binary_check = False, True
         while 1:
-            if i>1000 or stop_read: break # criterion: parser must detect its working format in first 1000 lines of output
+            if i>700 or stop_read: break # criterion: parser must detect its working format in first N lines of output
             str = f.readline()
             if not str: break
+            if binary_check:
+                if is_binary_string(str): break
+                else: binary_check = False
             str = str.replace('\r\n', '\n').replace('\r', '\n')
             for name, Parser in self.Parsers.iteritems():
                 if Parser.fingerprints(str):
@@ -302,91 +316,12 @@ class API:
         # (1) unsupported data occured
         if not calc and not error: return (None, 'nothing found...')
 
-        # (2) some CRYSTAL outputs contain not enough data -> they should be merged with other outputs
-        if not error and calc._coupler_:
-            '''calc._coupler_ = round(calc._coupler_, 5)
-            if self.db_conn:
-                cursor = self.db_conn.cursor()
-                try:
-                    cursor.execute( 'SELECT id, checksum, structures, electrons, info FROM results WHERE ROUND(energy, 5) = ?', (calc._coupler_,) )
-                except:
-                    return (None, 'Fatal error: %s' % sys.exc_info()[1])
-
-                row = cursor.fetchone()
-                if row is not None:
-
-                    # *in-place* merging
-                    strucs = json.loads(row['structures'])
-                    old_props = json.loads(row['electrons'])
-                    info = json.loads(row['info'])
-
-                    new_props, error = self._parse(  file, 'CRYSTOUT', basis_set=old_props['basis_set'], atomtypes=[i[0] for i in strucs[-1]['atoms']]  )
-
-                    if error: return (None, 'Merging of two outputs failed: ' + error)
-
-                    # does merging make sense?
-                    if not 'eigvals' in old_props: old_props['eigvals'] = new_props.electrons['eigvals']
-                    if 'eigvals' in old_props and len(old_props['eigvals'].keys()) < len(new_props.electrons['eigvals'].keys()): old_props['eigvals'] = new_props.electrons['eigvals']
-
-                    if not 'e_proj_eigvals' in old_props:
-                        e_proj_eigvals, impacts = [], []
-                        for i in new_props.electrons['proj_eigv_impacts']:
-                            e_proj_eigvals.append(i['val'])
-                            impacts.append(i['impacts'])
-                        old_props['e_proj_eigvals'] = e_proj_eigvals
-                        old_props['impacts'] = impacts
-
-                        # update tags:
-                        res = self._save_tags(row['checksum'], {'calctype0':'electr.structure'}, update=True)
-                        if res: return (None, 'Tags saving failed: '+res)
-
-                    del new_props
-                    old_props = json.dumps(old_props)
-                    info['prog'] = 'CRYSTAL+PROPERTIES'
-                    info = json.dumps(info)
-                    try: cursor.execute( 'UPDATE results SET electrons = ?, info = ? WHERE id = ?', (old_props, info, row['id']) )
-                    except:
-                        return (None, 'Fatal error: %s' % sys.exc_info()[1])
-                    else:
-                        return (None, 'Merging of two outputs successful!') # TODO: this should not be error, but special type of msg
-
-                else:
-                    # *deferred* merging
-                    self.deferred_storage[file] = calc._coupler_
-                    error = 'OK, but merging with other output is required!'
-            else:
-            '''
-            return (None, 'This file type is not supported in this usage regime!')
-
         # (3) check if we parsed something reasonable <- should be merged?
         if not error and calc:
 
-            # corrections
-            if not calc.structures[-1]['periodicity']: calc.structures[-1]['cell'] = [10, 10, 10, 90, 90, 90]
-
-            if not len(calc.structures) or not calc.structures[-1]['atoms']: error = 'Valid structure is not present!'
-            elif 0 in calc.structures[-1]['cell']: error = 'Cell data are corrupted!' # prevent cell collapses known in CRYSTAL outputs
+            if not len(calc.structures) or not len(calc.structures[-1]): error = 'Valid structure is not present!'            
 
             if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
-            
-            # check normals on emptyness and equality
-            if not (array(calc.structures[-1]['ab_normal']) != 0).sum() or calc.structures[-1]['ab_normal']==calc.structures[-1]['a_direction']: return (None, 'Unexpected problems with cell vectors mutual orientation!')
-                        
-            # check whether a merging with some existing deferred item is required
-            '''elif len(self.deferred_storage) and calc.energy:
-                if round(calc.energy, 5) in self.deferred_storage.values():
-                    deferred = [k for k, v in self.deferred_storage.iteritems() if v == round(calc.energy, 5)][0]
-                    new_props, error = self._parse(  deferred, 'CRYSTOUT', basis_set=calc.electrons['basis_set']['bs'], atomtypes=[i[0] for i in calc.structures[-1]['atoms']]  )
-                    if error: error = 'OK, but merging of two outputs failed: ' + error
-                    else:
-
-                        # does merging make sense?
-                        if not calc.electrons['eigvals']: calc.electrons['eigvals'] = new_props.electrons['eigvals']
-                        if calc.electrons['eigvals'] and len(calc.electrons['eigvals'].keys()) < len(new_props.electrons['eigvals'].keys()): calc.electrons['eigvals'] = new_props.electrons['eigvals']
-                        if not calc.electrons['proj_eigv_impacts']: calc.electrons['proj_eigv_impacts'] = new_props.electrons['proj_eigv_impacts']
-                        calc.info['prog'] = 'CRYSTAL+PROPERTIES'
-                    del new_props
-                    del self.deferred_storage[deferred]'''
 
         return (calc, error)
 
@@ -443,21 +378,24 @@ class API:
         @returns (Tilde_obj, error)
         '''
         error = None
-        calc.info['formula'] = self.formula( [i[0] for i in calc.structures[-1]['atoms']] )
-
+        
+        calc.info['formula'] = self.formula( calc.structures[-1].get_chemical_symbols() )
+        calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
+        
         # applying filter: todo
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
-                return (None, 'data do not satisfy the filter')
-
-        xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'])
-
-        if calc.structures[-1]['periodicity'] == 3: calc.info['dims'] = abs(det(xyz_matrix))
-        elif calc.structures[-1]['periodicity'] == 2: calc.info['dims'] = reduce(lambda x, y:x*y, sorted(calc.structures[-1]['cell'])[0:2])
+            return (None, 'data do not satisfy the filter')
+        
+        # extend ASE object with useful properties
+        for i in range(len(calc.structures)):
+            calc.structures[i].periodicity = sum(calc.structures[i].get_pbc())
+            calc.structures[i].dims = abs(det(calc.structures[i].cell))
+        calc.info['dims'] = calc.structures[-1].dims        
 
         # this is stupid (?), TODO
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
-            if i[0] == 'Xx': continue
+            if i[0] == 'X': continue
             calc.info['elements'].append(i[0])
             calc.info['contents'].append(int(i[1])) if i[1] else calc.info['contents'].append(1)
 
@@ -479,13 +417,14 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
 
         # general calculation type reasoning
-        if calc.charges: calc.info['calctypes'].append('charges')
+        if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append('charges') # numpy count_nonzero implementation
         if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
-        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phon.dispersion')
+        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
-        if calc.method['perturbation']: calc.info['calctypes'].append('electr.field response') # CRYSTAL-only - TODO: extend
+        if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
         if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
-        #if ('proj_eigv_impacts' in calc.electrons and calc.electrons['eigvals']) or getattr(calc, 'complete_dos', None): calc.info['calctypes'].append('electr.structure')
+        if calc.electrons['dos']: calc.info['calctypes'].append('electron DOS')
+        if calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron bands')
         if calc.energy: calc.info['calctypes'].append('total energy')
 
         for n, i in enumerate(calc.info['calctypes']):
@@ -533,12 +472,14 @@ class API:
                     
                     # EXCITING
                     elif i=='vacuum2d':
-                        calc.info['techs'].append('vacuum %s A' % calc.method['technique'][i])
+                        calc.info['techs'].append('vacuum %sA' % calc.method['technique'][i])
                     elif i=='spin-orbit':
-						calc.info['techs'].append('spin-orbit coupling')
+                        calc.info['techs'].append('spin-orbit coupling')
+                    elif i=='empty_states':
+                        calc.info['techs'].append('%s empty states' % calc.method['technique'][i])
 
             if 'vac' in calc.info['properties']:
-                if 'Xx' in [i[0] for i in calc.structures[-1]['atoms']]: calc.info['techs'].append('vacancy defect: ghost')
+                if 'X' in [i[0] for i in calc.structures[-1].atoms]: calc.info['techs'].append('vacancy defect: ghost')
                 else: calc.info['techs'].append('vacancy defect: void space')
 
             if calc.method['perturbation']:
@@ -556,10 +497,10 @@ class API:
         if calc.info['expanded']: calc.info['expanded'] = str(calc.info['expanded']) + 'x'
         else: del calc.info['expanded']
 
-        if calc.structures[-1]['periodicity'] == 3: calc.info['periodicity'] = '3-periodic'
-        elif calc.structures[-1]['periodicity'] == 2: calc.info['periodicity'] = '2-periodic'
-        elif calc.structures[-1]['periodicity'] == 1: calc.info['periodicity'] = '1-periodic'
-        elif calc.structures[-1]['periodicity'] == 0: calc.info['periodicity'] = 'non-periodic'
+        if calc.structures[-1].periodicity == 3: calc.info['periodicity'] = '3-periodic'
+        elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
+        elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
+        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
         for k, v in calc.info['properties'].iteritems():
             calc.info[k] = v
 
@@ -577,6 +518,33 @@ class API:
         if calc.phonons['dfp_disps']: calc.info['dfp_disps'] = len(calc.phonons['dfp_disps'])
         if calc.phonons['modes']:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
+        
+        # electronic properties reasoning
+        # by bands
+        if calc.electrons['bands']:
+            if calc.electrons['bands'].is_metal():
+                calc.info['etype'] = 'metal'
+                calc.info['bandgap'] = 0.0
+            else:
+                gap, is_direct = calc.electrons['bands'].get_bandgap()                
+                calc.info['bandgap'] = round(gap, 2)
+                calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
+                if gap<=1.0: calc.info['etype'] = 'semiconductor'
+                else: calc.info['etype'] = 'insulator'
+        
+        # by DOS  
+        if calc.electrons['dos']:
+            
+            gap = round(calc.electrons['dos'].get_bandgap(), 2)
+            
+            if calc.electrons['bands']: # check coincidence
+                if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is taken.')
+            else:
+                calc.info['bandgap'] = gap
+                if gap:
+                    if gap<=1.0: calc.info['etype'] = 'semiconductor'
+                    else: calc.info['etype'] = 'insulator'
+                else: calc.info['etype'] = 'metal'
         
         calc.benchmark() # this call must be at the very end of parsing
 
@@ -597,6 +565,7 @@ class API:
                     try: topic = tags_obj[ i['source'].replace('#', str(n)) ]
                     except KeyError:
                         if 'negative_tagging' in i and n==0 and not update: found_topics.append('none') # beware to add something new to an existing item!
+                        elif 'unknown_tagging' in i and n==0 and not update: found_topics.append('unknown')
                         break
                     else:
                         found_topics.append(topic)
@@ -605,6 +574,7 @@ class API:
                 try: found_topics.append( tags_obj[ i['source'] ] )
                 except KeyError:
                     if 'negative_tagging' in i and not update: found_topics.append('none') # beware to add something new to an existing item!
+                    elif 'unknown_tagging' in i and not update: found_topics.append('unknown')
 
             for topic in found_topics:
                 try: cursor.execute( 'SELECT tid FROM topics WHERE categ = ? AND topic = ?', (i['cid'], topic) )
@@ -639,14 +609,13 @@ class API:
         # a dict to list conversion: TODO
         if calc.phonons['modes']:
             phonons_json = []
-            xyz_matrix = cellpar_to_cell(calc.structures[-1]['cell'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'])
 
             for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 # re-orientate eigenvectors
                 for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
                     for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])/3):
                         eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
-                        R = dot( eigv, xyz_matrix ).tolist()
+                        R = dot( eigv, calc.structures[-1].cell ).tolist()
                         calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
 
                 try: irreps = calc.phonons['irreps'][bzpoint]
@@ -665,29 +634,13 @@ class API:
         else: calc.phonons = False
 
         # prepare structural data
-        calc.structures[-1]['orig_cif'] = generate_cif( calc.structures[-1]['cell'], calc.structures[-1]['atoms'], calc['symops'], calc.structures[-1]['ab_normal'], calc.structures[-1]['a_direction'] )
-        calc.structures[-1]['dims'] = calc.info['dims']
-
-        # prepare electronic structure data
-        '''electrons_json = {}
-        if calc.electrons['basis_set'] and 'bs' in calc.electrons['basis_set']:
-            # this is for CRYSTAL merging
-            electrons_json.update(  {'basis_set': calc.electrons['basis_set']['bs']}  )
-        if calc.electrons['eigvals']:
-            # this is for band structure plotting
-            electrons_json.update(  {'eigvals': calc.electrons['eigvals']}  )
-        if calc.electrons['proj_eigv_impacts']:
-            # this is for CRYSTAL DOS calculation and plotting
-            e_proj_eigvals, impacts = [], []
-            for i in calc.electrons['proj_eigv_impacts']:
-                e_proj_eigvals.append(i['val'])
-                impacts.append(i['impacts'])
-            electrons_json.update(  {'e_proj_eigvals': e_proj_eigvals, 'impacts': impacts}  )
-        if getattr(calc, 'complete_dos', None):
-            # this is for VASP DOS plotting
-            electrons_json.update(  {'dos': calc.complete_dos}  )
-        '''        
-
+        #calc.structures[-1].orig_cif = generate_cif( calc.structures[-1], symops=calc['symops'] )
+        calc.structures = [ase2dict(ase_obj) for ase_obj in calc.structures]
+        
+        # prepare electron data
+        for i in ['dos', 'bands']:
+            if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
+        
         # packing of the
         # Tilde ORM objects
         # NB: here they are except *info*
@@ -765,6 +718,9 @@ class API:
         # in results table (info field)
         # to speed up DB queries
         for i in ['structures', 'phonons', 'electrons', 'apps']:
-            if not db_transfer_mode: calc[i] = json.loads(db_row[i])
+            if not db_transfer_mode:
+                calc[i] = json.loads(db_row[i])
+                if i=='structures': calc.structures = [dict2ase(ase_dict) for ase_dict in calc.structures]              
             else: calc[i] = db_row[i]
+
         return calc

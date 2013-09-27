@@ -1,6 +1,6 @@
 
 # determines perovskite structure
-# v280613
+# v220913
 
 import os
 import sys
@@ -18,8 +18,9 @@ A_site_elems = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr
 B_site_elems = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', ')
 C_site_elems = 'O, F'.split(', ') # todo: add elements to C site
 
-def classify(tilde_obj):
+def classify(tilde_obj):    
     ''' classification by vacancy and substitutional defects in perovskites '''
+    
     if len(tilde_obj.info['elements']) == 1: return tilde_obj
 
     C_site = [e for e in tilde_obj.info['elements'] if e in C_site_elems]
@@ -65,7 +66,7 @@ def classify(tilde_obj):
 
     tilde_obj.info['tags'].append('perovskite')
 
-    if tilde_obj.structures[-1]['periodicity'] != 3: return tilde_obj # all below is for 3d case : TODO
+    if tilde_obj.structures[-1].periodicity != 3: return tilde_obj # all below is for 3d case : TODO
 
     contents = []
     impurities = {}
@@ -94,22 +95,22 @@ def classify(tilde_obj):
     #print impurities, A_hosts, B_hosts
 
     # A site or B site?
-    n=0
+    ref_coords = tilde_obj.structures[-1].get_positions()
+    num=0
     for impurity_element, content in impurities.iteritems():
         e = tilde_obj.info['elements'].index(impurity_element)
         tilde_obj.info['elements'].pop(e) # TODO
         tilde_obj.info['contents'].pop(e) # TODO
-        tilde_obj.info['properties']['impurity' + str(n)] = impurity_element + str(content) if content > 1 else impurity_element
-        dist_matrix = []
-        ref_coords = []
-        ref_coords.extend(tilde_obj.structures[-1]['atoms'])
-        n+=1
-        for i in tilde_obj.structures[-1]['atoms']:
-            if i[0] == impurity_element:
+        tilde_obj.info['properties']['impurity' + str(num)] = impurity_element + str(content) if content > 1 else impurity_element
+        dist_matrix = []        
+        num+=1
+        for i in tilde_obj.structures[-1]:
+            if i.symbol == impurity_element:
                 for j in ref_coords:
-                    dist_matrix.append( math.sqrt( (i[1]-j[1])**2 + (i[2]-j[2])**2 + (i[3]-j[3])**2 ) )
+                    dist_matrix.append( math.sqrt( (i.position[0]-j[0])**2 + (i.position[1]-j[1])**2 + (i.position[2]-j[2])**2 ) )
                 dist_matrix = filter(None, dist_matrix) # skip zeros
                 dist_matrix.sort()
+                
                 for k in range(len(dist_matrix)):
                     D_d = abs(dist_matrix[k+1]-dist_matrix[k]) / dist_matrix[k+1] # jump in a distance change allows us to determine A- or B-site
 

@@ -1,6 +1,7 @@
 *.py[co]
+.directory
 debug.log
-core/deps/findsym/findsym.log
+findsym.log
 data
 scripts
 parsers/CIF

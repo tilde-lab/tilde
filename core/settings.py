@@ -7,7 +7,7 @@ import json
 try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
 
-SETTINGS_FILE = 'settings.~'
+SETTINGS_FILE = 'settings.json'
 DEFAULT_DB = 'default.db'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')

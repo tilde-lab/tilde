@@ -2,7 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v060813
+# v220913
 
 import sys
 import os
@@ -14,8 +14,7 @@ import pprint
 starttime = time.time() # benchmarking
 
 if sys.version_info < (2, 6):
-    print '\n\nI cannot proceed. Your python is too old. At least version 2.6 is required!\n\n'
-    sys.exit()
+    sys.exit('\n\nI cannot proceed. Your python is too old. At least version 2.6 is required!\n\n')
 
 try: import argparse
 except ImportError: from deps.argparse import argparse
@@ -23,19 +22,16 @@ except ImportError: from deps.argparse import argparse
 try:
     from numpy import dot
     from numpy import array
-except ImportError:
-    print '\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n'
-    sys.exit()
+except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
 try: import sqlite3
 except ImportError:
     try: from pysqlite2 import dbapi2 as sqlite3
-    except ImportError:
-        print '\n\nI cannot proceed. Please, install python sqlite3 module!\n\n'
-        sys.exit()
+    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python sqlite3 module!\n\n')
 
 from settings import settings, userdbchoice, repositories, DATA_DIR
-from common import write_cif, html2str
+from common import html2str
+from common import write_cif
 from symmetry import DEFAULT_ACCURACY
 from api import API
 
@@ -97,12 +93,11 @@ if args.shortcut: args.recursive, args.convergence, args.info, args.terse = True
 db = None
 if args.add:
     if args.add == 'DIALOG':
-        uc = userdbchoice(repositories)
+        uc = userdbchoice(repositories) # NB. this spoils benchmarking
     else:
-        uc = userdbchoice(repositories, choice=args.add)
+        uc = userdbchoice(repositories, choice=args.add) # NB. this spoils benchmarking
 
-    if not os.access(os.path.abspath(DATA_DIR + os.sep + uc), os.W_OK):
-        raise RuntimeError("Sorry, database file is write-protected!")
+    if not os.access(os.path.abspath(DATA_DIR + os.sep + uc), os.W_OK): sys.exit("Sorry, database file is write-protected!")
         
     db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
     db.row_factory = sqlite3.Row
@@ -111,7 +106,7 @@ if args.add:
     print "The database selected:", uc
     
 if args.datamining:
-    uc = userdbchoice(repositories, create_allowed=False)
+    uc = userdbchoice(repositories, create_allowed=False) # NB. this spoils benchmarking
     
     db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
     db.row_factory = sqlite3.Row
@@ -232,13 +227,13 @@ for target in args.path:
                 for i in range(len(calc.tresholds)):
                     output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
             
-        if args.structures:
+        '''if args.structures:
             out = ''
             if len(calc.structures) > 1:
                 out += str(calc.structures[0]['cell']) + ' -> '
             out += str(calc.structures[-1]['cell'])
             out += " V=" + str(calc.info['dims'])
-            output_lines += out + "\n"
+            output_lines += out + "\n"'''
         
         if args.cif:
             try: calc.structures[ args.cif ]
@@ -247,10 +242,10 @@ for target in args.path:
                 N = args.cif if args.cif>0 else len(calc.structures) + 1 + args.cif
                 comment = calc.info['formula'] + " extracted from " + task + " (structure N " + str(N) + ")"
                 cif_file = os.path.realpath(os.path.abspath(DATA_DIR + os.sep + filename)) + '_' + str(args.cif) + '.cif'
-                if write_cif(cif_file, calc.structures[ args.cif ]['cell'], calc.structures[ args.cif ]['atoms'], calc['symops'], calc.structures[ args.cif ]['ab_normal'], calc.structures[ args.cif ]['a_direction'], comment):
+                if write_cif(cif_file, calc.structures[ args.cif ], comment):
                     output_lines += cif_file + " ready" + "\n"
                 else:
-                    output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"
+                    output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"        
         
         if args.module:
             hooks = Tilde.postprocess(calc)
@@ -260,7 +255,7 @@ for target in args.path:
                 output_lines += out + "\n"
             
         if args.xdebug:
-            output_lines += calc + "\n"
+            output_lines += str(calc) + "\n"
 
         if args.freqs:
             if not calc.phonons['modes']:
@@ -280,7 +275,9 @@ for target in args.path:
                 print task, error
                 continue
             header_line += ' added'
-
+        
+        
+        if len(output_lines): output_lines = "\n" + output_lines
         print header_line + add_msg + output_lines
         # NB: from here the calc instance is not functional anymore!
 

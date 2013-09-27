@@ -1,7 +1,7 @@
 Tilde
 =====
 
-Tilde (aka wwwtilda or ~) is an intelligent data organizer for cheminformatics and computational materials science.
+Tilde (aka wwwtilda or ~) is a data organizer for computational materials science.
 
 Warning
 -------
@@ -25,7 +25,9 @@ Prerequisites
 -------------
 
 On Windows no additional installations are required.
-On Unix/Mac you should have Python (at least of version 2.6), numerical modules (Numpy) and sqlite3 python module pre-installed. Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors). Python 3 was not tested though.
+On Unix/Mac you should have Python (at least of version 2.6), numerical modules (Numpy) and sqlite3 python module pre-installed.
+Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors).
+Note, that Python 3 was never tested.
 
 License and distribution
 ------------------------
@@ -43,4 +45,4 @@ Summary
 
 * Webpage: http://wwwtilda.googlecode.com
 * Maintainer: Evgeny Blokhin (eb@tilde.pro)
-* Timestamp: 10/09/2013
+* Timestamp: 25/09/2013

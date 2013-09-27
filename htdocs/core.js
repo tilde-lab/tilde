@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v150713
+* v220913
 *
 */
 // common flags, settings and object for their storage
@@ -255,7 +255,13 @@ function iframe_download( request, scope, hash ){
 }
 function dos_plotter(req, plot, divclass, axes){
     var plot = $.evalJSON(plot);
-    var options = {legend:{show:false}, series:{lines:{show:true}, points:{show:false}, shadowSize:0}, xaxis:{color:'#000', labelHeight:40}, yaxis:{ticks:[], labelWidth:30}, grid:{borderWidth:1, borderColor:'#000'}};
+    var options = {
+        legend:{show:false},
+        series:{lines:{show:true}, points:{show:false}, shadowSize:0},
+        xaxis:{color:'#eeeeee', labelHeight:40},
+        yaxis:{ticks:[], labelWidth:30},
+        grid:{borderWidth:1, borderColor:'#000'}
+    };
 
     var cpanel = $('#o_'+req.datahash+' div.'+divclass).prev('div');
     cpanel.parent().removeClass('ii');
@@ -272,7 +278,8 @@ function dos_plotter(req, plot, divclass, axes){
         var target = $('#o_'+req.datahash+' div.'+divclass);
         $.plot(target, data_to_plot, options);
 
-        target.append('<div style="position:absolute;z-index:50;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">'+axes.x+'</div>  <div style="position:absolute;z-index:50;width:200px;left:0;top:300px;text-align:center;font-size:1.5em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+axes.y+'</div>');
+        target.append('<div style="position:absolute;z-index:14;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">'+axes.x+'</div>&nbsp;')
+        target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.5em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+axes.y+'</div>');
     }
     cpanel.find("input").click(plot_user_choice);
     plot_user_choice();
@@ -280,7 +287,12 @@ function dos_plotter(req, plot, divclass, axes){
 }
 function bands_plotter(req, plot, divclass, ordinate){
     var plot = $.evalJSON(plot);
-    var options = {legend:{show:false}, series:{lines:{show:true}, points:{show:false}, shadowSize:0}, xaxis:{color:'#000', labelHeight:40, font:{size:9.5}, labelAngle:270}, yaxis:{color:'#000', labelWidth:50}, grid:{borderWidth:1, borderColor:'#000'}};
+    var options = {
+        legend:{show:false},
+        series:{lines:{show:true}, points:{show:false}, shadowSize:0},
+        xaxis:{color:'#eeeeee', labelHeight:40, font:{size:9.5, color:'#000'}, labelAngle:270},
+        yaxis:{color:'#eeeeee', labelWidth:50}, grid:{borderWidth:1, borderColor:'#000'}
+    };
 
     var target = $('#o_'+req.datahash+' div.'+divclass);
 
@@ -288,10 +300,10 @@ function bands_plotter(req, plot, divclass, ordinate){
     cpanel.parent().removeClass('ii');
 
     options.xaxis.ticks = plot[0].ticks
-    options.xaxis.ticks[options.xaxis.ticks.length-1][1] = '' // avoid cropping in canvas
+    //options.xaxis.ticks[options.xaxis.ticks.length-1][1] = '' // avoid cropping in canvas
     $.plot(target, plot, options);
 
-    target.append('<div style="position:absolute;z-index:50;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
+    target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
 
     target.prev('div').children('div.export_plot').click(function(){ export_data(plot) });
 }
@@ -377,12 +389,12 @@ function resp__login(req, data){
     } else document.location.hash = '#start';
 }
 function resp__browse(req, data){
-	// reset objects
-	_tilde.rendered = {};
-	_tilde.tab_buffer = [];
-	
-	switch_menus(true);
-	
+    // reset objects
+    _tilde.rendered = {};
+    _tilde.tab_buffer = [];
+    
+    switch_menus(true);
+    
     // we send table data in raw html (not json due to performance issues) and therefore some silly workarounds are needed
     data = data.split('||||');
     if (data.length>1) $('#countbox').empty().append(data[1]).show();
@@ -477,7 +489,7 @@ function resp__tags(req, data){
 }
 function resp__list(obj, data){
     if (data.substr(0, 20) == 'SETUP_NEEDED_TRIGGER'){ // bad design, fixme!!!
-		$('#connectors').hide();
+        $('#connectors').hide();
         $('#profile_holder').show();
         open_ipane('scan');
         $('#settings_local_path').val( data.substr(20) ).focus();
@@ -590,31 +602,22 @@ function resp__phonons(req, data){
 function resp__summary(req, data){
     data = $.evalJSON(data);
     var info = $.evalJSON(data.info);
+    
     if (data.phonons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
-        //$('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
-        //$('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').show();
+        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
+        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').show();
     } else {
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').hide();
     }
-
-    if (data.electrons && !_tilde.degradation){
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
-    }
-    /*if (!data.electrons && !_tilde.demo_regime && info.prog.indexOf('CRYSTAL') != -1 && !_tilde.degradation){
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
-        $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
-        var msg = '<div class="notice">Eigenvalues / eigenvectors are missing in CRYSTAL-only output.<br />Please, run PROPERTIES on the wavefunction file (fort.9) for the output:<div>'+info.location+'</div>using the following d3-input as a template:<div>NEWK<br><span>2 2</span><br>1 2<br>66 <span>4</span><br>67 <span>4</span><br>END<br></div>Then scan the folder with the obtained new output: if it corresponds to the current item, they would be merged and labeled CRYSTAL+PROPERTIES.</div>';
-        $('#o_'+req.datahash+' div.e_bands-holder').prepend(msg);
-        _tilde.tab_buffer.push(req.datahash+'_e_bands');
-        $('#o_'+req.datahash+' div.ipane[rel=e_bands]').removeClass('ii');
-        $('#o_'+req.datahash+' div.e_dos-holder').prepend(msg);
-        _tilde.tab_buffer.push(req.datahash+'_e_dos');
-        $('#o_'+req.datahash+' div.ipane[rel=e_dos]').removeClass('ii');
-    }*/
+    
+    if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
+    else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
+    
+    if (data.electrons.bands && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
+    else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').hide();
 
     var html = '<div><strong>'+info.location+'</strong></div>';
     html += '<div style="height:410px;overflow-x:visible;overflow-y:scroll;"><ul class=tags>';
@@ -871,7 +874,7 @@ $(document).ready(function(){
                     }
                 }, 500);
             } else {
-				if (!_tilde.settings.objects_expand) return;
+                if (!_tilde.settings.objects_expand) return;
                 $.each(hashes, function(n, i){
                     if (!_tilde.rendered[i] && i.length == 56) {
                         var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
@@ -960,10 +963,10 @@ $(document).ready(function(){
         else return;
         
         if (!_tilde.settings.objects_expand){
-			$('#d_cb_' + id).trigger('click');
-			return;
-		}
-		
+            $('#d_cb_' + id).trigger('click');
+            return;
+        }
+        
         if (_tilde.rendered[id]) {
             // close tab
             close_obj_tab(id);
@@ -1133,7 +1136,7 @@ $(document).ready(function(){
     // IPANE COMMANDS
     $(document).on('click', 'ul.ipane_ctrl li', function(){
         var cmd = $(this).attr('rel');
-        if (_tilde.freeze && !_tilde.tab_buffer[cmd]){ notify(_tilde.busy_msg); return; }
+        if (_tilde.freeze && !_tilde.tab_buffer[cmd] && cmd != 'admin'){ notify(_tilde.busy_msg); return; }
         var target = $(this).parents('.object_factory_holder');
         target = (target.length) ? target.attr('id').substr(2) : false;
         open_ipane(cmd, target);
@@ -1265,20 +1268,20 @@ $(document).ready(function(){
             });            
 
             // SETTINGS: EXPAND OBJECTS
-			_tilde.settings.objects_expand = $('#settings_objects_expand').is(':checked');
+            _tilde.settings.objects_expand = $('#settings_objects_expand').is(':checked');
             
             __send('settings', {area: 'cols', settings: _tilde.settings} );
             
             $('#profile_holder').hide();
         } else if ($('#ipane-units-holder').is(':visible')){
-			$('#profile_holder').hide();
-			
-			// re-draw data table without modifying tags
-			if (!_tilde.last_browse_request) return;
-			if (!$('#databrowser').is(':visible')) return;
-			__send('browse', _tilde.last_browse_request, true);			
-			
-		}
+            $('#profile_holder').hide();
+            
+            // re-draw data table without modifying tags
+            if (!_tilde.last_browse_request) return;
+            if (!$('#databrowser').is(':visible')) return;
+            __send('browse', _tilde.last_browse_request, true);         
+            
+        }
     });
 
     // UNIVERSAL ENTER HOTKEY: NOTE ACTION BUTTON *UNDER THE SAME DIV* WITH THE FORM

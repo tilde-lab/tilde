@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # tilda project: abstract class of a generic parser
-# v230513
+# v240913
 
 import os
 import sys
@@ -12,12 +12,12 @@ from numpy import array
 
 
 class Output:
-    def __init__(self, filename=None):
+    def __init__(self, filename):
         # (I)
         # inner Tilde objects
         self.starttime = time.time()
         self._coupler_ = False  # special attribute for an output which should be merged with another one by coinciding E_tot
-        self.data = ''          # file contents holder
+        self.data = ''          # file contents holder; may be empty for some parsers!
         self._checksum = None   # 56-symbol hash NB: do not call directly
         
         # dict with calculation conditions, goes to *info*
@@ -46,10 +46,12 @@ class Output:
         self.symops = ['+x,+y,+z']
 
         self.electrons = {
-            'basis_set':       {'bs': {}, 'ps': {}} # valence and core electrons
+            'basis_set':       {'bs': {}, 'ps': {}}, # valence and core electrons
+            'eigvals':		   {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
+            'dos':			   {}, # in advance pre-computed DOS
+            'bands':           {}  # in advance pre-computed band structure
         }
-        #self.electrons['eigvals'] = None
-        # NB own properties for VASP: dos, complete_dos
+        # NB own properties for VASP: dos
         # NB own properties for CRYSTAL: impacts, proj_eigv_impacts, e_proj_eigvals
 
         self.phonons = {
@@ -137,9 +139,8 @@ class Output:
     def get_checksum(self):
         ''' retrieve unique hash '''
         if not self._checksum:
-            if not self.data: return None
             file_sha224_checksum = sha224()
-            file_sha224_checksum.update(self.data)
+            file_sha224_checksum.update(str(self.structures) + str(self.energy)) # TODO
             return file_sha224_checksum.hexdigest()
         else:
             return self._checksum

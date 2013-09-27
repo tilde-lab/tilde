@@ -20,7 +20,7 @@ def classify(tilde_obj):
     account of artificial 3 periodic box case '''
     if not len(tilde_obj.info['elements']) == 1 or tilde_obj.info['contents'][0] != 1: return tilde_obj
 
-    if tilde_obj.structures[-1]['periodicity'] == 0 or \
+    if tilde_obj.structures[-1].periodicity == 0 or \
     float( tilde_obj.info['dims'] / covalent_radii[chemical_symbols.index(tilde_obj.info['elements'][0])] ) > REL:
 
         # atomic radius should be REL times less than cell dimensions
