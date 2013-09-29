@@ -1,1 +1,36 @@
-0.2.2added experimental CIF and EXCITING format supportWIEN2K and GAUSSIAN format support is experimentalenhanced player.html (module API extensions, full screen mode)fixed bugs in GUIfixed bugs in console UIupdated FINDSYM to 4.1 (cross-platform stable)0.2.1added single entry point (tilde.py) for console scripts and GUIadded multiple database managementadded new version checkeradded new API methods employed by modules and daemonfixed bug with windows mimetypes in portable Python distribfixed html arrows bugsfixed bugs with tilting calculationenhanced data scanning and export control (skip_if_paths and exportability directives)enhanced perovskites classificationenhanced isolated atom classificationenhanced 3d atomic structure renderer (player.html) with labelsenhanced UI usability (tags logic etc.)updated Tornado to commit 833d6975c3 (fix known memory leaks), CEF to v52, ASE to 3.7.1, jQuery to 1.9.1, Flot to 0.8.1, three.js to r58, tween.js to r7added some functional testsTODO:handle electron bands and DOS and phonon bands and DOS fullydetect defects in 2Dprovide a method to recreate symmetry-equivalent atoms (actual for WIEN2K)get rid of platform-dependent symmetry finder and switch to spglibmake client code cleaner: plug in javascript MVC framework, templates, history dispatcher etc.make core code cleanermake stress testsget rid of space-in-path windows errors(provide a SPARQL endpoint)(provide an OWL-RDF format export)
+0.2.2
+added experimental CIF and EXCITING format support (work in progress)
+WIEN2K and GAUSSIAN format support is only a courage experiment
+enhanced player.html (module API extensions, full screen mode)
+fixed bugs in GUI
+fixed bugs in console UI
+updated FINDSYM to 4.1 (cross-platform stable)
+
+0.2.1
+added single entry point (tilde.py) for console scripts and GUI
+added multiple database management
+added new version checker
+added new API methods employed by modules and daemon
+fixed bug with windows mimetypes in portable Python distrib
+fixed html arrows bugs
+fixed bugs with tilting calculation
+enhanced data scanning and export control (skip_if_paths and exportability directives)
+enhanced perovskites classification
+enhanced isolated atom classification
+enhanced 3d atomic structure renderer (player.html) with labels
+enhanced UI usability (tags logic etc.)
+updated Tornado to commit 833d6975c3 (fix known memory leaks), CEF to v52, ASE to 3.7.1, jQuery to 1.9.1, Flot to 0.8.1, three.js to r58, tween.js to r7
+added some functional tests
+
+TODO:
+handle electron bands and DOS and phonon bands and DOS fully
+correct defects handling in 2d
+provide a method to recreate symmetry-equivalent atoms (actual for WIEN2K)
+get rid of platform-dependent symmetry finder and switch to spglib
+make client code cleaner: plug in javascript MVC framework, templates, history dispatcher etc.
+make core code cleaner
+make stress tests
+get rid of windows errors concerned with spaces in program path
+(provide a SPARQL endpoint)
+(provide an OWL-RDF format export)
+
