@@ -882,18 +882,19 @@ if __name__ == "__main__":
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.settimeout(2)
-            s.connect(settings['update_server'])
+            s.connect(tuple(settings['update_server']))
             s.send("GET /VERSION HTTP/1.0\r\n\r\n")
             data = s.recv(1024)
             s.close()
             v = data.split('\r\n')[-1].strip()
-        except: updatemsg = 'Could not check new version. Update server is unreachable.'
+        except:
+            updatemsg = 'Could not check new version. Update server is unreachable.'
         else:
             try: int(v.split('.')[0])
             except: updatemsg = 'Could not check new version. Communication with update server failed.'
             else:
                 if v == API.version: updatemsg = "Current version is up-to-date."
-                else: updatemsg = 'Attention!\nYour program version (%s) is outdated!\nActual version is %s.\nUpdating is highly recommended.' % (v, API.version)
+                else: updatemsg = 'Attention!\n\tAchtung!\n\t\tAttenzione!\nYour program version (%s) is outdated!\nActual version is %s.\nUpdating is highly recommended.\n' % (API.version, v)
         print updatemsg
 
     # compiling table columns:
