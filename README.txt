@@ -17,10 +17,14 @@ Usage
 Please, avoid spaces and non-latin characters in the application folder name.
 The main script is called "tilde.bat" (for Windows) and "tilde.sh" (for Unix).
 All user commands are executed through this main script:
-To use command-line interface (CLI), run main script with a parameter (e.g. "--help").
+To use command-line interface (CLI), run main script with a parameter (e.g. "-h" or "-help").
 To start graphical interface (GUI), run main script without parameters.
 To terminate GUI on Windows, close the DOS box, on Unix hit Ctrl+C.
 On Unix GUI may also run in background mode ("nohup tilde.sh &").
+Adding data is possible using both CLI and GUI:
+Using CLI: append "-a" option to the folder name.
+Using GUI: click "add data" button at the top left corner of the program window.
+Avoid using GUI on large folders with data (more than several gigabytes), as CLI is much faster in this case.
 
 Prerequisites
 -------------

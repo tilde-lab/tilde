@@ -480,7 +480,7 @@ class API:
                         calc.info['techs'].append('%s empty states' % calc.method['technique'][i])
 
             if 'vac' in calc.info['properties']:
-                if 'X' in [i[0] for i in calc.structures[-1].atoms]: calc.info['techs'].append('vacancy defect: ghost')
+                if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
                 else: calc.info['techs'].append('vacancy defect: void space')
 
             if calc.method['perturbation']:
