@@ -41,7 +41,7 @@ for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../app
     if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
         registered_modules.append(appname)
 
-parser = argparse.ArgumentParser(prog="[tilde_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version, argument_default=argparse.SUPPRESS)
+parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version, argument_default=argparse.SUPPRESS)
 
 parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-u", dest="daemon", action="store", help="run GUI service (default)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
@@ -57,7 +57,7 @@ parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th C
 parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
-parser.add_argument("-d", dest="data query", action="store", help="query on data", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
+parser.add_argument("-d", dest="datamining", action="store", help="query on data", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 
 args = parser.parse_args()
 

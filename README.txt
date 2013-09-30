@@ -16,11 +16,11 @@ Usage
 
 Please, avoid spaces and non-latin characters in the application folder name.
 The main script is called "tilde.bat" (for Windows) and "tilde.sh" (for Unix).
-All user commands should be executed through this main script:
-To use command-line interface run main script with a parameter (e.g. "--help").
-To start graphical interface run main script without parameters.
-To terminate graphical interface on Windows close the DOS box, on Unix hit Ctrl+C.
-On Unix script may also run in background mode with "nohup tilde.sh &"
+All user commands are executed through this main script:
+To use command-line interface (CLI), run main script with a parameter (e.g. "--help").
+To start graphical interface (GUI), run main script without parameters.
+To terminate GUI on Windows, close the DOS box, on Unix hit Ctrl+C.
+On Unix GUI may also run in background mode ("nohup tilde.sh &").
 
 Prerequisites
 -------------
@@ -46,4 +46,4 @@ Summary
 
 * Webpage: http://wwwtilda.googlecode.com
 * Maintainer: Evgeny Blokhin (eb@tilde.pro)
-* Timestamp: 25/09/2013
+* Timestamp: 30/09/2013
