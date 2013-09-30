@@ -7,17 +7,15 @@
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
 #
 # See http://wwwtilda.googlecode.com
-# v220913
+# v300913
 
 import os
 import sys
 import json
 import socket
 import time
-from datetime import timedelta
 from itertools import ifilter
 import math
-import threading
 import logging
 
 from numpy import dot
@@ -27,12 +25,9 @@ try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
 
 # this is done to have all third-party code in deps folder
-# TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
 
 import tornado.web
-import tornado.gen
-
 import tornadio2.conn
 import tornadio2.router
 import tornadio2.server
@@ -62,7 +57,6 @@ Users, Repo_pool, Tilde_tags = {}, {}, {}
 
 class User:
     def __init__(self):
-        self.running = {}
         self.usettings = {}
         self.cur_db = settings['default_db']
 
@@ -99,7 +93,7 @@ class DataMap:
         tags = []
         for arg in args:
             tags.extend( self.c2t[ arg ] ) # logic OR intersection
-        return list(set(tags))
+        return list(set(tags))              
 
 class Request_Handler:
     @staticmethod
@@ -185,7 +179,10 @@ class Request_Handler:
 
         global Tilde_tags
         if Users[session_id].cur_db in Tilde_tags:
-            del Tilde_tags[ Users[session_id].cur_db ] # update tags in memory
+            # force update tags in memory
+            Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+            if Tilde_tags[ Users[session_id].cur_db ].error:
+                error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
 
         if callback: callback( (data, error) )
         else: return (data, error)
@@ -399,7 +396,10 @@ class Request_Handler:
             Users[session_id].cur_db = userobj['switching']
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
             if Users[session_id].cur_db in Tilde_tags:
-                del Tilde_tags[ Users[session_id].cur_db ] # update tags in memory
+                # force update tags in memory
+                Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+                if Tilde_tags[ Users[session_id].cur_db ].error:
+                    error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
             logging.debug('Switched to ' + userobj['switching'])
 
         else: error = 'Unknown settings context area!'
@@ -667,9 +667,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
     def on_open(self, info):
         global Users
         Users[ self.session.session_id ] = User()
-        #tornado.ioloop.IOLoop.instance().add_timeout(timedelta(seconds=4), self._test)
 
-    @tornado.gen.engine
     def on_message(self, message):
         userobj, output = {}, {'act': '', 'req': '', 'error': '', 'data': ''}
         output['act'], output['req'] = message.split(DELIM)
@@ -681,47 +679,33 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
             self._send(output)
         else:
 
-            # multiple-send
+            # multiple answer
             if output['act'] == 'report' and userobj['transport'] == 'local' and userobj['directory'] > 0:
-
+                
                 if not settings['local_dir']:
                     output['error'] = 'Please, define working path!'
                     self._send(output)
-
-                global Users
+                    
                 discover = settings['local_dir'] + userobj['path']
                 recursive = True if userobj['directory'] == 2 else False
-
                 if not os.access(discover, os.R_OK):
                     output['error'] = 'A requested path is not readable (not enough privileges?)'
                     self._send(output)
                 else:
                     tasks = Tilde.savvyize(discover, recursive)
                     if not tasks: self._send(output)
-                    for n, task in enumerate(tasks, 1):
-                        Users[ self.session.session_id ].running[ task ] = threading.Event()
-                        threading.Thread(target = self._keepalive, args = (output, task, time.time())).start()
-
-                        checksum, error = yield tornado.gen.Task(
-                            Request_Handler.report,
-                            **{'userobj': {'path': task[len(settings['local_dir']):], 'transport': 'local'}, 'session_id': self.session.session_id}
-                        )
-                        Users[ self.session.session_id ].running[ task ].set()
-
+                    for n, task in enumerate(tasks, start=1):
+                        checksum, error = Request_Handler.report({'path': task[len(settings['local_dir']):], 'transport': 'local'}, session_id=self.session.session_id)
                         finished = 1 if n == len(tasks) else 0
                         output['data'] = json.dumps({'filename': os.path.basename(task), 'error': error, 'checksum': checksum, 'finished': finished})
                         self._send(output)
 
-            # one-time-send
+            # single answer
             else:
                 output['data'], output['error'] = getattr(Request_Handler, output['act'])( userobj, session_id=self.session.session_id )
                 self._send(output)
 
     def on_close(self):
-        global Users
-        for event in Users[ self.session.session_id ].running.values():
-            event.set()
-        #time.sleep(3)
         del Users[ self.session.session_id ]
 
     def _send(self, output):
@@ -729,24 +713,6 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         if output['data'] is None: output['data'] = ""
         if output['error'] is None: output['error'] = ""
         answer = "%s%s%s%s%s%s%s" % (output['act'], DELIM, output['req'], DELIM, output['error'], DELIM, output['data'])
-        self.send( answer )
-
-    def _keepalive(self, output, current, timestamp):
-        global Users
-        if not self.session.session_id in Users: return # TODO: this causes hard-tracing error if something occurs in API!
-
-        while not Users[ self.session.session_id ].running[ current ].is_set():
-            Users[ self.session.session_id ].running[ current ].wait(2.5)
-            if time.time() - timestamp > 4:
-                output['data'] = 1
-                sys.stdout.write('.')
-                self._send(output)
-        else:
-            del Users[ self.session.session_id ].running[ current ]
-            return
-            
-    def _test(self):
-        answer = "%s%s%s%s%s%s%s" % ('test', DELIM, 'req', DELIM, '123', DELIM, '321')
         self.send( answer )
 
 class IndexHandler(tornado.web.RequestHandler):
@@ -925,7 +891,9 @@ if __name__ == "__main__":
         else:
             try: int(v.split('.')[0])
             except: updatemsg = 'Could not check new version. Communication with update server failed.'
-            else: updatemsg = 'Actual version is %s. Your version is %s' % (v, API.version)
+            else:
+                if v == API.version: updatemsg = "Current version is up-to-date."
+                else: updatemsg = 'Attention!\nYour program version (%s) is outdated!\nActual version is %s.\nUpdating is highly recommended.' % (v, API.version)
         print updatemsg
 
     # compiling table columns:
@@ -987,10 +955,8 @@ if __name__ == "__main__":
     Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 
     io_loop = tornado.ioloop.IOLoop.instance()
-    Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling']})
+    Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling'], 'client_timeout': 90}) # NB. three minutes of waiting is tough
     config = {"debug": debug}
-    #def tester():
-    #io_loop.add_timeout(timedelta(seconds=2), tester)
 
     try:
         application = tornado.web.Application(
@@ -1021,7 +987,4 @@ if __name__ == "__main__":
         print "\nWelcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: io_loop.start()
-        except KeyboardInterrupt:
-            io_loop.stop()
-            io_loop.close()
-            sys.exit("\nBye-bye.")
+        except KeyboardInterrupt: sys.exit("\nBye-bye.")

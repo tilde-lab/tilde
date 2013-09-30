@@ -1,0 +1,1134 @@
+
+
+            ---------
+:ITE001:  1. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.41525E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.2028417E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.2028417E-03
+:DEN  : DENSITY INTEGRALS =            -226.667260   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.21938  -1.21938
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -2.04301  -1.21938  -0.82363 v5,v5c,v5x  -2.04301  -1.21938  -0.82363
+:VZERY:v0,v0c,v0x  -0.72563   0.00000  -0.72563 v5,v5c,v5x  -0.72563   0.00000  -0.72563
+:VZERX:v0,v0c,v0x  -0.72563   0.00000  -0.72563 v5,v5c,v5x  -0.72563   0.00000  -0.72563
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2000   E(BOTTOM)=   -4.205   E(TOP)=   -4.195
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.1993499   -4.1993499   -4.1993499   -0.3077770    1.4366031
+         1.4366031    1.4366031    1.5489419    1.5489419    1.5489419
+         1.7107089    1.9512609    1.9512609
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.201019   -4.199350
+:BAND   :   2   -4.200448   -4.199350
+:BAND   :   3   -4.200003   -4.199350
+:BAND   :   4   -0.307777    0.399073
+:BAND   :   5    0.205788    1.436603
+:BAND   :   6    0.479585    1.436603
+:BAND   :   7    0.609204    1.508745
+:BAND   :   8    0.920727    1.622735
+:BAND   :   9    1.175722    1.916075
+:BAND   :  10    1.548942    1.987286
+:BAND   :  11    1.650345    1.999619
+        Energy to separate semicore and valencestates:  -0.35778
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.51014
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.798158
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.7961 6.8206 0.1694 0.0112 0.0000 0.0000 0.0000 0.0497 0.1197 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9984 -4.2001    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.7961  0.0904    0.8222  0.2446    0.1693  0.3248    0.0112  0.3363
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -24.649611
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.133111 Ry
+:2S 001: 2S                     -7.031321 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.099052        0.000000     1486.846910     1490.945961
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.2018417
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.7980548
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.0857493
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.9142344
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99998   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.1424418
+
+:DIS  :  CHARGE DISTANCE       0.1424418
+:BIG check (qbig,qrms,qtot)    0.475D-01   0.101D+00   0.142D+00
+:REDuction and QMX before broyd:    1.1963    1.1963    0.2336
+:PLANE:  INTERSTITAL DISTANCE  0.4166834
+ :Pratt iteration over-ride, DMIX   0.100000000000000     
+       BROYD MIXING SCHEME WITH 0.100
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.0973836
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.9026164
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.645735
+
+
+
+            ---------
+:ITE002:  2. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.41618E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.1357603E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.1357603E-03
+:DEN  : DENSITY INTEGRALS =            -226.561452   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.21977  -1.21977
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -2.03260  -1.21977  -0.81282 v5,v5c,v5x  -2.03260  -1.21977  -0.81282
+:VZERY:v0,v0c,v0x  -0.72439   0.00000  -0.72439 v5,v5c,v5x  -0.72439   0.00000  -0.72439
+:VZERX:v0,v0c,v0x  -0.72439   0.00000  -0.72439 v5,v5c,v5x  -0.72439   0.00000  -0.72439
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2100   E(BOTTOM)=   -4.215   E(TOP)=   -4.205
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2090390   -4.2090390   -4.2090390   -0.3091788    1.4350150
+         1.4350150    1.4350150    1.5468564    1.5468564    1.5468564
+         1.7096297    1.9494157    1.9494157
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.210699   -4.209039
+:BAND   :   2   -4.210132   -4.209039
+:BAND   :   3   -4.209689   -4.209039
+:BAND   :   4   -0.309179    0.397586
+:BAND   :   5    0.204250    1.435015
+:BAND   :   6    0.477890    1.435015
+:BAND   :   7    0.607246    1.507143
+:BAND   :   8    0.919047    1.621091
+:BAND   :   9    1.173998    1.914243
+:BAND   :  10    1.546856    1.985393
+:BAND   :  11    1.648518    1.999732
+        Energy to separate semicore and valencestates:  -0.35918
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.50866
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.799091
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.7971 6.8207 0.1692 0.0112 0.0000 0.0000 0.0000 0.0496 0.1196 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9984 -4.2098    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.7970  0.0890    0.8223  0.2432    0.1692  0.3232    0.0112  0.3348
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -24.712080
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.144912 Ry
+:2S 001: 2S                     -7.041003 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.107027        0.000000     1486.877285     1490.984312
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.2009089
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.7989881
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.0973836
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.9026164
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.1277073
+
+:DIS  :  CHARGE DISTANCE       0.1277073
+:BIG check (qbig,qrms,qtot)    0.426D-01   0.903D-01   0.128D+00
+:REDuction and QMX before broyd:    1.1802    1.1802    0.2441
+:PLANE:  INTERSTITAL DISTANCE  0.3745301
+:DIRB :  |BROYD|= 0.879D+00 |PRATT|= 0.162D+00 ANGLE=   0.7 DEGREES
+       BROYD MIXING SCHEME WITH 0.172
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939994
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060006
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.645362
+
+
+
+            ---------
+:ITE003:  3. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42380E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4395417E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4395417E-03
+:DEN  : DENSITY INTEGRALS =            -225.713940   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22278  -1.22278
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.92189  -1.22278  -0.69911 v5,v5c,v5x  -1.92189  -1.22278  -0.69911
+:VZERY:v0,v0c,v0x  -0.70811   0.00000  -0.70811 v5,v5c,v5x  -0.70811   0.00000  -0.70811
+:VZERX:v0,v0c,v0x  -0.70811   0.00000  -0.70811 v5,v5c,v5x  -0.70811   0.00000  -0.70811
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2850   E(BOTTOM)=   -4.290   E(TOP)=   -4.280
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2872973   -4.2872973   -4.2872973   -0.3202771    1.4222701
+         1.4222701    1.4222701    1.5296274    1.5296274    1.5296274
+         1.7023077    1.9342576    1.9342576
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.288832   -4.287297
+:BAND   :   2   -4.288309   -4.287297
+:BAND   :   3   -4.287900   -4.287297
+:BAND   :   4   -0.320277    0.385996
+:BAND   :   5    0.192064    1.422270
+:BAND   :   6    0.464146    1.422270
+:BAND   :   7    0.591239    1.494272
+:BAND   :   8    0.905492    1.607989
+:BAND   :   9    1.159828    1.899269
+:BAND   :  10    1.529627    1.984133
+:BAND   :  11    1.634607    1.999626
+        Energy to separate semicore and valencestates:  -0.37028
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49691
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.807382
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8053 6.8221 0.1678 0.0112 0.0000 0.0000 0.0000 0.0487 0.1191 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2880    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8053  0.0782    0.8236  0.2323    0.1678  0.3112    0.0112  0.3228
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.215785
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.237712 Ry
+:2S 001: 2S                     -7.119373 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.180067        0.000000     1487.105528     1491.285594
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1926173
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8072844
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939994
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060006
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0225905
+
+:DIS  :  CHARGE DISTANCE       0.0225905
+:BIG check (qbig,qrms,qtot)    0.753D-02   0.160D-01   0.226D-01
+:REDuction and QMX before broyd:    1.0203    1.0203    0.3594
+:PLANE:  INTERSTITAL DISTANCE  0.0193693
+:DIRB :  |BROYD|= 0.763D-01 |PRATT|= 0.790D-01 ANGLE=   3.3 DEGREES
+       BROYD MIXING SCHEME WITH 0.266
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1941690
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8058310
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643895
+
+
+
+            ---------
+:ITE004:  4. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42368E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4568489E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4568489E-03
+:DEN  : DENSITY INTEGRALS =            -225.784093   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22240  -1.22240
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91835  -1.22240  -0.69594 v5,v5c,v5x  -1.91835  -1.22240  -0.69594
+:VZERY:v0,v0c,v0x  -0.70754   0.00000  -0.70754 v5,v5c,v5x  -0.70754   0.00000  -0.70754
+:VZERX:v0,v0c,v0x  -0.70754   0.00000  -0.70754 v5,v5c,v5x  -0.70754   0.00000  -0.70754
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2800   E(BOTTOM)=   -4.285   E(TOP)=   -4.275
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2817536   -4.2817536   -4.2817536   -0.3202477    1.4221829
+         1.4221829    1.4221829    1.5301228    1.5301228    1.5301228
+         1.7021380    1.9342581    1.9342581
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.283303   -4.281754
+:BAND   :   2   -4.282774   -4.281754
+:BAND   :   3   -4.282362   -4.281754
+:BAND   :   4   -0.320248    0.386070
+:BAND   :   5    0.192151    1.422183
+:BAND   :   6    0.464310    1.422183
+:BAND   :   7    0.591531    1.494189
+:BAND   :   8    0.905703    1.608025
+:BAND   :   9    1.160074    1.899368
+:BAND   :  10    1.530123    1.984259
+:BAND   :  11    1.634740    1.999644
+        Energy to separate semicore and valencestates:  -0.37025
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49698
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806955
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8049 6.8220 0.1680 0.0112 0.0000 0.0000 0.0000 0.0487 0.1192 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2824    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8049  0.0782    0.8235  0.2324    0.1679  0.3113    0.0112  0.3229
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.182359
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.224352 Ry
+:2S 001: 2S                     -7.114371 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.177218        0.000000     1487.045417     1491.222635
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1930446
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8068567
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1941690
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8058310
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0121563
+
+:DIS  :  CHARGE DISTANCE       0.0121563
+:BIG check (qbig,qrms,qtot)    0.405D-02   0.860D-02   0.122D-01
+:REDuction and QMX before broyd:    1.0041    1.0041    0.3771
+:PLANE:  INTERSTITAL DISTANCE  0.0129281
+:DIRB :  |BROYD|= 0.858D-01 |PRATT|= 0.506D-01 ANGLE=   4.0 DEGREES
+       BROYD MIXING SCHEME WITH 0.321
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1942172
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8057828
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643898
+
+
+
+            ---------
+:ITE005:  5. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42348E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4839769E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4839769E-03
+:DEN  : DENSITY INTEGRALS =            -225.864275   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22189  -1.22189
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91311  -1.22189  -0.69122 v5,v5c,v5x  -1.91311  -1.22189  -0.69122
+:VZERY:v0,v0c,v0x  -0.70669   0.00000  -0.70669 v5,v5c,v5x  -0.70669   0.00000  -0.70669
+:VZERX:v0,v0c,v0x  -0.70669   0.00000  -0.70669 v5,v5c,v5x  -0.70669   0.00000  -0.70669
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2750   E(BOTTOM)=   -4.280   E(TOP)=   -4.270
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2753209   -4.2753209   -4.2753209   -0.3202570    1.4220442
+         1.4220442    1.4220442    1.5306708    1.5306708    1.5306708
+         1.7019033    1.9342309    1.9342309
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.276895   -4.275321
+:BAND   :   2   -4.276358   -4.275321
+:BAND   :   3   -4.275939   -4.275321
+:BAND   :   4   -0.320257    0.386112
+:BAND   :   5    0.192211    1.422044
+:BAND   :   6    0.464468    1.422044
+:BAND   :   7    0.591845    1.494055
+:BAND   :   8    0.905905    1.608033
+:BAND   :   9    1.160331    1.899454
+:BAND   :  10    1.530671    1.984379
+:BAND   :  11    1.634874    1.999625
+        Energy to separate semicore and valencestates:  -0.37026
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49703
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806419
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8044 6.8219 0.1681 0.0112 0.0000 0.0000 0.0000 0.0488 0.1193 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2760    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8044  0.0782    0.8234  0.2324    0.1681  0.3114    0.0112  0.3230
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.143726
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.209451 Ry
+:2S 001: 2S                     -7.108539 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.173503        0.000000     1486.979443     1491.152946
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1935806
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8063202
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1942172
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8057828
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0024060
+
+:DIS  :  CHARGE DISTANCE       0.0024060
+:BIG check (qbig,qrms,qtot)    0.802D-03   0.170D-02   0.241D-02
+:REDuction and QMX before broyd:    1.0000    1.0000    0.3952
+:PLANE:  INTERSTITAL DISTANCE  0.0035814
+:DIRB :  |BROYD|= 0.135D-01 |PRATT|= 0.113D-01 ANGLE=  12.4 DEGREES
+       BROYD MIXING SCHEME WITH 0.358
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939982
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060018
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643981
+
+
+
+            ---------
+:ITE006:  6. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42346E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4865181E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4865181E-03
+:DEN  : DENSITY INTEGRALS =            -225.855204   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22187  -1.22187
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91288  -1.22187  -0.69101 v5,v5c,v5x  -1.91288  -1.22187  -0.69101
+:VZERY:v0,v0c,v0x  -0.70666   0.00000  -0.70666 v5,v5c,v5x  -0.70666   0.00000  -0.70666
+:VZERX:v0,v0c,v0x  -0.70666   0.00000  -0.70666 v5,v5c,v5x  -0.70666   0.00000  -0.70666
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2750   E(BOTTOM)=   -4.280   E(TOP)=   -4.270
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2759570   -4.2759570   -4.2759570   -0.3202794    1.4220435
+         1.4220435    1.4220435    1.5306089    1.5306089    1.5306089
+         1.7019036    1.9342308    1.9342308
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.277523   -4.275957
+:BAND   :   2   -4.276989   -4.275957
+:BAND   :   3   -4.276572   -4.275957
+:BAND   :   4   -0.320279    0.386083
+:BAND   :   5    0.192185    1.422044
+:BAND   :   6    0.464440    1.422044
+:BAND   :   7    0.591811    1.494054
+:BAND   :   8    0.905864    1.608020
+:BAND   :   9    1.160295    1.899438
+:BAND   :  10    1.530609    1.984365
+:BAND   :  11    1.634853    1.999607
+        Energy to separate semicore and valencestates:  -0.37028
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49700
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806442
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8044 6.8219 0.1681 0.0112 0.0000 0.0000 0.0000 0.0488 0.1193 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2766    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8044  0.0782    0.8234  0.2323    0.1681  0.3114    0.0112  0.3229
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.147603
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.211483 Ry
+:2S 001: 2S                     -7.109087 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.173462        0.000000     1486.989366     1491.162827
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1935579
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8063430
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939982
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060018
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0014240
+
+:DIS  :  CHARGE DISTANCE       0.0014240
+:BIG check (qbig,qrms,qtot)    0.475D-03   0.101D-02   0.142D-02
+:REDuction and QMX before broyd:    1.0000    1.0000    0.3972
+:PLANE:  INTERSTITAL DISTANCE  0.0032438
+:DIRB :  |BROYD|= 0.543D-02 |PRATT|= 0.593D-02 ANGLE=   6.5 DEGREES
+       BROYD MIXING SCHEME WITH 0.378
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939537
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060463
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643947
+
+
+
+            ---------
+:ITE007:  7. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42343E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4908693E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4908693E-03
+:DEN  : DENSITY INTEGRALS =            -225.859960   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22180  -1.22180
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91212  -1.22180  -0.69031 v5,v5c,v5x  -1.91212  -1.22180  -0.69031
+:VZERY:v0,v0c,v0x  -0.70653   0.00000  -0.70653 v5,v5c,v5x  -0.70653   0.00000  -0.70653
+:VZERX:v0,v0c,v0x  -0.70653   0.00000  -0.70653 v5,v5c,v5x  -0.70653   0.00000  -0.70653
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2750   E(BOTTOM)=   -4.280   E(TOP)=   -4.270
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2755402   -4.2755402   -4.2755402   -0.3202965    1.4220199
+         1.4220199    1.4220199    1.5306347    1.5306347    1.5306347
+         1.7018738    1.9342182    1.9342182
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.277112   -4.275540
+:BAND   :   2   -4.276576   -4.275540
+:BAND   :   3   -4.276157   -4.275540
+:BAND   :   4   -0.320297    0.386069
+:BAND   :   5    0.192174    1.422020
+:BAND   :   6    0.464438    1.422020
+:BAND   :   7    0.591822    1.494031
+:BAND   :   8    0.905861    1.608008
+:BAND   :   9    1.160302    1.899432
+:BAND   :  10    1.530635    1.984363
+:BAND   :  11    1.634853    1.999591
+        Energy to separate semicore and valencestates:  -0.37030
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49699
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806391
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8043 6.8219 0.1681 0.0112 0.0000 0.0000 0.0000 0.0488 0.1193 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2762    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8043  0.0782    0.8234  0.2323    0.1681  0.3114    0.0112  0.3229
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.145159
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.210727 Ry
+:2S 001: 2S                     -7.108699 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.173062        0.000000     1486.986385     1491.159447
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1936084
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062924
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1939537
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8060463
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0008777
+
+:DIS  :  CHARGE DISTANCE       0.0008777
+:BIG check (qbig,qrms,qtot)    0.293D-03   0.621D-03   0.878D-03
+:REDuction and QMX before broyd:    1.0000    1.0000    0.4000
+:PLANE:  INTERSTITAL DISTANCE  0.0018910
+:DIRB :  |BROYD|= 0.268D-02 |PRATT|= 0.427D-02 ANGLE=  12.2 DEGREES
+       BROYD MIXING SCHEME WITH 0.389
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1938872
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8061128
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643971
+
+
+
+            ---------
+:ITE008:  8. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42341E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4930881E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4930881E-03
+:DEN  : DENSITY INTEGRALS =            -225.859452   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22178  -1.22178
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91178  -1.22178  -0.69000 v5,v5c,v5x  -1.91178  -1.22178  -0.69000
+:VZERY:v0,v0c,v0x  -0.70648   0.00000  -0.70648 v5,v5c,v5x  -0.70648   0.00000  -0.70648
+:VZERX:v0,v0c,v0x  -0.70648   0.00000  -0.70648 v5,v5c,v5x  -0.70648   0.00000  -0.70648
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2750   E(BOTTOM)=   -4.280   E(TOP)=   -4.270
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2755468   -4.2755468   -4.2755468   -0.3203081    1.4220113
+         1.4220113    1.4220113    1.5306291    1.5306291    1.5306291
+         1.7018632    1.9342139    1.9342139
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.277118   -4.275547
+:BAND   :   2   -4.276582   -4.275547
+:BAND   :   3   -4.276164   -4.275547
+:BAND   :   4   -0.320308    0.386057
+:BAND   :   5    0.192164    1.422011
+:BAND   :   6    0.464431    1.422011
+:BAND   :   7    0.591818    1.494023
+:BAND   :   8    0.905850    1.608000
+:BAND   :   9    1.160296    1.899426
+:BAND   :  10    1.530629    1.984359
+:BAND   :  11    1.634848    1.999581
+        Energy to separate semicore and valencestates:  -0.37031
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49698
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806378
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8043 6.8219 0.1681 0.0112 0.0000 0.0000 0.0000 0.0488 0.1193 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2762    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8043  0.0781    0.8234  0.2323    0.1681  0.3113    0.0112  0.3229
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.145234
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.210948 Ry
+:2S 001: 2S                     -7.108694 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.172906        0.000000     1486.987694     1491.160600
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1936213
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062796
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1938872
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8061128
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0006157
+
+:DIS  :  CHARGE DISTANCE       0.0006157
+:BIG check (qbig,qrms,qtot)    0.205D-03   0.435D-03   0.616D-03
+:REDuction and QMX before broyd:    1.0000    1.0000    0.4000
+:PLANE:  INTERSTITAL DISTANCE  0.0013027
+:DIRB :  |BROYD|= 0.606D-02 |PRATT|= 0.303D-02 ANGLE=  11.6 DEGREES
+       BROYD MIXING SCHEME WITH 0.394
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1937421
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062579
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643970
+
+
+
+            ---------
+:ITE009:  9. ITERATION
+            ---------
+
+       NUMBER OF ATOMS IN UNITCELL  =   1
+       SUBSTANCE: Al                                                          
+
+       LATTICE                      = F   
+:POT  : POTENTIAL OPTION   13
+:LAT  : LATTICE CONSTANTS=  7.65300  7.65300  7.65300    1.571    1.571    1.571
+:VOL  : UNIT CELL VOLUME =     112.05601
+       MODE OF CALCULATION IS       = RELA
+       NON-SPINPOLARIZED CALCULATION
+:IFFT  : FFT-parameters:   36   36   36 Factor: 2.00
+       ATOMNUMBER=  1 Al         VCOUL-ZERO =  0.42337E+00
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4980240E-03
+:FIT001: SIGMA OF V-XC FIT FOR ATOM  1  0.4980240E-03
+:DEN  : DENSITY INTEGRALS =            -225.858199   (Ry)
+       ELS_POTENTIAL_AT Z=0 and Z=0.5:  -1.22171  -1.22171
+       ELS_POTENTIAL_AT Y=0 and Y=0.5:   0.00000   0.00000
+:VZERO:v0,v0c,v0x  -1.91101  -1.22171  -0.68930 v5,v5c,v5x  -1.91101  -1.22171  -0.68930
+:VZERY:v0,v0c,v0x  -0.70636   0.00000  -0.70636 v5,v5c,v5x  -0.70636   0.00000  -0.70636
+:VZERX:v0,v0c,v0x  -0.70636   0.00000  -0.70636 v5,v5c,v5x  -0.70636   0.00000  -0.70636
+
+          ATOMIC SPHERE DEPENDENT PARAMETERS FOR ATOM  Al        
+          OVERALL ENERGY PARAMETER IS    0.3000
+          OVERALL BASIS SET ON ATOM IS LAPW
+          E( 1)=    0.3000
+             APW+lo
+          E( 1)=   -4.2750   E(BOTTOM)=   -4.280   E(TOP)=   -4.270
+             LOCAL ORBITAL
+          E( 0)=    0.3000
+             APW+lo
+
+       K=   0.00000   0.00000   0.00000            1
+:RKM  : MATRIX SIZE   66LOs:   7  RKM= 7.11  WEIGHT= 1.00  PGR:    
+       EIGENVALUES ARE:
+        -4.2755731   -4.2755731   -4.2755731   -0.3203330    1.4219929
+         1.4219929    1.4219929    1.5306171    1.5306171    1.5306171
+         1.7018404    1.9342051    1.9342051
+       ********************************************************
+
+       NUMBER OF K-POINTS:         165
+:GMA  : POTENTIAL AND CHARGE CUT-OFF  12.00 Ry**.5
+         Bandranges (emin - emax):
+:BAND   :   1   -4.277144   -4.275573
+:BAND   :   2   -4.276608   -4.275573
+:BAND   :   3   -4.276190   -4.275573
+:BAND   :   4   -0.320333    0.386031
+:BAND   :   5    0.192142    1.421993
+:BAND   :   6    0.464415    1.421993
+:BAND   :   7    0.591810    1.494005
+:BAND   :   8    0.905826    1.607984
+:BAND   :   9    1.160283    1.899414
+:BAND   :  10    1.530617    1.984351
+:BAND   :  11    1.634838    1.999560
+        Energy to separate semicore and valencestates:  -0.37033
+
+
+:NOE  : NUMBER OF ELECTRONS          =   9.000
+
+:FER  : F E R M I - ENERGY(TETRAH.M.)=   0.49695
+
+
+
+
+:POS001: AT.NR.   1 POSITION = 0.00000 0.00000 0.00000  MULTIPLICITY =  1
+
+       LMMAX  5
+       LM=   0 0  4 0  4 4  6 0  6 4
+
+:CHA001: TOTAL CHARGE INSIDE SPHERE   1 =     7.806350
+:PCS001: PARTIAL CHARGES SPHERE =  1 S,P,D,F,      D-EG,D-T2G 
+:QTL001: 0.8043 6.8219 0.1681 0.0112 0.0000 0.0000 0.0000 0.0488 0.1193 0.0000 0.0000 0.0000
+        Q-s-low E-s-low   Q-p-low E-p-low   Q-d-low E-d-low   Q-f-low E-f-low
+:EPL001:  0.0000 10.0000    5.9985 -4.2763    0.0000 10.0000    0.0000 10.0000
+        Q-s-hi  E-s-hi    Q-p-hi  E-p-hi    Q-d-hi  E-d-hi    Q-f-hi  E-f-hi 
+:EPH001:  0.8043  0.0781    0.8234  0.2323    0.1681  0.3113    0.0112  0.3229
+
+:CHA  : TOTAL CHARGE INSIDE UNIT CELL =       9.000000
+
+:SUM  : SUM OF EIGENVALUES =            -25.145467
+
+
+        1.ATOM      Al                    2 CORE STATES
+:1S 001: 1S                   -110.211457 Ry
+:2S 001: 2S                     -7.108694 Ry
+
+       DENSITY AT NUCLEUS
+        JATOM    VALENCE       SEMI-CORE            CORE           TOTAL
+
+:RTO001:   1        4.172559        0.000000     1486.990625     1491.163184
+     
+       CHARGES OF NEW CHARGE DENSITY
+:NTO  : TOTAL   INTERSTITIAL CHARGE=  1.1936497
+:NTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062511
+
+:NEC01: NUCLEAR AND ELECTRONIC CHARGE   13.00000  12.99990   1.00001
+     
+       CHARGES OF OLD CHARGE DENSITY
+:OTO  : TOTAL   INTERSTITIAL CHARGE=  1.1937421
+:OTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062579
+
+:NEC02: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+     
+       CONVERGENCE TEST
+:DTO001: TOTAL   DIFFERENCE CHARGE**2 IN SPHERE  1 =  0.0000287
+
+:DIS  :  CHARGE DISTANCE       0.0000287
+:BIG check (qbig,qrms,qtot)    0.958D-05   0.203D-04   0.287D-04
+:REDuction and QMX before broyd:    1.0000    1.0000    0.4000
+:PLANE:  INTERSTITAL DISTANCE  0.0000186
+:DIRB :  |BROYD|= 0.205D-03 |PRATT|= 0.136D-03 ANGLE=  24.1 DEGREES
+       BROYD MIXING SCHEME WITH 0.397
+     
+       CHARGES OF MIXED CHARGE DENSITY
+:CTO  : TOTAL   INTERSTITIAL CHARGE=  1.1937473
+:CTO001: TOTAL   CHARGE IN SPHERE  1 = 11.8062527
+
+:NEC03: NUCLEAR AND ELECTRONIC CHARGE   13.00000  13.00000   1.00000
+
+
+:ENE  : ********** TOTAL ENERGY IN Ry =         -485.643968
+

@@ -24,7 +24,7 @@ class Ebands():
                 lvb = max(self.stripes[n-1])
                 if lvb < bottom:
                     homok = self.abscissa[ self.stripes[n-1].index(lvb) ]
-                    lumok = self.abscissa[ self.stripes[n].index(bottom)] 
+                    lumok = self.abscissa[ self.stripes[n].index(bottom)]
                     return (bottom - lvb, homok == lumok)
                 else:
                     return (0.0, None)

@@ -57,7 +57,7 @@ parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th C
 parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
-parser.add_argument("-d", dest="datamining", action="store", help="datamining query", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
+parser.add_argument("-d", dest="data query", action="store", help="query on data", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 
 args = parser.parse_args()
 

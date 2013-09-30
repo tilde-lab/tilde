@@ -269,9 +269,9 @@ class CRYSTOUT(Output):
         if not strucs: raise RuntimeError( 'No structure was found!' )
 
         for crystal_data in strucs:
-            symbols, parameters, atoms, periodicity = [], [], [], 3
+            symbols, parameters, atoms, periodicity = [], [], [], [True, True, True]
             
-            if self.molecular_case: periodicity = 0
+            if self.molecular_case: periodicity = False
 
             crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
 
@@ -307,7 +307,7 @@ class CRYSTOUT(Output):
                 for i in range(0, 3):
                     if parameters[i] > self.PERIODIC_LIMIT:
                         parameters[i] = self.PERIODIC_LIMIT
-                        periodicity -= 1
+                        periodicity[i] = False
                         
                         # TODO : account case with not direct angles
                         for j in range(0, len(atoms)):
@@ -728,7 +728,6 @@ class CRYSTOUT(Output):
                     break
 
             parts = line.split()
-            #print parts
 
             if len(parts) == 1 and parts[0].upper() in ps_keywords.keys():
                 # pseudo

@@ -19,7 +19,7 @@ div.pane{display:none;}
 div.menu{padding:6px 0 11px;height:28px;width:100%;background:#fff;position:fixed;left:0;top:0;z-index:5;}
 
 /* LANDING PANE */
-#landing_holder{margin:0 auto;width:600px;}
+#landing_holder{margin:0 auto;width:700px;}
 #intro{width:100%;margin-bottom:25px;}
 
 /* LANDING PANE LOGO */

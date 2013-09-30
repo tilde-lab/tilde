@@ -15,8 +15,8 @@ import os
 import sys
 
 # this is done to have all third-party code in deps folder
-# TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+
 from spacegroup.cell import cell_to_cellpar
 
 # recommended accuracy value = 0.0001

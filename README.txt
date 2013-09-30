@@ -20,6 +20,7 @@ All user commands should be executed through this main script:
 To use command-line interface run main script with a parameter (e.g. "--help").
 To start graphical interface run main script without parameters.
 To terminate graphical interface on Windows close the DOS box, on Unix hit Ctrl+C.
+On Unix script may also run in background mode with "nohup tilde.sh &"
 
 Prerequisites
 -------------

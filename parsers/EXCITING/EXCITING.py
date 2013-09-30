@@ -143,7 +143,7 @@ class INFOOUT(Output):
                         break
                     
                     if ' scf iterations ' in self.data[n]:
-                        self.ncycles.append(  int(self.data[n].split(":")[-1])  )
+                        self.ncycles.append(  int(self.data[n].split(":")[-1].split()[0])  )
                     elif 'Maximum force magnitude' in self.data[n]:
                         f = self.data[n].split(":")[-1].split("(")
                         forces.append( float(f[0]) - float(f[-1][:-2]) )
@@ -172,8 +172,8 @@ class INFOOUT(Output):
             elif 'Total time spent ' in line: # Beryllium
                 self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
                 
-            elif line.startswith(' Fermi '):
-                e_last = float(self.data[n].split(":")[-1]) * Hartree
+            #elif line.startswith(' Fermi '):
+            #    e_last = float(self.data[n].split(":")[-1]) * Hartree
                 
             elif 'Number of empty states' in line:
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
@@ -238,12 +238,12 @@ class INFOOUT(Output):
         # Electronic properties
         if os.path.exists(os.path.join(os.path.dirname(file), 'dos.xml')):
             f = open(os.path.join(os.path.dirname(file), 'dos.xml'),'r')
-            self.electrons['dos'] = Edos(parse_dosxml(f, e_last))
+            self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
             f.close()
             
         if os.path.exists(os.path.join(os.path.dirname(file), 'bandstructure.xml')):
             f = open(os.path.join(os.path.dirname(file), 'bandstructure.xml'),'r')
-            self.electrons['bands'] = Ebands(parse_bandsxml(f, e_last))
+            self.electrons['bands'] = Ebands(parse_bandsxml(f))
             f.close()
         
     @staticmethod
@@ -252,9 +252,10 @@ class INFOOUT(Output):
         else: return False
 
 
-def parse_dosxml(fp, e_last):
+def parse_dosxml(fp, symbols):
     dos_obj = {'x': [],}
-    dos = []    
+    dos = []
+    symbol_counter = 0
     first_cyc, new_part = True, True
         
     context = etree.iterparse(fp, events=('end',))
@@ -267,7 +268,9 @@ def parse_dosxml(fp, e_last):
             
         elif elem.tag=='partialdos':
             target_atom = elem.attrib['speciessym']
-            if not target_atom: raise RuntimeError("Fatal lack of info occured: speciessym tag in dos.xml is empty!")
+            if not target_atom:
+                target_atom = symbols[symbol_counter]
+                symbol_counter += 1
             if not target_atom in dos_obj: dos_obj[target_atom] = dos
             else:
                 if len(dos) != len(dos_obj[target_atom]): raise RuntimeError("Unexpected data format in dos.xml!")
@@ -286,8 +289,8 @@ def parse_dosxml(fp, e_last):
             
             #spin = {1: 'alpha', 2: 'beta'}         
             #target_spin = spin[ int( elem.attrib['nspin'] ) ]
-            #if 'n' in elem.attrib: print 'n =', elem.attrib['n']
-            #if 'l' in elem.attrib: print 'l =', elem.attrib['l']
+            #if 'n' in elem.attrib: n = elem.attrib['n']
+            #if 'l' in elem.attrib: l = elem.attrib['l']
             
             first_cyc, new_part = False, False
             
@@ -301,7 +304,7 @@ def parse_dosxml(fp, e_last):
             
     return dos_obj
     
-def parse_bandsxml(fp, e_last):
+def parse_bandsxml(fp):
     band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
     first_cyc = True
     

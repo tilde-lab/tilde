@@ -9,11 +9,12 @@ import json
 from numpy import dot, array, matrix, cross, trace, sum
 
 # this is done to have all third-party code in deps folder
-# TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
+
 from deps.ase.atoms import Atoms
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+
 from spacegroup.cell import cell_to_cellpar
 
 
@@ -52,12 +53,12 @@ def ase2dict(ase_obj):
     
 def dict2ase(ase_dict):
     ase_obj = Atoms( \
-		symbols=map(lambda x: x.encode('ascii'), ase_dict['symbols']),
-		cell=ase_dict['cell'], 
-		positions=ase_dict['atoms'],
-		pbc=ase_dict['periodicity'], 
-		info=ase_dict['info'], magmoms=ase_dict['magmoms'], charges=ase_dict['charges']
-	)
+        symbols=map(lambda x: x.encode('ascii'), ase_dict['symbols']),
+        cell=ase_dict['cell'], 
+        positions=ase_dict['atoms'],
+        pbc=ase_dict['periodicity'], 
+        info=ase_dict['info'], magmoms=ase_dict['magmoms'], charges=ase_dict['charges']
+    )
     ase_obj.dims = ase_dict['dims']
     ase_obj.periodicity = ase_dict['periodicity']
     return ase_obj

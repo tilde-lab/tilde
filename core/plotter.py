@@ -12,8 +12,8 @@ from cubicspline import NaturalCubicSpline
 from dos import TotalDos, PartialDos
 
 # this is done to have all third-party code in deps folder
-# TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
+
 from ase.data.colors import jmol_colors
 from ase.data import chemical_symbols
 

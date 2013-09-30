@@ -1,9 +1,9 @@
 
 # Tilde project: basic routines
-# v030913
+# v300913
 # See http://wwwtilda.googlecode.com
 
-__version__ = "0.2.2"
+__version__ = "0.2.2" # numeric-only
 
 import os
 import sys
@@ -25,14 +25,15 @@ from common import generate_cif
 from symmetry import SymmetryHandler
 
 # this is done to simplify adding modules to Tilde according its API
-# TODO: dealing with sys.path is malpractice
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+
 from core.common import ModuleError
 from parsers import Output
 from settings import DEFAULT_SETUP
 from core.deps.ase import Atoms
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+
 from spacegroup.cell import cell_to_cellpar
 
 
@@ -113,7 +114,7 @@ class API:
             
             {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "descr": ""}, \
             {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "descr": ""}, \
-            {"cid": 4, "category": "supercell",             "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""}, \
+            {"cid": 4, "category": "formula units",         "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""}, \
             {"cid": 5, "category": "periodicity",           "source": "periodicity", "sort": 12, "has_column": True, "has_label": True, "descr": ""}, \
             {"cid": 6, "category": "calculation type",      "source": "calctype#", "sort": 10, "has_label": True, "descr": ""}, \
             {"cid": 7, "category": "hamiltonian",           "source": "H", "sort": 30, "has_column": True, "has_label": True, "descr": ""}, \

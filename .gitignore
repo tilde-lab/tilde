@@ -6,8 +6,6 @@ data
 scripts
 parsers/CIF
 parsers/CIF/*
-parsers/VASP
-parsers/VASP/*
 parsers/GAUSSIAN
 parsers/GAUSSIAN/*
 parsers/WIEN2K
