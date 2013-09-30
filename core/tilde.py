@@ -45,7 +45,7 @@ parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [position
 
 parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-u", dest="daemon", action="store", help="run GUI service (default)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
-parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to repository", type=str, metavar="REPOSITORY", nargs='?', const='DIALOG', default=False)
+parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to database", type=str, metavar="FILE.DB", nargs='?', const='DIALOG', default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-v", dest="convergence", action="store", help="convergence print", type=bool, metavar="", nargs='?', const=True, default=False)
