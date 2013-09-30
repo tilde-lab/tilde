@@ -1,15 +1,14 @@
 Tilde
 =====
 
-Tilde (aka wwwtilda or ~) is a data organizer for computational materials science.
+Tilde (a.k.a. wwwtilda or ~) is a data organizer for computational materials science.
 
 Warning
 -------
 
 This is NOT a public release, rather a proof-of-concept code summary for internal needs.
 It is not fully tested and may work unstable.
-End users are HIGHLY DISCOURAGED of using this code.
-However the user data are sacred and will never be affected.
+However, the user data are sacred and will never be affected.
 
 Usage
 -----
@@ -21,18 +20,17 @@ To use command-line interface (CLI), run main script with a parameter (e.g. "-h"
 To start graphical interface (GUI), run main script without parameters.
 To terminate GUI on Windows, close the DOS box, on Unix hit Ctrl+C.
 On Unix GUI may also run in background mode ("nohup tilde.sh &").
-Adding data is possible using both CLI and GUI:
-Using CLI: append "-a" option to the folder name.
-Using GUI: click "add data" button at the top left corner of the program window.
+Adding data is possible using both CLI and GUI.
 Avoid using GUI on large folders with data (more than several gigabytes), as CLI is much faster in this case.
 
 Prerequisites
 -------------
 
 On Windows no additional installations are required.
-On Unix/Mac you should have Python (at least of version 2.6), numerical modules (Numpy) and sqlite3 python module pre-installed.
-Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors).
-Note, that Python 3 was never tested.
+On Unix/Mac you should have Python (at least of version 2.6), as well 
+as Numpy, lxml and sqlite3 Python modules pre-installed.
+Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, lxml, sqlite3'" should produce no errors).
+Note, that Python 3 was not tested.
 
 License and distribution
 ------------------------
