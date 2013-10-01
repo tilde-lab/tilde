@@ -10,10 +10,12 @@ import fractions
 __order__ = 20
 __properties__ = [ {"category": "vacancy content", "source": "vac", "sort": 13, "negative_tagging": True, "has_column": True, "has_label": True, "descr": ""} ]
 
-def classify(tilde_obj):
+def classify(tilde_obj):    
     ''' detect vacant places of host atoms '''
+    
     if len(tilde_obj.info['elements']) < 2: return tilde_obj
     elif tilde_obj.structures[-1].periodicity in [0, 1, 2]: return tilde_obj
+    
     tilde_obj.info['expanded'] = reduce(fractions.gcd, tilde_obj.info['contents'])
     if sum(tilde_obj.info['contents']) / tilde_obj.info['expanded'] < 15: return tilde_obj # check for >= 15-atoms
     
@@ -22,15 +24,14 @@ def classify(tilde_obj):
         for index in range(len(tilde_obj.info['contents'])):
             chk_content = []
             chk_content.extend(tilde_obj.info['contents'])
+            
             if tilde_obj.info['lack']: try_index = tilde_obj.info['elements'].index(tilde_obj.info['lack'])
             else: try_index = index
+            
             chk_content[try_index] += i
             gcds.append([try_index, i, reduce(fractions.gcd, chk_content)])
             if tilde_obj.info['lack']: break
     m_red = max(gcds, key = lambda a: a[2]) # WARNING: only one of several possible reducing configurations is taken!
-    
-    #print tilde_obj.info['formula']
-    #print "--->", m_red
     
     # this structure probably contains defects
     if m_red[2] > tilde_obj.info['expanded']:

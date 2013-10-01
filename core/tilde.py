@@ -35,6 +35,7 @@ from common import write_cif
 from symmetry import DEFAULT_ACCURACY
 from api import API
 
+from deps.ase.lattice.spacegroup.cell import cell_to_cellpar
 
 registered_modules = []
 for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../apps') ):
@@ -227,13 +228,13 @@ for target in args.path:
                 for i in range(len(calc.tresholds)):
                     output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
             
-        '''if args.structures:
+        if args.structures:
             out = ''
             if len(calc.structures) > 1:
-                out += str(calc.structures[0]['cell']) + ' -> '
-            out += str(calc.structures[-1]['cell'])
+                out += str(cell_to_cellpar(calc.structures[0].cell)) + ' -> '
+            out += str(cell_to_cellpar(calc.structures[-1].cell))
             out += " V=" + str(calc.info['dims'])
-            output_lines += out + "\n"'''
+            output_lines += out + "\n"
         
         if args.cif:
             try: calc.structures[ args.cif ]

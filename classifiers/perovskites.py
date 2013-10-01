@@ -1,6 +1,6 @@
 
 # determines perovskite structure
-# v220913
+# v011013
 
 import os
 import sys
@@ -19,7 +19,7 @@ B_site_elems = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, P
 C_site_elems = 'O, F'.split(', ') # todo: add elements to C site
 
 def classify(tilde_obj):    
-    ''' classification by vacancy and substitutional defects in perovskites '''
+    ''' classification by vacancy and substitutional defects (impurities) in perovskites '''
     
     if len(tilde_obj.info['elements']) == 1: return tilde_obj
 
@@ -93,40 +93,19 @@ def classify(tilde_obj):
             B_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
     #print impurities, A_hosts, B_hosts
-
+    
+    if len(A_hosts) > 1 or len(B_hosts) > 1: return tilde_obj # not for alloys below
+    
     # A site or B site?
-    ref_coords = tilde_obj.structures[-1].get_positions()
     num=0
     for impurity_element, content in impurities.iteritems():
         e = tilde_obj.info['elements'].index(impurity_element)
         tilde_obj.info['elements'].pop(e) # TODO
         tilde_obj.info['contents'].pop(e) # TODO
         tilde_obj.info['properties']['impurity' + str(num)] = impurity_element + str(content) if content > 1 else impurity_element
-        dist_matrix = []        
         num+=1
-        for i in tilde_obj.structures[-1]:
-            if i.symbol == impurity_element:
-                for j in ref_coords:
-                    dist_matrix.append( math.sqrt( (i.position[0]-j[0])**2 + (i.position[1]-j[1])**2 + (i.position[2]-j[2])**2 ) )
-                dist_matrix = filter(None, dist_matrix) # skip zeros
-                dist_matrix.sort()
-                
-                for k in range(len(dist_matrix)):
-                    D_d = abs(dist_matrix[k+1]-dist_matrix[k]) / dist_matrix[k+1] # jump in a distance change allows us to determine A- or B-site
-
-                    # TODO: interstitial defects
-
-                    if 0.12 < D_d < 0.28: #
-                        # A-site with coord.number = 12
-                        if len(A_hosts) > 1: return tilde_obj # TODO?
-                        A_hosts[A_hosts.keys()[0]] += 1
-                        break
-
-                    elif D_d >= 0.28:
-                        # B-site with coord.number = 6
-                        if len(B_hosts) > 1: return tilde_obj # TODO?
-                        B_hosts[B_hosts.keys()[0]] += 1
-                        break
+        if impurity_element in A_site_elems: A_hosts[A_hosts.keys()[0]] += content
+        elif impurity_element in B_site_elems: B_hosts[B_hosts.keys()[0]] += content
 
     for n, i in enumerate(tilde_obj.info['elements']):
         if i in A_hosts:

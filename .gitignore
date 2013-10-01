@@ -3,7 +3,6 @@
 debug.log
 findsym.log
 data
-scripts
 parsers/CIF
 parsers/CIF/*
 parsers/GAUSSIAN

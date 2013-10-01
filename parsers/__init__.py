@@ -12,7 +12,7 @@ from numpy import array
 
 
 class Output:
-    def __init__(self, filename):
+    def __init__(self, filename=None):
         # (I)
         # inner Tilde objects
         self.starttime = time.time()
@@ -47,8 +47,8 @@ class Output:
 
         self.electrons = {
             'basis_set':       {'bs': {}, 'ps': {}}, # valence and core electrons
-            'eigvals':		   {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
-            'dos':			   {}, # in advance pre-computed DOS
+            'eigvals':         {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
+            'dos':             {}, # in advance pre-computed DOS
             'bands':           {}  # in advance pre-computed band structure
         }
         # NB own properties for VASP: dos

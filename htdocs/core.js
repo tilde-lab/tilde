@@ -34,7 +34,7 @@ _tilde.units = {
 _tilde.unit_capts = {'energy':'Total electronic energy', 'phonons':'Phonon frequencies'};
 _tilde.default_settings = {};
 _tilde.default_settings.units = {'energy':'eV', 'phonons':'cm<sup>-1</sup>'};
-_tilde.default_settings.cols = [1, 1001, 1002, 1005, 1006, 10]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
+_tilde.default_settings.cols = [1, 1002, 1003, 1005, 1006, 10]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
 _tilde.default_settings.colnum = 75;
 _tilde.default_settings.objects_expand = true;
 

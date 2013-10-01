@@ -650,6 +650,7 @@ class CRYSTOUT(Output):
                 except (ValueError, IndexError): break # endb, e.g. void space or INFORMATION **** READM2 **** FULL DIRECT SCF (MONO AND BIEL INT) SELECTED
 
                 atom_type = test[1][:2].capitalize()
+                if atom_type == 'Xx': atom_type = 'X'
                 atom_order.append(atom_type)
 
                 try: gbasis['bs'][ atom_type ]
@@ -691,8 +692,8 @@ class CRYSTOUT(Output):
                             gbasis['ps'][ atom_type ][-1].append( tuple( [lines[0 + i*3], lines[1 + i*3], lines[2 + i*3]] ) )
 
         # sometimes ghost basis set is printed without exponents and we should determine what atom was replaced
-        if 'Xx' in gbasis['bs'] and not len(gbasis['bs']['Xx']):
-            replaced = atom_order[ atom_order.index('Xx') - 1 ]
+        if 'X' in gbasis['bs'] and not len(gbasis['bs']['X']):
+            replaced = atom_order[ atom_order.index('X') - 1 ]
             gbasis['bs']['X'] = copy.deepcopy(gbasis['bs'][replaced])
 
         return self.__correct_bs_ghost(gbasis)
@@ -773,7 +774,7 @@ class CRYSTOUT(Output):
                     if len(parts[0]) > 2: parts[0] = parts[0][-2:]
                     if int(parts[0]) == 0: atom_type = 'X'
                     else: atom_type = chemical_symbols[ int(parts[0]) ]
-                    #print atom_type
+
                     try: gbasis['bs'][ atom_type ]
                     except KeyError: gbasis['bs'][ atom_type ] = []
                     else:
@@ -829,28 +830,28 @@ class CRYSTOUT(Output):
         # actually no GHOST deletion will be performed as it breaks orbitals order for band structure plotting!
         '''cmp_atoms = []
         for cmp_atom in gbasis['bs'].keys():
-            if cmp_atom[0:2] != 'Xx':
+            if cmp_atom[0:2] != 'X':
                 cmp_atom = ''.join([letter for letter in cmp_atom if not letter.isdigit()]) # remove doubling types with numbers (all GHOSTs will be deleted anyway!)
             if not cmp_atom in cmp_atoms: cmp_atoms.append( cmp_atom )
 
         diff = list(set(atoms) - set(cmp_atoms)) + list(set(cmp_atoms) - set(atoms)) # difference between two lists
         print "diff in atoms and bs:", diff
         if diff:
-            if len(diff) == 1 and diff[0] == 'Xx':
-                del gbasis['bs']['Xx']
-            elif len(diff) == 2 and 'Xx' in diff:
-                replace = [i for i in diff if i != 'Xx'][0]
-                if replace == 'Xx1':
+            if len(diff) == 1 and diff[0] == 'X':
+                del gbasis['bs']['X']
+            elif len(diff) == 2 and 'X' in diff:
+                replace = [i for i in diff if i != 'X'][0]
+                if replace == 'X1':
                     # if two ghosts, both will be deleted without proper replacement! TODO: fixme
                     for i in diff:
                         del gbasis['bs'][i]
                 else:
-                    gbasis['bs'][replace] = gbasis['bs']['Xx']
-                    del gbasis['bs']['Xx']
+                    gbasis['bs'][replace] = gbasis['bs']['X']
+                    del gbasis['bs']['X']
             elif len(diff) >= 3:
                 # if two ghosts, both will be deleted without proper replacement! TODO: fixme
                 for i in diff:
-                    if i[0:2] == 'Xx': del gbasis['bs'][i]'''
+                    if i[0:2] == 'X': del gbasis['bs'][i]'''
         return gbasis
 
     def set_method(self):

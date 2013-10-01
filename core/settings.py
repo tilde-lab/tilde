@@ -13,7 +13,7 @@ DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 10
 DEFAULT_SETUP = {
-                'webport': 7777,
+                'webport': 7777, # is it robust to use?
                 'default_db': DEFAULT_DB,
                 'local_dir': None,
                 'exportability': True,
