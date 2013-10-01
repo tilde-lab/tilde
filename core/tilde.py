@@ -22,6 +22,7 @@ except ImportError: from deps.argparse import argparse
 try:
     from numpy import dot
     from numpy import array
+    from numpy.linalg import det
 except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
 try: import sqlite3
@@ -231,9 +232,9 @@ for target in args.path:
         if args.structures:
             out = ''
             if len(calc.structures) > 1:
-                out += str(cell_to_cellpar(calc.structures[0].cell)) + ' -> '
+                out += str(cell_to_cellpar(calc.structures[0].cell)) + " V=%2.2f" % (abs(det(calc.structures[0].cell))) + ' -> '
             out += str(cell_to_cellpar(calc.structures[-1].cell))
-            out += " V=" + str(calc.info['dims'])
+            out += " V=%2.2f" % calc.info['dims']
             output_lines += out + "\n"
         
         if args.cif:
