@@ -411,7 +411,7 @@ class API:
 
         # post-processing tags
         if not len(calc.info['standard']):
-            #if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
+            if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
             if not calc.info['expanded']: calc.info['expanded'] = reduce(fractions.gcd, calc.info['contents'])
             for n, i in enumerate(map(lambda x: x/calc.info['expanded'], calc.info['contents'])):
                 if i==1: calc.info['standard'] += calc.info['elements'][n]
