@@ -53,7 +53,7 @@ div.tiny{font-size:0.7em;line-height:1.1;overflow-x:hidden;}
 div.ipane{display:none;border:1px solid #06c;width:100%;min-height:100px;margin-top:23px;z-index:1;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;word-wrap:break-word;}
 div.ipane > div{clear:both;}
 div.ipane div.ipane-local-menu{height:34px;padding:10px 15px 0 30px;clear:none;}
-#settings_holder div.ipane_db_field{width:85%;height:30px;border:1px solid #ccc;margin-bottom:6px !important;padding:10px !important;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;}
+#settings_holder div.ipane_db_field{width:85%;height:30px;border:1px solid #ccc;margin-bottom:6px !important;padding:10px !important;cursor:pointer;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;}
 #settings_holder div.ipane_db_field:hover{border:1px solid #000;background:#ffc;}
 #settings_holder div.ipane_db_field span{font-size:1.5em;float:left;}
 #settings_holder div.ipane_db_field input{font-size:1.5em;border:none;width:56%;float:left;}
@@ -187,7 +187,10 @@ div.cross{margin-right:10px;float:right;width:16px;height:16px;font-size:10px;te
 div.formlabel{width:120px;}
 
 /* CORE FM STYLES */
-div.filetree{padding:20px 5px 20px 15px;}
+#tilda-local-filepath{margin:25px 25px 10px 33px;position:relative;}
+#settings_local_path{border:1px solid #999;height:26px;width:100%;}
+#filepath_apply_trigger{position:absolute;right:4px;top:4px;width:20px;height:20px;cursor:pointer;background:url(images/refresh.gif) no-repeat;}
+div.filetree{padding:10px 5px 7px 15px;}
 div.filetree ul li{list-style:none;padding-left:24px;margin:0;display:block;min-height:24px;clear:both;background-position:left 4px;background-repeat:no-repeat;}
 div.filetree ul a{float:left;color:#333;text-decoration:none;font-size:0.9em;line-height:24px;}
 div.filetree ul a:hover{background:#bdf;}

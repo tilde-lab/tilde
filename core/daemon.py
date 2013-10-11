@@ -36,7 +36,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from settings import settings, write_settings, write_db, repositories, DATA_DIR, EXAMPLE_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
+from settings import settings, write_settings, write_db, repositories, DATA_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase
 from plotter import plotter
@@ -98,6 +98,7 @@ class DataMap:
 class Request_Handler:
     @staticmethod
     def login(userobj, session_id):
+        data, error = { 'title': EDITION, 'version': API.version }, None
         
         # *client-side* settings
         if userobj['settings']['colnum'] not in [50, 75, 100]: userobj['settings']['colnum'] = 75
@@ -115,24 +116,14 @@ class Request_Handler:
                 enabled = True if item['cid'] in userobj['settings']['cols'] else False
                 avcols.append({ 'cid': item['cid'], 'category': (item['category'] if 'nocap' in item else item['category'].capitalize()), 'sort': item['sort'], 'enabled': enabled })
 
-        # *server-side* settings
-        data = { 'title': EDITION, 'version': API.version }
-        error = None
-        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT COUNT(*) FROM results' )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-        else:
-            row = cursor.fetchone()
+        # settings of object-scope (global flags)
+        data['demo_regime'] = 1 if settings['demo_regime'] else 0
+        if settings['debug_regime']: data['debug_regime'] = settings['debug_regime']
 
-            # settings of object-scope (global flags)
-            data['amount'] = row[0] if row[0] else 0 # first run?
-            data['demo_regime'] = 1 if settings['demo_regime'] else 0
-            if settings['debug_regime']: data['debug_regime'] = settings['debug_regime']
-
-            # settings of specified scope
-            data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
-            for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
-                if i in settings: data['settings'][i] = settings[i]
+        # settings of specified scope
+        data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
+        for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
+            if i in settings: data['settings'][i] = settings[i]
 
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
 
@@ -144,20 +135,14 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
 
-        # LOCAL CONNECTOR INSTALL MODE
-        if not settings['local_dir']:
-            return ('SETUP_NEEDED_TRIGGER' + EXAMPLE_DIR, error) # here we do not yield an error, rather suggest politely
-        if ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
-            return ('SETUP_NEEDED_TRIGGER' + EXAMPLE_DIR, error)
-
         userobj['path'] = userobj['path'].replace('../', '')
         discover = settings['local_dir'] + userobj['path']
         if not os.path.exists(discover): error = 'Not existing path was requested!'
-        elif not os.access(discover, os.R_OK): error = 'A requested path is not readable (not enough privileges?)'
+        elif not os.access(discover, os.R_OK): error = 'A requested path is not readable (check privileges?)'
         else:
             if userobj['transport'] in Tilde.Conns.keys():
                 data, error = Tilde.Conns[ userobj['transport'] ]['list']( userobj['path'], settings['local_dir'] )
-            if not data and not userobj['path'] and not error: data = 'Notice: the folder specified by default is empty.'
+            if not data and not userobj['path'] and not error: data = 'Notice: specified folder is empty.'
         return (data, error)
 
     @staticmethod
@@ -165,13 +150,7 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         if not settings['local_dir']: return (data, 'Please, define working path!')
-
         userobj['path'] = userobj['path'].replace('../', '')
-
-        # skip huge files
-        if settings['quick_regime']:
-            if os.path.getsize(settings['local_dir'] + userobj['path']) > 25*1024*1024:
-                error = 'file too big, skipping in quick regime...'
 
         if not error:
             if userobj['transport'] in Tilde.Conns.keys():
@@ -211,11 +190,7 @@ class Request_Handler:
             if not rlen or not isinstance(data_clause, list) or len(data_clause[0]) != 56: return (data, 'Invalid browsing!')
             data_clause = '","'.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
 
-        else:
-            # building data table header (for an empty table)
-            data = build_header( Users[session_id].usettings['cols'], Users[session_id].usettings['objects_expand'] )
-            data += '<tbody></tbody>'
-            return (data, error)
+        else: return (data, 'Error: neither tid nor hash was provided!')
 
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
@@ -368,22 +343,27 @@ class Request_Handler:
         # *server-side* settings
         if userobj['area'] == 'scan':
             if settings['demo_regime']: return (data, 'Action not allowed!')
-
-            if not len(userobj['settings']['local_dir']): return (data, 'Please, input a working path.')
-            if not os.path.exists(userobj['settings']['local_dir']) or not os.access(userobj['settings']['local_dir'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
-            if 'win' in sys.platform and userobj['settings']['local_dir'].startswith('/'): return (data, 'Working path should not start with slash!')
-            if 'linux' in sys.platform and not userobj['settings']['local_dir'].startswith('/'): return (data, 'Working path should start with slash!')
-
-            userobj['settings']['local_dir'] = os.path.abspath(userobj['settings']['local_dir'])
-            if not userobj['settings']['local_dir'].endswith(os.sep): userobj['settings']['local_dir'] += os.sep
-            settings['local_dir'] = userobj['settings']['local_dir']
-            settings['quick_regime'] = userobj['settings']['quick_regime']
-            settings['skip_unfinished'] = userobj['settings']['skip_unfinished']
-            settings['skip_if_path'] = userobj['settings']['skip_if_path']
+            
+            for i in ['quick_regime', 'skip_unfinished', 'skip_if_path']:
+                settings[i] = userobj['settings'][i]
 
             if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
 
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], settings=settings )
+        
+        # *server-side* settings    
+        elif userobj['area'] == 'path':
+            if not len(userobj['path']): return (data, 'Please, input a valid working path.')
+            if not os.path.exists(userobj['path']) or not os.access(userobj['path'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
+            if 'win' in sys.platform and userobj['path'].startswith('/'): return (data, 'Working path should not start with slash.')
+            if 'linux' in sys.platform and not userobj['path'].startswith('/'): return (data, 'Working path should start with slash.')
+
+            userobj['path'] = os.path.abspath(userobj['path'])
+            if not userobj['path'].endswith(os.sep): userobj['path'] += os.sep
+            settings['local_dir'] = userobj['path']
+            data = userobj['path']
+            
+            if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
 
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
@@ -392,7 +372,7 @@ class Request_Handler:
 
         # *server + client-side* settings
         elif userobj['area'] == 'switching':
-            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Invalid database switching!')
+            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect selection!')
             Users[session_id].cur_db = userobj['switching']
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
             if Users[session_id].cur_db in Tilde_tags:
@@ -404,7 +384,7 @@ class Request_Handler:
 
         else: error = 'Unknown settings context area!'
 
-        data = 1
+        if not data: data = 1
         return (data, error)
 
     @staticmethod
@@ -680,12 +660,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         else:
 
             # multiple answer
-            if output['act'] == 'report' and userobj['transport'] == 'local' and userobj['directory'] > 0:
-                
-                if not settings['local_dir']:
-                    output['error'] = 'Please, define working path!'
-                    self._send(output)
-                    
+            if output['act'] == 'report' and userobj['transport'] == 'local' and userobj['directory'] > 0:                    
                 discover = settings['local_dir'] + userobj['path']
                 recursive = True if userobj['directory'] == 2 else False
                 if not os.access(discover, os.R_OK):

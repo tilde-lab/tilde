@@ -16,7 +16,7 @@ Usage
 Please, avoid spaces and non-latin characters in the application folder name.
 The main script is called "tilde.bat" (for Windows) and "tilde.sh" (for Unix).
 All user commands are executed through this main script:
-To use command-line interface (CLI), run main script with a parameter (e.g. "-h" or "-help").
+To use command-line interface (CLI), run main script with a parameter (e.g. "-h" or "--help").
 To start graphical interface (GUI), run main script without parameters.
 To terminate GUI on Windows, close the DOS box, on Unix hit Ctrl+C.
 On Unix GUI may also run in background mode ("nohup tilde.sh &").

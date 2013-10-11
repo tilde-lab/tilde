@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v220913
+* v101013
 *
 */
 // common flags, settings and object for their storage
@@ -109,7 +109,7 @@ function logger(message, no_wrap, clean){
     if (!no_wrap) message = "<div>" + message.replace(/ /g, "&nbsp;") + "</div>";
     $("#debug").prepend(message);
 }
-function console(show){
+function set_console(show){
     if (show){
         $('#console_holder').animate({ height: 'show' }, { duration: 250, queue: false });
     } else {
@@ -129,78 +129,6 @@ function set_dbs(){
         options += '<option value="' + item + '">copy to ' + item + '</option>';
     });
     $('#db_copy_select').empty().append(options);
-}
-function set_user_settings( settings ){
-    //if (_tilde.debug) logger("RECEIVED SETTINGS: " + $.toJSON(settings));
-
-    for (var attrname in settings){ _tilde.settings[attrname] = settings[attrname] }
-    //if (_tilde.debug) logger("ACTUAL SETTINGS: " + $.toJSON(_tilde.settings));
-
-    // render databases
-    //
-    set_dbs();
-    var dbs_str = '', btns = '<div class="btn right db-make-active-trigger">make active</div>';
-    if (!_tilde.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
-
-    $.each(_tilde.settings.dbs, function(n, item){
-        if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
-        else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
-    });
-
-    if (!_tilde.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
-    $('div[rel=dbs] div').html( dbs_str );
-
-    // render columns settings (depend on server + client state)
-    //
-    $('#maxcols').html(_tilde.maxcols);
-    $('#ipane_cols_holder > ul').empty();
-    _tilde.settings.avcols.sort(function(a, b){
-        if (a.sort < b.sort) return -1;
-        else if (a.sort > b.sort) return 1;
-        else return 0;
-    });
-    $.each(_tilde.settings.avcols, function(n, item){
-        var checked_state = item.enabled ? ' checked=true' : '';
-        $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category+'</label></li>' );
-    });
-    var colnum_str = '';
-    $.each([50, 75, 100], function(n, item){
-        var checked_state = '';
-        if (_tilde.settings.colnum == item) checked_state = ' checked=true';
-        colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'" /><label for="s_rdclnm_'+n+'"> '+item+'</label>';
-    });
-    $('#ipane-maxitems-holder').empty().append(colnum_str);
-    _tilde.settings.objects_expand ? $('#settings_objects_expand').attr('checked', true) : $('#settings_objects_expand').attr('checked', false);
-
-    // render units settings (depend on client state only)
-    //
-    var units_str = '';
-    $.each(_tilde.units, function(k, v){
-        //units_str += k.charAt(0).toUpperCase() + k.slice(1)+':';
-        units_str += _tilde.unit_capts[k]+':';
-        $.each(v, function(kk, vv){
-            var checked_state = '';
-            if (_tilde.settings.units[k] == kk) checked_state = ' checked=true';
-            units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'" /><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
-        });
-        units_str += '<br /><br /><br />';
-    });
-    $('#ipane-units-holder').empty().append( units_str );
-
-    // render scan settings (depend on server state only)
-    //
-    $('#settings_local_path').val(_tilde.settings.local_dir);
-    _tilde.settings.quick_regime ? $('#settings_quick_regime').attr('checked', true) : $('#settings_quick_regime').attr('checked', false);
-    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').attr('checked', true) : $('#settings_skip_unfinished').attr('checked', false);
-
-    if (!!_tilde.settings.skip_if_path) {
-        $('#settings_skip_if_path').attr('checked', true);
-        $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
-    } else $('#settings_skip_if_path').attr('checked', false);
-    
-    // render export settings
-    //
-    if (settings.exportability) $('#export_trigger').show();
 }
 function open_ipane(cmd, target){
     if (!!target) var current = $('#o_'+target+' ul.ipane_ctrl li[rel='+cmd+']');
@@ -360,7 +288,7 @@ function gather_tags(area, myself){
 * ======================================================================================================
 *
 */
-// PROCESS RESPONCE FUNCTIONS
+// RESPONCE FUNCTIONS
 function resp__login(req, data){
     data = $.evalJSON(data);
 
@@ -379,14 +307,74 @@ function resp__login(req, data){
         __send(action[0], action[1], true);
     }
 
-    set_user_settings(data.settings);
+    //if (_tilde.debug) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
 
-    if (data.amount){
-        logger('RECORDS IN DATABASE: ' + data.amount);
-        // state restores here by anchors!
-        if (!document.location.hash) document.location.hash = '#tags';
-        $('#continue_trigger').removeAttr('rel');
-    } else document.location.hash = '#start';
+    for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
+    //if (_tilde.debug) logger("ACTUAL SETTINGS: " + $.toJSON(_tilde.settings));
+
+    // render databases
+    set_dbs();
+    //var dbs_str = '', btns = '<div class="btn right db-make-active-trigger">make active</div>';
+    var dbs_str = '', btns = '';
+    if (!_tilde.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
+
+    $.each(_tilde.settings.dbs, function(n, item){
+        if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
+        else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
+    });
+
+    if (!_tilde.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
+    $('div[rel=dbs] div').html( dbs_str );
+
+    // render columns settings (depend on server + client state)
+    $('#maxcols').html(_tilde.maxcols);
+    $('#ipane_cols_holder > ul').empty();
+    _tilde.settings.avcols.sort(function(a, b){
+        if (a.sort < b.sort) return -1;
+        else if (a.sort > b.sort) return 1;
+        else return 0;
+    });
+    $.each(_tilde.settings.avcols, function(n, item){
+        var checked_state = item.enabled ? ' checked=true' : '';
+        $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category+'</label></li>' );
+    });
+    var colnum_str = '';
+    $.each([50, 75, 100], function(n, item){
+        var checked_state = '';
+        if (_tilde.settings.colnum == item) checked_state = ' checked=true';
+        colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'" /><label for="s_rdclnm_'+n+'"> '+item+'</label>';
+    });
+    $('#ipane-maxitems-holder').empty().append(colnum_str);
+    _tilde.settings.objects_expand ? $('#settings_objects_expand').attr('checked', true) : $('#settings_objects_expand').attr('checked', false);
+
+    // render units settings (depend on client state only)
+    var units_str = '';
+    $.each(_tilde.units, function(k, v){
+        //units_str += k.charAt(0).toUpperCase() + k.slice(1)+':';
+        units_str += _tilde.unit_capts[k]+':';
+        $.each(v, function(kk, vv){
+            var checked_state = '';
+            if (_tilde.settings.units[k] == kk) checked_state = ' checked=true';
+            units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'" /><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
+        });
+        units_str += '<br /><br /><br />';
+    });
+    $('#ipane-units-holder').empty().append( units_str );
+
+    // render scan settings (depend on server state only)
+    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').attr('checked', true) : $('#settings_skip_unfinished').attr('checked', false);
+
+    if (!!_tilde.settings.skip_if_path) {
+        $('#settings_skip_if_path').attr('checked', true);
+        $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
+    } else $('#settings_skip_if_path').attr('checked', false);
+    
+    $('#settings_local_path').val(_tilde.settings.local_dir);
+    
+    // render export settings
+    if (data.settings.exportability) $('#export_trigger').show();
+    
+    if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
 }
 function resp__browse(req, data){
     // reset objects
@@ -419,11 +407,11 @@ function resp__browse(req, data){
     // (2) any data request by hash
     // (3) tagcloud queries
     if ($.isEmptyObject(req)) {
-        document.location.hash = '#continue';
+        notify('Switch to continue happened!')
     } else {
         if (req.hashes) req = {tids: false, defer_load: true};
         if (req.defer_load) __send('tags', {tids: req.tids, render: 'tagcloud', switchto: 'browse'});
-        else document.location.hash = '#browse';
+        else document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
     }
 }
 function resp__tags(req, data){
@@ -485,16 +473,9 @@ function resp__tags(req, data){
     }
 
     // junction
-    if (req.switchto) document.location.hash = '#' + req.switchto;
+    if (req.switchto == 'browse') document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
 }
 function resp__list(obj, data){
-    if (data.substr(0, 20) == 'SETUP_NEEDED_TRIGGER'){ // bad design, fixme!!!
-        $('#connectors').hide();
-        $('#profile_holder').show();
-        open_ipane('scan');
-        $('#settings_local_path').val( data.substr(20) ).focus();
-        return;
-    }
     $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
     open_ipane('conn-local');
     if (data.length)
@@ -505,10 +486,12 @@ function resp__list(obj, data){
         $('#tilda-'+obj.transport+'-filetree').find('.start').remove();
         $('#tilda-'+obj.transport+'-filetree').append(data).find('ul:hidden').show();
         bindTree($('#tilda-'+obj.transport+'-filetree'), obj.transport);
+        $('#settings_local_path').val(_tilde.settings.local_dir + obj.path);
     } else {
         var $el = $('#tilda-'+obj.transport+'-filetree a[rel="'+obj.path+'"]').parent();
         $el.removeClass('collapsed wait').addClass('expanded').append(data).find('ul:hidden').show();
         bindTree($el, obj.transport);
+        $('#settings_local_path').val(_tilde.settings.local_dir + obj.path + _tilde.settings.local_dir.substr(_tilde.settings.local_dir.length-1));
     }
     _tilde.filetree.transports[obj.transport] = true;
 }
@@ -521,18 +504,16 @@ function resp__report(obj, data){
             _tilde.freeze = false; $('#loadbox').hide();
             _tilde.multireceive = 0;
 
-            setTimeout(function(){ console(false) }, 1000);
+            setTimeout(function(){ set_console(false) }, 1000);
             return;
         } else if (parseInt(data) == 1){
             // KEEP-ALIVE RESULTS
             logger('..', true);
             return;
         }
-
         _tilde.multireceive++;
         data = $.evalJSON(data);
         if (!_tilde.multireceive) logger( '===========BEGIN OF SCAN '+obj.path+'===========', false, true );
-
 
         if (data.checksum) _tilde.hashes.push( data.checksum );
         if (data.error) logger( data.filename + ': ' + data.error );
@@ -556,7 +537,7 @@ function resp__report(obj, data){
 
             logger( '===========END OF SCAN '+obj.path+'===========' );
 
-            setTimeout(function(){ console(false) }, 1000);
+            setTimeout(function(){ set_console(false) }, 1000);
         }
     } else {
         _tilde.freeze = false; $('#loadbox').hide();
@@ -641,9 +622,9 @@ function resp__summary(req, data){
     }
 }
 function resp__settings(req, data){
-    $.jStorage.set('tilde_settings', _tilde.settings);
-    logger('SETTINGS SAVED!');
-    if (req.area == 'scan'){
+    if (req.area == 'path'){
+        _tilde.settings.local_dir = data;
+        $('#tilda-local-filepath input').val(_tilde.settings.local_dir);
         $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
         __send('list',   {path:_tilde.filetree.root, transport:'local'} );
         $('#profile_holder').hide();
@@ -653,19 +634,16 @@ function resp__settings(req, data){
         if (!$('#databrowser').is(':visible')) return;
         __send('browse', _tilde.last_browse_request, true);
     } else if (req.area == 'switching'){
-        $('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
+        //$('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
         if (!_tilde.demo_regime) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
         $('div.ipane_db_field_active').removeClass('ipane_db_field_active');
         $('div[rel="' + req.switching + '"]').addClass('ipane_db_field_active').children('div').remove();
         _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
         _tilde.settings.dbs.unshift(req.switching);
         set_dbs();
-
-        $('#splashscreen').empty();
-        if (document.location.hash == 'tags' || document.location.hash == '#tags') __send('tags', {tids: false, render: 'splashscreen', switchto: false});
-        else document.location.hash = '#tags';
-        $('#splashscreen_holder').show();
     }
+    $.jStorage.set('tilde_settings', _tilde.settings);
+    logger('SETTINGS SAVED!');
 }
 function resp__clean(req, data){
     $('div[rel="' + req.db + '"]').remove();
@@ -675,7 +653,8 @@ function resp__clean(req, data){
 }
 function resp__db_create(req, data){
     req.newname += '.db'
-    $('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn right db-make-active-trigger">make active</div><div class="btn btn3 right db-delete-trigger">delete</div></div>');
+    //$('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn right db-make-active-trigger">make active</div><div class="btn btn3 right db-delete-trigger">delete</div></div>');
+    $('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn btn3 right db-delete-trigger">delete</div></div>');
     _tilde.settings.dbs.push(req.newname);
     set_dbs();
     logger('DATABASE ' + req.newname + ' CREATED.');
@@ -776,7 +755,6 @@ $(document).ready(function(){
     _tilde.socket.on('reconnect_failed', function(){
         notify('Connection to program core cannot be established due to the network restrictions. Sometimes <a href=javascript:window.location.reload()>refresh</a> may help.');
     });
-
 /**
 *
 *
@@ -788,106 +766,102 @@ $(document).ready(function(){
     if (_tilde.cur_anchor != document.location.hash){
         _tilde.cur_anchor = document.location.hash;
 
-        var anchor = _tilde.cur_anchor.substr(1);
+        var anchors = _tilde.cur_anchor.substr(1).split('/');
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
         switch_menus(true);
+        
+        if (anchors[0].substr(anchors[0].length-3) == '.db'){
+            // db changed?
+            if (anchors[0] != _tilde.settings.dbs[0]){
+                $('#splashscreen').empty();
+                __send('settings',  {area: 'switching', switching: anchors[0]} );   
+            }
+            if (!anchors[1]){
+                
+                // MAIN TAGS SCREEN
+                
+                $('div.pane').hide();
+                $('#databrowser').hide();
+                $('div.downscreen').hide();
+                $('#countbox').hide();
+                $('#tagcloud_trigger').hide();
+                $('#closeobj_trigger').hide();
+                $('#noclass_trigger').hide();
+                
+                if (!$('#splashscreen div').length){
+                    _tilde.timeout2 = setInterval(function(){
+                    if (!_tilde.freeze){
+                        __send('tags', {tids: false, render: 'splashscreen', switchto: false});
+                        clearInterval(_tilde.timeout2);
+                    }
+                    }, 500);
+                } else {
+                    $('#data_holder').show();
+                    $('#splashscreen_holder').show();
+                    //add_tag_expanders();
+                }
 
-        if (anchor == 'start'){
+                _tilde.rendered = {}; // reset objects
+                _tilde.tab_buffer = [];
+                $('tr.obj_holder').remove();
+                $('#data_holder').show();
+            } else {                
+                $('#connectors').hide();
+                $('div.pane').hide();
+                $('#splashscreen_holder').hide();
+
+                $('#data_holder').show();
+                $('#databrowser').show();
+                $('#tagcloud_trigger').show();
+                $('#noclass_trigger').show();
+                
+                if (anchors[1] == 'browse'){
+                    
+                    // TABLE SCREEN
+                    
+                    $('#closeobj_trigger').hide();
+                    if (!$('#splashscreen div').length) document.location.hash = '#' + _tilde.settings.dbs[0];
+                    _tilde.sortdisable = false; // sorting switch                   
+                } else {
+                                        
+                    // HASH (+WINDOW) SCREEN
+                                    
+                    var hashes = anchors[1].split('+');
+                    
+                    if ($('#databrowser').is(':empty')){
+                        _tilde.timeout3 = setInterval(function(){
+                            if (!_tilde.freeze){
+                                __send('browse', {hashes: hashes} );
+                                clearInterval(_tilde.timeout3);
+                            }
+                        }, 500);
+                    } else {
+                        $.each(hashes, function(n, i){
+                            if (!_tilde.rendered[i] && i.length == 56) {
+                                var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
+                                $('#i_'+i).after(obf);
+                                __send('summary',  {datahash: i} )
+                                open_ipane('summary', i);
+                                _tilde.rendered[i] = true;
+                                _tilde.scrollmemo = $('#i_'+i).offset().top;
+                                $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
+                            }
+                        });
+                    }
+                    _tilde.sortdisable = true; // sorting switch
+                }
+            }
+            
+        } else if (anchors[0] == 'about'){
+            
+            // ABOUT SCREEN
+            
             $('div.pane').hide();
             $('#landing_holder').show();
             $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
-        }
-        else if (anchor == 'continue'){
-            $('div.pane').hide();
-            $('#splashscreen_holder').hide();
-            $('#noclass_trigger').hide();
-            $('#data_holder').show();
-            $('#databrowser').show();
-        }
-        else if (anchor == 'browse'){
-            $('div.pane').hide();
-            $('#splashscreen_holder').hide();
-            $('#closeobj_trigger').hide();
-
-            $('#data_holder').show();
-
-            if ($('#splashscreen div').length){
-                $('#tagcloud_trigger').show();
-                $('#noclass_trigger').show();
-            } else {
-                _tilde.timeout1 = setInterval(function(){
-                    if (!_tilde.freeze){
-                        __send('tags', {tids: false, render: 'splashscreen', switchto: 'tags'});
-                        clearInterval(_tilde.timeout1);
-                    }
-                }, 500);
-            }
-            _tilde.sortdisable = false; // sorting switch
-        }
-        else if (anchor == 'tags'){
-            $('div.pane').hide();
-            $('#databrowser').hide();
-            $('div.downscreen').hide();
-            $('#countbox').hide();
-
-            $('#tagcloud_trigger').hide();
-            $('#closeobj_trigger').hide();
-            $('#noclass_trigger').hide();
-
-            if (!$('#splashscreen div').length){
-                _tilde.timeout2 = setInterval(function(){
-                if (!_tilde.freeze){
-                    __send('tags', {tids: false, render: 'splashscreen', switchto: 'tags'});
-                    clearInterval(_tilde.timeout2);
-                }
-                }, 500);
-            } else {
-                $('#data_holder').show();
-                $('#splashscreen_holder').show();
-                //add_tag_expanders();
-            }
-            _tilde.rendered = {}; // reset objects
-            _tilde.tab_buffer = [];
-            $('tr.obj_holder').remove();
-            $('#data_holder').show();
-        }
-        else if (anchor.length > 55){
-            $('#connectors').hide();
-            $('div.pane').hide();
-            $('#splashscreen_holder').hide();
-
-            $('#data_holder').show();
-            $('#databrowser').show();
-            $('#tagcloud_trigger').show();
-            $('#noclass_trigger').show();
-
-            var hashes = anchor.split('+');
-
-            if (!$('#databrowser td').length){
-                _tilde.timeout3 = setInterval(function(){
-                    if (!_tilde.freeze){
-                        __send('browse', {hashes: hashes} );
-                        clearInterval(_tilde.timeout3);
-                    }
-                }, 500);
-            } else {
-                if (!_tilde.settings.objects_expand) return;
-                $.each(hashes, function(n, i){
-                    if (!_tilde.rendered[i] && i.length == 56) {
-                        var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
-                        $('#i_'+i).after(obf);
-                        __send('summary',  {datahash: i} )
-                        open_ipane('summary', i);
-                        _tilde.rendered[i] = true;
-                        _tilde.scrollmemo = $('#i_'+i).offset().top;
-                        $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
-                    }
-                });
-            }
-            _tilde.sortdisable = true; // sorting switch
         }
     }
     }, 333);
@@ -906,14 +880,12 @@ $(document).ready(function(){
         if (rev) __send('report',  {path: rel, directory: 2, transport:'local'} );
         else     __send('report',  {path: rel, directory: 1, transport:'local'} );
         $('#tagcloud_holder').hide();
-        console(true);
+        set_console(true);
     });
 
     // INTRO TRIGGER
     $('#continue_trigger').click(function(){
-        if ($(this).attr('rel') == 'start_junction') var action = function(){ __send('browse', {}); }
-        else var action = function(){ document.location.hash = '#tags'; }
-
+        var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
@@ -944,17 +916,22 @@ $(document).ready(function(){
 
         close_obj_tab(id);
 
-        var hashes = document.location.hash.substr(1).split('+');
+        var anchors = document.location.hash.substr(1).split('/');
+        if (anchors.length != 2){
+            notify('Unexpected behaviour #1! Please, report this to the developers!');
+            return;
+        }
+        var hashes = anchors[1].split('+');
         var i = $.inArray(id, hashes);
         hashes.splice(i, 1);
-        if (!hashes.length) document.location.hash = '#browse';
-        else document.location.hash = '#' + hashes.join('+');
+        if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+        else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
         $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
 
     // DEBUG CONSOLE
     $('#console_trigger').click(function(){
-        console(true);
+        set_console(true);
     });
 
     // DATABROWSER TABLE
@@ -971,11 +948,16 @@ $(document).ready(function(){
             // close tab
             close_obj_tab(id);
 
-            var hashes = document.location.hash.substr(1).split('+');
+            var anchors = document.location.hash.substr(1).split('/');
+            if (anchors.length != 2){
+                notify('Unexpected behaviour #2! Please, report this to the developers!');
+                return;
+            }
+            var hashes = anchors[1].split('+');
             var i = $.inArray(id, hashes);
             hashes.splice(i, 1);
-            if (!hashes.length) document.location.hash = '#browse';
-            else document.location.hash = '#' + hashes.join('+');
+            if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+            else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
         } else {
             // open tab
             var size = 0, key;
@@ -984,16 +966,21 @@ $(document).ready(function(){
             }
             if (size == 3){
                 // remove the first tab
-                var hashes = document.location.hash.substr(1).split('+');
+                var anchors = document.location.hash.substr(1).split('/');
+                if (anchors.length != 2){
+                    notify('Unexpected behaviour #3! Please, report this to the developers!');
+                    return;
+                }
+                var hashes = anchors[1].split('+');
                 var first = hashes.splice(0, 1);
 
                 close_obj_tab(first);
 
-                document.location.hash = '#' + hashes.join('+');
+                document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
             }
             if (document.location.hash.length > 55){
                 document.location.hash += '+' + id
-            } else document.location.hash = '#' + id;
+            } else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + id;
             $('#closeobj_trigger').show();
         }
         $('div.downscreen').hide();
@@ -1067,19 +1054,24 @@ $(document).ready(function(){
         $('#tagcloud_trigger').hide();
         $(this).hide();
         $('#splashscreen').empty();
-        document.location.hash = '#tags';
+        document.location.hash = '#' + _tilde.settings.dbs[0];
     });
     $('#closeobj_trigger').click(function(){
         $(this).hide();
-        var hashes = document.location.hash.substr(1).split('+');
+        var anchors = document.location.hash.substr(1).split('/');
+        if (anchors.length != 2){
+            notify('Unexpected behaviour #4! Please, report this to the developers!');
+            return;
+        }
+        var hashes = anchors[1].split('+');
         $.each(hashes, function(n, i){
             close_obj_tab(i);
         });
-        document.location.hash = '#browse';
+        document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
         $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
     $('#tagcloud_trigger').click(function(){
-        console(false);
+        set_console(false);
         if ($('#tagcloud_holder').is(':visible')) $('#tagcloud_holder').animate({ height: 'hide' }, { duration: 250, queue: false });
         else $('#tagcloud_holder').animate({ height: 'show' }, { duration: 250, queue: false });
     });
@@ -1099,7 +1091,6 @@ $(document).ready(function(){
 
 
     // TAGCLOUD TAG COMMANDS SINGLE CLICK
-    // immediate data request and consequent tags request
     $(document).on('click', '#tagcloud a.taglink', function(){
         $('#tagcloud').hide();
 
@@ -1108,13 +1099,12 @@ $(document).ready(function(){
             __send('browse', {tids: tags, defer_load: true});
         } else {
             $('#splashscreen').empty();
-            document.location.hash = '#tags';
+            document.location.hash = '#' + _tilde.settings.dbs[0];
         }
         return false;
     });
 
     // SPLASHSCREEN TAG COMMANDS SINGLE CLICK
-    // immediate tags request and ability for consequent data request
     $(document).on('click', '#splashscreen a.taglink', function(){
         var tags = gather_tags($('#splashscreen'), $(this));
         if (tags.length){
@@ -1195,19 +1185,24 @@ $(document).ready(function(){
         }
     });
 
-    // SETTINGS: CLICKS ON DATABASES
-    $(document).on('click', 'div.db-make-active-trigger', function(){
+    // SETTINGS: SWITCH DATABASES
+    $(document).on('click', 'div.ipane_db_field', function(){
+        document.location.hash = '#' + $(this).attr('rel');        
+    });
+    /*$(document).on('click', 'div.db-make-active-trigger', function(){
         var active_db = $(this).parent().attr('rel');
         __send('settings',  {area: 'switching', switching: active_db} );
-    });
-    $(document).on('click', 'div.db-delete-trigger', function(){
+    });*/
+    $(document).on('click', 'div.db-delete-trigger', function(ev){
         var $e = $(this);
         $e.html('confirm').removeClass('db-delete-trigger').addClass('db-delete-confirm-trigger');
         setTimeout(function(){ $e.html('delete').removeClass('db-delete-confirm-trigger').addClass('db-delete-trigger') }, 2000);
+        ev.stopPropagation();
     });
-    $(document).on('click', 'div.db-delete-confirm-trigger', function(){
+    $(document).on('click', 'div.db-delete-confirm-trigger', function(ev){
         var db = $(this).parent().attr('rel');
         __send('clean',  {db: db} );
+        ev.stopPropagation();
     });
     $(document).on('click', '#create-db-trigger', function(){
         $(this).before('<div class="ipane_db_field"><form action="/" class="_hotkeyable"><input type="text" value="" id="create-db-name" maxlength="18" /><input type="submit" style="display:none" /></form><span>.db</span><div class="btn right _hotkey" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
@@ -1229,14 +1224,17 @@ $(document).ready(function(){
         }
         $('#maxcols').parent().css('background-color', '#fff');
     });
+    
+    // SETTINGS: FILETREE PATH
+    $('#filepath_apply_trigger').click(function(){        
+        __send('settings', { area: 'path', path: $('#settings_local_path').val() });
+    });
 
     // SETTINGS: EXPLICIT CLICK TO SAVE
     $('div.settings-apply').click(function(){
-        if ($('#settings_local_path').is(':visible')){
+        if ($('#settings_skip_unfinished').is(':visible')){
 
             // SETTINGS: SCAN
-            _tilde.settings.local_dir = $('#settings_local_path').val();
-            _tilde.settings.quick_regime = $('#settings_quick_regime').is(':checked');
             _tilde.settings.skip_unfinished = $('#settings_skip_unfinished').is(':checked');
             _tilde.settings.skip_if_path = $('#settings_skip_if_path').is(':checked') ? $('#settings_skip_if_path_mask').val() : false;
 
@@ -1286,7 +1284,6 @@ $(document).ready(function(){
 
     // UNIVERSAL ENTER HOTKEY: NOTE ACTION BUTTON *UNDER THE SAME DIV* WITH THE FORM
     $(document).on('submit', 'form._hotkeyable', function(){
-        //alert($(this).parent().children('div._hotkey').value())
         $(this).parent().children('div._hotkey').trigger("click");
         return false;
     });
@@ -1331,8 +1328,7 @@ $(document).ready(function(){
 
     // ABOUT
     $('#about_trigger').click(function(){
-        document.location.hash = '#start';
-        if ($('#splashscreen div').length) $('#continue_trigger').removeAttr('rel');
+        document.location.hash = '#about';
     });
 
     // RESIZE
@@ -1345,9 +1341,9 @@ $(document).ready(function(){
         $('#maxcols').html(_tilde.maxcols);
     });
 
-    // ESC KEY
-    $(document).keyup(function(e){
-        if (e.keyCode == 27){
+    // Q/q HOTKEY TO CLOSE ALL (ESC KEY NOT WORKING IN FF)
+    $(document).keyup(function(ev){
+        if (ev.keyCode == 81 || ev.keyCode == 113){
             $('div._closable').hide();
             if (!$.isEmptyObject(_tilde.rendered)){
                 $('#closeobj_trigger').trigger('click'); // bad design TODO

@@ -106,7 +106,7 @@ class Output:
 
         # (IV)
         # settings objects
-        self.PERIODIC_LIMIT = 50    # note: non-periodic component(s) are assigned 500 in CRYSTAL
+        self.PERIODIC_LIMIT = 30    # note: non-periodic component(s) are assigned 500 in CRYSTAL
 
     def __getitem__(self, key):
         ''' get either by dict key or by attribute '''
