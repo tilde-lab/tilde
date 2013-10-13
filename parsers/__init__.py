@@ -106,7 +106,12 @@ class Output:
 
         # (IV)
         # settings objects
-        self.PERIODIC_LIMIT = 30    # note: non-periodic component(s) are assigned 500 in CRYSTAL
+        
+        # this is the limiting distance, after which the direction is considered non-periodic
+        # be careful, as this has no physical meaning and may vary in different codes
+        # e.g.: non-periodic component(s) are assigned 500 in CRYSTAL
+        # hovewer, in PW codes this is ambiguous
+        self.PERIODIC_LIMIT = 50
 
     def __getitem__(self, key):
         ''' get either by dict key or by attribute '''

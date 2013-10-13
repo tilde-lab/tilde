@@ -257,6 +257,8 @@ class Request_Handler:
                 tags = []
                 result = cursor.fetchall()
                 for item in result:
+                    if not item['tid'] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
+                    
                     match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
                     
                     if not 'has_label' in match or not match['has_label']: continue
@@ -580,6 +582,29 @@ class Request_Handler:
         e['bands']['stripes'] = ifilter(lambda value: val_min < sum(value)/len(value) < val_max, e['bands']['stripes'])
         
         return (json.dumps(plotter( task = 'bands', precomputed = e['bands'] )), error)
+        
+    @staticmethod
+    def delete(userobj, session_id):
+        data, error = None, None
+        if settings['demo_regime']: return (data, 'Action not allowed!')
+        
+        global Tilde_tags, Repo_pool
+        
+        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
+        
+        data_clause = '","'.join(userobj['hashes'])
+        try:
+            cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
+            cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
+            Repo_pool[ Users[session_id].cur_db ].commit()
+        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        else:
+            # force update tags in memory
+            Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+            if Tilde_tags[ Users[session_id].cur_db ].error:
+                error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
+            data = 1
+            return (data, error)
 
     @staticmethod
     def clean(userobj, session_id):
@@ -592,7 +617,7 @@ class Request_Handler:
             return (data, 'Cannot close database: ' + "%s" % sys.exc_info()[1])
         else:
             del Repo_pool[ userobj['db'] ]
-            del Tilde_tags[ userobj['db'] ]
+            if userobj['db'] in Tilde_tags: del Tilde_tags[ userobj['db'] ]
             try: os.remove(os.path.abspath(  DATA_DIR + os.sep + userobj['db']  ))
             except:
                 return (data, 'Cannot delete database: ' + "%s" % sys.exc_info()[1])

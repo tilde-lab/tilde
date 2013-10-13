@@ -666,6 +666,19 @@ function resp__db_copy(req, data){
     $('#databrowser tr').removeClass('shared');
     switch_menus(true);
 }
+function resp__delete(req, data){
+    $('#d_cb_all').attr('checked', false);
+    $.each(req.hashes, function(n, i){
+        $('#i_' + i).remove();
+    });
+    
+    switch_menus(true);
+    $('#splashscreen').empty();
+    
+    if ($('#databrowser tbody').is(':empty')){
+        document.location.hash = '#' + _tilde.settings.dbs[0];
+    }
+}
 function resp__check_export(req, data){
     iframe_download( 'export', req.db, req.id );
 }
@@ -767,6 +780,8 @@ $(document).ready(function(){
         _tilde.cur_anchor = document.location.hash;
 
         var anchors = _tilde.cur_anchor.substr(1).split('/');
+        
+        if (!anchors.length) return;
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
@@ -785,12 +800,13 @@ $(document).ready(function(){
                 $('div.pane').hide();
                 $('#databrowser').hide();
                 $('div.downscreen').hide();
+                $('#initbox').hide();
                 $('#countbox').hide();
                 $('#tagcloud_trigger').hide();
                 $('#closeobj_trigger').hide();
                 $('#noclass_trigger').hide();
                 
-                if (!$('#splashscreen div').length){
+                if ($('#splashscreen').is(':empty')){
                     _tilde.timeout2 = setInterval(function(){
                     if (!_tilde.freeze){
                         __send('tags', {tids: false, render: 'splashscreen', switchto: false});
@@ -800,17 +816,19 @@ $(document).ready(function(){
                 } else {
                     $('#data_holder').show();
                     $('#splashscreen_holder').show();
+                    if ($('a.activetag').length) $('#initbox').show();
                     //add_tag_expanders();
                 }
 
                 _tilde.rendered = {}; // reset objects
                 _tilde.tab_buffer = [];
                 $('tr.obj_holder').remove();
-                $('#data_holder').show();
+                $('#data_holder').show();                
             } else {                
                 $('#connectors').hide();
                 $('div.pane').hide();
                 $('#splashscreen_holder').hide();
+                $('#initbox').hide();
 
                 $('#data_holder').show();
                 $('#databrowser').show();
@@ -822,7 +840,7 @@ $(document).ready(function(){
                     // TABLE SCREEN
                     
                     $('#closeobj_trigger').hide();
-                    if (!$('#splashscreen div').length) document.location.hash = '#' + _tilde.settings.dbs[0];
+                    if ($('#splashscreen').is(':empty')) document.location.hash = '#' + _tilde.settings.dbs[0];
                     _tilde.sortdisable = false; // sorting switch                   
                 } else {
                                         
@@ -840,12 +858,14 @@ $(document).ready(function(){
                     } else {
                         $.each(hashes, function(n, i){
                             if (!_tilde.rendered[i] && i.length == 56) {
+                                var target_cell = $('#i_'+i);
+                                if (!target_cell.length) return false; // this is a crunch, in principle, a history dispatcher is needed : TODO
                                 var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
-                                $('#i_'+i).after(obf);
+                                target_cell.after(obf);
                                 __send('summary',  {datahash: i} )
                                 open_ipane('summary', i);
                                 _tilde.rendered[i] = true;
-                                _tilde.scrollmemo = $('#i_'+i).offset().top;
+                                _tilde.scrollmemo = target_cell.offset().top;
                                 $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
                             }
                         });
@@ -862,6 +882,9 @@ $(document).ready(function(){
             $('#landing_holder').show();
             $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
+        } else {
+            notify('This supposed to be error 404.');
+            document.location.hash = '#' + _tilde.settings.dbs[0];
         }
     }
     }, 333);
@@ -1038,6 +1061,33 @@ $(document).ready(function(){
             __send('check_export', {id: id, db: _tilde.settings.dbs[0]});
         } else notify('Batch export is not implemented.');
     });
+    
+    // DELETE ITEM
+    $('#delete_trigger').click(function(){
+        var todel = [];
+        $('input.SHFT_cb').each(function(){
+            if ($(this).is(':checked')){
+                var i = $(this).attr('id').substr(5); // d_cb_
+                todel.push( i );
+                if (_tilde.rendered[i]){
+                    // close tab
+                    close_obj_tab(i);
+
+                    var anchors = document.location.hash.substr(1).split('/');
+                    if (anchors.length != 2){
+                        notify('Unexpected behaviour #5! Please, report this to the developers!');
+                        return;
+                    }
+                    var hashes = anchors[1].split('+');
+                    var id = $.inArray(i, hashes);
+                    hashes.splice(id, 1);
+                    if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+                    else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+                }
+            }
+        });
+        __send('delete',   {hashes: todel});
+    });
 
     // DATABROWSER MENU ADD
     $(document).on('click', '#add_trigger, span.add_trigger', function(){
@@ -1053,7 +1103,7 @@ $(document).ready(function(){
     $('#noclass_trigger').click(function(){
         $('#tagcloud_trigger').hide();
         $(this).hide();
-        $('#splashscreen').empty();
+        $('#splashscreen').empty();        
         document.location.hash = '#' + _tilde.settings.dbs[0];
     });
     $('#closeobj_trigger').click(function(){
@@ -1187,12 +1237,14 @@ $(document).ready(function(){
 
     // SETTINGS: SWITCH DATABASES
     $(document).on('click', 'div.ipane_db_field', function(){
-        document.location.hash = '#' + $(this).attr('rel');        
+        if ($(this).attr('rel')) document.location.hash = '#' + $(this).attr('rel');        
     });
     /*$(document).on('click', 'div.db-make-active-trigger', function(){
         var active_db = $(this).parent().attr('rel');
         __send('settings',  {area: 'switching', switching: active_db} );
     });*/
+    
+    // SETTINGS: DELETE DATABASE
     $(document).on('click', 'div.db-delete-trigger', function(ev){
         var $e = $(this);
         $e.html('confirm').removeClass('db-delete-trigger').addClass('db-delete-confirm-trigger');
@@ -1204,6 +1256,8 @@ $(document).ready(function(){
         __send('clean',  {db: db} );
         ev.stopPropagation();
     });
+    
+    // SETTINGS: CREATE DATABASE
     $(document).on('click', '#create-db-trigger', function(){
         $(this).before('<div class="ipane_db_field"><form action="/" class="_hotkeyable"><input type="text" value="" id="create-db-name" maxlength="18" /><input type="submit" style="display:none" /></form><span>.db</span><div class="btn right _hotkey" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
         $('#create-db-name').focus();

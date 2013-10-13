@@ -127,6 +127,7 @@ def classify(tilde_obj):
             tilde_obj.info['tags'].append('adsorption')
             adsorbent_formula = ''
             r = reduce(fractions.gcd, adsorbate.values())
+            
             # sort according to pre-defined element order in a full slab formula
             elems = [x for x in tilde_obj.info['elements'] if x in adsorbate.keys()] + [x for x in adsorbate.keys() if x not in tilde_obj.info['elements']]
             elems_content = [ adsorbate[i] for i in elems ]

@@ -515,7 +515,8 @@ class CRYSTOUT(Output):
                     val[1] = val[1].capitalize()
                     val[3] = val[3][:6] # erroneous by stars
                     if val[1] in symbols: val[3] = pseudo_charges[val[1]] - float(val[3])
-                    elif val[1] == 'Xx': val[3] = -float(val[3])
+                    elif val[1] == 'Xx': val[3] = -float(val[3]) # this needs checking! TODO
+                    else: raise RuntimeError('Unexpected atomic symbol: ' + val[1] )
                     charges.append(val[3])
             self.structures[-1].set_initial_charges(charges)
         else: self.warning( 'No charges available!' )

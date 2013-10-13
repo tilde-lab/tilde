@@ -3,7 +3,7 @@
 # v300913
 # See http://wwwtilda.googlecode.com
 
-__version__ = "0.2.2" # numeric-only
+__version__ = "0.2.3" # numeric-only
 
 import os
 import sys
@@ -107,13 +107,13 @@ class API:
                 self.Conns[connectname] = {'list': getattr(getattr(conn, connectname), 'list'), 'report': getattr(getattr(conn, connectname), 'report')}
 
         # *hierarchy API*
-        # This is used while building topics
-        # (displayed at the splashscreen and tagcloud)
+        # This is used for classification
+        # (also displayed in GUI at the splashscreen and tagcloud)
         self.hierarchy = [ \
             {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "sort": 1, "has_column": True, "has_label": True, "descr": ""}, \
             
-            {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "descr": ""}, \
-            {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "descr": ""}, \
+            {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "has_label": True, "descr": ""}, \
+            {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "has_label": True, "descr": ""}, \
             {"cid": 4, "category": "formula units",         "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""}, \
             {"cid": 5, "category": "periodicity",           "source": "periodicity", "sort": 12, "has_column": True, "has_label": True, "descr": ""}, \
             {"cid": 6, "category": "calculation type",      "source": "calctype#", "sort": 10, "has_label": True, "descr": ""}, \
@@ -121,8 +121,8 @@ class API:
             {"cid": 8, "category": "system",                "source": "tag#", "sort": 11, "has_label": True, "descr": ""}, \
             
             {"cid": 9, "category": "symmetry",              "source": "symmetry", "sort": 80, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 10,"category": "space group (Schon.)",  "source": "sg", "sort": 81, "has_column": True, "descr": "Result space group (Schoenflis notation)"}, \
-            {"cid": 11,"category": "point group",           "source": "pg", "sort": 82, "has_column": True, "has_label": True, "descr": "Result point group"}, \
+            {"cid": 10,"category": "point group",           "source": "pg", "sort": 81, "has_column": True, "has_label": True, "descr": "Result point group"}, \
+            {"cid": 11,"category": "space group (Schon.)",  "source": "sg", "sort": 82, "has_column": True, "has_label": True, "descr": "Result space group (Schoenflis notation)"}, \
             {"cid": 12,"category": "space group (intl.)",   "source": "ng", "sort": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
             {"cid": 13,"category": "layer group (intl.)",   "source": "dg", "sort": 91, "has_column": True, "descr": "Result layer group (international notation)"}, \
             
@@ -136,10 +136,10 @@ class API:
             {"cid": 21,"category": "phon.k-points",         "source": "n_ph_k", "sort": 88, "has_column": True, "descr": ""}, \
             {"cid": 22,"category": "code",                  "source": 'prog', "sort": 89, "has_column": True, "has_label": True, "descr": ""},
             
-            {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "has_label": False, "descr": ""},
+            {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "descr": ""},
             
             {"cid": 24,"category": "conductivity",          "source": 'etype', "sort": 5, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
-            {"cid": 25,"category": "Min. band gap, eV",     "source": 'bandgap', "sort": 6, "unknown_tagging": True, "has_column": True, "has_label": False, "descr": "", "nocap": True},
+            {"cid": 25,"category": "Min. band gap, eV",     "source": 'bandgap', "sort": 6, "unknown_tagging": True, "has_column": True, "descr": "", "nocap": True},
             {"cid": 26,"category": "band gap type",         "source": 'bandgaptype', "sort": 31, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
         ]
         
@@ -560,6 +560,9 @@ class API:
         cursor = self.db_conn.cursor()
         for n, i in enumerate(self.hierarchy):
             found_topics = []
+            
+            if not 'has_label' in i: continue
+            
             if '#' in i['source']:
                 n=0
                 while 1:
@@ -578,6 +581,8 @@ class API:
                     elif 'unknown_tagging' in i and not update: found_topics.append('unknown')
 
             for topic in found_topics:
+                if not topic: topic = 'none' # Warning! None-values spoil database with duplicate empty entries!
+                
                 try: cursor.execute( 'SELECT tid FROM topics WHERE categ = ? AND topic = ?', (i['cid'], topic) )
                 except: return 'Fatal error: %s' % sys.exc_info()[1]
                 tid = cursor.fetchone()
