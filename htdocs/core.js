@@ -781,7 +781,7 @@ $(document).ready(function(){
 
         var anchors = _tilde.cur_anchor.substr(1).split('/');
         
-        if (!anchors.length) return;
+        if (!anchors.length || !_tilde.settings.dbs) return;
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
