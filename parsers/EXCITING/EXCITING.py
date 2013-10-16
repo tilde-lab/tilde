@@ -238,13 +238,15 @@ class INFOOUT(Output):
         # Electronic properties
         if os.path.exists(os.path.join(os.path.dirname(file), 'dos.xml')):
             f = open(os.path.join(os.path.dirname(file), 'dos.xml'),'r')
-            self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
-            f.close()
+            try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
+            except: self.warning("Error in dos.xml file!")
+            finally: f.close()
             
         if os.path.exists(os.path.join(os.path.dirname(file), 'bandstructure.xml')):
             f = open(os.path.join(os.path.dirname(file), 'bandstructure.xml'),'r')
-            self.electrons['bands'] = Ebands(parse_bandsxml(f))
-            f.close()
+            try: self.electrons['bands'] = Ebands(parse_bandsxml(f))
+            except: self.warning("Error in bandstructure.xml file!")
+            finally: f.close()
         
     @staticmethod
     def fingerprints(test_string):

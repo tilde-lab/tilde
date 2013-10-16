@@ -24,8 +24,8 @@ from ase.units import Hartree
 
 from parsers import Output
 from core.electron_structure import Edos, Ebands
+from core.constants import Phonopy_Constants
 
-VaspToCm = 521.47083
 
 def str_delimited(results, header=None, delimiter="\t"):
     """ Given a tuple of tuples, generate a delimited string form in a table-like format. """
@@ -702,8 +702,8 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         if name == "v" and state["varray"] == False:
             freqs = [float(x) for x in self.val.getvalue().split()]
             for i in range(len(freqs)):
-                if freqs[i]<0: freqs[i] = math.sqrt( -freqs[i] )*VaspToCm
-                else: freqs[i] = -math.sqrt( freqs[i] )*VaspToCm
+                if freqs[i]<0: freqs[i] = math.sqrt( -freqs[i] )*Phonopy_Constants.VaspToCm
+                else: freqs[i] = -math.sqrt( freqs[i] )*Phonopy_Constants.VaspToCm
             freqs.reverse()
             self.dynmat["freqs"] = freqs
 

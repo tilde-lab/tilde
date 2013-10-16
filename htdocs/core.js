@@ -840,7 +840,7 @@ $(document).ready(function(){
                     // TABLE SCREEN
                     
                     $('#closeobj_trigger').hide();
-                    if ($('#splashscreen').is(':empty')) document.location.hash = '#' + _tilde.settings.dbs[0];
+                    if ($('#splashscreen').is(':empty')) document.location.hash = '#' + anchors[0];
                     _tilde.sortdisable = false; // sorting switch                   
                 } else {
                                         

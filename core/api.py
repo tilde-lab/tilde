@@ -1,6 +1,6 @@
 
 # Tilde project: basic routines
-# v300913
+# v141013
 # See http://wwwtilda.googlecode.com
 
 __version__ = "0.2.3" # numeric-only
@@ -57,13 +57,15 @@ class API:
         # (3) its file name repeats the name of parser folder
         All_parsers, self.Parsers = {}, {}
         for parsername in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
+            if settings['demo_regime']: continue
+            
             if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ): continue
             if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
                 raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
             try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ).read() )
             except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
             
-            if not 'enabled' in parsermanifest or not parsermanifest['enabled'] and not settings['debug_regime']: continue  
+            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not settings['debug_regime']: continue  
             
             All_parsers[parsername] = getattr(getattr(__import__('parsers.' + parsername + '.' + parsername), parsername), parsername) # all imported modules will be stored here
         

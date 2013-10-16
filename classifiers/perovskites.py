@@ -8,25 +8,24 @@ import math
 
 from core.deps.ase.data import chemical_symbols
 from core.deps.ase.data import covalent_radii
+from core.constants import Perovskite_Structure
 
 
 # hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
 __order__ = 10
 __properties__ = [ {"category": "impurity", "source": "impurity#", "negative_tagging": True, "chem_notation": True, "has_label": True, "sort": 14, "descr": ""} ]
 
-A_site_elems = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Ag, Pb, Bi, Th'.split(', ')
-B_site_elems = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', ')
-C_site_elems = 'O, F'.split(', ') # todo: add elements to C site
+
 
 def classify(tilde_obj):    
     ''' classification by vacancy and substitutional defects (impurities) in perovskites '''
     
     if len(tilde_obj.info['elements']) == 1: return tilde_obj
 
-    C_site = [e for e in tilde_obj.info['elements'] if e in C_site_elems]
+    C_site = [e for e in tilde_obj.info['elements'] if e in Perovskite_Structure.C]
     if not C_site: return tilde_obj
-    A_site = [e for e in tilde_obj.info['elements'] if e in A_site_elems]
-    B_site = [e for e in tilde_obj.info['elements'] if e in B_site_elems]
+    A_site = [e for e in tilde_obj.info['elements'] if e in Perovskite_Structure.A]
+    B_site = [e for e in tilde_obj.info['elements'] if e in Perovskite_Structure.B]
 
     # proportional coefficient D
     AB, C = 0, 0
@@ -86,10 +85,10 @@ def classify(tilde_obj):
         if contents[num][2] <= 0.0625 and contents[num][2] / contents[num+1][2] <= 0.5:
             impurities[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ] # ex: ['Fe', 2]
 
-        elif contents[num][1] in A_site_elems:
+        elif contents[num][1] in Perovskite_Structure.A:
             A_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
-        elif contents[num][1] in B_site_elems:
+        elif contents[num][1] in Perovskite_Structure.B:
             B_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
     #print impurities, A_hosts, B_hosts
@@ -104,8 +103,8 @@ def classify(tilde_obj):
         tilde_obj.info['contents'].pop(e) # TODO
         tilde_obj.info['properties']['impurity' + str(num)] = impurity_element + str(content) if content > 1 else impurity_element
         num+=1
-        if impurity_element in A_site_elems: A_hosts[A_hosts.keys()[0]] += content
-        elif impurity_element in B_site_elems: B_hosts[B_hosts.keys()[0]] += content
+        if impurity_element in Perovskite_Structure.A: A_hosts[A_hosts.keys()[0]] += content
+        elif impurity_element in Perovskite_Structure.B: B_hosts[B_hosts.keys()[0]] += content
 
     for n, i in enumerate(tilde_obj.info['elements']):
         if i in A_hosts:

@@ -12,7 +12,8 @@ from core.settings import EXAMPLE_DIR
 
 # Data for test are published in:
 # (1) Surf.Sci.602 3674 (2008) http://dx.doi.org/10.1016/j.susc.2008.10.002
-# (2) in Evgeny Blokhin's master thesis
+# (2) Evgeny Blokhin's master thesis
+# NB: in Euler notation delta is gamma, delta plus/minus phi is alpha
 test_data = {
     'check_last_point.cryst.out': {
         'comment': 'Source (1), Table 1, calculated, Euler notation',
