@@ -156,5 +156,5 @@ if settings['demo_regime'] and settings['debug_regime']: settings['debug_regime'
 
 # SETTINGS RESTRICTIONS
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3: raise RuntimeError('Path skipping directive must not contain more than 3 symbols due to memory limits!')
-if ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')): settings['local_dir'] = EXAMPLE_DIR
+if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')): settings['local_dir'] = EXAMPLE_DIR
 if not settings['local_dir'].endswith(os.sep): settings['local_dir'] += os.sep
