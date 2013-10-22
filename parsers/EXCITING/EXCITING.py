@@ -1,6 +1,6 @@
 
 # tilda project: EXCITING calculations parser
-# v250913
+# v221013
 
 import os
 import sys
@@ -238,9 +238,10 @@ class INFOOUT(Output):
         # Electronic properties
         if os.path.exists(os.path.join(os.path.dirname(file), 'dos.xml')):
             f = open(os.path.join(os.path.dirname(file), 'dos.xml'),'r')
-            try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
-            except: self.warning("Error in dos.xml file!")
-            finally: f.close()
+            self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
+            #try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
+            #except: self.warning("Error in dos.xml file!")
+            #finally: f.close()
             
         if os.path.exists(os.path.join(os.path.dirname(file), 'bandstructure.xml')):
             f = open(os.path.join(os.path.dirname(file), 'bandstructure.xml'),'r')
@@ -259,75 +260,77 @@ def parse_dosxml(fp, symbols):
     dos = []
     symbol_counter = 0
     first_cyc, new_part = True, True
-        
-    context = etree.iterparse(fp, events=('end',))
-    
-    for action, elem in context:
-        if elem.tag=='totaldos':
-            if len(dos) != len(dos_obj['x']): raise RuntimeError("Data in dos.xml are mismatched!")
-            dos_obj['total'] = dos
-            dos, new_part = [], True
-            
-        elif elem.tag=='partialdos':
-            target_atom = elem.attrib['speciessym']
-            if not target_atom:
-                target_atom = symbols[symbol_counter]
-                symbol_counter += 1
-            if not target_atom in dos_obj: dos_obj[target_atom] = dos
-            else:
-                if len(dos) != len(dos_obj[target_atom]): raise RuntimeError("Unexpected data format in dos.xml!")
-                dos_obj[target_atom] = [sum(s) for s in zip( dos_obj[target_atom], dos )]
-            dos, new_part = [], True
-            
-        elif elem.tag=='interstitialdos':
-            dos_obj['interstitial'] = dos
-            dos, new_part = [], True
-            
-        elif elem.tag=='diagram':
-            if not new_part:
-                # orbital contributions are merged : TODO
-                # spins are merged : TODO
-                dos = [sum(s) for s in zip( dos[ : len(dos)/2], dos[len(dos)/2 : ] )]
-            
-            #spin = {1: 'alpha', 2: 'beta'}         
-            #target_spin = spin[ int( elem.attrib['nspin'] ) ]
-            #if 'n' in elem.attrib: n = elem.attrib['n']
-            #if 'l' in elem.attrib: l = elem.attrib['l']
-            
-            first_cyc, new_part = False, False
-            
-        elif elem.tag=='point':
-            if first_cyc: dos_obj['x'].append( float(elem.attrib['e']) * Hartree  )
-            dos.append(float(elem.attrib['dos']))
-            
-        elem.clear()        
-        while elem.getprevious() is not None:
-            del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
+
+    try:
+        for action, elem in etree.iterparse(fp, events=('end',)):
+            if elem.tag=='totaldos':
+                if len(dos) != len(dos_obj['x']): raise RuntimeError("Data in dos.xml are mismatched!")
+                dos_obj['total'] = dos
+                dos, new_part = [], True
+                
+            elif elem.tag=='partialdos':
+                target_atom = elem.attrib['speciessym']
+                if not target_atom:
+                    target_atom = symbols[symbol_counter]
+                    symbol_counter += 1
+                if not target_atom in dos_obj: dos_obj[target_atom] = dos
+                else:
+                    if len(dos) != len(dos_obj[target_atom]): raise RuntimeError("Unexpected data format in dos.xml!")
+                    dos_obj[target_atom] = [sum(s) for s in zip( dos_obj[target_atom], dos )]
+                dos, new_part = [], True
+                
+            elif elem.tag=='interstitialdos':
+                dos_obj['interstitial'] = dos
+                dos, new_part = [], True
+                
+            elif elem.tag=='diagram':
+                if not new_part:
+                    # orbital contributions are merged : TODO
+                    # spins are merged : TODO
+                    dos = [sum(s) for s in zip( dos[ : len(dos)/2], dos[len(dos)/2 : ] )]
+                
+                #spin = {1: 'alpha', 2: 'beta'}         
+                #target_spin = spin[ int( elem.attrib['nspin'] ) ]
+                #if 'n' in elem.attrib: n = elem.attrib['n']
+                #if 'l' in elem.attrib: l = elem.attrib['l']
+                
+                first_cyc, new_part = False, False
+                
+            elif elem.tag=='point':
+                if first_cyc: dos_obj['x'].append( float(elem.attrib['e']) * Hartree  )
+                dos.append(float(elem.attrib['dos']))
+                
+            elem.clear()        
+            while elem.getprevious() is not None:
+                del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
+                
+    except (etree.XMLSyntaxError, StopIteration): pass # Work around bug https://bugs.launchpad.net/bugs/1185701
             
     return dos_obj
     
 def parse_bandsxml(fp):
     band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
     first_cyc = True
-    
-    context = etree.iterparse(fp, events=('end',))
-    
-    for action, elem in context:
-        if elem.tag=='band':
-            band_obj['stripes'].append([])          
-            first_cyc = False
-            
-        elif elem.tag=='point':
-            if first_cyc: band_obj['abscissa'].append( float(elem.attrib['distance']) )
-            band_obj['stripes'][-1].append(float(elem.attrib['eval']) * Hartree)
-            
-        elif elem.tag=='vertex':
-            band_obj['ticks'].append( [ float(elem.attrib['distance']), elem.attrib['label'] ] ) # NB : elem.attrib['coord']
-                        
-        elem.clear()
-        while elem.getprevious() is not None:
-            try: del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
-            except TypeError: break
+
+    try:
+        for action, elem in etree.iterparse(fp, events=('end',)):
+            if elem.tag=='band':
+                band_obj['stripes'].append([])          
+                first_cyc = False
+                
+            elif elem.tag=='point':
+                if first_cyc: band_obj['abscissa'].append( float(elem.attrib['distance']) )
+                band_obj['stripes'][-1].append(float(elem.attrib['eval']) * Hartree)
+                
+            elif elem.tag=='vertex':
+                band_obj['ticks'].append( [ float(elem.attrib['distance']), elem.attrib['label'] ] ) # NB : elem.attrib['coord']
+                            
+            elem.clear()
+            while elem.getprevious() is not None:
+                try: del elem.getparent()[0] # delete previous siblings; make sure there are no references to Element objects outside the loop!
+                except TypeError: break
+                
+    except (etree.XMLSyntaxError, StopIteration): pass # Work around bug https://bugs.launchpad.net/bugs/1185701
     
     if band_obj['ticks'][0][0] != band_obj['abscissa'][0] or band_obj['ticks'][-1][0] != band_obj['abscissa'][-1]: raise RuntimeError("Unexpected data format in bandstructure.xml!")
     band_obj['stripes'].pop() # last []
