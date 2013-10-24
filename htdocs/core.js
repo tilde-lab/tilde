@@ -395,7 +395,7 @@ function resp__browse(req, data){
 
     $('td._e').each(function(){
         var val = parseFloat( $(this).text() );
-        if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ) );
+        if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
     });
 
     $('span.units-energy').text(_tilde.settings.units.energy);

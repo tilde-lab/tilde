@@ -1,31 +1,33 @@
 #!/usr/bin/env python
 
-# Convert db to json
+# Convert Tilde sqlite database to json file
+# for insertion in other type of database
 
 import os
 import sys
-import sqlite3
-import json
 import time
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-from core.settings import DATA_DIR
+try:
+    import sqlite3
+    import json
+except ImportError: sys.exit('\n\nPlease, install sqlite3 and json modules!\n\n')
 
 starttime = time.time()
 
 try:
     workpath = sys.argv[1]
 except IndexError:
-    raise RuntimeError('No db defined!')
-if not os.path.exists(DATA_DIR + os.sep + workpath):
-    raise RuntimeError('Invalid path!')
+    sys.exit('No db defined!')
+workpath = os.path.abspath(workpath)
+if not os.path.exists(workpath):
+    sys.exit('Invalid path!')
 
-db = sqlite3.connect(DATA_DIR + os.sep + workpath)
+db = sqlite3.connect(workpath)
 db.row_factory = sqlite3.Row
 db.text_factory = str
 cursor = db.cursor()
-f = open(DATA_DIR + os.sep + workpath + '.json', 'w')
+f = open(workpath + '.json', 'w')
 for row in cursor.execute('SELECT * FROM results'):
     f.write(json.dumps(dict(row)) + "\n")
 f.close()
-print "Done in %1.2f sec" % (time.time() - starttime)
+print "%s.json done in %1.2f sec" % (workpath, time.time() - starttime)
