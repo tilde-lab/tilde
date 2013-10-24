@@ -17,7 +17,9 @@ Tilde consists of several parts: core, local server, command-line interface (**C
 
 ## Prerequisites
 
-Tilde core, local server and **CLI** are written in Python. On Windows no additional installations are required, as soon as all the dependencies (including Python interpreter itself) are already provided with Tilde. On Unix/Mac you should have Python (at least of version 2.6), as well as Numpy and sqlite3 Python modules pre-installed. Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors). Note, that Python 3 was not tested. The graphical user interface (**GUI**) is written in JavaScript and runs in any modern HTML5 web-browser (e.g. Google Chrome, Mozilla Firefox or Safari). Flash and Java plugins are not required. For Windows, a suitable open-source web-browser Chromium is shipped with Tilde.
+Tilde core, local server and **CLI** are written in Python. On Windows no additional installations are required, as soon as all the dependencies (including Python interpreter itself) are already provided with Tilde. On Unix/Mac you should have Python (at least of version 2.6), as well as Numpy and sqlite3 Python modules pre-installed. Typically, this is the case on modern Unix PCs (console command "python -c 'import numpy, sqlite3'" should produce no errors). Note, that Python 3 was not tested.
+
+The graphical user interface (**GUI**) is written in JavaScript and runs in any modern HTML5 web-browser (e.g. Google Chrome, Mozilla Firefox or Safari). Flash and Java plugins are not required. For Windows, a suitable open-source web-browser Chromium is shipped with Tilde.
 
 Tilde was tested on Windows XP, 7, 8 and Linux Debian and Suse operating systems.
 
@@ -37,23 +39,23 @@ Warning! This is **NOT** a public release, rather a proof-of-concept code summar
 
 Not only Tilde represents the community need for a new instrument in scientific data management and exchange. Other known related projects are:
 
-- Accelrys Pipeline Pilot and Materials Studio, (http://accelrys.com/products)
-- AFLOW framework and Aflowlib.org repository, (http://www.aflowlib.org)
-- AIDA (AiiDA): Automated Infrastructure and Database for Ab-initio design (Bosch LLC), (http://www.cecam.org/workshop-4-717.html?presentation_id=9102)
-- Blue Obelisk Data Repository (XSLT, XML), (http://bodr.sourceforge.net)
-- CCLib (Python), (http://cclib.sf.net)
-- CDF (Python), (http://kitchingroup.cheme.cmu.edu/cdf)
-- CMR (Python), (https://wiki.fysik.dtu.dk/cmr)
-- Computational Chemistry Comparison and Benchmark Database, (http://cccbdb.nist.gov)
-- cctbx: Computational Crystallography Toolbox, (http://cctbx.sourceforge.net)
-- ESTEST (Python, XQuery), (http://estest.ucdavis.edu)
-- J-ICE online viewer (based on Jmol, Java), (http://j-ice.sourceforge.net)
-- Materials Project (Python), (http://www.materialsproject.org)
-- PAULING FILE world largest database for inorganic compounds, (http://paulingfile.com)
+- Accelrys Pipeline Pilot and Materials Studio, http://accelrys.com/products
+- AFLOW framework and Aflowlib.org repository, http://www.aflowlib.org
+- AIDA (AiiDA): Automated Infrastructure and Database for Ab-initio design (Bosch LLC), http://www.cecam.org/workshop-4-717.html?presentation_id=9102
+- Blue Obelisk Data Repository (XSLT, XML), http://bodr.sourceforge.net
+- CCLib (Python), http://cclib.sf.net
+- CDF (Python), http://kitchingroup.cheme.cmu.edu/cdf
+- CMR (Python), https://wiki.fysik.dtu.dk/cmr
+- Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
+- cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net
+- ESTEST (Python, XQuery), http://estest.ucdavis.edu
+- J-ICE online viewer (based on Jmol, Java), http://j-ice.sourceforge.net
+- Materials Project (Python), http://www.materialsproject.org
+- PAULING FILE world largest database for inorganic compounds, http://paulingfile.com
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
-- Quixote, (http://quixote.wikispot.org)
-- Scipio (Java), (https://scipio.iciq.es)
-- WebMO: Web-based interface to computational chemistry packages (Java, Perl), (http://webmo.net)
+- Quixote, http://quixote.wikispot.org
+- Scipio (Java), https://scipio.iciq.es
+- WebMO: Web-based interface to computational chemistry packages (Java, Perl), http://webmo.net
 
 ## Openness principle
 
@@ -65,15 +67,11 @@ The world wide web itself [was initiated](http://en.wikipedia.org/wiki/History_o
 
 Tilde was inspired by torrents, Google Wave and xmpp-jabber applications, whose common feature is a peer-to-peer (P2P) distributed syndication. Tilde will adopt this idea to materials science. That is, running instances of Tilde will be able to communicate with each other over the P2P-network, being located on the different computers. So Tilde users could connect and exchange their source / derivative data, compare their calculations and find out bugs together in modeling programs that they use for own data-mining.
 
-## Feedback and bugreports
+## Contact
 
 Please, send your feedback, bugreports and wishlists to [Evgeny Blokhin](mailto:eb@tilde.pro) or post them at [GitHub](http://github.com/jam31/wwwtilda/issues)
 
-## Contact
-
-Tilde is maintained by [Evgeny Blokhin](mailto:eb@tilde.pro).
-
 ## Links
 
-- (http://github.com/jam31/wwwtilda)
-- (http://twitter.com/wwwtilda)
+- http://github.com/jam31/wwwtilda
+- http://twitter.com/wwwtilda
