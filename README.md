@@ -35,6 +35,8 @@ Tilde has [MIT-license](http://en.wikipedia.org/wiki/MIT_License). This means ev
 
 Warning! This is **NOT** a public release, rather a proof-of-concept code summary for internal needs. It is not fully tested and may work unstable. However, the user data are sacred and will never be affected.
 
+Use the right menu at [GitHub](http://github.com/jam31/wwwtilda) to download / clone in git.
+
 ## Related projects
 
 Not only Tilde represents the community need for a new instrument in scientific data management and exchange. Other known related projects are:
@@ -69,7 +71,7 @@ Tilde was inspired by torrents, Google Wave and xmpp-jabber applications, whose 
 
 ## Contact
 
-Please, send your feedback, bugreports and wishlists to [Evgeny Blokhin](mailto:eb@tilde.pro) or post them at [GitHub](http://github.com/jam31/wwwtilda/issues)
+Please, send your feedback, bugreports and wishlists to [Evgeny Blokhin](mailto:eb@tilde.pro) or post them at [GitHub](http://github.com/jam31/wwwtilda/issues).
 
 ## Links
 
