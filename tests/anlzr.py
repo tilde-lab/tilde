@@ -12,7 +12,6 @@ sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/../'))  # path to
 
 from core.api import API
 from core.deps.ase.units import Hartree
-from core.common import to_precision
 
 starttime = time.time()
 
@@ -48,5 +47,8 @@ for task in tasks:
     # Mulliken test
     #mull_sum = round(sum(calc.structures[-1].get_initial_charges()), 2)
     #assert mull_sum == 0.0, "Sum of charges is %s" % mull_sum
+    
+    print calc.electrons['dos'].todict()
+    print calc.electrons['bands'].todict()
     
 

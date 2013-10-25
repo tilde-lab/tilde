@@ -14,13 +14,10 @@ except ImportError: sys.exit('\n\nPlease, install sqlite3 and json modules!\n\n'
 
 starttime = time.time()
 
-try:
-    workpath = sys.argv[1]
-except IndexError:
-    sys.exit('No db defined!')
+try: workpath = sys.argv[1]
+except IndexError: sys.exit('No db defined!')
 workpath = os.path.abspath(workpath)
-if not os.path.exists(workpath):
-    sys.exit('Invalid path!')
+if not os.path.exists(workpath): sys.exit('Invalid path!')
 
 db = sqlite3.connect(workpath)
 db.row_factory = sqlite3.Row

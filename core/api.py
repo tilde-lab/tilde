@@ -41,6 +41,99 @@ class API:
     version = __version__
     __shared_state = {} # singleton
 
+    # static cell wrappers
+    # for customizing the GUI data table
+    @staticmethod
+    def col__etype(obj, colnum):
+        value = '?' if not 'etype' in obj['info'] else obj['info']['etype']
+        return "<td rel=%s>%s</td>" % (colnum, value)
+        
+    @staticmethod
+    def col__bandgap(obj, colnum):
+        value = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
+        return "<td rel=%s class=_e>%s</td>" % (colnum, value)
+        
+    @staticmethod
+    def col__bandgaptype(obj, colnum):
+        value = '?' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
+        return "<td rel=%s>%s</td>" % (colnum, value)
+        
+    @staticmethod
+    def col__n(obj, colnum):
+        return "<td rel=%s>%3d</td>" % (colnum, len( obj['structures'][-1]['symbols'] ))
+    
+    @staticmethod
+    def col__energy(obj, colnum):
+        e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
+        return "<td rel=%s class=_e>%s</td>" % (colnum, e)
+    
+    @staticmethod
+    def col__dims(obj, colnum):
+        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
+        return "<td rel=%s>%s</td>" % (colnum, dims)
+    
+    @staticmethod
+    def col__loc(obj, colnum):
+        #if len(loc) > 50: loc = loc[0:50] + '...'
+        return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
+    
+    @staticmethod
+    def col__finished(obj, colnum):
+        if int(obj['info']['finished']) > 0: finished = 'yes'
+        elif int(obj['info']['finished']) == 0: finished = 'n/a'
+        elif int(obj['info']['finished']) < 0: finished = 'no'
+        return "<td rel=%s>%s</td>" % (colnum, finished)
+
+    # main mapping source
+    # according to that a data classification is made
+    hierarchy = [ \
+        {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "sort": 1, "has_column": True, "has_label": True, "descr": ""},
+        
+        {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "has_label": True, "descr": ""},
+        {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "has_label": True, "descr": ""},
+        {"cid": 4, "category": "formula units",         "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 5, "category": "periodicity",           "source": "periodicity", "sort": 12, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 6, "category": "calculation type",      "source": "calctype#", "sort": 10, "has_label": True, "descr": ""},
+        {"cid": 7, "category": "hamiltonian",           "source": "H", "sort": 30, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 8, "category": "system",                "source": "tag#", "sort": 11, "has_label": True, "descr": ""},
+        
+        {"cid": 9, "category": "symmetry",              "source": "symmetry", "sort": 80, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 10,"category": "point group",           "source": "pg", "sort": 81, "has_column": True, "has_label": True, "descr": "Result point group"},
+        {"cid": 11,"category": "space group (Schon.)",  "source": "sg", "sort": 82, "has_column": True, "has_label": True, "descr": "Result space group (Schoenflis notation)"},
+        {"cid": 12,"category": "space group (intl.)",   "source": "ng", "sort": 90, "has_column": True, "descr": "Result space group (international notation)"},
+        {"cid": 13,"category": "layer group (intl.)",   "source": "dg", "sort": 91, "has_column": True, "descr": "Result layer group (international notation)"},
+        
+        {"cid": 14,"category": "main tolerance",        "source": "tol", "sort": 84, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 15,"category": "spin-polarized",        "source": "spin", "sort": 22, "negative_tagging": True, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 16,"category": "locked magn.state",     "source": "lockstate", "sort": 23, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 17,"category": "k-point set",           "source": "k", "sort": 85, "has_column": True, "has_label": True, "descr": ""},
+        {"cid": 18,"category": "used techniques",       "source": "tech#", "sort": 84, "has_label": True, "descr": ""},
+        {"cid": 19,"category": "phon.magnitude",        "source": "dfp_magnitude", "sort": 86, "has_column": True, "descr": ""},
+        {"cid": 20,"category": "phon.disp.number",      "source": "dfp_disps", "sort": 87, "has_column": True, "descr": ""},
+        {"cid": 21,"category": "phon.k-points",         "source": "n_ph_k", "sort": 88, "has_column": True, "descr": ""},
+        {"cid": 22,"category": "code",                  "source": 'prog', "sort": 89, "has_column": True, "has_label": True, "descr": ""},
+        
+        {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "descr": ""},
+        
+        {"cid": 24,"category": "conductivity",          "source": 'etype', "sort": 5, "has_column": True, "has_label": True, "descr": "", "cell_wrapper": col__etype},
+        {"cid": 25,"category": "Min. band gap, <span class=units-energy>eV</span>",     "source": 'bandgap', "sort": 6, "has_column": True, "descr": "", "nocap": True, "cell_wrapper": col__bandgap},
+        {"cid": 26,"category": "band gap type",         "source": 'bandgaptype', "sort": 31, "has_column": True, "has_label": True, "descr": "", "cell_wrapper": col__bandgaptype},
+    ]
+                
+    # columns outside main hierarchy
+    # needed only for GUI daemon table
+    ADD_COLS = [ \
+        {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "sort": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n},
+        {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>eV</span>", "source": '', "sort": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy},
+        {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "sort": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims},
+        {"cid": 1005, "category": "Source file", "source": '', "sort": 98, "has_column": True, "cell_wrapper": col__loc},
+        {"cid": 1006, "category": "Finished?", "source": '', "sort": 99, "has_column": True, "cell_wrapper": col__finished},
+    ]
+    
+    # dynamic columns
+    # filled by modules through their API
+    APP_COLS = []  
+
     def __init__(self, db_conn=None, settings=DEFAULT_SETUP):
         self.__dict__ = self.__shared_state
 
@@ -86,6 +179,7 @@ class API:
         # *apptarget* - whether an app should be executed (based on hierarchy API)
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
+        n = 0
         for appname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../apps' ):
             if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
                 try: appmanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ).read() )
@@ -97,6 +191,11 @@ class API:
                     try: app = __import__('apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
                     except ImportError: raise RuntimeError('Module API Error: module ' + appname + ' is invalid or not found!')
                     self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
+                    
+                    # compiling table columns:
+                    if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
+                        APP_COLS.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'source': '', 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
+                        n += 1
 
         # *connector API*
         # Every connector implements reading methods:
@@ -107,44 +206,10 @@ class API:
                 connectname = connectname[0:-3]
                 conn = __import__('connectors.' + connectname) # this means: from foo import Foo
                 self.Conns[connectname] = {'list': getattr(getattr(conn, connectname), 'list'), 'report': getattr(getattr(conn, connectname), 'report')}
-
+        
         # *hierarchy API*
         # This is used for classification
         # (also displayed in GUI at the splashscreen and tagcloud)
-        self.hierarchy = [ \
-            {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "sort": 1, "has_column": True, "has_label": True, "descr": ""}, \
-            
-            {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "has_label": True, "descr": ""}, \
-            {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "has_label": True, "descr": ""}, \
-            {"cid": 4, "category": "formula units",         "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 5, "category": "periodicity",           "source": "periodicity", "sort": 12, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 6, "category": "calculation type",      "source": "calctype#", "sort": 10, "has_label": True, "descr": ""}, \
-            {"cid": 7, "category": "hamiltonian",           "source": "H", "sort": 30, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 8, "category": "system",                "source": "tag#", "sort": 11, "has_label": True, "descr": ""}, \
-            
-            {"cid": 9, "category": "symmetry",              "source": "symmetry", "sort": 80, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 10,"category": "point group",           "source": "pg", "sort": 81, "has_column": True, "has_label": True, "descr": "Result point group"}, \
-            {"cid": 11,"category": "space group (Schon.)",  "source": "sg", "sort": 82, "has_column": True, "has_label": True, "descr": "Result space group (Schoenflis notation)"}, \
-            {"cid": 12,"category": "space group (intl.)",   "source": "ng", "sort": 90, "has_column": True, "descr": "Result space group (international notation)"}, \
-            {"cid": 13,"category": "layer group (intl.)",   "source": "dg", "sort": 91, "has_column": True, "descr": "Result layer group (international notation)"}, \
-            
-            {"cid": 14,"category": "main tolerance",        "source": "tol", "sort": 84, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 15,"category": "spin-polarized",        "source": "spin", "sort": 22, "negative_tagging": True, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 16,"category": "locked magn.state",     "source": "lockstate", "sort": 23, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 17,"category": "k-point set",           "source": "k", "sort": 85, "has_column": True, "has_label": True, "descr": ""}, \
-            {"cid": 18,"category": "used techniques",       "source": "tech#", "sort": 84, "has_label": True, "descr": ""}, \
-            {"cid": 19,"category": "phon.magnitude",        "source": "dfp_magnitude", "sort": 86, "has_column": True, "descr": ""}, \
-            {"cid": 20,"category": "phon.disp.number",      "source": "dfp_disps", "sort": 87, "has_column": True, "descr": ""}, \
-            {"cid": 21,"category": "phon.k-points",         "source": "n_ph_k", "sort": 88, "has_column": True, "descr": ""}, \
-            {"cid": 22,"category": "code",                  "source": 'prog', "sort": 89, "has_column": True, "has_label": True, "descr": ""},
-            
-            {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "descr": ""},
-            
-            {"cid": 24,"category": "conductivity",          "source": 'etype', "sort": 5, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
-            {"cid": 25,"category": "Min. band gap, eV",     "source": 'bandgap', "sort": 6, "unknown_tagging": True, "has_column": True, "descr": "", "nocap": True},
-            {"cid": 26,"category": "band gap type",         "source": 'bandgaptype', "sort": 31, "unknown_tagging": True, "has_column": True, "has_label": True, "descr": ""},
-        ]
-        
         self.Classifiers = []
         for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):
             if classifier.endswith('.py') and classifier != '__init__.py':
@@ -156,13 +221,13 @@ class API:
                 for n, prop in enumerate(local_props):
                     local_props[n]['cid'] = int(10000*len(classifier)*math.log(int("".join([str(letters.index(l)+1) for l in classifier if l in letters]))))+n # we need to build a uniqie cid to use in tag system
                     if not 'sort' in local_props[n]: local_props[n]['sort'] = local_props[n]['cid']
-                if local_props: self.hierarchy.extend( local_props )
+                if local_props: API.hierarchy.extend( local_props )
 
                 self.Classifiers.append({ \
                     'classify': getattr(getattr(obj, classifier), 'classify'),\
                     'order': getattr(getattr(obj, classifier), '__order__'),\
                     'class': classifier})
-                self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
+                self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])   
 
     def reload(self, db_conn=None, settings=None):
         '''
@@ -560,7 +625,7 @@ class API:
         '''
         tags = []
         cursor = self.db_conn.cursor()
-        for n, i in enumerate(self.hierarchy):
+        for n, i in enumerate(API.hierarchy):
             found_topics = []
             
             if not 'has_label' in i: continue
@@ -571,7 +636,6 @@ class API:
                     try: topic = tags_obj[ i['source'].replace('#', str(n)) ]
                     except KeyError:
                         if 'negative_tagging' in i and n==0 and not update: found_topics.append('none') # beware to add something new to an existing item!
-                        elif 'unknown_tagging' in i and n==0 and not update: found_topics.append('unknown')
                         break
                     else:
                         found_topics.append(topic)
@@ -580,7 +644,6 @@ class API:
                 try: found_topics.append( tags_obj[ i['source'] ] )
                 except KeyError:
                     if 'negative_tagging' in i and not update: found_topics.append('none') # beware to add something new to an existing item!
-                    elif 'unknown_tagging' in i and not update: found_topics.append('unknown')
 
             for topic in found_topics:
                 if not topic: topic = 'none' # Warning! None-values spoil database with duplicate empty entries!

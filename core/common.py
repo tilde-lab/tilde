@@ -32,7 +32,19 @@ def u(obj, encoding='utf-8'):
     else: return obj
     
 def html2str(i):
-    return str(i).replace('<sub>', '_').replace('</sub>', '').replace('<sup>', '^').replace('</sup>', '')
+    # TODO
+    tokens = { \
+    '<sub>': '_',
+    '</sub>': '',
+    '<sup>': '^',
+    '</sup>': '',
+    '<span class=units-energy>': '',
+    '</span>': '',
+    }
+    i = str(i)
+    for k, v in tokens.iteritems():
+        i = i.replace(k, v)
+    return i
     
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''

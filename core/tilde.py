@@ -195,7 +195,7 @@ for target in args.path:
         
         if args.info:
             found_topics = []
-            for n, i in enumerate(Tilde.hierarchy):
+            for n, i in enumerate(API.hierarchy):
                 if '#' in i['source']:
                     n=0
                     while 1:
@@ -218,7 +218,7 @@ for target in args.path:
             for t in found_topics:
                 t = map(html2str, t)
                 out += "  " + t[0] + ': ' + ', '.join(t[1:])
-                out += "\t" if not j%2 else "\n"
+                out += "\t\t" if not j%2 else "\n"
                 j+=1
             output_lines += out[:-1] + "\n"
 

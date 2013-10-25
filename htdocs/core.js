@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: client core
-* v101013
+* v251013
 *
 */
 // common flags, settings and object for their storage
@@ -31,7 +31,7 @@ _tilde.units = {
     'energy': {'au':0.03674932601, 'eV':1, 'Ry':0.07349861206},
     'phonons': {'cm<sup>-1</sup>':1, 'THz':0.029979}
 };
-_tilde.unit_capts = {'energy':'Total electronic energy', 'phonons':'Phonon frequencies'};
+_tilde.unit_capts = {'energy':'Energy', 'phonons':'Phonon frequencies'};
 _tilde.default_settings = {};
 _tilde.default_settings.units = {'energy':'eV', 'phonons':'cm<sup>-1</sup>'};
 _tilde.default_settings.cols = [1, 1002, 1003, 1005, 1006, 10]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
@@ -391,7 +391,8 @@ function resp__browse(req, data){
 
     if (!$('#databrowser > tbody > tr').length){
         $('#databrowser tbody').append('<tr><td colspan=100 class=center>No data &mdash; <span class="link add_trigger">let\'s add!</span></td></tr>');
-    } else $('#tagcloud_holder').show();
+    }
+    // else $('#tagcloud_holder').show();
 
     $('td._e').each(function(){
         var val = parseFloat( $(this).text() );

@@ -221,7 +221,7 @@ class Request_Handler:
                     if '#' in item['source']: continue # todo
 
                     if 'cell_wrapper' in item:
-                        data += item['cell_wrapper'](data_obj, item['cid'])
+                        data += item['cell_wrapper'].__func__(data_obj, item['cid'])
                     else:
                         if item['source'] in data_obj['info'] and data_obj['info'][item['source']]:
                             data += '<td rel=' + str(item['cid']) + '>' + (  html_formula(data_obj['info'][ item['source'] ]) if 'chem_notation' in item else str(data_obj['info'][ item['source'] ])  ) + '</td>'
@@ -259,7 +259,7 @@ class Request_Handler:
                 for item in result:
                     if not item['tid'] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
                     
-                    match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
+                    match = [x for x in API.hierarchy if x['cid'] == item['categ']][0]
                     
                     if not 'has_label' in match or not match['has_label']: continue
                     
@@ -308,7 +308,7 @@ class Request_Handler:
                     tagrow = cursor.fetchall()
                     tags = []
                     for t in tagrow:
-                        o = [x for x in Tilde.hierarchy if x['cid'] == t['categ']][0]
+                        o = [x for x in API.hierarchy if x['cid'] == t['categ']][0]
 
                         cat = o['category']
                         if cat == 'chemical formula': continue # this we do not need in summary
@@ -897,49 +897,7 @@ if __name__ == "__main__":
                 else: updatemsg = 'Attention!\n\tAchtung!\n\t\tAttenzione!\nYour program version (%s) is outdated!\nActual version is %s.\nUpdating is highly recommended.\n' % (API.version, v)
         print updatemsg
 
-    # compiling table columns:
-    # invoke modules through their API
-    APP_COLS = []
-    n = 0
-    for appname, appclass in Tilde.Apps.iteritems():
-        if hasattr(appclass['appmodule'], 'cell_wrapper'):
-            APP_COLS.append( {'cid': (2000+n), 'category': appclass['appcaption'], 'source': '', 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(appclass['appmodule'], 'cell_wrapper')}  )
-        n += 1
-
-    # compiling table columns
-    # describe additional columns
-    # that are neither hierarchy API part,
-    # nor module API part
-    def col__n(obj, colnum):
-        return "<td rel=%s>%3d</td>" % (colnum, len( obj['structures'][-1]['symbols'] ))
-        
-    def col__energy(obj, colnum):
-        e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
-        return "<td rel=%s class=_e>%s</td>" % (colnum, e)
-        
-    def col__dims(obj, colnum):
-        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
-        return "<td rel=%s>%s</td>" % (colnum, dims)
-        
-    def col__loc(obj, colnum):
-        #if len(loc) > 50: loc = loc[0:50] + '...'
-        return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
-        
-    def col__finished(obj, colnum):
-        if int(obj['info']['finished']) > 0: finished = 'yes'
-        elif int(obj['info']['finished']) == 0: finished = 'n/a'
-        elif int(obj['info']['finished']) < 0: finished = 'no'
-        return "<td rel=%s>%s</td>" % (colnum, finished)
-
-    ADD_COLS = [ \
-    {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "sort": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n}, \
-    {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>au</span>", "source": '', "sort": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy}, \
-    {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "sort": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims}, \
-    {"cid": 1005, "category": "Source file", "source": '', "sort": 98, "has_column": True, "cell_wrapper": col__loc}, \
-    {"cid": 1006, "category": "Finished?", "source": '', "sort": 99, "has_column": True, "cell_wrapper": col__finished}, \
-    ]
-    Tilde_cols = sorted( Tilde.hierarchy + ADD_COLS + APP_COLS, key=lambda x: x['sort'] )
-
+    Tilde_cols = sorted( API.hierarchy + API.ADD_COLS + API.APP_COLS, key=lambda x: x['sort'] )
 
     debug = True if settings['debug_regime'] else False
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
