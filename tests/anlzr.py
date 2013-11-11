@@ -48,7 +48,7 @@ for task in tasks:
     #mull_sum = round(sum(calc.structures[-1].get_initial_charges()), 2)
     #assert mull_sum == 0.0, "Sum of charges is %s" % mull_sum
     
-    print calc.electrons['dos'].todict()
-    print calc.electrons['bands'].todict()
+    print calc.phonons['modes']
+    print calc.phonons['ph_eigvecs']
     
 

@@ -11,10 +11,8 @@ from core.deps.ase.data import covalent_radii
 from core.constants import Perovskite_Structure
 
 
-# hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
+# hierarchy API: __order__ to apply classifier
 __order__ = 10
-__properties__ = [ {"category": "impurity", "source": "impurity#", "negative_tagging": True, "chem_notation": True, "has_label": True, "sort": 14, "descr": ""} ]
-
 
 
 def classify(tilde_obj):    

@@ -5,9 +5,8 @@ import os
 import sys
 
 
-# hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
+# hierarchy API: __order__ to apply classifier
 __order__ = 30
-__properties__ = []
 
 def classify(tilde_obj):
     ''' classification of organic compounds by content '''

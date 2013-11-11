@@ -16,6 +16,7 @@ class Vibtd():
         'zpe': None
         }
         
+        # only for CRYSTAL code actually
         if tilde_calc.phonons['zpe'] and tilde_calc['energy']:
             self.vibtd['zpe'] = tilde_calc.phonons['zpe'] # a.u. (per cell or supercell???)
             self.vibtd['ezpe'] = tilde_calc.phonons['zpe'] + tilde_calc['energy']

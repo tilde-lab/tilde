@@ -336,7 +336,7 @@ function resp__login(req, data){
     });
     $.each(_tilde.settings.avcols, function(n, item){
         var checked_state = item.enabled ? ' checked=true' : '';
-        $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category+'</label></li>' );
+        $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
     });
     var colnum_str = '';
     $.each([50, 75, 100], function(n, item){

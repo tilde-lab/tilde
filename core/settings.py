@@ -7,7 +7,11 @@ import json
 try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
 
+from xml.etree import ElementTree as ET
+
+
 SETTINGS_FILE = 'settings.json'
+HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_DB = 'default.db'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
@@ -22,7 +26,7 @@ DEFAULT_SETUP = {
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
                 'title': None,
-                'update_server': ('tilde.pro', 80)
+                'update_server': "http://tilde.pro/VERSION"
                 }
 DB_SCHEMA = '''
 DROP TABLE IF EXISTS "results";
@@ -113,6 +117,19 @@ def userdbchoice(options, choice=None, add_msg="", create_allowed=True):
         else:
             return choice
 
+def read_hierarchy():
+    try: tree = ET.parse(HIERARCHY_FILE)
+    except: raise RuntimeError('Fatal error: invalid file ' + HIERARCHY_FILE)
+    else:
+        hierarchy = []
+        doc = tree.getroot()
+        for elem in doc.findall('entity'):
+            hierarchy.append( elem.attrib )
+            
+            # type corrections
+            hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
+            hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
+        return hierarchy
 
 # INSTALL MODE
 if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ) ):

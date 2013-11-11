@@ -1,9 +1,9 @@
 
 # Tilde project: basic routines
-# v141013
+# v301013
 # See http://wwwtilda.googlecode.com
 
-__version__ = "0.2.3" # numeric-only
+__version__ = "0.2.4" # numeric-only
 
 import os
 import sys
@@ -27,9 +27,9 @@ from symmetry import SymmetryHandler
 # this is done to simplify adding modules to Tilde according its API
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
-from core.common import ModuleError
+from core.common import ModuleError, html_formula
 from parsers import Output
-from settings import DEFAULT_SETUP
+from core.settings import DEFAULT_SETUP, read_hierarchy
 from core.deps.ase import Atoms
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
@@ -40,106 +40,12 @@ from spacegroup.cell import cell_to_cellpar
 class API:
     version = __version__
     __shared_state = {} # singleton
-
-    # static cell wrappers
-    # for customizing the GUI data table
-    @staticmethod
-    def col__etype(obj, colnum):
-        value = '?' if not 'etype' in obj['info'] else obj['info']['etype']
-        return "<td rel=%s>%s</td>" % (colnum, value)
         
-    @staticmethod
-    def col__bandgap(obj, colnum):
-        value = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
-        return "<td rel=%s class=_e>%s</td>" % (colnum, value)
-        
-    @staticmethod
-    def col__bandgaptype(obj, colnum):
-        value = '?' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
-        return "<td rel=%s>%s</td>" % (colnum, value)
-        
-    @staticmethod
-    def col__n(obj, colnum):
-        return "<td rel=%s>%3d</td>" % (colnum, len( obj['structures'][-1]['symbols'] ))
-    
-    @staticmethod
-    def col__energy(obj, colnum):
-        e = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
-        return "<td rel=%s class=_e>%s</td>" % (colnum, e)
-    
-    @staticmethod
-    def col__dims(obj, colnum):
-        dims = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
-        return "<td rel=%s>%s</td>" % (colnum, dims)
-    
-    @staticmethod
-    def col__loc(obj, colnum):
-        #if len(loc) > 50: loc = loc[0:50] + '...'
-        return "<td rel=%s><div class=tiny>%s</div></td>" % (colnum, obj['info']['location'])
-    
-    @staticmethod
-    def col__finished(obj, colnum):
-        if int(obj['info']['finished']) > 0: finished = 'yes'
-        elif int(obj['info']['finished']) == 0: finished = 'n/a'
-        elif int(obj['info']['finished']) < 0: finished = 'no'
-        return "<td rel=%s>%s</td>" % (colnum, finished)
-
-    # main mapping source
-    # according to that a data classification is made
-    hierarchy = [ \
-        {"cid": 1, "category": "formula",               "source": "standard", "chem_notation": True, "sort": 1, "has_column": True, "has_label": True, "descr": ""},
-        
-        {"cid": 2, "category": "containing element",    "source": "element#", "sort": 14, "has_label": True, "descr": ""},
-        {"cid": 3, "category": "host elements number",  "source": "nelem", "sort": 13, "has_label": True, "descr": ""},
-        {"cid": 4, "category": "formula units",         "source": "expanded", "sort": 29, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 5, "category": "periodicity",           "source": "periodicity", "sort": 12, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 6, "category": "calculation type",      "source": "calctype#", "sort": 10, "has_label": True, "descr": ""},
-        {"cid": 7, "category": "hamiltonian",           "source": "H", "sort": 30, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 8, "category": "system",                "source": "tag#", "sort": 11, "has_label": True, "descr": ""},
-        
-        {"cid": 9, "category": "symmetry",              "source": "symmetry", "sort": 80, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 10,"category": "point group",           "source": "pg", "sort": 81, "has_column": True, "has_label": True, "descr": "Result point group"},
-        {"cid": 11,"category": "space group (Schon.)",  "source": "sg", "sort": 82, "has_column": True, "has_label": True, "descr": "Result space group (Schoenflis notation)"},
-        {"cid": 12,"category": "space group (intl.)",   "source": "ng", "sort": 90, "has_column": True, "descr": "Result space group (international notation)"},
-        {"cid": 13,"category": "layer group (intl.)",   "source": "dg", "sort": 91, "has_column": True, "descr": "Result layer group (international notation)"},
-        
-        {"cid": 14,"category": "main tolerance",        "source": "tol", "sort": 84, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 15,"category": "spin-polarized",        "source": "spin", "sort": 22, "negative_tagging": True, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 16,"category": "locked magn.state",     "source": "lockstate", "sort": 23, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 17,"category": "k-point set",           "source": "k", "sort": 85, "has_column": True, "has_label": True, "descr": ""},
-        {"cid": 18,"category": "used techniques",       "source": "tech#", "sort": 84, "has_label": True, "descr": ""},
-        {"cid": 19,"category": "phon.magnitude",        "source": "dfp_magnitude", "sort": 86, "has_column": True, "descr": ""},
-        {"cid": 20,"category": "phon.disp.number",      "source": "dfp_disps", "sort": 87, "has_column": True, "descr": ""},
-        {"cid": 21,"category": "phon.k-points",         "source": "n_ph_k", "sort": 88, "has_column": True, "descr": ""},
-        {"cid": 22,"category": "code",                  "source": 'prog', "sort": 89, "has_column": True, "has_label": True, "descr": ""},
-        
-        {"cid": 23,"category": "modeling time, hr",     "source": 'duration', "sort": 90, "has_column": True, "descr": ""},
-        
-        {"cid": 24,"category": "conductivity",          "source": 'etype', "sort": 5, "has_column": True, "has_label": True, "descr": "", "cell_wrapper": col__etype},
-        {"cid": 25,"category": "Min. band gap, <span class=units-energy>eV</span>",     "source": 'bandgap', "sort": 6, "has_column": True, "descr": "", "nocap": True, "cell_wrapper": col__bandgap},
-        {"cid": 26,"category": "band gap type",         "source": 'bandgaptype', "sort": 31, "has_column": True, "has_label": True, "descr": "", "cell_wrapper": col__bandgaptype},
-    ]
-                
-    # columns outside main hierarchy
-    # needed only for GUI daemon table
-    ADD_COLS = [ \
-        {"cid": 1001, "category": "N<sub>atoms</sub>", "source": '', "sort": 2, "has_column": True, "nocap": True, "cell_wrapper": col__n},
-        {"cid": 1002, "category": "E<sub>el.tot</sub>/cell, <span class=units-energy>eV</span>", "source": '', "sort": 3, "has_column": True, "nocap": True, "cell_wrapper": col__energy},
-        {"cid": 1003, "category": "Cell, A<sup>2</sup> or A<sup>3</sup>", "source": '', "sort": 4, "has_column": True, "nocap": True, "cell_wrapper": col__dims},
-        {"cid": 1005, "category": "Source file", "source": '', "sort": 98, "has_column": True, "cell_wrapper": col__loc},
-        {"cid": 1006, "category": "Finished?", "source": '', "sort": 99, "has_column": True, "cell_wrapper": col__finished},
-    ]
-    
-    # dynamic columns
-    # filled by modules through their API
-    APP_COLS = []  
-
     def __init__(self, db_conn=None, settings=DEFAULT_SETUP):
         self.__dict__ = self.__shared_state
-
         self.db_conn = db_conn
-        self.settings = settings
-
+        self.settings = settings        
+        self.hierarchy = read_hierarchy() # main mapping source according to what a data classification is made
         self.deferred_storage = {}
 
         # *parser API*
@@ -176,7 +82,7 @@ class API:
         # *onprocess* - invoking during processing (therefore %appfolder%.py must provide the class %Appfolder%)
         # *appcaption* - module caption (used as column caption in data table & as atomic structure rendering pane overlay caption)
         # *appdata* - a new property defined by app
-        # *apptarget* - whether an app should be executed (based on hierarchy API)
+        # *apptarget* - whether an app should be executed (based on hierarchy)
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
         n = 0
@@ -194,8 +100,10 @@ class API:
                     
                     # compiling table columns:
                     if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
-                        APP_COLS.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'source': '', 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
+                        self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
                         n += 1
+        
+        self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
 
         # *connector API*
         # Every connector implements reading methods:
@@ -217,17 +125,58 @@ class API:
                 obj = __import__('classifiers.' + classifier) # this means: from foo import Foo
                 if getattr(getattr(obj, classifier), '__order__') is None: raise RuntimeError('Classifier '+classifier+' has not defined an order to apply!')
 
-                local_props = getattr(getattr(obj, classifier), '__properties__')
-                for n, prop in enumerate(local_props):
-                    local_props[n]['cid'] = int(10000*len(classifier)*math.log(int("".join([str(letters.index(l)+1) for l in classifier if l in letters]))))+n # we need to build a uniqie cid to use in tag system
-                    if not 'sort' in local_props[n]: local_props[n]['sort'] = local_props[n]['cid']
-                if local_props: API.hierarchy.extend( local_props )
-
                 self.Classifiers.append({ \
                     'classify': getattr(getattr(obj, classifier), 'classify'),\
                     'order': getattr(getattr(obj, classifier), '__order__'),\
                     'class': classifier})
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])   
+
+    def wrap_cell(self, categ, obj):
+        '''
+        Cell wrappers
+        for customizing the GUI data table
+        '''
+        html_class = '' # for GUI javascript
+        out = ''
+        
+        if 'cell_wrapper' in categ: # this bound type is currently defined by apps only
+            out = categ['cell_wrapper'](obj)
+        else:
+            if categ['cid'] in [1, 511, 521, 522]:
+                out = html_formula(obj['info'][ categ['source'] ]) if categ['source'] in obj['info'] else '&mdash;'
+                
+            elif categ['cid'] == 24:
+                out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
+                
+            elif categ['cid'] == 25:
+                html_class = ' class=_e'
+                out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
+                
+            elif categ['cid'] == 26:
+                out = '?' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
+                
+            elif categ['cid'] == 1001:
+                out = "%3d" % len( obj['structures'][-1]['symbols'] )
+                
+            elif categ['cid'] == 1002:
+                html_class = ' class=_e'
+                out = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
+                
+            elif categ['cid'] == 1003:
+                out = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
+                
+            elif categ['cid'] == 1005:
+                out = "<div class=tiny>%s</div>" % obj['info']['location']
+                
+            elif categ['cid'] == 1006:
+                f = int(obj['info']['finished'])
+                if f > 0: out = 'yes'
+                elif f == 0: out = 'n/a'
+                elif f < 0: out = 'no'
+            
+            else:
+                out = obj['info'][ categ['source'] ] if 'source' in categ and categ['source'] in obj['info'] else '&mdash;'
+        return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
 
     def reload(self, db_conn=None, settings=None):
         '''
@@ -460,15 +409,14 @@ class API:
             calc.structures[i].dims = abs(det(calc.structures[i].cell))
         calc.info['dims'] = calc.structures[-1].dims        
 
-        # this is stupid (?), TODO
+        # TODO (?)
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
             if i[0] == 'X': continue
             calc.info['elements'].append(i[0])
             calc.info['contents'].append(int(i[1])) if i[1] else calc.info['contents'].append(1)
 
-        # extend Tilde hierarchy
-        # with modules (idea of *hierarchy API*)
+        # extend Tilde hierarchy with modules
         for C_obj in self.Classifiers:
             try: calc = C_obj['classify'](calc)
             except:
@@ -625,10 +573,10 @@ class API:
         '''
         tags = []
         cursor = self.db_conn.cursor()
-        for n, i in enumerate(API.hierarchy):
+        for n, i in enumerate(self.hierarchy):
             found_topics = []
             
-            if not 'has_label' in i: continue
+            if not 'has_label' in i or not 'source' in i: continue
             
             if '#' in i['source']:
                 n=0

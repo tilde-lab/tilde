@@ -5,9 +5,8 @@ import os
 import sys
 
 
-# hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
+# hierarchy API: __order__ to apply classifier
 __order__ = 5
-__properties__ = [ {"category": "basis sets", "source": "bs#", "has_label": True, "descr": ""} ]
 
 def classify(tilde_obj):
     if tilde_obj.electrons['basis_set'] is None:

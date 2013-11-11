@@ -195,7 +195,10 @@ for target in args.path:
         
         if args.info:
             found_topics = []
-            for n, i in enumerate(API.hierarchy):
+            for n, i in enumerate(Tilde.hierarchy):
+                
+                if not 'source' in i: continue
+                
                 if '#' in i['source']:
                     n=0
                     while 1:
@@ -261,7 +264,7 @@ for target in args.path:
 
         if args.freqs:
             if not calc.phonons['modes']:
-                print task, ' has no phonons!'
+                print task, 'has no phonons!'
                 continue
             for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 output_lines += "\tK-POINT: " + bzpoint + "\n"

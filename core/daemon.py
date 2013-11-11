@@ -13,6 +13,7 @@ import os
 import sys
 import json
 import socket
+import urllib2
 import time
 from itertools import ifilter
 import math
@@ -38,7 +39,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 from settings import settings, write_settings, write_db, repositories, DATA_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
 from api import API
-from common import dict2ase
+from common import dict2ase, html_formula
 from plotter import plotter
 
 
@@ -110,11 +111,12 @@ class Request_Handler:
 
         # all available columns are compiled here and sent to user for him to select between them
         avcols = []
-        for item in Tilde_cols:
+        for item in Tilde.hierarchy:
+            
             if 'has_column' in item:
-                if '#' in item['source']: continue # todo
+                if 'source' in item and '#' in item['source']: continue # todo
                 enabled = True if item['cid'] in userobj['settings']['cols'] else False
-                avcols.append({ 'cid': item['cid'], 'category': (item['category'] if 'nocap' in item else item['category'].capitalize()), 'sort': item['sort'], 'enabled': enabled })
+                avcols.append({ 'cid': item['cid'], 'category': item['category'], 'sort': item['sort'], 'enabled': enabled })
 
         # settings of object-scope (global flags)
         data['demo_regime'] = 1 if settings['demo_regime'] else 0
@@ -198,10 +200,26 @@ class Request_Handler:
         else:
             result = cursor.fetchall()
             rescount = 0
-            # building data table header
-            data = build_header( Users[session_id].usettings['cols'], Users[session_id].usettings['objects_expand'] )
+            
+            # building data table header: compulsory part
+            data = '<thead>'
+            data += '<tr>'
+            data += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
+            
+            # dynamic part
+            for item in Tilde.hierarchy:
+                if 'has_column' in item and item['cid'] in Users[session_id].usettings['cols']:
+                    if 'source' in item and '#' in item['source']: continue # todo
+                    data += '<th rel=' + str(item['cid']) + '>' + item['category'][0].upper() + item['category'][1:] + '</th>'
+            
+            # compulsory part
+            if Users[session_id].usettings['objects_expand']: data += '<th class="not-sortable">More...</th>'
+            data += '</tr>'
+            data += '</thead>'
             data += '<tbody>'
+            
             for row in result:
+                
                 # building data table rows
                 rescount += 1
                 data_obj = {}
@@ -210,23 +228,17 @@ class Request_Handler:
                 data_obj['info'] = json.loads(row['info'])
                 data_obj['apps'] = json.loads(row['apps'])
 
-                # --compulsory part--
+                # compulsory part
                 data += '<tr id=i_' + row['checksum'] + '>'
                 data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
 
-                # --dynamic part--
-                for item in Tilde_cols:
+                # dynamic part
+                for item in Tilde.hierarchy:
                     if not 'has_column' in item: continue
                     if not item['cid'] in Users[session_id].usettings['cols']: continue
-                    if '#' in item['source']: continue # todo
-
-                    if 'cell_wrapper' in item:
-                        data += item['cell_wrapper'].__func__(data_obj, item['cid'])
-                    else:
-                        if item['source'] in data_obj['info'] and data_obj['info'][item['source']]:
-                            data += '<td rel=' + str(item['cid']) + '>' + (  html_formula(data_obj['info'][ item['source'] ]) if 'chem_notation' in item else str(data_obj['info'][ item['source'] ])  ) + '</td>'
-                        else:
-                            data += '<td rel=' + str(item['cid']) + '>&mdash;</td>'
+                    if 'source' in item and '#' in item['source']: continue # todo
+                    
+                    data += Tilde.wrap_cell(item, data_obj)
 
                 # --compulsory part--
                 if Users[session_id].usettings['objects_expand']: data += "<td class=objects_expand><strong>click by row</strong></td>"
@@ -248,7 +260,7 @@ class Request_Handler:
         if not 'render' in userobj: return (data, 'Tags rendering area must be defined!')
         if not 'tids' in userobj: tids = None # json may contain nulls, standardize them
         else: tids = userobj['tids']
-
+                
         if not tids:
             cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
             try: cursor.execute( 'SELECT tid, categ, topic FROM topics' )
@@ -259,11 +271,12 @@ class Request_Handler:
                 for item in result:
                     if not item['tid'] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
                     
-                    match = [x for x in API.hierarchy if x['cid'] == item['categ']][0]
+                    try: match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
+                    except IndexError: return (data, 'Schema and data do not match: different versions of code and database?')
                     
                     if not 'has_label' in match or not match['has_label']: continue
                     
-                    if 'chem_notation' in match: i = html_formula(item['topic'])
+                    if match['cid'] in [1, 511, 521, 522]: i = html_formula(item['topic']) # TODO!!!
                     else: i = item['topic']
 
                     if not 'sort' in match: sort = 1000
@@ -308,12 +321,11 @@ class Request_Handler:
                     tagrow = cursor.fetchall()
                     tags = []
                     for t in tagrow:
-                        o = [x for x in API.hierarchy if x['cid'] == t['categ']][0]
+                        o = [x for x in Tilde.hierarchy if x['cid'] == t['categ']][0]
 
                         cat = o['category']
-                        if cat == 'chemical formula': continue # this we do not need in summary
 
-                        if 'chem_notation' in o: i = html_formula(t['topic'])
+                        if o['cid'] in [1, 511, 521, 522]: i = html_formula(t['topic']) # TODO!!!
                         else: i = t['topic']
 
                         if not 'sort' in o: sort = 1000
@@ -840,64 +852,22 @@ class UpdateServiceHandler(tornado.web.RequestHandler):
         logging.critical("Client " + self.request.remote_ip + " has requested an update.")
         self.write(API.version)
 
-def build_header(cols, col_objects_expand):
-    # --compulsory part--
-    headers_html = '<thead>'
-    headers_html += '<tr>'
-    headers_html += '<th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
-
-    # --dynamic part--
-    for item in Tilde_cols:
-        if 'has_column' in item and item['cid'] in cols:
-            if '#' in item['source']: continue # todo
-            headers_html += '<th rel=' + str(item['cid']) + '>' + (item['category'] if 'nocap' in item else item['category'].capitalize()) + '</th>'
-
-    # --compulsory part--
-    if col_objects_expand: headers_html += '<th class="not-sortable">More...</th>'
-    headers_html += '</tr>'
-    headers_html += '</thead>'
-
-    return headers_html
-
-def html_formula(string):
-    sub, html_formula = False, ''
-    for n, i in enumerate(string):
-        if i.isdigit() or i=='.' or i=='-':
-            if not sub and n != 0:
-                html_formula += '<sub>'
-                sub = True
-        else:
-            if sub and i != 'd':
-                html_formula += '</sub>'
-                sub = False
-        html_formula += i
-    if sub: html_formula += '</sub>'
-    return html_formula
-
 if __name__ == "__main__":
     
     # check new version
     if not settings['demo_regime'] and 'update_server' in settings:
         updatemsg = ''
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            s.settimeout(2)
-            s.connect(tuple(settings['update_server']))
-            s.send("GET /VERSION HTTP/1.0\r\n\r\n")
-            data = s.recv(1024)
-            s.close()
-            v = data.split('\r\n')[-1].strip()
-        except:
-            updatemsg = 'Could not check new version. Update server is unreachable.'
+            updatemsg = urllib2.urlopen(settings['update_server'], timeout=2.5).read()
+        except urllib2.URLError:
+            updatemsg = 'Could not check new version: update server is down.'
         else:
-            try: int(v.split('.')[0])
-            except: updatemsg = 'Could not check new version. Communication with update server failed.'
+            try: int(updatemsg.split('.')[0])
+            except: updatemsg = 'Could not check new version: communication with update server failed.'
             else:
-                if v == API.version: updatemsg = "Current version is up-to-date."
-                else: updatemsg = 'Attention!\n\tAchtung!\n\t\tAttenzione!\nYour program version (%s) is outdated!\nActual version is %s.\nUpdating is highly recommended.\n' % (API.version, v)
+                if updatemsg.strip() == API.version: updatemsg = "Current version is up-to-date."
+                else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
         print updatemsg
-
-    Tilde_cols = sorted( API.hierarchy + API.ADD_COLS + API.APP_COLS, key=lambda x: x['sort'] )
 
     debug = True if settings['debug_regime'] else False
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR

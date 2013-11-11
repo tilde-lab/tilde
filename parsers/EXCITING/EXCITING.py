@@ -14,6 +14,7 @@ from ase import Atoms
 
 from parsers import Output
 from core.electron_structure import Edos, Ebands
+from core.constants import Constants
 
 # INFO.OUT parser
 
@@ -241,6 +242,47 @@ class INFOOUT(Output):
             try: self.electrons['bands'] = Ebands(parse_bandsxml(f))
             except: self.warning("Error in bandstructure.xml file!")
             finally: f.close()
+            
+        # Phonons
+        if os.path.exists(os.path.join(os.path.dirname(file), 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT':
+            f = open(os.path.join(os.path.dirname(file), 'PHONON.OUT'), 'r')
+            linelist = f.readlines()
+            filelen = len(linelist)
+            n_at = len(self.structures[-1])
+            n_line = 0
+            while n_line < filelen:
+                n_line += 1
+                modes, irreps, ph_eigvecs = [], [], []
+                k_coords = " ".join(map(lambda x: "%1.2f" % float(x), linelist[n_line].split()[1:4]))
+                
+                # next line is empty
+                n_line += 2
+                for i in range(n_at*3):
+                
+                    # read mode number and frequency
+                    modes.append( float(linelist[n_line].split()[1]) * Constants.ha2rcm )
+                    irreps.append("")
+                    n_line += 1
+                    
+                    # read eigenvectors
+                    container = []
+                    for atom in range(n_at):
+                        for disp in range(3):
+                            container.append( float(linelist[n_line].split()[3]) )
+                            #float(linelist[n_line].split()[4])
+                            n_line += 1
+                    
+                    ph_eigvecs.append(container)
+                    
+                    # two empty lines follow
+                    n_line +=1
+                
+                self.phonons['modes'][ k_coords ] = modes
+                self.phonons['irreps'][ k_coords ] = irreps
+                self.phonons['ph_eigvecs'][ k_coords ] = ph_eigvecs
+
+            f.close()
+
         
     @staticmethod
     def fingerprints(test_string):

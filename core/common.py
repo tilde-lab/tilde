@@ -46,6 +46,21 @@ def html2str(i):
         i = i.replace(k, v)
     return i
     
+def html_formula(string):
+    sub, html_formula = False, ''
+    for n, i in enumerate(string):
+        if i.isdigit() or i=='.' or i=='-':
+            if not sub and n != 0:
+                html_formula += '<sub>'
+                sub = True
+        else:
+            if sub and i != 'd':
+                html_formula += '</sub>'
+                sub = False
+        html_formula += i
+    if sub: html_formula += '</sub>'
+    return html_formula
+    
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
     nontext = bytes.translate(''.join(map(chr, range(256))), ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))) # all bytes and text bytes

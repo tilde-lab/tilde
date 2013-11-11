@@ -8,9 +8,8 @@ from core.deps.ase.data import chemical_symbols
 from core.deps.ase.data import covalent_radii
 
 
-# hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
+# hierarchy API: __order__ to apply classifier
 __order__ = 30
-__properties__ = []
 
 
 REL = 100

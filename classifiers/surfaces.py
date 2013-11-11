@@ -7,9 +7,9 @@ import sys
 import math
 import fractions
 
-# hierarchy API: __order__ to apply classifier and __properties__ extending basic hierarchy
+# hierarchy API: __order__ to apply classifier
 __order__ = 40
-__properties__ = [ {"category": "planes number", "source": "layers", "has_column": True, "has_label": True, "descr": ""}, {"category": "adsorbent", "source": "adsorbent", "chem_notation": True, "has_column": True, "has_label": True, "descr": ""}, {"category": "surface termination", "source": "termination", "chem_notation": True, "has_column": True, "has_label": True, "descr": ""} ]
+
 
 def classify(tilde_obj):    
     ''' determine count of layers and adsorption '''

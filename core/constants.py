@@ -5,10 +5,10 @@
 from math import pi, sqrt
 
 
-# phonopy constants
-# work by Atsushi Togo, http://phonopy.sf.net
+# Phonopy constants, extended
+# initial compilation by Atsushi Togo, http://phonopy.sf.net
 
-class Phonopy_Constants:
+class Constants:
     kb_J = 1.3806504e-23 # [J/K]
     PlanckConstant = 4.13566733e-15 # [eV s]
     Hbar = PlanckConstant/(2*pi) # [eV s]
@@ -38,6 +38,8 @@ class Phonopy_Constants:
     EvTokJmol = EV / 1000 * Avogadro # [kJ/mol] 96.4853910
     Wien2kToTHz = sqrt(Rydberg/1000*EV/AMU)/(Bohr*1e-10)/(2*pi)/1e12 # [THz] 3.44595837
     EVAngstromToGPa = EV * 1e21
+    
+    ha2rcm = 2.194746313708e05
 
 
 # Perovskite elements

@@ -15,11 +15,11 @@ from core.common import ModuleError
 class Example_app():
     # this determines how the data should be represented in a table cell
     @staticmethod
-    def cell_wrapper(obj, colnum):
+    def cell_wrapper(obj):
         selfname = __name__.split('.')[-1]
         if not selfname in obj['apps']:
-            return "<td rel=%s><div class=tiny>n/a</div></td>" % colnum
-        return "<td rel=%s class=your_own_code>%s</td>" % (colnum, obj['apps'][selfname])
+            return "<div class=tiny>n/a</div>"
+        return "<i>%s</i>" % obj['apps'][selfname]
 
     # this is a main class code
     def __init__(self, tilde_calc):
