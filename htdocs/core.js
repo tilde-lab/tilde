@@ -679,6 +679,7 @@ function resp__delete(req, data){
     if ($('#databrowser tbody').is(':empty')){
         document.location.hash = '#' + _tilde.settings.dbs[0];
     }
+    $('#databrowser').trigger('update');
 }
 function resp__check_export(req, data){
     iframe_download( 'export', req.db, req.id );
