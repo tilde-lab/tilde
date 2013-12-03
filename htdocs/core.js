@@ -330,8 +330,8 @@ function resp__login(req, data){
     $('#maxcols').html(_tilde.maxcols);
     $('#ipane_cols_holder > ul').empty();
     _tilde.settings.avcols.sort(function(a, b){
-        if (a.sort < b.sort) return -1;
-        else if (a.sort > b.sort) return 1;
+        if (a.category < b.category) return -1;
+        else if (a.category > b.category) return 1;
         else return 0;
     });
     $.each(_tilde.settings.avcols, function(n, item){
@@ -374,7 +374,8 @@ function resp__login(req, data){
     // render export settings
     if (data.settings.exportability) $('#export_trigger').show();
     
-    if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
+    //if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
+    if (!document.location.hash) document.location.hash = '#about';
 }
 function resp__browse(req, data){
     // reset objects
@@ -700,6 +701,14 @@ function resp__ph_bands(req, data){
 function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands-holder', 'E - E<sub>f</sub>, eV');
 }
+
+
+function resp__demo_reason(req, data){
+    //console.log(data);
+    out = data.split('<hr />');
+    $('#demo_output_on').empty().html(out[0]);
+    $('#demo_output_by').empty().html(out[1]);
+}
 /**
 *
 *
@@ -887,8 +896,16 @@ $(document).ready(function(){
             
             $('div.pane').hide();
             $('#landing_holder').show();
-            $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
+            $("#tilde_logo").animate({ marginTop: '10px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
+        
+        } else if (anchors[0] == 'demo'){
+            
+            // DEMO SCREEN
+            
+            $('div.pane').hide();
+            $('#demo').show();
+            
         } else {
             notify('This supposed to be error 404.');
             document.location.hash = '#' + _tilde.settings.dbs[0];
@@ -916,6 +933,12 @@ $(document).ready(function(){
     // INTRO TRIGGER
     $('#continue_trigger').click(function(){
         var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
+        $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
+        $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
+    });
+    
+    $('#demo_trigger').click(function(){
+        var action = function(){ document.location.hash = '#demo'; }
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
@@ -1412,4 +1435,13 @@ $(document).ready(function(){
         }
         return false;
     });
+    
+    
+    // DEMO EXAMPLE
+    $('#demo_form').submit(function(){
+        var x = $('#demo_query').val();
+        __send('demo_reason', {'x': x});
+        return false;
+    });
+    
 });

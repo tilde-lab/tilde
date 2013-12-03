@@ -231,11 +231,17 @@
     <!-- MAIN CONTENT SIDE -->
     <div id="mainframe" class="shadow">
         <div id="welcome">
-            <p>Welcome to Tilde <span id="version"></span>&nbsp;graphical interface. This is an alternative to a command-line interface.</p>
+            <div style="float:left;width:275px;height:275px;background:url(/static/images/nomad.jpg) center center no-repeat;margin:0 25px 0 20px;"></div>
+            
+            <p>Welcome to the NoMaD, joint project in physics and computer science, aiming to predict new materials <i>in&nbsp;silico</i>.</p>
+            
+            <p>NoMaD is built on top of <a href="http://tilde.pro/">Tilde</a>.</p>
 
-            <p>Here you manage your modeling data. Your actual files stay unaffected. See additional info at <a href="https://github.com/jam31/wwwtilda">GitHub</a>.</p>
+            <p>Hereby an example set of databases is presented (no guarantees, demonstration purposes only).</p>
 
-            <div id="continue_trigger" class="btn btn2" style="width:147px;margin:20px auto;font-size:1.1em">Continue <span style="font-size:2.1em">&rarr;</span></div>
+            <div id="continue_trigger" class="btn btn2 left" style="width:147px;font-size:1.2em;margin:20px 1px 20px 270px;line-height:1.5em;">Continue <span style="font-size:2.1em">&rarr;</span></div>
+            <div id="demo_trigger" class="btn btn2 right" style="width:260px;font-size:1.2em;margin:20px 10px 20px 1px;line-height:1.5em;">New features (demo) <span style="font-size:2.1em">&rarr;</span></div>
+            <div class="clear"></div>
 
         </div>
     </div>
@@ -274,6 +280,20 @@
     <div id="tagcloud_holder" class="_closable downscreen ii" style="display:none;">
         <div class="downscreen_close _close"></div>
         <div id="tagcloud"></div>
+    </div>
+</div>
+
+<!-- DEMO LAYOUT -->
+<div id="demo" class="pane">
+    <div style="width:500px;margin:75px auto;">
+        <div id="demo_form">
+            <form method="post" action="/" class="_hotkeyable"><input type="text" value="" id="demo_query" style="font-size:1.5em;width:500px;height:30px;border:1px solid #666;margin-bottom:10px;" /><input type="submit" style="display:none" /></form>
+            <div id="filepath_apply_trigger" class="_hotkey"></div>
+        </div>
+        <div>
+            <div id="demo_output_on" style="float:left;width:50%;font-size:1em;"></div>
+            <div id="demo_output_by" style="float:right;width:50%;font-size:1em;"></div>
+        </div>
     </div>
 </div>
 

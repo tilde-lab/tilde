@@ -39,6 +39,8 @@ from api import API
 from common import dict2ase, html_formula
 from plotter import plotter
 
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/hierarchy'))
+from hierarchy import g, actson, actedby
 
 DELIM = '~#~#~'
 EDITION = settings['title'] if settings['title'] else 'Tilde ' + API.version
@@ -679,6 +681,16 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         sys.exit(0)
+        
+        
+        
+    @staticmethod
+    def demo_reason(userobj, session_id):
+        data, error = None, None        
+        on = "<b>Infuences:</b><br />" + "<br />".join(actson(userobj['x'], g))
+        by = "<b>Infuenced by:</b><br />" + "<br />".join(actedby(userobj['x'], g))        
+        data = on + "<hr />" + by        
+        return (data, error)
 
 
 class DuplexConnection(tornadio2.conn.SocketConnection):
