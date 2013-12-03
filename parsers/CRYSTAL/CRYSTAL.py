@@ -10,7 +10,10 @@ import time
 import copy
 from fractions import Fraction
 
-from numpy import dot, array, cross, append
+from numpy import dot
+from numpy import array
+from numpy import cross
+from numpy import append
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
@@ -75,7 +78,7 @@ class CRYSTOUT(Output):
         # it matches other (parent) CRYSTAL output
         # by _coupler_ property (E_tot).
         # However if we have received *missing_props*,
-        # we do parse it
+        # we do parse it now
 
         if not missing_props: self._coupler_ = self.is_coupling(file)
         if not self._coupler_ or missing_props is not None:
@@ -84,7 +87,7 @@ class CRYSTOUT(Output):
             raw_data = open(file).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
             parts_pointer = list(find_all(raw_data, "*                              MAIN AUTHORS"))
 
-            # determine whether to deal with CRYSTAL and / or PROPERTIES output formats
+            # determine whether to deal with CRYSTAL and/or PROPERTIES output formats
             if len(parts_pointer) > 1:
                 if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
                 len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs

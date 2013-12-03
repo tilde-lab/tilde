@@ -1,9 +1,8 @@
 
-# Tilde project: basic routines
-# v301013
-# See http://wwwtilda.googlecode.com
+# Tilde project: re-usable core
+# v271113
 
-__version__ = "0.2.4" # numeric-only
+__version__ = "0.2.4" # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
 import os
 import sys
@@ -12,29 +11,21 @@ import re
 import fractions
 import inspect
 import traceback
-import subprocess
 import json
-from string import letters
 
 from numpy import dot, array, cross
 from numpy.linalg import det, norm
 
-from common import u, is_binary_string
-from common import ase2dict, dict2ase
-from common import generate_cif
+from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, ModuleError, html_formula
 from symmetry import SymmetryHandler
+from settings import DEFAULT_SETUP, read_hierarchy
 
 # this is done to simplify adding modules to Tilde according its API
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
-from core.common import ModuleError, html_formula
 from parsers import Output
-from core.settings import DEFAULT_SETUP, read_hierarchy
 from core.deps.ase import Atoms
-
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
-
-from spacegroup.cell import cell_to_cellpar
+from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
 
 
 class API:
@@ -85,7 +76,7 @@ class API:
         # *apptarget* - whether an app should be executed (based on hierarchy)
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
-        n = 0
+        #n = 0
         for appname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../apps' ):
             if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
                 try: appmanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ).read() )
@@ -99,11 +90,11 @@ class API:
                     self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
                     
                     # compiling table columns:
-                    if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
-                        self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
-                        n += 1
+                    #if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
+                    #    self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
+                    #    n += 1
         
-        self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
+        #self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
 
         # *connector API*
         # Every connector implements reading methods:
@@ -149,11 +140,11 @@ class API:
                 out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
                 
             elif categ['cid'] == 25:
-                html_class = ' class=_e'
+                html_class = ' class=_g'
                 out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
                 
             elif categ['cid'] == 26:
-                out = '?' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
+                out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
                 
             elif categ['cid'] == 1001:
                 out = "%3d" % len( obj['structures'][-1]['symbols'] )
@@ -439,8 +430,7 @@ class API:
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
         if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
         if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
-        if calc.electrons['dos']: calc.info['calctypes'].append('electron DOS')
-        if calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron bands')
+        if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
         if calc.energy: calc.info['calctypes'].append('total energy')
 
         for n, i in enumerate(calc.info['calctypes']):
@@ -528,7 +518,7 @@ class API:
         calc.info['ng'] = found.n
         calc.info['symmetry'] = found.symmetry
         calc.info['pg'] = found.pg
-        calc.info['dg'] = found.dg        
+        calc.info['dg'] = found.dg
 
         if calc.phonons['dfp_magnitude']: calc.info['dfp_magnitude'] = round(calc.phonons['dfp_magnitude'], 3)
         if calc.phonons['dfp_disps']: calc.info['dfp_disps'] = len(calc.phonons['dfp_disps'])
@@ -554,7 +544,7 @@ class API:
             gap = round(calc.electrons['dos'].get_bandgap(), 2)
             
             if calc.electrons['bands']: # check coincidence
-                if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is taken.')
+                if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is considered.')
             else:
                 calc.info['bandgap'] = gap
                 if gap:
@@ -657,7 +647,7 @@ class API:
         calc.structures = [ase2dict(ase_obj) for ase_obj in calc.structures]
         
         # prepare electron data
-        for i in ['dos', 'bands']:
+        for i in ['dos', 'bands']: # projected?
             if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
         
         # packing of the

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# tilda project: abstract class of a generic parser
+# Tilde project: abstract class of a generic parser
 # v240913
 
 import os
@@ -48,6 +48,7 @@ class Output:
         self.electrons = {
             'basis_set':       {'bs': {}, 'ps': {}}, # valence and core electrons
             'eigvals':         {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
+            'projected':       [], # raw eigenvalues [..., ...] for total DOS smearing
             'dos':             {}, # in advance pre-computed DOS
             'bands':           {}  # in advance pre-computed band structure
         }
@@ -145,7 +146,7 @@ class Output:
         ''' retrieve unique hash '''
         if not self._checksum:
             file_sha224_checksum = sha224()
-            file_sha224_checksum.update(str(self.structures) + str(self.energy)) # TODO
+            file_sha224_checksum.update(str(self.structures) + str(self.energy)) # this is how unique identity is determined now
             return file_sha224_checksum.hexdigest()
         else:
             return self._checksum

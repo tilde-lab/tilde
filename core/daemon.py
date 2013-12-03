@@ -3,11 +3,8 @@
 # Tilde project: daemon
 # (currently acting as a GUI service)
 # Provides a user interface for database management
-#
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
-#
-# See http://wwwtilda.googlecode.com
-# v300913
+# v271113
 
 import os
 import sys
@@ -37,7 +34,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from settings import settings, write_settings, write_db, repositories, DATA_DIR, DB_SCHEMA, MAX_CONCURRENT_DBS
+from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula
 from plotter import plotter
@@ -342,7 +339,7 @@ class Request_Handler:
 
                     e_flag = {'dos': True, 'bands': True}
                     # avoids json.loads
-                    if '"dos": {}' in row['electrons']: e_flag['dos'] = False
+                    if '"dos": {}' in row['electrons'] and '"projected": {}' in row['electrons']: e_flag['dos'] = False
                     if '"bands": {}' in row['electrons']: e_flag['bands'] = False
 
                     data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
@@ -386,7 +383,7 @@ class Request_Handler:
 
         # *server + client-side* settings
         elif userobj['area'] == 'switching':
-            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect selection!')
+            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect database!')
             Users[session_id].cur_db = userobj['switching']
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
             if Users[session_id].cur_db in Tilde_tags:
@@ -550,28 +547,32 @@ class Request_Handler:
         s = json.loads(row['structures'])
         e = json.loads(row['electrons'])
 
-        if not len(e['dos']): return (data, 'Electron information is not full: plotting impossible!') # and (not 'e_proj_eigvals' in e or not 'impacts' in e):
+        if not len(e['dos']) and not len(e['projected']): return (data, 'Electron information is not full: plotting impossible!') # and (not 'e_proj_eigvals' in e or not 'impacts' in e):
 
-        sigma = 0.05
         val_min = E_LOWER_DEFAULT if not 'min' in userobj else userobj['min']
         val_max = E_UPPER_DEFAULT if not 'max' in userobj else userobj['max']
         pitch=(val_max - val_min) / 200
-
-        '''if 'e_proj_eigvals' in e and 'impacts' in e:
-            # CRYSTAL
-            data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))'''
-
-        # VASP
-        # EXCITING
-        # reduce values
-        keep = []
-        for n, i in enumerate(e['dos']['x']):
-            if val_min <= i <= val_max:
-                keep.append(n)
-        for k in e['dos'].keys():
-            e['dos'][k] = e['dos'][k][keep[0] : keep[-1]+1]        
         
-        return (json.dumps(plotter(task = 'dos', precomputed = e['dos'])), error)
+        '''if 'e_proj_eigvals' in e and 'impacts' in e:
+            data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))'''
+        
+        # EXCITING EIGVAL.OUT
+        if len(e['projected']):
+            sigma=0.1 # tested on comparison with EXCITING XMLs
+            return (json.dumps(plotter(task = 'dos', eigenvalues = e['projected'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
+            
+        # VASP vasprun.xml
+        # EXCITING dos.xml        
+        else:
+            # reduce values
+            keep = []
+            for n, i in enumerate(e['dos']['x']):
+                if val_min <= i <= val_max:
+                    keep.append(n)
+            for k in e['dos'].keys():
+                e['dos'][k] = e['dos'][k][keep[0] : keep[-1]+1]        
+            
+            return (json.dumps(plotter(task = 'dos', precomputed = e['dos'])), error)
 
     @staticmethod
     def e_bands(userobj, session_id): # currently supported for: EXCITING
@@ -583,7 +584,7 @@ class Request_Handler:
         row = cursor.fetchone()
         if row is None: return (data, 'No information found!')
         
-        #s = json.loads(row['structures'])
+        s = json.loads(row['structures'])
         e = json.loads(row['electrons'])
 
         if not len(e['bands']): return (data, 'Band structure is missing!')
@@ -865,7 +866,7 @@ if __name__ == "__main__":
             try: int(updatemsg.split('.')[0])
             except: updatemsg = 'Could not check new version: communication with update server failed.'
             else:
-                if updatemsg.strip() == API.version: updatemsg = "Current version is up-to-date."
+                if updatemsg.strip() == API.version: updatemsg = "Current version is up-to-date.\n"
                 else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
         print updatemsg
 
@@ -878,9 +879,19 @@ if __name__ == "__main__":
         Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
         Repo_pool[r].row_factory = sqlite3.Row
         Repo_pool[r].text_factory = str
+        
+        # check DB_SCHEMA_VERSION
+        incompatible = check_db_version(Repo_pool[r])
+        if incompatible:
+            del Repo_pool[r]
+            print 'Sorry, database ' + DATA_DIR + os.sep + r + ' is incompatible.'
+            continue
+        
         Tilde_tags[r] = DataMap( r )
         if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
-
+    
+    if not Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_db'] + " is incompatible, please, remove it to proceed.")
+    
     Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 
     io_loop = tornado.ioloop.IOLoop.instance()
@@ -895,15 +906,15 @@ if __name__ == "__main__":
                 #(r"/cif/(.*)", CIFDownloadHandler),
                 (r"/json3d/(.*)", JSON3DDownloadHandler),
                 (r"/export/(.*)", DataExportHandler),
-                (r"/VERSION", UpdateServiceHandler)
+                #(r"/VERSION", UpdateServiceHandler)
             ]),
             static_path = os.path.realpath(os.path.dirname(__file__)) + '/../htdocs',
             socket_io_port = settings['webport'],
-            socket_io_address = '0.0.0.0',
+            socket_io_address = '0.0.0.0', # otherwise not working everywhere
             **config)
         tornadio2.server.SocketServer(application, io_loop=io_loop, auto_start=False)
     except:
-        errmsg = "\nError while starting new Tilde daemon: " + "%s" % sys.exc_info()[1]
+        errmsg = "Error while starting new Tilde daemon: " + "%s" % sys.exc_info()[1]
         logging.critical( errmsg )
         print errmsg
     else:
@@ -913,7 +924,7 @@ if __name__ == "__main__":
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "\nWelcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
+        print "Welcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: io_loop.start()
         except KeyboardInterrupt: sys.exit("\nBye-bye.")

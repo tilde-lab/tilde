@@ -398,6 +398,10 @@ function resp__browse(req, data){
         var val = parseFloat( $(this).text() );
         if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
     });
+    $('td._g').each(function(){
+        var val = parseFloat( $(this).text() );
+        if (val) $(this).text( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
+    });
 
     $('span.units-energy').text(_tilde.settings.units.energy);
     $('#databrowser').show();
@@ -731,6 +735,7 @@ $(document).ready(function(){
     _tilde.socket = new io.connect( location.hostname, { transports: ['websocket', 'xhr-polling'], reconnect: true } );
 
     _tilde.socket.on('connect', function(){
+        //_tilde.socket.socket.connected
         logger('CONNECTED.');
         $('#notifybox').hide();
         _tilde.freeze = false;

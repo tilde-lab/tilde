@@ -1,4 +1,10 @@
 
+# Tilde project: plotting interface
+# based on the fact that phonon DOS/bands and electron DOS/bands are objects of the same kind
+# DOS is formatted precomputed / smeared according to a normal distribution
+# bands are formatted precomputed / interpolated through natural cubic spline function
+# v281113
+
 import os
 import sys
 import math
@@ -44,7 +50,7 @@ def plotter(task, **kwargs):
                     results[-1]['data'].append([ kwargs['precomputed']['abscissa'][n], val])
             
         else:        
-            if not 'order' in kwargs: order = sorted( kwargs['values'].keys() )
+            if not 'order' in kwargs: order = sorted( kwargs['values'].keys() ) # TODO
             else: order = kwargs['order']
             
             nullstand = '0 0 0'
@@ -77,11 +83,11 @@ def plotter(task, **kwargs):
                     results[-1]['ticks'].append( [d, bz.replace(' ', '')] )
                     
                 # end in nullstand point (normally, Gamma)
-                y.append(kwargs['values'][nullstand][N])
-                if d == 0: d+=0.5
-                else: d += linalg.norm( bz_vec_ref )
-                x.append(d)
-                results[-1]['ticks'].append( [d, nullstand.replace(' ', '')] )
+                #y.append(kwargs['values'][nullstand][N])
+                #if d == 0: d+=0.5
+                #else: d += linalg.norm( bz_vec_ref )
+                #x.append(d)
+                #results[-1]['ticks'].append( [d, nullstand.replace(' ', '')] )
                 
                 divider = 10 if len(order)<10 else 1.5
                 step = (max(x)-min(x)) / len(kwargs['values']) / divider
@@ -101,23 +107,7 @@ def plotter(task, **kwargs):
         if 'precomputed' in kwargs:
             total_dos = [[i, kwargs['precomputed']['total'][n]] for n, i in enumerate(kwargs['precomputed']['x'])]
             
-        else:        
-            # get the order of atoms to evaluate their partial impact
-            labels = {}
-            types = []        
-            
-            index, subtractor = 0, 0
-            for k, atom in enumerate(kwargs['atomtypes']): # determine the order of atoms for the partial impact of every type
-                if atom not in labels:
-                    #if atom == 'X' and not calc.phonons: # artificial GHOST case for phonons, decrease atomic index
-                    #    subtractor += 1
-                    #    continue
-                    labels[atom] = index
-                    types.append([k+1-subtractor])
-                    index += 1
-                else:
-                    types[ labels[atom] ].append(k+1-subtractor)
-
+        else:
             tdos = TotalDos( kwargs['eigenvalues'], sigma=kwargs['sigma'] )
             tdos.set_draw_area(omega_min=kwargs['omega_min'], omega_max=kwargs['omega_max'], omega_pitch=kwargs['omega_pitch'])
             total_dos = tdos.calculate()
@@ -130,20 +120,35 @@ def plotter(task, **kwargs):
                 if k in ['x', 'total']: continue
                 partial_doses.append({ 'label': k, 'data': [[i, kwargs['precomputed'][k][n]] for n, i in enumerate(kwargs['precomputed']['x'])] })
             
-        else:
+        elif 'impacts' in kwargs and 'atomtypes' in kwargs:
+            # get the order of atoms to evaluate their partial impact
+            labels = {}
+            types = []            
+            index, subtractor = 0, 0
+            for k, atom in enumerate(kwargs['atomtypes']): # determine the order of atoms for the partial impact of every type
+                if atom not in labels:
+                    #if atom == 'X' and not calc.phonons: # artificial GHOST case for phonons, decrease atomic index
+                    #    subtractor += 1
+                    #    continue
+                    labels[atom] = index
+                    types.append([k+1-subtractor])
+                    index += 1
+                else:
+                    types[ labels[atom] ].append(k+1-subtractor)
+                    
             pdos = PartialDos( kwargs['eigenvalues'], kwargs['impacts'], sigma=kwargs['sigma'] )
             pdos.set_draw_area(omega_min=kwargs['omega_min'], omega_max=kwargs['omega_max'], omega_pitch=kwargs['omega_pitch'])
             partial_doses = pdos.calculate( types, labels )
-        
-        # add colors to partials
-        for i in range(len(partial_doses)):
-            if partial_doses[i]['label'] == 'X': color = '#000000'
-            elif partial_doses[i]['label'] == 'H': color = '#CCCCCC'            
-            else:
-                try: color = jmol_to_hex( jmol_colors[ chemical_symbols.index(partial_doses[i]['label']) ] )
-                except ValueError: color = '#FFCC66'
-            partial_doses[i].update({'color': color})
-        
-        results.extend(partial_doses)        
+            
+            # add colors to partials
+            for i in range(len(partial_doses)):
+                if partial_doses[i]['label'] == 'X': color = '#000000'
+                elif partial_doses[i]['label'] == 'H': color = '#CCCCCC'            
+                else:
+                    try: color = jmol_to_hex( jmol_colors[ chemical_symbols.index(partial_doses[i]['label']) ] )
+                    except ValueError: color = '#FFCC66'
+                partial_doses[i].update({'color': color})
+            results.extend(partial_doses)
+            
         return results
         

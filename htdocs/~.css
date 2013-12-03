@@ -28,7 +28,7 @@ div.menu{padding:6px 0 11px;height:28px;width:100%;background:#fff;position:fixe
 
 /* ABOUT MESSAGE CONTENT */
 #mainframe{display:none;width:100%;background:#fff;border:1px solid #000;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;}
-#welcome{background:url(images/top-corner-black.gif) center top no-repeat;margin:-20px 0 0;padding:40px 15px 0;}
+#welcome{background:url(images/top-corner-black.gif) center top no-repeat;margin:-19px 0 0;padding:40px 15px 0;}
 #welcome p{font-size:1.1em;line-height:1.3em;margin-bottom:1em;text-align:center;}
 
 /* COMMON STYLES */

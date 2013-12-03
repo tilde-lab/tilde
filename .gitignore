@@ -1,7 +1,9 @@
 *.py[co]
 .directory
 debug.log
-findsym.log
+windows/cef/debug.log
+core/build
+core/_spglib.so
 data
 parsers/CIF
 parsers/CIF/*
@@ -9,3 +11,4 @@ parsers/GAUSSIAN
 parsers/GAUSSIAN/*
 parsers/WIEN2K
 parsers/WIEN2K/*
+tests/xmind2owl

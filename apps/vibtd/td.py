@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Tilda project: vibrational TD contribution calculator
+# Tilde project: vibrational TD contribution calculator
+# CURRENTLY NOT PLUGGED IN INSIDE TILDE!
 # v161111
 
 import os

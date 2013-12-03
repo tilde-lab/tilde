@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>
-    <entity cid="1" category="formula" source="standard" sort="1" has_column="1" has_label="1" descr=""/>
-     
-    <entity cid="2" category="containing element" source="element#" sort="14" has_label="1" descr=""/>
-    <entity cid="3" category="host elements number" source="nelem" sort="13" has_label="1" descr=""/>
-    <entity cid="4" category="formula units" source="expanded" sort="29" has_column="1" has_label="1" descr=""/>
-    <entity cid="5" category="periodicity" source="periodicity" sort="12" has_column="1" has_label="1" descr=""/>
-    <entity cid="6" category="calculation type" source="calctype#" sort="10" has_label="1" descr=""/>
-    <entity cid="7" category="hamiltonian" source="H" sort="30" has_column="1" has_label="1" descr=""/>
-    <entity cid="8" category="system type" source="tag#" sort="11" has_label="1" descr=""/>
-     
-    <entity cid="9" category="symmetry" source="symmetry" sort="80" has_column="1" has_label="1" descr=""/>
-    <entity cid="10" category="point group" source="pg" sort="81" has_column="1" has_label="1" descr="Result point group"/>
-    <entity cid="11" category="space group (schon.)" source="sg" sort="82" has_column="1" has_label="1" descr="Result space group (Schoenflis notation)"/>
-    <entity cid="12" category="space group (intl.)" source="ng" sort="90" has_column="1" descr="Result space group (international notation)"/>
-    <entity cid="13" category="layer group (intl.)" source="dg" sort="91" has_column="1" descr="Result layer group (international notation)"/>
-     
-    <entity cid="14" category="main tolerance" source="tol" sort="84" has_column="1" has_label="1" descr=""/>
-    <entity cid="15" category="spin-polarized" source="spin" sort="22" negative_tagging="1" has_column="1" has_label="1" descr=""/>
-    <entity cid="16" category="locked magn.state" source="lockstate" sort="23" has_column="1" has_label="1" descr=""/>
-    <entity cid="17" category="k-point set" source="k" sort="85" has_column="1" has_label="1" descr=""/>
-    <entity cid="18" category="used techniques" source="tech#" sort="84" has_label="1" descr=""/>
-    <entity cid="19" category="phon.magnitude" source="dfp_magnitude" sort="86" has_column="1" descr=""/>
-    <entity cid="20" category="phon.disp.number" source="dfp_disps" sort="87" has_column="1" descr=""/>
-    <entity cid="21" category="phon.k-points" source="n_ph_k" sort="88" has_column="1" descr=""/>
-    <entity cid="22" category="code" source='prog' sort="89" has_column="1" has_label="1" descr=""/>
-     
-    <entity cid="23" category="modeling time, hr" source='duration' sort="90" has_column="1" descr=""/>
-     
-    <entity cid="24" category="conductivity" source='etype' sort="5" has_column="1" has_label="1" descr=""/>
-    <entity cid="25" category="min. band gap" html="Min. band gap, {units-energy}" source='bandgap' sort="6" has_column="1" descr=""/>
-    <entity cid="26" category="band gap type" source='bandgaptype' sort="31" has_column="1" has_label="1" descr=""/>     
-     
-    <entity cid="501" category="basis sets" source="bs#" sort="500" has_label="1" descr=""/>
-     
-    <entity cid="510" category="vacancy content" source="vac" sort="13" negative_tagging="1" has_column="1" has_label="1" descr=""/>
-    <entity cid="511" category="impurity" source="impurity#" sort="14" negative_tagging="1" has_label="1" descr=""/>
-     
-    <entity cid="520" category="planes number" source="layers" sort="95" has_column="1" has_label="1" descr=""/>
-    <entity cid="521" category="adsorbent" source="adsorbent" sort="96" has_column="1" has_label="1" descr=""/>
-    <entity cid="522" category="surface termination" source="termination" sort="95" has_column="1" has_label="1" descr=""/>
+    <entity cid="1" category="formula" source="standard" sort="1" has_column="1" has_label="1" descr=""/>     
+    <entity cid="2" category="containing element" source="element#" sort="2" has_label="1" descr=""/>
+    <entity cid="3" category="host elements number" source="nelem" sort="3" has_label="1" descr=""/>
+    <entity cid="4" category="formula units" source="expanded" sort="4" has_column="1" has_label="1" descr=""/>
+    <entity cid="1001" category="number of atoms" html="N,,atoms,," sort="5" has_column="1" descr=""/>
 
-
-    <entity cid="1001" category="number of atoms" html="N,,atoms,," sort="2" has_column="1" descr=""/>
-    <entity cid="1002" category="total energy" html="E,,el.tot,,/cell, {units-energy}" sort="3" has_column="1" descr=""/>
-    <entity cid="1003" category="cell dimensions" html="Cell, {units-distance}^^2^^ or {units-distance}^^3^^" sort="4" has_column="1" descr=""/>
-    <entity cid="1005" category="source file" sort="98" has_column="1" descr=""/>
-    <entity cid="1006" category="finished" html="Finished?" sort="99" has_column="1" descr=""/>
     
-    <entity cid="2000" category="sample example" sort="666" has_column="1" has_label="1" descr=""/>
+    <entity cid="5" category="periodicity" source="periodicity" sort="6" has_column="1" has_label="1" descr=""/> 
+    <entity cid="9" category="syngony" source="symmetry" sort="7" has_column="1" has_label="1" descr=""/>
+    <entity cid="10" category="point group" source="pg" sort="8" has_column="1" has_label="1" descr="Result point group"/>
+    <entity cid="11" category="space group (schon.)" source="sg" sort="9" has_column="1" has_label="1" descr="Result space group (Schoenflis notation)"/>
+    <entity cid="12" category="space group (intl.)" source="ng" sort="10" has_column="1" descr="Result space group (international notation)"/>
+    <entity cid="13" category="layer group (intl.)" source="dg" sort="11" has_column="1" descr="Result layer group (international notation)"/>
+
+
+    <entity cid="8" category="system type" source="tag#" sort="12" has_label="1" descr=""/>
+    <entity cid="6" category="calculation type" source="calctype#" sort="13" has_label="1" descr=""/>
+    <entity cid="7" category="hamiltonian" source="H" sort="14" has_column="1" has_label="1" descr=""/>
+    <entity cid="14" category="main tolerance" source="tol" sort="15" has_column="1" has_label="1" descr=""/>
+    <entity cid="15" category="spin-polarized" source="spin" sort="16" negative_tagging="1" has_column="1" has_label="1" descr=""/>
+    <entity cid="16" category="locked magn.state" source="lockstate" sort="17" has_column="1" has_label="1" descr=""/>
+    <entity cid="17" category="k-point set" source="k" sort="18" has_column="1" has_label="1" descr=""/>
+    <entity cid="18" category="used techniques" source="tech#" sort="19" has_label="1" descr=""/>
+    <entity cid="19" category="phon.magnitude" source="dfp_magnitude" sort="20" has_column="1" descr=""/>
+    <entity cid="20" category="phon.disp.number" source="dfp_disps" sort="21" has_column="1" descr=""/>
+    <entity cid="21" category="phon.k-points" source="n_ph_k" sort="22" has_column="1" descr=""/>
+    <entity cid="22" category="code" source='prog' sort="23" has_column="1" has_label="1" descr=""/>
+     
+    <entity cid="23" category="modeling time, hr" source='duration' sort="1003" has_column="1" descr=""/>
+     
+    <entity cid="24" category="conductivity" source='etype' sort="24" has_column="1" has_label="1" descr=""/>
+    <entity cid="25" category="min. band gap" html="Min. band gap, {units-energy}" source='bandgap' sort="25" has_column="1" descr=""/>
+    <entity cid="26" category="band gap type" source='bandgaptype' sort="26" has_column="1" has_label="1" descr=""/>     
+    <entity cid="510" category="vacancy content" source="vac" sort="27" negative_tagging="1" has_column="1" has_label="1" descr=""/>
+    <entity cid="511" category="impurity" source="impurity#" sort="28" negative_tagging="1" has_label="1" descr=""/>     
+    <entity cid="520" category="planes number" source="layers" sort="29" has_column="1" has_label="1" descr=""/>
+    <entity cid="521" category="adsorbent" source="adsorbent" sort="30" has_column="1" has_label="1" descr=""/>
+    <entity cid="522" category="surface termination" source="termination" sort="31" has_column="1" has_label="1" descr=""/>
+
+
+    <entity cid="501" category="basis sets" source="bs#" sort="10000" has_label="1" descr=""/>
+    
+    
+    <entity cid="1002" category="total energy" html="E,,el.tot,,/cell, {units-energy}" sort="1000" has_column="1" descr=""/>
+    <entity cid="1003" category="cell dimensions" html="Cell, {units-distance}^^2^^ or {units-distance}^^3^^" sort="4" has_column="1" descr=""/>
+    <entity cid="1005" category="source file" sort="999" has_column="1" descr=""/>
+    <entity cid="1006" category="finished" html="Finished?" sort="1001" has_column="1" descr=""/>
+    
+    <entity cid="2000" category="sample example" sort="1002" has_column="1" has_label="1" descr=""/>
 </schema>

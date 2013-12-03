@@ -11,111 +11,40 @@
 #
 # v220913
 
-import os
-import sys
+import os, sys
 
 # this is done to have all third-party code in deps folder
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
 
+from ase.atoms import Atoms
 from spacegroup.cell import cell_to_cellpar
+
+# Dirty hack to provide cross-platform compatibility : TODO
+try:
+    if 'win' in sys.platform: sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../windows/spglib/'))
+    import _spglib as spg
+except ImportError: raise RuntimeError('Cannot start symmetry finder!')
+
 
 # recommended accuracy value = 0.0001
 DEFAULT_ACCURACY=1e-04
 
-if 'win' in sys.platform:
-    from ase.atoms import Atoms
-    import pywintypes
-    import pythoncom
-    import win32api
-    from pyspglib import spglib
-
-    class SymmetryFinder:
-        def __init__(self, tilde_obj, accuracy):
-            self.error = None
-            try: symmetry = spglib.get_spacegroup(tilde_obj['structures'][-1], accuracy)
-            except Exception, ex:
-                self.error = 'Symmetry finder error: %s' % ex
-            else:
-                symmetry = symmetry.split()
-                self.n = int( symmetry[1].replace("(", "").replace(")", "") )
-                self.i = symmetry[0]
-
-elif 'linux' in sys.platform:
-    import subprocess
-    from numpy import dot, array, matrix
-    
-    isodata_path = os.path.realpath(os.path.dirname(__file__)) + '/deps/findsym'
-    findsym = os.path.join(isodata_path, 'findsym')
-    myenv = {'ISODATA': isodata_path + os.sep}
-    
-    if not os.access(findsym, os.X_OK): os.chmod(findsym, 0777)
-    # TODO: how to suppress creation of log and redundant I/O?
-
-    class SymmetryFinder:
-        def __init__(self, tilde_obj, accuracy):
-            self.error = None
-            self.cif = None            
-            input, findsym_corr, error = self.findsym_input(tilde_obj['structures'][-1], accuracy)
-            #print input
-            
-            if error: self.error = error
-            else:
-                p = subprocess.Popen([findsym], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=myenv)
-                foundsym = p.communicate(input)[0]                
-                #print foundsym
-
-                if not "------------------------------------------" in foundsym:
-                    self.error = 'FINDSYM program failed to run!'
-                else:
-                    out = foundsym.split("------------------------------------------")
-                    if len(out) != 3:
-                        self.error = 'FINDSYM reported error:', out[-1]
-                    else:
-                        # prepare CIF
-                        out[2] = out[2].replace("data_ findsym-output", "data_findsym-output") # problems here with CIF grammar (tracked thanks to Materials Studio!)
-                        # replace A, B, C etc. in output on real atoms
-                        parts = out[2].split("_atom_site_type_symbol")
-                        for symbol, letter in findsym_corr.iteritems():
-                            parts[1] = parts[1].replace(letter, symbol)
-                        self.cif = parts[0] + "_atom_site_type_symbol" + parts[1]
-                        
-                        # prepare main output
-                        symmetry = out[1].splitlines()[1].replace("Space Group ", "")
-                        self.n, self.s, self.i = symmetry.split()
-                        self.n = int( self.n )
-
-        def findsym_input(self, structure, accuracy):
-            error = None
-            findsym_atoms = 'ABCDEFGHIJKLMNOPQRSTYVWXYZ'
-            out = "~\n" + "%s" % accuracy + "\n2\n"
-            out += "%3.8f   %3.8f   %3.8f   %3.8f   %3.8f   %3.8f\n" % tuple(cell_to_cellpar(structure.cell))
-            out += " 2\n P\n " + "%s" % len(structure) + "\n"
-            coords = ''
-            atomtypes = []
-            atomlabels = {}
-            N = 0
-            for symb in structure.get_chemical_symbols():
-                if symb in atomlabels.values():
-                    counter = [k for k, v in atomlabels.iteritems() if v == symb][0]
-                    atomtypes.append(counter)
-                else:
-                    N += 1
-                    atomlabels[N] = symb
-                    atomtypes.append(N)
-            for pos in structure.get_scaled_positions():
-                coords += "   % 3.8f   % 3.8f   % 3.8f\n" % tuple(pos)
-            for n, type in enumerate(atomtypes):
-                out += "   " + "%s" % type
-                if not n % 20: out += "\n"
-            if out[-1:] != "\n": out += "\n"
-            out += coords
-            findsym_corr = {}
-            for i, v in atomlabels.iteritems():
-                try: findsym_corr[v.capitalize()] = findsym_atoms[i-1]
-                except IndexError: error = 'Too many atom types for FINDSYM!'
-            return out, findsym_corr, error
-
-else: raise RuntimeError('Cannot start platform-dependent symmetry finder!')
+class SymmetryFinder:
+    def __init__(self, tilde_obj, accuracy):
+        self.error = None
+        self.angle_tolerance=4
+        try: symmetry = spg.spacegroup(
+            tilde_obj['structures'][-1].get_cell().T.copy(),
+            tilde_obj['structures'][-1].get_scaled_positions().copy(),
+            tilde_obj['structures'][-1].get_atomic_numbers(),
+            accuracy,
+            self.angle_tolerance)
+        except Exception, ex:
+            self.error = 'Symmetry finder error: %s' % ex
+        else:
+            symmetry = symmetry.split()
+            self.n = int( symmetry[1].replace("(", "").replace(")", "") )
+            self.i = symmetry[0]
 
 '''
 # Dummy class for testing purposes

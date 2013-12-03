@@ -1,6 +1,6 @@
 
-# tilda project: EXCITING calculations parser
-# v241013
+# Tilde project: EXCITING text logs and XML outputs parser
+# v301113
 
 import os
 import sys
@@ -11,6 +11,11 @@ from xml.etree import ElementTree as ET
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.units import Bohr, Hartree
 from ase import Atoms
+
+from numpy import dot
+from numpy import array
+from numpy import transpose
+from numpy import linalg
 
 from parsers import Output
 from core.electron_structure import Edos, Ebands
@@ -173,8 +178,8 @@ class INFOOUT(Output):
             elif 'Total time spent ' in line: # Beryllium
                 self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
                 
-            #elif line.startswith(' Fermi '):
-            #    e_last = float(self.data[n].split(":")[-1]) * Hartree
+            elif line.startswith(' Fermi '):
+                e_last = float(self.data[n].split(":")[-1]) * Hartree
                 
             elif 'Number of empty states' in line:
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
@@ -231,21 +236,58 @@ class INFOOUT(Output):
                 self.structures[i].set_pbc((True, True, False))
                     
         # Electronic properties
-        if os.path.exists(os.path.join(os.path.dirname(file), 'dos.xml')):
-            f = open(os.path.join(os.path.dirname(file), 'dos.xml'),'r')
+        
+        # look for full DOS in xml
+        '''if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
+            f = open(os.path.join(cur_folder, 'dos.xml'),'r')
             try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
             except: self.warning("Error in dos.xml file!")
             finally: f.close()
-            
-        if os.path.exists(os.path.join(os.path.dirname(file), 'bandstructure.xml')):
-            f = open(os.path.join(os.path.dirname(file), 'bandstructure.xml'),'r')
+        
+        # look for interpolated bands in xml    
+        if os.path.exists(os.path.join(cur_folder, 'bandstructure.xml')):
+            f = open(os.path.join(cur_folder, 'bandstructure.xml'),'r')
             try: self.electrons['bands'] = Ebands(parse_bandsxml(f))
             except: self.warning("Error in bandstructure.xml file!")
+            finally: f.close()'''
+        
+        # worst case: look for DOS (total) and raw bands        
+        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']):
+            f = open(os.path.join(cur_folder, 'EIGVAL.OUT'),'r')
+            # why such a call? we need to spare RAM
+            # so let's look whether these variables are filled
+            # and fill them only if needed
+            try: kpts, columns = parse_eigvals(f, e_last)
+            except: self.warning("Error in EIGVAL.OUT file!")
+            else:
+                # manipulations per se
+                # obviously this should repeat XML data (but beware an interpolation noise on small k-sets!)
+                if not self.electrons['dos']:
+                    for c in columns:
+                        for i in c:
+                            self.electrons['projected'].append(i)
+                    self.electrons['projected'].sort()                  
+                        
+                if not self.electrons['bands']:
+                    band_obj = {'ticks': [], 'abscissa': [], 'stripes': []}
+                    d = 0.0
+                    bz_vec_ref = [0, 0, 0]
+                    for k in kpts:
+                        bz_vec_cur = dot( k, linalg.inv( self.structures[-1].cell ).transpose() )
+                        bz_vec_dir = map(sum, zip(bz_vec_cur, bz_vec_ref))
+                        bz_vec_ref = bz_vec_cur        
+                        d += linalg.norm( bz_vec_dir )
+                        band_obj['abscissa'].append(d)
+                    band_obj['stripes'] = transpose(array(columns)).tolist()
+                    self.electrons['bands'] = Ebands(band_obj)
+                        
             finally: f.close()
             
+        if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")        
+            
         # Phonons
-        if os.path.exists(os.path.join(os.path.dirname(file), 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT':
-            f = open(os.path.join(os.path.dirname(file), 'PHONON.OUT'), 'r')
+        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO
+            f = open(os.path.join(cur_folder, 'PHONON.OUT'), 'r')
             linelist = f.readlines()
             filelen = len(linelist)
             n_at = len(self.structures[-1])
@@ -268,7 +310,8 @@ class INFOOUT(Output):
                     container = []
                     for atom in range(n_at):
                         for disp in range(3):
-                            container.append( float(linelist[n_line].split()[3]) )
+                            try: container.append( float(linelist[n_line].split()[3]) )
+                            except ValueError: container.append(0.0)
                             #float(linelist[n_line].split()[4])
                             n_line += 1
                     
@@ -282,13 +325,14 @@ class INFOOUT(Output):
                 self.phonons['ph_eigvecs'][ k_coords ] = ph_eigvecs
 
             f.close()
-
         
     @staticmethod
     def fingerprints(test_string):
         if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True
         else: return False
 
+
+# dos.xml parser
 
 def parse_dosxml(fp, symbols):
     dos_obj = {'x': [],}
@@ -337,7 +381,9 @@ def parse_dosxml(fp, symbols):
         elem.clear()
             
     return dos_obj
-    
+
+# bandstructure.xml parser
+
 def parse_bandsxml(fp):
     band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
     first_cyc = True
@@ -360,3 +406,33 @@ def parse_bandsxml(fp):
     band_obj['stripes'].pop() # last []
         
     return band_obj
+
+# EIGVAL.OUT parser
+
+def parse_eigvals(fp, e_last):
+    kpts = []
+    columns = []
+    while 1:
+        s = fp.readline()
+        if not s: break
+        s = s.strip()
+        if len(s) < 20: # first two lines or section dividers
+            if not columns:
+                columns.append([])
+                continue
+            if not columns[-1]:
+                continue
+            else:
+                columns[-1] = map(lambda x: x-e_last, columns[-1])
+                columns.append([])
+        elif len(s) > 45: # k-point coords
+            kpts.append(  map(float, s.split()[1:4])  )
+        else:
+            try: int(s[0])
+            except ValueError: # comment
+                continue
+            else:
+                n, e, occ = s.split()
+                columns[-1].append(float(e)*Hartree)
+    columns.pop() # last []            
+    return kpts, columns
