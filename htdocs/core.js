@@ -905,6 +905,7 @@ $(document).ready(function(){
             
             $('div.pane').hide();
             $('#demo').show();
+            $('#demo_query').focus();
             
         } else {
             notify('This supposed to be error 404.');

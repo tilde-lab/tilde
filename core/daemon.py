@@ -648,8 +648,6 @@ class Request_Handler:
     def restart(userobj=None, session_id=None):
         data, error = None, None
         
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        
         # this is borrowed from tornado autoreload
         if sys.platform == 'win32':
             # os.execv is broken on Windows and can't properly parse command line
