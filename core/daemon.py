@@ -339,7 +339,7 @@ class Request_Handler:
 
                     e_flag = {'dos': True, 'bands': True}
                     # avoids json.loads
-                    if '"dos": {}' in row['electrons'] and '"projected": {}' in row['electrons']: e_flag['dos'] = False
+                    if '"dos": {}' in row['electrons'] and '"projected": []' in row['electrons']: e_flag['dos'] = False
                     if '"bands": {}' in row['electrons']: e_flag['bands'] = False
 
                     data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
