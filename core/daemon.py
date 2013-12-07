@@ -34,7 +34,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
+from settings import settings, write_settings, write_db, check_db_version, permitted_ip, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula
 from plotter import plotter
@@ -42,6 +42,7 @@ from plotter import plotter
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/hierarchy'))
 from hierarchy import g, actson, actedby
 
+ALWS_ALLWD_RSRCS = ['images/top-corner-black.gif', 'images/logo.gif', 'images/nomad.jpg'] # this will be shown even to restricted IPs
 DELIM = '~#~#~'
 EDITION = settings['title'] if settings['title'] else 'Tilde ' + API.version
 E_LOWER_DEFAULT = -7.0
@@ -95,7 +96,7 @@ class DataMap:
             tags.extend( self.c2t[ arg ] ) # logic OR intersection
         return list(set(tags))              
 
-class Request_Handler:
+class DuplexConnectionHandler:
     @staticmethod
     def login(userobj, session_id):
         data, error = { 'title': EDITION, 'version': API.version }, None
@@ -341,7 +342,7 @@ class Request_Handler:
 
                     e_flag = {'dos': True, 'bands': True}
                     # avoids json.loads
-                    if '"dos": {}' in row['electrons'] and '"projected": {}' in row['electrons']: e_flag['dos'] = False
+                    if '"dos": {}' in row['electrons'] and '"projected": []' in row['electrons']: e_flag['dos'] = False
                     if '"bands": {}' in row['electrons']: e_flag['bands'] = False
 
                     data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
@@ -692,7 +693,10 @@ class Request_Handler:
 
 
 class DuplexConnection(tornadio2.conn.SocketConnection):
-    def on_open(self, info):
+    def on_open(self, info):                
+        if not permitted_ip(info.ip):
+            self.session.close(self.endpoint)
+            
         global Users
         Users[ self.session.session_id ] = User()
 
@@ -702,7 +706,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 
         if len(output['req']): userobj = json.loads(output['req'])
 
-        if not hasattr(Request_Handler, output['act']):
+        if not hasattr(DuplexConnectionHandler, output['act']):
             output['error'] = 'No server handler for action ' + output['act']
             self._send(output)
         else:
@@ -718,18 +722,19 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
                     tasks = Tilde.savvyize(discover, recursive)
                     if not tasks: self._send(output)
                     for n, task in enumerate(tasks, start=1):
-                        checksum, error = Request_Handler.report({'path': task[len(settings['local_dir']):], 'transport': 'local'}, session_id=self.session.session_id)
+                        checksum, error = DuplexConnectionHandler.report({'path': task[len(settings['local_dir']):], 'transport': 'local'}, session_id=self.session.session_id)
                         finished = 1 if n == len(tasks) else 0
                         output['data'] = json.dumps({'filename': os.path.basename(task), 'error': error, 'checksum': checksum, 'finished': finished})
                         self._send(output)
 
             # single answer
             else:
-                output['data'], output['error'] = getattr(Request_Handler, output['act'])( userobj, session_id=self.session.session_id )
+                output['data'], output['error'] = getattr(DuplexConnectionHandler, output['act'])( userobj, session_id=self.session.session_id )
                 self._send(output)
 
     def on_close(self):
-        del Users[ self.session.session_id ]
+        if self.session.session_id in Users:
+            del Users[ self.session.session_id ]
 
     def _send(self, output):
         if output['error'] is None and output['data'] is None: output['error'] = output['act'] + " handler has returned an empty result!"
@@ -739,8 +744,11 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         self.send( answer )
 
 class IndexHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
+    def get(self):      
+        if not permitted_ip(self.request.remote_ip):
+            self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/demo.html")
+        else:
+            self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
 
 '''class CIFDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -767,17 +775,25 @@ class IndexHandler(tornado.web.RequestHandler):
             
 class JSON3DDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
-        if not '/' in req_str: raise tornado.web.HTTPError(404)
+        
+        if not permitted_ip(self.request.remote_ip):
+            raise tornado.web.HTTPError(403)
+        
+        if not '/' in req_str:
+            raise tornado.web.HTTPError(404)
         items = req_str.split('/')
-        if len(items) != 2: raise tornado.web.HTTPError(404)
+        if len(items) != 2:
+            raise tornado.web.HTTPError(404)
         db, hash = items
-        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)        
+        if len(hash) != 56 or not db in Repo_pool:
+            raise tornado.web.HTTPError(404)        
         
         try:
             cursor = Repo_pool[ db ].cursor()
             cursor.execute( 'SELECT structures, info, apps FROM results WHERE checksum = ?', (hash,) )
             row = cursor.fetchone()
-            if not row: raise tornado.web.HTTPError(404)
+            if not row:
+                raise tornado.web.HTTPError(404)
         except:
             raise tornado.web.HTTPError(500)
         else:
@@ -813,8 +829,10 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
                     radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
                 oa = {'t':i.symbol}
                 for app in overlayed_apps.keys():
-                    try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
-                    except KeyError: pass
+                    try:
+                        oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
+                    except KeyError:
+                        pass
                 atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
 
             # player.html cell depiction
@@ -834,18 +852,27 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
 
 class DataExportHandler(tornado.web.RequestHandler):
     def get(self, req_str):
-        if not settings['exportability']: raise tornado.web.HTTPError(404)
-        if not '/' in req_str: raise tornado.web.HTTPError(404)
+        
+        if not permitted_ip(self.request.remote_ip):
+            raise tornado.web.HTTPError(403)
+        
+        if not settings['exportability']:
+            raise tornado.web.HTTPError(404)
+        if not '/' in req_str:
+            raise tornado.web.HTTPError(404)
         items = req_str.split('/')
-        if len(items) != 2: raise tornado.web.HTTPError(404)
+        if len(items) != 2:
+            raise tornado.web.HTTPError(404)
         db, hash = items
-        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
+        if len(hash) != 56 or not db in Repo_pool:
+            raise tornado.web.HTTPError(404)
 
         try:
             cursor = Repo_pool[ db ].cursor()
             cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (hash,) )
             row = cursor.fetchone()
-            if not row: raise tornado.web.HTTPError(404)
+            if not row:
+                raise tornado.web.HTTPError(404)
         except:
             raise tornado.web.HTTPError(500)
         else:
@@ -857,11 +884,14 @@ class DataExportHandler(tornado.web.RequestHandler):
                 self.write(file)
             else:
                 raise tornado.web.HTTPError(404)
-
-class UpdateServiceHandler(tornado.web.RequestHandler):
-    def get(self):
-        logging.critical("Client " + self.request.remote_ip + " has requested an update.")
-        self.write(API.version)
+        
+class RestrictedStaticFileHandler(tornado.web.StaticFileHandler):
+    def get(self, path, include_body=True):
+                
+        if not permitted_ip(self.request.remote_ip) and path not in ALWS_ALLWD_RSRCS:
+            raise tornado.web.HTTPError(403)
+            
+        tornado.web.StaticFileHandler.get(self, path, include_body=True)
 
 if __name__ == "__main__":
     
@@ -912,13 +942,11 @@ if __name__ == "__main__":
         application = tornado.web.Application(
             Router.apply_routes([
                 (r"/", IndexHandler),
-                (r"/static/(.*)", tornado.web.StaticFileHandler),
-                #(r"/cif/(.*)", CIFDownloadHandler),
                 (r"/json3d/(.*)", JSON3DDownloadHandler),
-                (r"/export/(.*)", DataExportHandler),
-                #(r"/VERSION", UpdateServiceHandler)
+                (r"/export/(.*)", DataExportHandler)
             ]),
-            static_path = os.path.realpath(os.path.dirname(__file__)) + '/../htdocs',
+            static_path = os.path.realpath(os.path.dirname(__file__) + '/../htdocs'),
+            static_handler_class = RestrictedStaticFileHandler,
             socket_io_port = settings['webport'],
             socket_io_address = '0.0.0.0', # otherwise not working everywhere
             **config)

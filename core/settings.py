@@ -6,14 +6,12 @@ import sys
 import os
 import re
 import json
-
+from xml.etree import ElementTree as ET
 try: import sqlite3
 except: from pysqlite2 import dbapi2 as sqlite3
 
 # EXTENSIONS COMPILATION
 import installation
-
-from xml.etree import ElementTree as ET
 
 
 DB_SCHEMA_VERSION = '1.0'
@@ -33,7 +31,8 @@ DEFAULT_SETUP = {
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
                 'title': None,
-                'update_server': "http://tilde.pro/VERSION"
+                'update_server': "http://tilde.pro/VERSION",
+                'white_ip_list': '',
                 }
 DB_SCHEMA = '''
 CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
@@ -152,6 +151,25 @@ def check_db_version(db_conn):
     else:
         return False
 
+def valid_ip(addr):
+    try:
+        addr = addr.strip().split(".")
+    except AttributeError:
+        return False
+    try:
+        return len(addr) == 4 and all((octet.isdigit() and int(octet) < 256) or octet == '*' for octet in addr)
+    except ValueError:
+        return False
+        
+def permitted_ip(addr):
+    for i in settings['white_ip_list']:
+        if '*' in i:
+            p = i.find('*')
+            if addr[:p] == i[:p]:
+                return True
+        elif i == addr:
+            return True
+    return False
 
 # INSTALLATION
 
@@ -186,9 +204,17 @@ if len(repositories) > MAX_CONCURRENT_DBS:
 # SETTINGS COMBINATIONS
 
 if settings['demo_regime'] and settings['debug_regime']: settings['debug_regime'] = 0
+if settings['demo_regime']:
+    ips = settings['white_ip_list'].split(',')
+    settings['white_ip_list'] = []
+    for n in range(len(ips)):
+        if not valid_ip(ips[n]): raise RuntimeError('IP address format in settings is invalid!')
+        settings['white_ip_list'].append(ips[n].strip())
+        
 
 # SETTINGS RESTRICTIONS
 
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3: raise RuntimeError('Path skipping directive must not contain more than 3 symbols due to memory limits!')
 if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')): settings['local_dir'] = EXAMPLE_DIR
 if not settings['local_dir'].endswith(os.sep): settings['local_dir'] += os.sep
+   
