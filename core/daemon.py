@@ -597,7 +597,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):      
         if not permitted_ip(self.request.remote_ip):
-            self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/demo.html")
+            self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/stub.html")
         else:
             self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
 
