@@ -1,8 +1,8 @@
 
 # Tilde project: core
-# v271113
+# v071213
 
-__version__ = "0.2.4"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+__version__ = "0.2.5"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
                         # SYNCHRONIZE WITH root/VERSION
 import os
 import sys
@@ -38,34 +38,10 @@ class API:
         self.settings = settings        
         self.hierarchy = read_hierarchy() # main mapping source according to what a data classification is made
         self.deferred_storage = {}
-
-        # *parser API*
-        # Subfolder "parsers" contains directories with parsers.
-        # Parser will be active if:
-        # (1) its class defines a fingerprints method
-        # (2) it is enabled in its manifest file
-        # (3) its file name repeats the name of parser folder
-        All_parsers, self.Parsers = {}, {}
-        for parsername in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
-            if settings['demo_regime']: continue
-            
-            if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ): continue
-            if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
-                raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
-            try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ).read() )
-            except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
-            
-            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not settings['debug_regime']: continue  
-            
-            All_parsers[parsername] = getattr(getattr(__import__('parsers.' + parsername + '.' + parsername), parsername), parsername) # all imported modules will be stored here
         
-        # replace modules by classes and check *fingerprints* method
-        for parser, module in All_parsers.iteritems():
-            for name, cls in inspect.getmembers(module):
-                if inspect.isclass(cls):
-                    if inspect.isclass(cls) and hasattr(cls, 'fingerprints'):
-                        self.Parsers[cls.__name__] = cls
-
+        # *parser API is omitted*
+        self.Parsers = {}
+        
         # *module API*
         # Tilde module (app) is simply a subfolder (%appfolder%) of apps folder
         # contains manifest.json and %appfolder%.py files

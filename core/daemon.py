@@ -119,7 +119,7 @@ class DuplexConnectionHandler:
                 avcols.append({ 'cid': item['cid'], 'category': item['category'], 'sort': item['sort'], 'enabled': enabled })
 
         # settings of object-scope (global flags)
-        data['demo_regime'] = 1 if settings['demo_regime'] else 0
+        data['demo_regime'] = 1
         if settings['debug_regime']: data['debug_regime'] = settings['debug_regime']
 
         # settings of specified scope
@@ -131,42 +131,6 @@ class DuplexConnectionHandler:
 
         data = json.dumps(data)
         return (data, error)
-
-    @staticmethod
-    def list(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-
-        userobj['path'] = userobj['path'].replace('../', '')
-        discover = settings['local_dir'] + userobj['path']
-        if not os.path.exists(discover): error = 'Not existing path was requested!'
-        elif not os.access(discover, os.R_OK): error = 'A requested path is not readable (check privileges?)'
-        else:
-            if userobj['transport'] in Tilde.Conns.keys():
-                data, error = Tilde.Conns[ userobj['transport'] ]['list']( userobj['path'], settings['local_dir'] )
-            if not data and not userobj['path'] and not error: data = 'Notice: specified folder is empty.'
-        return (data, error)
-
-    @staticmethod
-    def report(userobj, session_id, callback=None):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        if not settings['local_dir']: return (data, 'Please, define working path!')
-        userobj['path'] = userobj['path'].replace('../', '')
-
-        if not error:
-            if userobj['transport'] in Tilde.Conns.keys():
-                data, error = Tilde.Conns[ userobj['transport'] ]['report']( userobj['path'], settings['local_dir'], Tilde )
-
-        global Tilde_tags
-        if Users[session_id].cur_db in Tilde_tags:
-            # force update tags in memory
-            Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
-            if Tilde_tags[ Users[session_id].cur_db ].error:
-                error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
-
-        if callback: callback( (data, error) )
-        else: return (data, error)
 
     @staticmethod
     def browse(userobj, session_id):
@@ -354,19 +318,8 @@ class DuplexConnectionHandler:
 
         global Tilde, Users, Tilde_tags
 
-        # *server-side* settings
-        if userobj['area'] == 'scan':
-            if settings['demo_regime']: return (data, 'Action not allowed!')
-            
-            for i in ['quick_regime', 'skip_unfinished', 'skip_if_path']:
-                settings[i] = userobj['settings'][i]
-
-            if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
-
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], settings=settings )
-        
         # *server-side* settings    
-        elif userobj['area'] == 'path':
+        if userobj['area'] == 'path':
             if not len(userobj['path']): return (data, 'Please, input a valid working path.')
             if not os.path.exists(userobj['path']) or not os.access(userobj['path'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
             if 'win' in sys.platform and userobj['path'].startswith('/'): return (data, 'Working path should not start with slash.')
@@ -420,54 +373,6 @@ class DuplexConnectionHandler:
                 return (data, error)
             else: return (data, 'Sorry, i have no access to source file anymore!')
 
-    @staticmethod
-    def db_create(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        
-        global Repo_pool
-        
-        if len(Repo_pool) == MAX_CONCURRENT_DBS: return (data, 'Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
-        
-        error = write_db(userobj['newname'])
-        userobj['newname'] += '.db'
-        
-        if not error:
-            Repo_pool[userobj['newname']] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + userobj['newname']  ) )
-            Repo_pool[userobj['newname']].row_factory = sqlite3.Row
-            Repo_pool[userobj['newname']].text_factory = str
-            data, error = 1, None
-        
-        return (data, error)
-
-    @staticmethod
-    def db_copy(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        if not 'tocopy' in userobj or not 'dest' in userobj or not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
-        if not userobj['dest'] in Repo_pool: return (data, 'Copying destination invalid!')
-
-        global Tilde
-        data_clause = '","'.join(  userobj['tocopy']  )
-        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % data_clause )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
-        else:
-            result = cursor.fetchall()
-
-            # TODO: THIS IS I/O DANGEROUS
-            Tilde.reload( db_conn=Repo_pool[ userobj['dest'] ] )
-
-            for r in result:
-                calc = Tilde.restore(r, db_transfer_mode=True)
-                checksum, error = Tilde.save(calc, db_transfer_mode=True)
-                
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
-        data = 1
-        return (data, error)
-    
-    # TODO: delegate content of these four methods to plotter!
-    
     @staticmethod
     def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP
         data, error = None, None
@@ -598,52 +503,6 @@ class DuplexConnectionHandler:
         e['bands']['stripes'] = ifilter(lambda value: val_min < sum(value)/len(value) < val_max, e['bands']['stripes'])
         
         return (json.dumps(plotter( task = 'bands', precomputed = e['bands'] )), error)
-        
-    @staticmethod
-    def delete(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        
-        global Tilde_tags, Repo_pool
-        
-        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        
-        data_clause = '","'.join(userobj['hashes'])
-        try:
-            cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
-            cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
-            Repo_pool[ Users[session_id].cur_db ].commit()
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
-        else:
-            # force update tags in memory
-            Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
-            if Tilde_tags[ Users[session_id].cur_db ].error:
-                error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
-            data = 1
-            return (data, error)
-
-    @staticmethod
-    def clean(userobj, session_id):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        if userobj['db'] == Users[session_id].cur_db: return (data, 'Deletion of current database is prohibited!')
-        global Tilde_tags, Repo_pool
-        try: Repo_pool[ userobj['db'] ].close()
-        except:
-            return (data, 'Cannot close database: ' + "%s" % sys.exc_info()[1])
-        else:
-            del Repo_pool[ userobj['db'] ]
-            if userobj['db'] in Tilde_tags: del Tilde_tags[ userobj['db'] ]
-            try: os.remove(os.path.abspath(  DATA_DIR + os.sep + userobj['db']  ))
-            except:
-                return (data, 'Cannot delete database: ' + "%s" % sys.exc_info()[1])
-
-            if userobj['db'] == settings['default_db']:
-                settings['default_db'] = Users[session_id].cur_db
-                if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
-
-            data = 1
-            return (data, error)
 
     @staticmethod
     def restart(userobj=None, session_id=None):
@@ -674,14 +533,6 @@ class DuplexConnectionHandler:
                 # this error specifically.
                 os.spawnv(os.P_NOWAIT, sys.executable, [sys.executable] + sys.argv)
                 sys.exit(0)
-
-    @staticmethod
-    def terminate(userobj=None, session_id=None):
-        data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
-        sys.exit(0)
-        
-        
         
     @staticmethod
     def demo_reason(userobj, session_id):
@@ -895,21 +746,6 @@ class RestrictedStaticFileHandler(tornado.web.StaticFileHandler):
 
 if __name__ == "__main__":
     
-    # check new version
-    if not settings['demo_regime'] and 'update_server' in settings:
-        updatemsg = ''
-        try:
-            updatemsg = urllib2.urlopen(settings['update_server'], timeout=2.5).read()
-        except urllib2.URLError:
-            updatemsg = 'Could not check new version: update server is down.'
-        else:
-            try: int(updatemsg.split('.')[0])
-            except: updatemsg = 'Could not check new version: communication with update server failed.'
-            else:
-                if updatemsg.strip() == API.version: updatemsg = "Current version is up-to-date.\n"
-                else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
-        print updatemsg
-
     debug = True if settings['debug_regime'] else False
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
     #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
