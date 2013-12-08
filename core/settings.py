@@ -26,7 +26,6 @@ DEFAULT_SETUP = {
                 'default_db': DEFAULT_DB,
                 'local_dir': EXAMPLE_DIR,
                 'exportability': True,
-                'demo_regime': False,
                 'debug_regime': False,
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
@@ -162,6 +161,8 @@ def valid_ip(addr):
         return False
         
 def permitted_ip(addr):
+    if not settings['white_ip_list']:
+        return True
     for i in settings['white_ip_list']:
         if '*' in i:
             p = i.find('*')
@@ -202,9 +203,7 @@ if len(repositories) > MAX_CONCURRENT_DBS:
     raise RuntimeError('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
     
 # SETTINGS COMBINATIONS
-
-if settings['demo_regime'] and settings['debug_regime']: settings['debug_regime'] = 0
-if settings['demo_regime']:
+if settings['white_ip_list']:
     ips = settings['white_ip_list'].split(',')
     settings['white_ip_list'] = []
     for n in range(len(ips)):

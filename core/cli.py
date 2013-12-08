@@ -71,10 +71,6 @@ if not args.path and not args.daemon and not args.datamining: #if not len(vars(a
 if args.daemon:
     print "\nPlease, wait a bit while Tilde application is starting.....\n"
 
-    # invoke windows GUI frame
-    if args.daemon == 'shell' and 'win' in sys.platform and not settings['debug_regime'] and not settings['demo_regime']:
-       subprocess.Popen(sys.executable + ' ' + os.path.realpath(os.path.dirname(__file__)) + '/winui.py')
-
     # replace current process with Tilde daemon process
     try:
         os.execv(sys.executable, [sys.executable, os.path.realpath(os.path.dirname(__file__)) + '/daemon.py'])
