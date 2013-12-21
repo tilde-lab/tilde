@@ -2,76 +2,149 @@
 <head>
 <meta charset="utf-8">
 <style>
+*{font-family:"Courier New";margin:0;padding:0;}
 
-svg { border: 1px solid black; background: white; }
-.axis .domain, .axis .tick { stroke: #000; fill: none; }
-.bar { fill: #fcc; stroke: #444; }
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1px;
+}
 
+#licensing {
+  fill: green;
+}
+
+.link.influences {
+  stroke: #ccc;
+}
+
+.link.belongs {
+    stroke: #ccc;
+}
+
+circle {
+  fill: #fff;
+  stroke: #ccc;
+  stroke-width: 1px;
+  cursor:pointer;
+}
+
+text {
+  font-size:12px;
+  font-weight:bold;
+  cursor:pointer;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+text.shadow {
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-opacity: .8;
+}
 </style>
 
 <script type="text/javascript" src="/static/d3.v3.min.js"></script>
 </head>
 <body>
+
 <script type="text/javascript">
-var width = 500,
-    height = 500, 
-    margin = 50;
+var graph = {"edges": [{"target": "Input file", "source": "File location", "type": "belongs"}, {"target": "Groundstate setup", "source": "Cell", "type": "belongs"}, {"target": "Input file", "source": "Modeling time", "type": "belongs"}, {"target": "Relaxation setup", "source": "Relax algorithm", "type": "belongs"}, {"target": "2D properties", "source": "Termination", "type": "belongs"}, {"target": "Phonon properties", "source": "Modes", "type": "belongs"}, {"target": "Input", "source": "Correctly finished", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "N atoms per cell", "type": "belongs"}, {"target": "Input", "source": "Groundstate setup", "type": "belongs"}, {"target": "Cell", "source": "Cell dimensions", "type": "belongs"}, {"target": "Input file", "source": "Text representation", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "Containing elements", "type": "belongs"}, {"target": "Defects", "source": "Vacancies", "type": "belongs"}, {"target": "Groundstate setup", "source": "Sphere radius", "type": "belongs"}, {"target": "Phonon properties", "source": "Phonon DOS", "type": "belongs"}, {"target": "Phonon properties", "source": "Frequencies", "type": "belongs"}, {"target": "Groundstate setup", "source": "RGKmax", "type": "belongs"}, {"target": "Electron properties", "source": "Electron band structure", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "Host elements number", "type": "belongs"}, {"target": "Electron properties", "source": "Electron DOS", "type": "belongs"}, {"target": "Input", "source": "Phonon setup", "type": "belongs"}, {"target": "Input", "source": "Input file", "type": "belongs"}, {"target": "2D properties", "source": "Thickness", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "Chemical formula", "type": "belongs"}, {"target": "2D properties", "source": "Adsorbent", "type": "belongs"}, {"target": "Symmetry", "source": "Syngony", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "Formula units", "type": "belongs"}, {"target": "Electron properties", "source": "Band gap", "type": "belongs"}, {"target": "Stoichiometric properties", "source": "Defects", "type": "belongs"}, {"target": "Symmetry", "source": "Space group (shoen.)", "type": "belongs"}, {"target": "Cell", "source": "Symmetry", "type": "belongs"}, {"target": "Groundstate setup", "source": "K-mesh", "type": "belongs"}, {"target": "Groundstate setup", "source": "Basis set", "type": "belongs"}, {"target": "Input", "source": "Code version", "type": "belongs"}, {"target": "Input file", "source": "Parsing time", "type": "belongs"}, {"target": "Groundstate setup", "source": "Spin-polarization", "type": "belongs"}, {"target": "2D properties", "source": "Vacuum", "type": "belongs"}, {"target": "Electron properties", "source": "Band gap type", "type": "belongs"}, {"target": "Phonon setup", "source": "Phonon magnitude", "type": "belongs"}, {"target": "Input", "source": "Relaxation setup", "type": "belongs"}, {"target": "Symmetry", "source": "Space group (int.)", "type": "belongs"}, {"target": "Symmetry", "source": "Layer group", "type": "belongs"}, {"target": "Cell", "source": "Cell vectors", "type": "belongs"}, {"target": "Defects", "source": "Impurities", "type": "belongs"}, {"target": "Groundstate setup", "source": "2D properties", "type": "belongs"}, {"target": "Phonon properties", "source": "Phonon band structure", "type": "belongs"}, {"target": "Symmetry", "source": "Point group", "type": "belongs"}, {"target": "Relaxation setup", "source": "Force tolerance", "type": "belongs"}, {"target": "Electron properties", "source": "Conductivity of current", "type": "belongs"}, {"target": "Groundstate setup", "source": "Hamiltonian", "type": "belongs"}, {"target": "Phonon properties", "source": "Phonon setup", "type": "influences"}, {"target": "Phonon band structure", "source": "Symmetry", "type": "influences"}, {"target": "Phonon properties", "source": "Stoichiometric properties", "type": "influences"}, {"target": "Electron band structure", "source": "Symmetry", "type": "influences"}, {"target": "E tot", "source": "Groundstate setup", "type": "influences"}, {"target": "Phonon properties", "source": "Groundstate setup", "type": "influences"}, {"target": "Electron properties", "source": "Stoichiometric properties", "type": "influences"}, {"target": "Cell", "source": "Relaxation setup", "type": "influences"}, {"target": "Electron properties", "source": "Groundstate setup", "type": "influences"}], "vertices": ["Band gap type", "Basis set", "Phonon magnitude", "Stoichiometric properties", "Electron band structure", "Cell", "Text representation", "RGKmax", "Phonon setup", "Input", "Groundstate setup", "Cell vectors", "Containing elements", "Relaxation setup", "Force tolerance", "Phonon DOS", "Adsorbent", "Code version", "2D properties", "Frequencies", "Hamiltonian", "Thickness", "Electron properties", "Impurities", "K-mesh", "Vacuum", "Conductivity of current", "Defects", "Phonon properties", "Host elements number", "Modes", "Parsing time", "Correctly finished", "Vacancies", "N atoms per cell", "Symmetry", "Spin-polarization", "Sphere radius", "Space group (shoen.)", "Chemical formula", "Layer group", "Space group (int.)", "Point group", "Modeling time", "Electron DOS", "Formula units", "Periodicity", "Input file", "Termination", "Band gap", "File location", "Cell dimensions", "Relax algorithm", "Phonon band structure", "Syngony", "E tot"]}
 
-var svg=d3.select("body").append("svg").attr("width",width).attr("height",height);
-var x=d3.scale.linear().domain([0,5]).range([margin,width-margin]);
-var y=d3.scale.linear().domain([-10,10]).range([height-margin,margin]);
-var r=d3.scale.linear().domain([0,500]).range([0,20]);
-var o=d3.scale.linear().domain([10000,100000]).range([.5,1]);
-var c=d3.scale.category10().domain(["Africa","America","Asia","Europe","Oceania"]);
+var nodes = {};
 
-var xAxis = d3.svg.axis()
-  .scale(x)
-  .orient("bottom");
+// Compute the distinct nodes from the links
+graph.edges.forEach(function(link) {
+  link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+  link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+});
 
-var yAxis = d3.svg.axis()
-  .scale(y)
-  .orient("left");
+var width = document.body.clientWidth,
+    height = 1500;
 
+var force = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(graph.edges)
+    .size([width, height*=2/3])
+    .linkDistance(130)
+    .gravity(0.06)
+    .charge(-400)
+    .on("tick", tick)
+    .start();
 
-svg.append("g")
-  .attr("class", "axis")
-  .attr("transform", "translate(0," + (height - margin) + ")")
-  .call(xAxis);
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+    
+// Per-type markers, as they don't inherit styles.
+/*svg.append("defs").selectAll("marker")
+    .data(["belongs", "influences"])
+  .enter().append("marker")
+    .attr("id", function(d){return d})
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5").style("fill", "#ccc");*/
 
-svg.append("g")
-  .attr("class", "axis")
-   .attr("transform", "translate(" + margin + ",0)")
-  .call(yAxis);
+var path = svg.append("g").selectAll("path")
+    .data(force.links())
+  .enter().append("path")
+    .attr("class", function(d) { return "link " + d.type; })
+    .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
 
+var circle = svg.append("g").selectAll("circle")
+    .data(force.nodes())
+  .enter().append("circle")
+    .attr("r", 8)
+    .call(force.drag);
 
-svg.selectAll(".h").data(d3.range(-8,10,2)).enter()
-  .append("line").classed("h",1)
-  .attr("x1",margin).attr("x2",height-margin)
-  .attr("y1",y).attr("y2",y)
-  
-svg.selectAll(".v").data(d3.range(1,5)).enter()
-  .append("line").classed("v",1)
-  .attr("y1",margin).attr("y2",width-margin)
-  .attr("x1",x).attr("x2",x)
-  
-var GERD=[2.21367, 2.74826, 1.96158, 1.80213, 0.39451, 1.52652, 3.01937, 1.44122, 3.84137, 2.20646, 2.78056, 0.5921, 1.14821, 2.64107, 1.78988, 4.2504, 1.26841, 3.33499, 3.3609, 1.67862, 0.41322, 1.81965, 1.13693, 1.75922, 0.67502, 1.65519, 1.24252, 0.48056, 1.85642, 0.92523, 1.38357, 3.61562, 2.99525, 0.84902, 1.82434, 2.78518];
-var growth=[2.48590317, 3.10741128, 1.89308521, 3.21494841, 5.19813626, 1.65489834, 1.04974368, 7.63563272, 2.85477157, 1.47996142, 2.99558644, -6.90796403, 1.69192342, -3.99988322, -0.42935239, 4.84602001, 0.43108032, 3.96559062, 6.16184325, 2.67806902, 5.56185685, 1.18517739, 2.33052515, 1.59773989, 4.34962928, -1.60958484, 4.03428262, 3.34920254, -0.17459255, 2.784, -0.06947685, 3.93555895, 2.71404473, 9.00558548, 2.09209263, 3.02171711];
-var GDPcap=[40718.78167, 42118.46375, 38809.66436, 39069.91407, 15106.73205, 25956.76492, 40169.83173, 22403.02459, 37577.71225, 34147.98907, 39389.25874, 26878.00015, 21731.55484, 35641.55402, 40457.94273, 28595.68799, 32580.06572, 33751.23348, 29101.34563, 86226.3276, 15200.22119, 43455.30129, 29870.67748, 57230.89, 19882.99226, 25425.59561, 19833, 24429.61828, 27559.75186, 10497.583, 32779.3288, 41526.2995, 46621.77334, 15666.18783, 35715.4691, 46587.61843];
-var population=[22319.07, 8427.318, 10590.44, 33909.7, 17248.45, 10286.3, 5495.246, 1335.347, 5366.482, 62747.78, 82852.47, 11312.16, 9993.116, 308.038, 4394.382, 7623.6, 59059.66, 126912.8, 48988.83, 483.701, 109219.9, 16480.79, 4291.9, 4789.628, 37725.21, 10684.97, 142822.5, 5404.493, 2029.418, 50384.55, 44835.48, 9276.365, 7889.345, 73497, 62761.35, 313232];
-var country=["Australia", "Austria", "Belgium", "Canada", "Chile", "Czech Republic", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Japan", "Korea", "Luxembourg", "Mexico", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Russian Federation", "Slovak Republic", "Slovenia", "South Africa", "Spain", "Sweden", "Switzerland", "Turkey", "United Kingdom", "United States"];
-var continent=["Oceania", "Europe", "Europe", "America", "America", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Asia", "Europe", "Asia", "Asia", "Europe", "America", "Europe", "Oceania", "Europe", "Europe", "Europe", "Europe", "Europe", "Europe", "Africa", "Europe", "Europe", "Europe", "Europe", "Europe", "America"];
+var text = svg.append("svg:g").selectAll("g")
+    .data(force.nodes())
+  .enter().append("svg:g");
 
-svg.selectAll("circle").data(country).enter()
-  .append("circle")
-  .attr("cx",function(d,i) {return x(GERD[i]);})
-  .attr("cy",function(d,i) {return y(growth[i]);})
-  .attr("r",function(d,i) {return r(Math.sqrt(population[i]));})
+// A copy of the text with a thick white stroke for legibility.
+text.append("text")
+    .attr("x", 12)
+    .attr("y", ".31em")
+    .attr("class", "shadow")
+    .text(function(d) { return d.name; });
 
-  .style("fill",function(d,i) {return c(continent[i]);})
-  .style("opacity",function(d,i) {return o(GDPcap[i]);})
+text.append("text")
+    .attr("x", 12)
+    .attr("y", ".31em")
+    .text(function(d) { return d.name; });
 
-    .append("title")
-    .text(String)
+// Use elliptical arc path segments target doubly-encode directionality.
+function tick() {        
+  path.attr("d", direct);
+  circle.attr("transform", transform);
+  text.attr("transform", transform);
+}
+
+function direct(d) {
+  return "M" + d.source.x + "," + d.source.y + " " + d.target.x + "," + d.target.y;
+}
+
+function transform(d) {
+  return "translate(" + d.x + "," + d.y + ")";
+}
+
+var s=0;
+while(force.alpha() > 0.06) {
+    force.tick();
+    if(s++ > 500) break;
+}
+
+circle.on("click", function(d) { handle(d) })
+text.on("click", function(d) { handle(d) })
+
+function handle(x){
+    console.log(x)
+}
+
 </script>
 
 

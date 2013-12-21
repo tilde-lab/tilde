@@ -15,6 +15,7 @@ import time
 from itertools import ifilter
 import math
 import logging
+import tempfile
 
 from numpy import dot
 from numpy import array
@@ -39,8 +40,10 @@ from api import API
 from common import dict2ase, html_formula
 from plotter import plotter
 
+# temp solution
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/hierarchy'))
-from hierarchy import g, actson, actedby
+from hierarchy.mmreasoner import Ontology
+ontograph = Ontology()
 
 ALWS_ALLWD_RSRCS = ['images/top-corner-black.gif', 'images/logo.gif', 'images/nomad.jpg'] # this will be shown even to restricted IPs
 DELIM = '~#~#~'
@@ -535,11 +538,25 @@ class DuplexConnectionHandler:
                 sys.exit(0)
         
     @staticmethod
-    def demo_reason(userobj, session_id):
-        data, error = None, None        
-        on = "<b>Infuences:</b><br />" + "<br />".join(actson(userobj['x'], g))
-        by = "<b>Infuenced by:</b><br />" + "<br />".join(actedby(userobj['x'], g))        
-        data = on + "<hr />" + by        
+    def demo_reason(userobj, session_id=None):
+        data, error = None, None
+        std = '/data/nomad/results/hierarchy.xmind'
+        
+        if 'mapfile' in userobj:
+            if userobj['mapfile'] == 'std': userobj['mapfile'] = std
+            
+            global ontograph
+            ontograph.compile(userobj['mapfile'])
+            error = ontograph.error
+            if not error:
+                ontograph.reason()
+            error = ontograph.error
+            if not error:
+                data = ontograph.to_json()                
+                
+        elif 'term' in userobj:
+            data = json.dumps({'actson': ontograph.actson(userobj['term']), 'actedby': ontograph.actedby(userobj['term'])})
+        
         return (data, error)
 
 
@@ -556,7 +573,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
         output['act'], output['req'] = message.split(DELIM)
 
         if len(output['req']): userobj = json.loads(output['req'])
-
+        
         if not hasattr(DuplexConnectionHandler, output['act']):
             output['error'] = 'No server handler for action ' + output['act']
             self._send(output)
@@ -735,6 +752,23 @@ class DataExportHandler(tornado.web.RequestHandler):
                 self.write(file)
             else:
                 raise tornado.web.HTTPError(404)
+                
+class FileUploadHandler(tornado.web.RequestHandler):
+    def post(self):
+        data, error = '', ''
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.xmind')
+        try:
+            tmp.write(self.request.files['file'][0]['body'])            
+        except (KeyError, IndexError):
+            error = 'Unable to upload file!'
+        else:
+            tmp.seek(0)
+            data, error = DuplexConnectionHandler.demo_reason({'mapfile': tmp.name})
+            if not error: error = ''
+        finally:
+            tmp.close()
+
+        self.finish( '<script type=text/javascript>self.parent.process_uploaded(\'%s\', \'%s\')</script>' % (data, error) )
         
 class RestrictedStaticFileHandler(tornado.web.StaticFileHandler):
     def get(self, path, include_body=True):
@@ -779,7 +813,8 @@ if __name__ == "__main__":
             Router.apply_routes([
                 (r"/", IndexHandler),
                 (r"/json3d/(.*)", JSON3DDownloadHandler),
-                (r"/export/(.*)", DataExportHandler)
+                (r"/export/(.*)", DataExportHandler),
+                (r"/upload", FileUploadHandler),
             ]),
             static_path = os.path.realpath(os.path.dirname(__file__) + '/../htdocs'),
             static_handler_class = RestrictedStaticFileHandler,

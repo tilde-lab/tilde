@@ -1,0 +1,172 @@
+<!-- SVG graph renderer
+based on d3.js
+v211213 -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{font-family:"Courier New";margin:0;padding:0;}
+.edge{
+    fill:none;
+    stroke:#ccc;
+    stroke-width:1px;
+}
+.edge.influences{
+    stroke:#06c;
+}
+circle{
+    fill:#fff;
+    stroke:#ccc;
+    stroke-width:1px;
+    cursor:pointer;
+}
+text{
+    font-size:12px;
+    font-weight:bold;
+    cursor:pointer;
+    text-shadow:0 2px 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, -2px 0 0 #fff;
+    fill:#000;
+}
+text.shadow{
+    stroke:#fff;
+    stroke-width:3px;
+    stroke-opacity:0.8;
+}
+</style>
+
+<script type="text/javascript" src="/static/d3.v3.min.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+function build_graph(){
+    if (!window.parent) return;
+    if (!window.parent._tilde) return;
+    if (!window.parent._tilde.graph_comm) return;
+    
+    var edges = window.parent._tilde.graph_comm;
+    var nodes = {};
+
+    // Compute the distinct nodes from the links
+    edges.forEach(function(link){
+      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+    });
+    
+    console.log(edges)
+    
+    window.table = {};
+    var i=0;
+    for (var p in nodes){
+        window.table[p] = i++;
+    }
+
+    var width = document.body.clientWidth, height = 1400;
+    
+    d3.select("svg").remove();
+    var svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    var force = d3.layout.force()
+        .nodes(d3.values(nodes))
+        .links(edges)
+        .size([width, height*=2/3])
+        .linkDistance(130)
+        .gravity(0.09)
+        .charge(-400)
+        .on("tick", tick)
+        .start();
+        
+    var path = svg.append("g").selectAll("path")
+        .data(force.links())
+        .enter().append("path")
+        .attr("class", function(d) { return "edge " + d.type; });
+        
+    var link = svg.selectAll(".edge");
+
+    var circle = svg.append("g").selectAll("circle")
+        .data(force.nodes())
+        .enter().append("circle")
+        .attr("r", 8)
+        .attr("id", function(d,i) { return "c_"+window.table[d.name] })
+        .call(force.drag);
+
+    var text = svg.append("g").selectAll("g")
+        .data(force.nodes())
+        .enter().append("g");
+
+    // A copy of the text with a thick white stroke for legibility
+    text.append("text")
+        .attr("x", 12)
+        .attr("y", ".31em")
+        .attr("class", "shadow")
+        .attr("id", function(d,i) { return "s_"+window.table[d.name] })
+        .text(function(d) { return d.name; });
+
+    text.append("text")
+        .attr("x", 12)
+        .attr("y", ".31em")
+        .attr("id", function(d,i) { return "t_"+window.table[d.name] })
+        .text(function(d) { return d.name; });
+        
+    circle.on("mouseover", function(d) { handle(d) });
+    text.on("mouseover", function(d) { handle(d) });
+    circle.on("mouseout", function(d) { dehandle(d) });
+    text.on("mouseout", function(d) { dehandle(d) });
+
+    function tick() {        
+      path.attr("d", direct);
+      circle.attr("transform", transform);
+      text.attr("transform", transform);
+    }
+
+    function direct(d) {
+      return "M" + d.source.x + "," + d.source.y + " " + d.target.x + "," + d.target.y;
+    }
+
+    function transform(d) {
+      return "translate(" + d.x + "," + d.y + ")";
+    }
+    
+    function handle(x){
+        /*var next = window.table[x.name]+1;
+        for (var v in window.table){
+            if (window.table[v] == next){
+                console.log(v)
+                break;
+            }
+        }*/
+        //d3.select('#c_' + next).style("fill", "#f00");
+        //d3.select('#t_' + next).style("fill", "#f00");
+        window.parent.__send('demo_reason', {'term': x.name});
+    }
+    
+    function dehandle(x){
+        //console.log(x);
+        d3.selectAll('text').style("fill", "#000");
+        d3.selectAll('circle').style("fill", "#fff");
+    }  
+
+    var s=0;
+    while(force.alpha() > 0.06) {
+        force.tick();
+        if(s++ > 500) break;
+    }
+}
+
+function react(a){
+    a.actson.forEach(function(v){
+        d3.select('#c_' + window.table[v]).style("fill", "#0c3");
+        d3.select('#t_' + window.table[v]).style("fill", "#0c3");
+    });
+    a.actedby.forEach(function(v){
+        d3.select('#c_' + window.table[v]).style("fill", "#f00");
+        d3.select('#t_' + window.table[v]).style("fill", "#f00");
+    });
+}
+
+build_graph();
+</script>
+</body>
+</html>

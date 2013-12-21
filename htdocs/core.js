@@ -1,7 +1,7 @@
 /**
 *
-* Tilde project: client core
-* v251013
+* Tilde project: NoMaD UI
+* v201213
 *
 */
 // common flags, settings and object for their storage
@@ -25,6 +25,7 @@ _tilde.filetree.root = '';
 _tilde.filetree.load_msg = 'Requesting directory listing...';
 _tilde.busy_msg = 'Program core is now busy serving your request. Please, wait a bit and try again.';
 _tilde.cw = 0;
+_tilde.graph_comm = false;
 
 // units
 _tilde.units = {
@@ -281,6 +282,30 @@ function gather_tags(area, myself){
     });
 
     return found_tags;
+}
+function process_uploaded(resp, error){
+    $('#demo_upload > form > input[type=file]').attr('value', '');
+    if (error){
+        notify('Warning, an error while upload occured:<br />'+error);
+        return;
+    }
+    if (resp.length){
+        _tilde.graph_comm = $.evalJSON(resp);
+        run_graph();
+    }
+}
+function run_graph(){
+    $('#loadbox').show();
+    _tilde.freeze = true;
+    $('div.pane').hide();
+    if (!$('#f_reasoner').length){
+        $('#demo').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html"></iframe>').show();
+    } else {
+        $('#demo').show();
+        document.getElementById('f_reasoner').contentWindow.build_graph();
+    }
+    $('#loadbox').hide();
+    _tilde.freeze = false;
 }
 /**
 *
@@ -701,13 +726,13 @@ function resp__ph_bands(req, data){
 function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands-holder', 'E - E<sub>f</sub>, eV');
 }
-
-
 function resp__demo_reason(req, data){
-    //console.log(data);
-    out = data.split('<hr />');
-    $('#demo_output_on').empty().html(out[0]);
-    $('#demo_output_by').empty().html(out[1]);
+    if (req.mapfile){
+        _tilde.graph_comm = $.evalJSON(data);
+        run_graph();
+    } else if (req.term){
+        document.getElementById('f_reasoner').contentWindow.react($.evalJSON(data));
+    }
 }
 /**
 *
@@ -901,14 +926,11 @@ $(document).ready(function(){
         
         } else if (anchors[0] == 'demo'){
             
-            // DEMO SCREEN
-            
-            $('div.pane').hide();
-            $('#demo').show();
-            $('#demo_query').focus();
+            // DEMO SCREEN            
+            __send('demo_reason', {'mapfile': 'std'})         
             
         } else {
-            notify('This supposed to be error 404.');
+            notify('URI not registered (error 404)');
             document.location.hash = '#' + _tilde.settings.dbs[0];
         }
     }
@@ -1434,14 +1456,6 @@ $(document).ready(function(){
                 $('#closeobj_trigger').trigger('click'); // bad design TODO
             }
         }
-        return false;
-    });
-    
-    
-    // DEMO EXAMPLE
-    $('#demo_form').submit(function(){
-        var x = $('#demo_query').val();
-        __send('demo_reason', {'x': x});
         return false;
     });
     

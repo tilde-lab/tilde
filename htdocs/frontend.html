@@ -10,6 +10,7 @@
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
 <script type="text/javascript" src="/static/jstorage.min.js"></script>
 <script type="text/javascript" src="/static/core.js"></script>
+<script type="text/javascript" src="/static/d3.v3.min.js"></script>
 </head>
 <body>
 
@@ -79,6 +80,7 @@
             <li rel="scan" class="protected">scan</li>
             <li rel="admin">manage</li>
             <li rel="dbs">DBs</li>
+            <li rel="onto">ontology</li>
         </ul>
 
         <div class="ipane" rel="cols">
@@ -131,6 +133,17 @@
             <div style="width:100%">
             </div>
         </div>
+        
+        <div class="ipane" rel="onto">
+            <div>To make ontology reasoning and visualization, please, upload your mind map in XMind format.</div>
+            <div id="demo_upload" style="width:100%;margin:20px;">
+                <form action="/upload" target="file-process" method="post" enctype="multipart/form-data" style="margin:10px 30px;">
+                    <input type="file" name="file" size="30" value="">
+                    <input type="submit">
+                </form>
+            </div>
+        </div>
+        
     </div>
     </div>
 </div>
@@ -284,22 +297,13 @@
 </div>
 
 <!-- DEMO LAYOUT -->
-<div id="demo" class="pane">
-    <div style="width:500px;margin:75px auto;">
-        <div id="demo_form">
-            <form method="post" action="/" class="_hotkeyable"><input type="text" value="" id="demo_query" style="font-size:1.5em;width:500px;height:30px;border:1px solid #666;margin-bottom:10px;" /><input type="submit" style="display:none" /></form>
-            <div id="filepath_apply_trigger" class="_hotkey"></div>
-        </div>
-        <div>
-            <div id="demo_output_on" style="float:left;width:50%;font-size:1em;"></div>
-            <div id="demo_output_by" style="float:right;width:50%;font-size:1em;"></div>
-        </div>
-    </div>
-</div>
+<div id="demo" class="pane"></div>
 
 </body>
+
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
 if (location.hostname == 'nomad.physik.hu-berlin.de'){(function (d, w, c) { (w[c] = w[c] || []).push(function() { try { w.yaCounter23307178 = new Ya.Metrika({id:23307178}); } catch(e) { } }); var n = d.getElementsByTagName("script")[0], s = d.createElement("script"), f = function () { n.parentNode.insertBefore(s, n); }; s.type = "text/javascript"; s.async = true; s.src = (d.location.protocol == "https:" ? "https:" : "http:") + "//mc.yandex.ru/metrika/watch.js"; if (w.opera == "[object Opera]") { d.addEventListener("DOMContentLoaded", f, false); } else { f(); } })(document, window, "yandex_metrika_callbacks")}
 </script>
+
 </html>
