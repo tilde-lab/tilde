@@ -538,24 +538,21 @@ class DuplexConnectionHandler:
                 sys.exit(0)
         
     @staticmethod
-    def demo_reason(userobj, session_id=None):
+    def mmreasoner(userobj, session_id=None):
         data, error = None, None
-        std = '/data/nomad/results/hierarchy.xmind'
+        std = os.path.realpath(os.path.dirname(__file__) + '/schema/hierarchy.xmind')
         
-        if 'mapfile' in userobj:
-            if userobj['mapfile'] == 'std': userobj['mapfile'] = std
-            
-            global ontograph
-            ontograph.compile(userobj['mapfile'])
-            error = ontograph.error
-            if not error:
-                ontograph.reason()
-            error = ontograph.error
-            if not error:
-                data = ontograph.to_json()                
-                
-        elif 'term' in userobj:
-            data = json.dumps({'actson': ontograph.actson(userobj['term']), 'actedby': ontograph.actedby(userobj['term'])})
+        if not 'mapfile' in userobj or userobj['mapfile'] == 'std':
+            userobj['mapfile'] = std
+        
+        global ontograph
+        ontograph.compile(userobj['mapfile'])
+        error = ontograph.error
+        if not error:
+            ontograph.reason()
+        error = ontograph.error
+        if not error:
+            data = ontograph.to_json()
         
         return (data, error)
 
@@ -763,7 +760,7 @@ class FileUploadHandler(tornado.web.RequestHandler):
             error = 'Unable to upload file!'
         else:
             tmp.seek(0)
-            data, error = DuplexConnectionHandler.demo_reason({'mapfile': tmp.name})
+            data, error = DuplexConnectionHandler.mmreasoner({'mapfile': tmp.name})
             if not error: error = ''
         finally:
             tmp.close()

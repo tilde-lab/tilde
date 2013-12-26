@@ -1,4 +1,9 @@
 
+#
+# converts XMind drawing format to graphs and applies OWL-RL reasoner by Ivan Herman
+# outputs json for in-browser SVG plotting
+#
+
 import os, sys
 import json
 import copy
@@ -49,10 +54,7 @@ class Ontology:
             except IndexError:
                 self.error = 'Internal error! The XMind format is invalid!'
             for i in detached_topics:
-                node = {
-                'title': Ontology.term2uri(i.getElementsByTagName(TAG_TITLE)[0].firstChild.nodeValue),
-                'label': ''
-                }
+                node = { 'title': Ontology.term2uri(i.getElementsByTagName(TAG_TITLE)[0].firstChild.nodeValue) }
                 node['label'] = i.getElementsByTagName('labels')[0].firstChild.firstChild.nodeValue if i.getElementsByTagName('labels') else ''
                 vertices_names[ i.attributes['id'].value ] = node['title']
                 self.g.add((  self.TILDE[ node['title'] ], rdflib.RDF.type, self.OWL.Class  ))
@@ -74,15 +76,12 @@ class Ontology:
             self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
 
-            self.g.add((  self.TILDE.affectedby, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.affectedby, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
-            self.g.add((  self.TILDE.affectedby, self.OWL.inverseOf, self.TILDE.influences  ))
-
             self.g.add((  self.TILDE.comprises, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.add((  self.TILDE.comprises, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
             self.g.add((  self.TILDE.comprises, self.OWL.inverseOf, self.TILDE.belongsto  ))
 
             self.g.add((  self.TILDE.actson, rdflib.RDF.type, self.OWL.ObjectProperty  ))
+            self.g.add((  self.TILDE.actson, self.OWL.equivalentProperty, self.TILDE.influences  ))
             self.g.add((  self.TILDE.actedby, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.parse(data='''
             @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -97,27 +96,11 @@ class Ontology:
             self.g.add((  self.TILDE.participates, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             
     def reason(self):
-        self.og = copy.deepcopy(self.g)
+        self.org = copy.deepcopy(self.g)
         try:
             DeductiveClosure(OWLRL_Extension).expand(self.g)
         except:
-            self.error = 'Unable to apply reasoner!'
-        
-    def actson(self, entity):
-        output = []
-        try:
-            for entity in self.g.objects(subject=self.TILDE[ Ontology.term2uri(entity) ], predicate=self.TILDE.actson):
-                output.append(Ontology.uri2term(entity))
-        except: pass
-        return output
-
-    def actedby(self, entity):
-        output = []
-        try:
-            for entity in self.g.objects(subject=self.TILDE[ Ontology.term2uri(entity) ], predicate=self.TILDE.actedby):
-                output.append(Ontology.uri2term(entity))
-        except: pass
-        return output
+            self.error = 'Unable to apply reasoner!'        
         
     def dump(self):
         return self.g.serialize(format='turtle')
@@ -127,11 +110,15 @@ class Ontology:
         
         #vertices = list(set(vertices))
         
-        for s, o in self.og.subject_objects(predicate=self.TILDE.belongsto):
-            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'belongs' })
-        
-        for s, o in self.og.subject_objects(predicate=self.TILDE.influences):
+        for s, o in self.org.subject_objects(predicate=self.TILDE.belongsto):
+            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'belongs' })        
+        for s, o in self.org.subject_objects(predicate=self.TILDE.influences):
             edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'influences' })
+            
+        for s, o in self.g.subject_objects(predicate=self.TILDE.actson):
+            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actson' })            
+        for s, o in self.g.subject_objects(predicate=self.TILDE.actedby):
+            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
         
         return json.dumps(edges)   
 

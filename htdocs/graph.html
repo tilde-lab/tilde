@@ -38,35 +38,73 @@ text.shadow{
 <script type="text/javascript" src="/static/d3.v3.min.js"></script>
 </head>
 <body>
+    
+<div style="position:fixed;top:30px;right:0;padding:20px;width:300px;height:100px;text-align:right;line-height:1.5em;font-size:1.4em;">
+    Legend:
+    <div id="legend_inferred" style="display:none;" class="legends">
+        <div style="color:#0c3;font-weight:bold;">node influences on<div style="float:right;width:20px;height:20px;background:#0c3;"></div></div>
+        <div style="color:#f00;font-weight:bold;">node is influenced by<div style="float:right;width:20px;height:20px;background:#f00;"></div></div>
+    </div>
+    <div id="legend_none" style="display:none;" class="legends">
+        no conclusions made
+    </div>
+    <div id="legend_init" style="display:none;" class="legends">
+        touch any node to start
+    </div>
+</div>
+    
 <script type="text/javascript">
-function build_graph(){
-    if (!window.parent) return;
-    if (!window.parent._tilde) return;
-    if (!window.parent._tilde.graph_comm) return;
+var build_graph;
+(build_graph = function(){
+    var source=[];
+    var edges=[], nodes={};
+    var actson={}, actedby={};
     
-    var edges = window.parent._tilde.graph_comm;
-    var nodes = {};
-
-    // Compute the distinct nodes from the links
-    edges.forEach(function(link){
-      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
-      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+    if (!("_tilde" in window.parent) || !("graph_comm" in window.parent._tilde)){
+        source = [{'source': 'primary', 'target': 'secondary', 'type': 'belongs' }, {'source': 'primary', 'target': 'ternary', 'type': 'influences' }, {'source': 'secondary', 'target': 'ternary', 'type': 'actson' },{'source': 'ternary', 'target': 'secondary', 'type': 'actedby' }];
+    } else {    
+        source = JSON.parse(window.parent._tilde.graph_comm);
+    }
+    
+    // Filter edges and compute the distinct nodes from the links
+    source.forEach(function(link){
+        if (link.type == 'actson'){
+            (link.source in actson) ? (actson[link.source].push(link.target)) : actson[link.source] = [link.target];
+        } else if (link.type == 'actedby') {
+            (link.source in actedby) ? (actedby[link.source].push(link.target)) : actedby[link.source] = [link.target];
+        } else {
+            link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+            link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+            edges.push(link);
+        }
     });
-    
-    console.log(edges)
-    
-    window.table = {};
+            
+    var table = {};
     var i=0;
     for (var p in nodes){
-        window.table[p] = i++;
+        table[p] = i++;
     }
 
-    var width = document.body.clientWidth, height = 1400;
+    var width = document.body.clientWidth-100, height = 1400;
     
     d3.select("svg").remove();
     var svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
+        
+    // Per-type markers
+    svg.append("defs").selectAll("marker")
+        .data(["belongs", "influences"])
+        .enter().append("marker")
+        .attr("id", function(d){return d})
+        .attr("viewBox", "0 0 40 40")
+        .attr("refX", 65)
+        .attr("refY", 20)
+        .attr("markerWidth", 16)
+        .attr("markerHeight", 12)
+        .attr("orient", "auto")
+        .append("polyline")
+        .attr("points", "0,0 40,20 0,40 10,20").style("fill", "#ccc");
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
@@ -81,7 +119,8 @@ function build_graph(){
     var path = svg.append("g").selectAll("path")
         .data(force.links())
         .enter().append("path")
-        .attr("class", function(d) { return "edge " + d.type; });
+        .attr("class", function(d) { return "edge " + d.type; })
+        .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
         
     var link = svg.selectAll(".edge");
 
@@ -89,7 +128,7 @@ function build_graph(){
         .data(force.nodes())
         .enter().append("circle")
         .attr("r", 8)
-        .attr("id", function(d,i) { return "c_"+window.table[d.name] })
+        .attr("id", function(d,i) { return "c_"+table[d.name] })
         .call(force.drag);
 
     var text = svg.append("g").selectAll("g")
@@ -101,13 +140,13 @@ function build_graph(){
         .attr("x", 12)
         .attr("y", ".31em")
         .attr("class", "shadow")
-        .attr("id", function(d,i) { return "s_"+window.table[d.name] })
+        .attr("id", function(d,i) { return "s_"+table[d.name] })
         .text(function(d) { return d.name; });
 
     text.append("text")
         .attr("x", 12)
         .attr("y", ".31em")
-        .attr("id", function(d,i) { return "t_"+window.table[d.name] })
+        .attr("id", function(d,i) { return "t_"+table[d.name] })
         .text(function(d) { return d.name; });
         
     circle.on("mouseover", function(d) { handle(d) });
@@ -130,51 +169,47 @@ function build_graph(){
     }
     
     function handle(x){
-        /*var next = window.table[x.name]+1;
-        for (var v in window.table){
-            if (window.table[v] == next){
-                console.log(v)
-                break;
-            }
-        }*/
-        //d3.select('#c_' + next).style("fill", "#f00");
-        //d3.select('#t_' + next).style("fill", "#f00");
-        window.parent.__send('demo_reason', {'term': x.name});
+        var showflag;
+        if (x.name in actson){
+            actson[x.name].forEach(function(v){
+                d3.select('#c_' + table[v]).style("fill", "#0c3");
+                d3.select('#t_' + table[v]).style("fill", "#0c3");
+            });
+            showflag=1
+        }
+        if (x.name in actedby){
+            actedby[x.name].forEach(function(v){
+                d3.select('#c_' + table[v]).style("fill", "#f00");
+                d3.select('#t_' + table[v]).style("fill", "#f00");
+            });
+            showflag=1
+        }
+        if (showflag){
+            d3.selectAll('div.legends').style("display", "none");
+            d3.select('#legend_inferred').style("display", "block");    
+        } else {
+            d3.selectAll('div.legends').style("display", "none");
+            d3.select('#legend_none').style("display", "block");    
+        }
     }
     
     function dehandle(x){
-        //console.log(x);
         d3.selectAll('text').style("fill", "#000");
         d3.selectAll('circle').style("fill", "#fff");
+        d3.selectAll('div.legends').style("display", "none");
+        d3.select('#legend_init').style("display", "block");
     }  
-
+    
+    // Speed up simulation convergence
     var s=0;
-    while(force.alpha() > 0.06) {
+    while(force.alpha() > 0.01) {
         force.tick();
         if(s++ > 500) break;
     }
-}
-
-function react(a){
-    a.actson.forEach(function(v){
-        d3.select('#c_' + window.table[v]).style("fill", "#0c3");
-        d3.select('#t_' + window.table[v]).style("fill", "#0c3");
-    });
-    a.actedby.forEach(function(v){
-        d3.select('#c_' + window.table[v]).style("fill", "#f00");
-        d3.select('#t_' + window.table[v]).style("fill", "#f00");
-    });
-}
-
-build_graph();
+    
+    d3.selectAll('div.legends').style("display", "none");
+    d3.select('#legend_init').style("display", "block");
+})();
 </script>
-
-<div style="position:absolute;top:50px;right:0;text-align:right;padding:20px;line-height:20px;">
-Legend:
-<div style="color:#06c;">dependence<div style="float:right;width:15px;height:15px;background:#06c;"></div></div>
-<div style="color:#0c3;">is influenced<div style="float:right;width:15px;height:15px;background:#0c3;"></div></div>
-<div style="color:#f00;">influences<div style="float:right;width:15px;height:15px;background:#f00;"></div></div>
-</div>
-
 </body>
 </html>

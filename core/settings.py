@@ -16,7 +16,7 @@ import installation
 
 DB_SCHEMA_VERSION = '1.0'
 SETTINGS_FILE = 'settings.json'
-HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
+HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/schema/hierarchy.xml')
 DEFAULT_DB = 'default.db'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')

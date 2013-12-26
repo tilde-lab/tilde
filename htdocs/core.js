@@ -284,28 +284,24 @@ function gather_tags(area, myself){
     return found_tags;
 }
 function process_uploaded(resp, error){
-    $('#demo_upload > form > input[type=file]').attr('value', '');
+    $('#mmreasoner_upload > form > input[type=file]').attr('value', '');
     if (error){
         notify('Warning, an error while upload occured:<br />'+error);
         return;
     }
     if (resp.length){
-        _tilde.graph_comm = $.evalJSON(resp);
+        _tilde.graph_comm = resp;
         run_graph();
     }
 }
 function run_graph(){
-    $('#loadbox').show();
-    _tilde.freeze = true;
     $('div.pane').hide();
-    if (!$('#f_reasoner').length){
-        $('#demo').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html"></iframe>').show();
+    if ($('#mmreasoner').is(':empty')){
+        $('#mmreasoner').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html"></iframe>').show();
     } else {
-        $('#demo').show();
+        $('#mmreasoner').show();
         document.getElementById('f_reasoner').contentWindow.build_graph();
     }
-    $('#loadbox').hide();
-    _tilde.freeze = false;
 }
 /**
 *
@@ -726,13 +722,9 @@ function resp__ph_bands(req, data){
 function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands-holder', 'E - E<sub>f</sub>, eV');
 }
-function resp__demo_reason(req, data){
-    if (req.mapfile){
-        _tilde.graph_comm = $.evalJSON(data);
-        run_graph();
-    } else if (req.term){
-        document.getElementById('f_reasoner').contentWindow.react($.evalJSON(data));
-    }
+function resp__mmreasoner(req, data){
+    _tilde.graph_comm = data;
+    run_graph();
 }
 /**
 *
@@ -924,17 +916,18 @@ $(document).ready(function(){
             $("#tilde_logo").animate({ marginTop: '10px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
         
-        } else if (anchors[0] == 'demo'){
+        } else if (anchors[0] == 'mmreasoner'){
             
-            // DEMO SCREEN            
-            __send('demo_reason', {'mapfile': 'std'})         
+            // REASONER SCREEN
+            if ($('#mmreasoner').is(':empty')) __send('mmreasoner', {'mapfile': 'std'});
+            else run_graph();
             
         } else {
             notify('URI not registered (error 404)');
             document.location.hash = '#' + _tilde.settings.dbs[0];
         }
     }
-    }, 333);
+    }, 250);
 /**
 *
 *
@@ -960,8 +953,8 @@ $(document).ready(function(){
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
     
-    $('#demo_trigger').click(function(){
-        var action = function(){ document.location.hash = '#demo'; }
+    $('#mmreasoner_trigger').click(function(){
+        var action = function(){ document.location.hash = '#mmreasoner'; }
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
