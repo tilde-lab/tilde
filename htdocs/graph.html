@@ -1,6 +1,6 @@
 <!-- SVG graph renderer
 based on d3.js
-v211213 -->
+v281213 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -33,37 +33,48 @@ text.shadow{
     stroke-width:3px;
     stroke-opacity:0.8;
 }
+marker#belongs{fill:#ccc;}
+marker#influences{fill:#06c;}
 </style>
 
 <script type="text/javascript" src="/static/d3.v3.min.js"></script>
 </head>
-<body>
-    
-<div style="position:fixed;top:30px;right:0;padding:20px;width:300px;height:100px;text-align:right;line-height:1.5em;font-size:1.4em;">
-    Legend:
-    <div id="legend_inferred" style="display:none;" class="legends">
-        <div style="color:#0c3;font-weight:bold;">node influences on<div style="float:right;width:20px;height:20px;background:#0c3;"></div></div>
-        <div style="color:#f00;font-weight:bold;">node is influenced by<div style="float:right;width:20px;height:20px;background:#f00;"></div></div>
-    </div>
-    <div id="legend_none" style="display:none;" class="legends">
-        no conclusions made
-    </div>
-    <div id="legend_init" style="display:none;" class="legends">
-        touch any node to start
-    </div>
-</div>
-    
+<body></body>
+
 <script type="text/javascript">
 var build_graph;
+var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent._tilde);
+
 (build_graph = function(){
     var source=[];
     var edges=[], nodes={};
     var actson={}, actedby={};
     
-    if (!("_tilde" in window.parent) || !("graph_comm" in window.parent._tilde)){
+    if (standalone){
         source = [{'source': 'primary', 'target': 'secondary', 'type': 'belongs' }, {'source': 'primary', 'target': 'ternary', 'type': 'influences' }, {'source': 'secondary', 'target': 'ternary', 'type': 'actson' },{'source': 'ternary', 'target': 'secondary', 'type': 'actedby' }];
     } else {    
         source = JSON.parse(window.parent._tilde.graph_comm);
+    }
+    
+    // Legend
+    if (!window.has_legend){
+        var legend_html = 'Legend:<div id="graph_legend_inferred" style="display:none;" class="graph_legends"><div style="color:#0c3;">node influences on<div style="float:right;width:16px;height:16px;background:#0c3;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div><div style="color:#f00;">node is influenced by<div style="float:right;width:16px;height:16px;background:#f00;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div></div><div id="graph_legend_none" style="display:none;" class="graph_legends">no conclusions made</div><div id="graph_legend_init" style="display:none;" class="graph_legends">touch or drag any node to start</div>';
+        var legend_css = 'position:fixed;z-index:99999;top:4px;left:4px;padding:10px;width:290px;height:100px;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;background:#fc0;line-height:1.4em;font-size:1.15em;font-weight:bold;';
+        var ref;
+        
+        if (standalone) ref = document;
+        else ref = window.parent.document;
+        
+        var graph_legend = ref.createElement( 'div' );
+        graph_legend.innerHTML = legend_html;
+        graph_legend.style.cssText = legend_css;
+        ref.getElementsByTagName('body')[0].appendChild( graph_legend );
+        
+        var l_a = ref.getElementsByClassName('graph_legends'),
+        l_1 = ref.getElementById('graph_legend_inferred'),
+        l_2 = ref.getElementById('graph_legend_none'),
+        l_3 = ref.getElementById('graph_legend_init');
+        window.has_legend = true;
     }
     
     // Filter edges and compute the distinct nodes from the links
@@ -85,7 +96,7 @@ var build_graph;
         table[p] = i++;
     }
 
-    var width = document.body.clientWidth-100, height = 1400;
+    var width = document.body.clientWidth-50, height = 1700;
     
     d3.select("svg").remove();
     var svg = d3.select("body").append("svg")
@@ -97,22 +108,22 @@ var build_graph;
         .data(["belongs", "influences"])
         .enter().append("marker")
         .attr("id", function(d){return d})
-        .attr("viewBox", "0 0 40 40")
-        .attr("refX", 65)
-        .attr("refY", 20)
+        .attr("viewBox", "0 0 40 20")
+        .attr("refX", 55)
+        .attr("refY", 10)
         .attr("markerWidth", 16)
         .attr("markerHeight", 12)
         .attr("orient", "auto")
         .append("polyline")
-        .attr("points", "0,0 40,20 0,40 10,20").style("fill", "#ccc");
+        .attr("points", "0,0 40,10 0,20 10,10");
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
         .links(edges)
         .size([width, height*=2/3])
-        .linkDistance(130)
+        .linkDistance(100)
         .gravity(0.09)
-        .charge(-400)
+        .charge(-900)
         .on("tick", tick)
         .start();
         
@@ -184,20 +195,20 @@ var build_graph;
             });
             showflag=1
         }
+        
+        Array.prototype.forEach.call(l_a, function(i){ i.style.display = "none" });
         if (showflag){
-            d3.selectAll('div.legends').style("display", "none");
-            d3.select('#legend_inferred').style("display", "block");    
+            l_1.style.display = "block";
         } else {
-            d3.selectAll('div.legends').style("display", "none");
-            d3.select('#legend_none').style("display", "block");    
+            l_2.style.display = "block"; 
         }
     }
     
     function dehandle(x){
         d3.selectAll('text').style("fill", "#000");
         d3.selectAll('circle').style("fill", "#fff");
-        d3.selectAll('div.legends').style("display", "none");
-        d3.select('#legend_init').style("display", "block");
+        Array.prototype.forEach.call(l_a, function(i){ i.style.display = "none" });
+        l_3.style.display = "block";
     }  
     
     // Speed up simulation convergence
@@ -207,9 +218,8 @@ var build_graph;
         if(s++ > 500) break;
     }
     
-    d3.selectAll('div.legends').style("display", "none");
-    d3.select('#legend_init').style("display", "block");
+    Array.prototype.forEach.call(l_a, function(i){ i.style.display = "none" });
+    l_3.style.display = "block";
 })();
 </script>
-</body>
 </html>
