@@ -40,6 +40,9 @@ class Constants:
     EVAngstromToGPa = EV * 1e21
     
     ha2rcm = 2.194746313708e05
+    
+    kJmolToAucel = 0.00038088
+    cm2THz = 0.0299792458
 
 
 # Perovskite elements

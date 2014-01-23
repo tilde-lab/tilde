@@ -500,8 +500,7 @@ class API:
             calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         calc.info['nelem'] = len(calc.info['elements'])
 
-        if calc.info['expanded']: calc.info['expanded'] = str(calc.info['expanded']) + 'x'
-        else: del calc.info['expanded']
+        if not calc.info['expanded']: del calc.info['expanded']
 
         if calc.structures[-1].periodicity == 3: calc.info['periodicity'] = '3-periodic'
         elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'

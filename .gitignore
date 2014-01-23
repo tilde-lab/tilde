@@ -11,4 +11,3 @@ parsers/GAUSSIAN
 parsers/GAUSSIAN/*
 parsers/WIEN2K
 parsers/WIEN2K/*
-tests/xmind2owl

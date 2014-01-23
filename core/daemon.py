@@ -890,7 +890,7 @@ if __name__ == "__main__":
         Tilde_tags[r] = DataMap( r )
         if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
     
-    if not Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_db'] + " is incompatible, please, remove it to proceed.")
+    if not settings['default_db'] in Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_db'] + " is incompatible, please, remove it to proceed.")
     
     Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 

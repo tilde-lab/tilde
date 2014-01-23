@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v170913
+# v220114
 
 import os
 import sys
@@ -51,6 +51,10 @@ patterns['k2'] = re.compile(r"\n\sRMS\sGRADIENT(.+?)\n")
 patterns['k3'] = re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n")
 patterns['k4'] = re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n")
 patterns['version'] = re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL)
+patterns['pv'] = re.compile(r"\n PV            :\s(.*)\n")
+patterns['ts'] = re.compile(r"\n TS            :\s(.*)\n")
+patterns['et'] = re.compile(r"\n ET            :\s(.*)\n")
+patterns['T'] = re.compile(r"\n AT \(T =(.*)MPA\):\n")
 
 def find_all(a_str, sub):
     start = 0
@@ -140,6 +144,7 @@ class CRYSTOUT(Output):
                 # extract zero-point energy, depending on phonons presence
                 if self.phonons['modes']:                    
                     self.phonons['zpe'] = self.get_zpe()
+                    self.phonons['td'] = self.get_td()
                 
                 # format ph_k_degeneracy
                 if self.phonons['ph_k_degeneracy']:
@@ -1050,6 +1055,40 @@ class CRYSTOUT(Output):
             except ValueError: return None
             else: return zpe * Hartree
         else: return None
+        
+    def get_td(self):
+        td = {'t':[], 'pv':[], 'ts':[], 'et':[]}
+        t = patterns['T'].findall(self.data)
+        if t is not None:
+            for i in t:
+                td['t'].append(float(i.split('K,')[0]))
+        pv = patterns['pv'].findall(self.data)
+        if pv is not None:
+            for i in pv:
+                td['pv'].append(float(i.split()[0])) # AU/CELL
+        ts = patterns['ts'].findall(self.data)
+        if ts is not None:
+            for i in ts:
+                i = i.split()[0]
+                try:
+                    i = float(i)
+                    if math.isnan(i): i = 0.0
+                except ValueError: i = 0.0
+                td['ts'].append(float(i)) # AU/CELL
+        et = patterns['et'].findall(self.data)
+        if et is not None:
+            for i in et:
+                i = i.split()[0]
+                try:
+                    i = float(i)
+                    if math.isnan(i): i = 0.0
+                except ValueError: i = 0.0
+                td['et'].append(float(i)) # AU/CELL
+        if td['t'] and td['pv'] and td['ts'] and td['et']:
+            return td 
+        else:
+            self.warning( 'Errors in thermodynamics!' )
+            return None
     
     '''def get_e_last(self):
         if "TOP OF VALENCE BANDS" in self.pdata:

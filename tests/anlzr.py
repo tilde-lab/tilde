@@ -58,12 +58,13 @@ for task in tasks:
     # Mulliken test
     #mull_sum = round(sum(calc.structures[-1].get_initial_charges()), 2)
     #assert mull_sum == 0.0, "Sum of charges is %s" % mull_sum
+    
+    print calc.phonons['td']
         
     # bridge with pymatgen k-point finder
-    # currently serves the only aim to determine the labels of k-points
+    # currently serves the only aim to determine the labels of k-points 
 
-
-    PMGS = Structure(calc.structures[-1].get_cell(), calc.structures[-1].get_chemical_symbols(), calc.structures[-1].get_positions(), coords_are_cartesian=True)
+    '''PMGS = Structure(calc.structures[-1].get_cell(), calc.structures[-1].get_chemical_symbols(), calc.structures[-1].get_positions(), coords_are_cartesian=True)
         
     try: k = HighSymmKpath(PMGS)
     except:
@@ -75,7 +76,7 @@ for task in tasks:
     kpts, klbl = k.get_kpoints(1)
     pathway = []
     for i in klbl:
-        print i, k.kpath['kpoints'][i]
+        print i, k.kpath['kpoints'][i]'''
     
     #for k, v in k.kpath['kpoints'].iteritems():
     #   print k, 

@@ -16,7 +16,9 @@
 # along with phonopy.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from units import *
+
+# patched by jam31
+from core.constants import Constants
 
 class ThermalPropertiesBase:
     def __init__(self, eigenvalues, weights=None):
@@ -34,52 +36,52 @@ class ThermalPropertiesBase:
     def get_free_energy(self):
 
         def func(temp, omega):
-            return Kb * temp * np.log(1.0 - np.exp((- omega) / (Kb * temp)))
+            return Constants.Kb * temp * np.log(1.0 - np.exp((- omega) / (Constants.Kb * temp)))
 
         free_energy = self.get_thermal_property(func)
-        return free_energy / np.sum(self.weights) * EvTokJmol + self.zero_point_energy
+        return free_energy / np.sum(self.weights) * Constants.EvTokJmol + self.zero_point_energy
 
     def get_free_energy2(self):
 
         if self.temperature > 0:
             def func(temp, omega):
-                return  Kb * temp * np.log(2.0 * np.sinh(omega / (2 * Kb * temp)))
+                return  Constants.Kb * temp * np.log(2.0 * np.sinh(omega / (2 * Constants.Kb * temp)))
 
             free_energy = self.get_thermal_property(func)
-            return free_energy / np.sum(self.weights) * EvTokJmol
+            return free_energy / np.sum(self.weights) * Constants.EvTokJmol
         else:
             return self.zero_point_energy
 
     def get_heat_capacity_v(self):
 
         def func(temp, omega):
-            expVal = np.exp(omega / (Kb * temp))
-            return Kb * (omega / (Kb * temp)) ** 2 * expVal / (expVal - 1.0) ** 2
+            expVal = np.exp(omega / (Constants.Kb * temp))
+            return Constants.Kb * (omega / (Constants.Kb * temp)) ** 2 * expVal / (expVal - 1.0) ** 2
 
         cv = self.get_thermal_property(func)
-        return cv / np.sum(self.weights) * EvTokJmol
+        return cv / np.sum(self.weights) * Constants.EvTokJmol
 
     def get_entropy(self):
         
         def func(temp, omega):
-            val = omega / (2 * Kb * temp)
-            return 1. / (2 * temp) * omega * np.cosh(val) / np.sinh(val) - Kb * np.log(2 * np.sinh(val))
+            val = omega / (2 * Constants.Kb * temp)
+            return 1. / (2 * temp) * omega * np.cosh(val) / np.sinh(val) - Constants.Kb * np.log(2 * np.sinh(val))
 
         entropy = self.get_thermal_property(func)
-        return entropy / np.sum(self.weights) * EvTokJmol
+        return entropy / np.sum(self.weights) * Constants.EvTokJmol
 
     def get_entropy2(self):
 
         def func(temp, omega):
-            val = omega / (Kb * temp)
-            return -Kb * np.log(1 - np.exp( -val )) + 1.0 / temp * omega / (np.exp( val ) - 1)
+            val = omega / (Constants.Kb * temp)
+            return -Constants.Kb * np.log(1 - np.exp( -val )) + 1.0 / temp * omega / (np.exp( val ) - 1)
 
         entropy = self.get_thermal_property(func)
-        return entropy / np.sum(self.weights) * EvTokJmol
+        return entropy / np.sum(self.weights) * Constants.EvTokJmol
 
 
 class ThermalProperties(ThermalPropertiesBase):
-    def __init__(self, eigenvalues, weights=None, factor=VaspToTHz, cutoff_eigenvalue=None):
+    def __init__(self, eigenvalues, weights=None, factor=Constants.VaspToTHz, cutoff_eigenvalue=None):
         ThermalPropertiesBase.__init__(self, eigenvalues, weights)
         self.factor = factor
         if cutoff_eigenvalue:
@@ -95,14 +97,14 @@ class ThermalProperties(ThermalPropertiesBase):
         for eigs in self.eigenvalues:
             frequencies.append(
                 np.sqrt( np.extract( eigs>self.cutoff_eigenvalue, eigs)
-                         ) * self.factor * THzToEv )
+                         ) * self.factor * Constants.THzToEv )
         self.frequencies = frequencies
 
     def __zero_point_energy(self):
         z_energy = 0.
         for i, freqs in enumerate(self.frequencies):
             z_energy += np.sum(1.0 / 2 * freqs) * self.weights[i]
-        self.zero_point_energy = z_energy / np.sum(self.weights) * EvTokJmol
+        self.zero_point_energy = z_energy / np.sum(self.weights) * Constants.EvTokJmol
 
     def get_zero_point_energy(self):
         return self.zero_point_energy
@@ -111,7 +113,7 @@ class ThermalProperties(ThermalPropertiesBase):
         entropy = 0.0
         for i, freqs in enumerate(self.frequencies):
             entropy -= np.sum(np.log(freqs)) * self.weights[i]
-        self.high_T_entropy = entropy * Kb / np.sum(self.weights) * EvTokJmol
+        self.high_T_entropy = entropy * Constants.Kb / np.sum(self.weights) * Constants.EvTokJmol
 
     def get_high_T_entropy(self):
         return self.high_T_entropy
@@ -133,7 +135,7 @@ class ThermalProperties(ThermalPropertiesBase):
             return phonoc.thermal_properties( self.temperature,
                                               self.eigenvalues,
                                               self.weights,
-                                              self.factor * THzToEv,
+                                              self.factor * Constants.THzToEv,
                                               self.cutoff_eigenvalue )
         else:
             return (0.0, 0.0, 0.0)
@@ -165,16 +167,16 @@ class ThermalProperties(ThermalPropertiesBase):
             self.set_temperature(t)
             temps.append(t)
 
-
             # try:
                 # import phonopy._phonopy as phonoc
                 # C implementation, but not so faster than Numpy
                 # props = self.get_c_thermal_properties()
-                # fe.append(props[0] * EvTokJmol + self.zero_point_energy)
-                # entropy.append(props[1] * EvTokJmol * 1000)
-                # cv.append(props[2] * EvTokJmol * 1000)
+                # fe.append(props[0] * Constants.EvTokJmol + self.zero_point_energy)
+                # entropy.append(props[1] * Constants.EvTokJmol * 1000)
+                # cv.append(props[2] * Constants.EvTokJmol * 1000)
             # except ImportError:
                 # Numpy implementation, but not so bad
+                
             fe.append(self.get_free_energy())
             entropy.append(self.get_entropy()*1000)
             cv.append(self.get_heat_capacity_v()*1000)
@@ -217,7 +219,7 @@ class ThermalProperties(ThermalPropertiesBase):
         
 
 class PartialThermalProperties(ThermalProperties):
-    def __init__(self, eigenvalues, eigenvectors, weights=None, factor=VaspToTHz):
+    def __init__(self, eigenvalues, eigenvectors, weights=None, factor=Constants.VaspToTHz):
         ThermalPropertiesBase.__init__(self, eigenvalues, weights=weights)
         # eigenvalues[q-point][mode] = eigenvalue
         # eigenvectors2[q-point][natom*3][mode] = 
@@ -249,7 +251,7 @@ class PartialThermalProperties(ThermalProperties):
                             self.weights[j]
 
             zero_point_energy[i] = \
-                z_energy / np.sum(self.weights) * self.factor * THzToEv * EvTokJmol
+                z_energy / np.sum(self.weights) * self.factor * Constants.THzToEv * Constants.EvTokJmol
 
         self.zero_point_energy = zero_point_energy
 

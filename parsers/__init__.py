@@ -65,7 +65,8 @@ class Output:
             'dfp_disps':        [],
             'dfp_magnitude':    None,
             'dielectric_tensor':False,
-            'zpe':              None
+            'zpe':              None,
+            'td':               None
             }
 
         # Tilde classification and technical info object

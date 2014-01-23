@@ -1,6 +1,9 @@
 
 # Vibrational thermodynamics module
-# obtains thermodynamic functions basing on phonons
+# this is a check module,
+# to assure if we are able to avoid TD extraction
+# and obtain TD from phonons only;
+
 # partly uses Phonopy code
 # written by Atsushi Togo
 
@@ -16,7 +19,9 @@ class Vibtd():
         'zpe': None
         }
         
-        # only for CRYSTAL code actually
-        if tilde_calc.phonons['zpe'] and tilde_calc['energy']:
-            self.vibtd['zpe'] = tilde_calc.phonons['zpe'] # a.u. (per cell or supercell???)
-            self.vibtd['ezpe'] = tilde_calc.phonons['zpe'] + tilde_calc['energy']
+        # actual for CRYSTAL code only
+        if tilde_calc.phonons['zpe'] and tilde_calc.phonons['td']:
+            
+            # per cell or supercell? depends on CRYSTAL version!            
+            self.vibtd['zpe'] = tilde_calc.phonons['zpe']
+            self.vibtd['td'] = tilde_calc.phonons['td']

@@ -51,7 +51,7 @@ class INFOOUT(Output):
             if ' EXCITING ' in line:
                 if 'started' in line:
                     version = line.split()[2].capitalize()
-                    if version not in ['Helium', 'Lithium', 'Beryllium']: raise RuntimeError("This Exciting version is currently not supported!")
+                    if version not in ['Helium', 'Lithium', 'Beryllium', 'Mortadella']: raise RuntimeError("This Exciting version is currently not supported!")
                     self.info['prog'] = 'Exciting ' + version
                 #elif 'stopped' in line:
                 #   self.info['finished'] = 1
