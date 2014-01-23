@@ -179,7 +179,8 @@ class INFOOUT(Output):
                 self.info['duration'] = "%2.2f" % (float(self.data[n].split(":")[-1])/3600)
                 
             elif line.startswith(' Fermi '):
-                e_last = float(self.data[n].split(":")[-1]) * Hartree
+                try: e_last = float(self.data[n].split(":")[-1]) * Hartree
+                except ValueError: raise RuntimeError("Fermi energy is out of physical bounds! Terminating.")
                 
             elif 'Number of empty states' in line:
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
