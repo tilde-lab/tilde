@@ -59,7 +59,7 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
     // Legend
     if (!window.has_legend){
         var legend_html = 'Legend:<div id="graph_legend_inferred" style="display:none;" class="graph_legends"><div style="color:#0c3;">node influences on<div style="float:right;width:16px;height:16px;background:#0c3;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div><div style="color:#f00;">node is influenced by<div style="float:right;width:16px;height:16px;background:#f00;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div></div><div id="graph_legend_none" style="display:none;" class="graph_legends">no conclusions made</div><div id="graph_legend_init" style="display:none;" class="graph_legends">touch or drag any node to start</div>';
-        var legend_css = 'position:fixed;z-index:99999;top:4px;left:4px;padding:10px;width:290px;height:100px;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;background:#fc0;line-height:1.4em;font-size:1.15em;font-weight:bold;';
+        var legend_css = 'position:fixed;z-index:99999;bottom:4px;left:4px;padding:10px;width:350px;height:100px;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;background:#fc0;line-height:1.4em;font-size:1.15em;font-weight:bold;';
         var ref;
         
         if (standalone) ref = document;
@@ -96,7 +96,7 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         table[p] = i++;
     }
 
-    var width = document.body.clientWidth-50, height = 1700;
+    var width = document.body.clientWidth-50, height = 1900;
     
     d3.select("svg").remove();
     var svg = d3.select("body").append("svg")
@@ -122,8 +122,8 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         .links(edges)
         .size([width, height*=2/3])
         .linkDistance(100)
-        .gravity(0.09)
-        .charge(-900)
+        .gravity(0.1)
+        .charge(-1200)
         .on("tick", tick)
         .start();
         
