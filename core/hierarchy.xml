@@ -8,7 +8,7 @@
 
     
     <entity cid="5" category="periodicity" source="periodicity" sort="6" has_column="1" has_label="1" descr=""/> 
-    <entity cid="9" category="syngony" source="symmetry" sort="7" has_column="1" has_label="1" descr=""/>
+    <entity cid="9" category="crystalline class" source="symmetry" sort="7" has_column="1" has_label="1" descr=""/>
     <entity cid="10" category="point group" source="pg" sort="8" has_column="1" has_label="1" descr="Result point group"/>
     <entity cid="11" category="space group (schon.)" source="sg" sort="9" has_column="1" has_label="1" descr="Result space group (Schoenflis notation)"/>
     <entity cid="12" category="space group (intl.)" source="ng" sort="10" has_column="1" descr="Result space group (international notation)"/>
@@ -50,4 +50,5 @@
     <entity cid="1006" category="finished" html="Finished?" sort="1001" has_column="1" descr=""/>
     
     <entity cid="2000" category="sample example" sort="1002" has_column="1" has_label="1" descr=""/>
+    <!-- cid no more than 2000 -->
 </schema>

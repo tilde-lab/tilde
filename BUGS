@@ -1,0 +1,3 @@
+strange bug with KeyError 'colnum' in daemon 'browse' method
+stack overflow in /home/losev/MD_data/objects/LiF/vasp/togo/512.1/disp-002/vasprun.xml
+stack overflow in /home/losev/MD_data/objects/LiF/vasp/Li_svF-final/phonon512/disp-004/vasprun.xml

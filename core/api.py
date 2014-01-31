@@ -77,7 +77,7 @@ class API:
         # *apptarget* - whether an app should be executed (based on hierarchy)
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
-        #n = 0
+        n = 1
         for appname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../apps' ):
             if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
                 try: appmanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ).read() )
@@ -91,9 +91,9 @@ class API:
                     self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
                     
                     # compiling table columns:
-                    #if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
-                    #    self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
-                    #    n += 1
+                    if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
+                        self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
+                        n += 1
         
         #self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
 
@@ -394,6 +394,14 @@ class API:
         # applying filter: todo
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
             return (None, 'data do not satisfy the filter')
+            
+        # account surface case (and vacuum creation method)
+        # TODO : replace with the more robust method!
+        cellpar = cell_to_cellpar( calc.structures[-1].cell ).tolist()
+        if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
+            calc.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
+            for i in range(len(calc.structures)):
+                calc.structures[i].set_pbc((True, True, False))
         
         # extend ASE object with useful properties
         for i in range(len(calc.structures)):
@@ -477,9 +485,11 @@ class API:
                         else: type += ' defer.'
                         calc.info['techs'].append(i + type)
                     
-                    # EXCITING
+                    # ALL
                     elif i=='vacuum2d':
                         calc.info['techs'].append('vacuum %sA' % calc.method['technique'][i])
+                    
+                    # EXCITING
                     elif i=='spin-orbit':
                         calc.info['techs'].append('spin-orbit coupling')
                     elif i=='empty_states':

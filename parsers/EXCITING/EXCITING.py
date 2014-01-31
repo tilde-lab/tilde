@@ -225,17 +225,8 @@ class INFOOUT(Output):
         #else:
         #   # TODO: Get rid of redundant messages
         #   # Warning(charge)
-        #   self.warning( " ".join(w) )
-        
-        # special slab case
-        # account periodicity (vacuum creation method)
-        # TODO
-        cellpar = cell_to_cellpar( cell ).tolist()
-        if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
-            self.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
-            for i in range(len(self.structures)):
-                self.structures[i].set_pbc((True, True, False))
-                    
+        #   self.warning( " ".join(w) )        
+                   
         # Electronic properties
         
         # look for full DOS in xml

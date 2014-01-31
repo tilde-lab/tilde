@@ -7,8 +7,7 @@ import sys
 
 # deps third-party code and common routines
 # here are already available:
-from ase.data import chemical_symbols
-from ase.data import atomic_masses
+from ase.data import chemical_symbols, atomic_masses
 from core.common import ModuleError
 
 
@@ -24,11 +23,11 @@ class Example_app():
     # this is a main class code
     def __init__(self, tilde_calc):
         self.weight = 0
-        for a in [atom[0] for atom in tilde_calc.structures[-1]['atoms']]:
-            if not a in chemical_symbols:
+        for a in tilde_calc.structures[-1]:
+            if not a.symbol in chemical_symbols:
                 raise ModuleError('Unexpected atom has been found!')
             try:
-                self.weight += atomic_masses[chemical_symbols.index(a)]
+                self.weight += atomic_masses[chemical_symbols.index(a.symbol)]
             except IndexError:
                 raise ModuleError('Application error!')
         self.weight = round(self.weight)
