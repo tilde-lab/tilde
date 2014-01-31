@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from parsers import Output
 from core.deps.ase import Atoms
 from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
+from core.electron_structure import ElectronStructureError
 
 
 class API:
@@ -540,7 +541,9 @@ class API:
         # by DOS  
         if calc.electrons['dos']:
             
-            gap = round(calc.electrons['dos'].get_bandgap(), 2)
+            try: gap = round(calc.electrons['dos'].get_bandgap(), 2)
+            except ElectronStructureError as e:
+                return (None, e.value)
             
             if calc.electrons['bands']: # check coincidence
                 if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is considered.')

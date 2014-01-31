@@ -20,7 +20,7 @@ from spacegroup.cell import cell_to_cellpar
 
 class ModuleError(Exception):
     def __init__(self, value):
-        self.value = value
+        self.value = value        
 
 def metric(v):
     ''' Get direction of vector '''

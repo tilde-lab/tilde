@@ -6,6 +6,10 @@
 
 import os, sys
 
+class ElectronStructureError(Exception):
+    def __init__(self, value):
+        self.value = value
+
 class Ebands():
     def __init__(self, obj):
         self.abscissa = obj['abscissa']
@@ -50,10 +54,10 @@ class Edos():
                 k, t = n, n
                 while self.alldos[k] == 0:
                     k += 1                  
-                    if k > dim: raise RuntimeError("Unexpected data in band structure!")
+                    if k > dim: raise ElectronStructureError("Unexpected data in band structure: only one eigenvalue found!")
                 while self.alldos[t] == 0:
                     t -= 1                  
-                    if t==0: raise RuntimeError("Unexpected data in band structure!")
+                    if t==0: raise ElectronStructureError("Unexpected data in band structure: not enough eigenvalues to determine the band gap!")
                 return self.abscissa[k] - self.abscissa[t]
         
     def todict(self):

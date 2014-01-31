@@ -125,7 +125,7 @@ class Request_Handler:
             if i in settings: data['settings'][i] = settings[i]
 
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
-
+        
         data = json.dumps(data)
         return (data, error)
 
@@ -784,7 +784,7 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
                         
             #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
             
-            if len(ase_obj) > 1000: return (data, 'Sorry, this structure is too large for me to display!')
+            if len(ase_obj) > 1250: raise tornado.web.HTTPError(500) # Sorry, this structure is too large for me to display!
             
             #ase_obj.center() # NB: check for slabs!            
             #mass_center = ase_obj.get_center_of_mass()

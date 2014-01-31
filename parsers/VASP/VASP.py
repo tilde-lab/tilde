@@ -1,7 +1,7 @@
 
 # Tilde project: VASP XML parser
 # contains code from pymatgen iovasp module (author: Shyue Ping Ong)
-# v250913
+# v310114
 
 import os
 import sys
@@ -9,7 +9,7 @@ import re
 import math
 import itertools
 import traceback
-import xml.sax.handler
+import xml.sax
 import StringIO
 from collections import defaultdict
 
@@ -290,12 +290,32 @@ class XML_Output(Output):
         Output.__init__(self, filename)
 
         self._handler = VasprunHandler()
+        
+        # TODO: this will be very slow
+        # use iterative parser here?
+        '''filestring = open(filename).read()
+        
+        illegal_unichrs = [ (0x00, 0x08), (0x0B, 0x1F), (0x7F, 0x84), (0x86, 0x9F),
+                            (0xD800, 0xDFFF), (0xFDD0, 0xFDDF), (0xFFFE, 0xFFFF),
+                            (0x1FFFE, 0x1FFFF), (0x2FFFE, 0x2FFFF), (0x3FFFE, 0x3FFFF),
+                            (0x4FFFE, 0x4FFFF), (0x5FFFE, 0x5FFFF), (0x6FFFE, 0x6FFFF),
+                            (0x7FFFE, 0x7FFFF), (0x8FFFE, 0x8FFFF), (0x9FFFE, 0x9FFFF),
+                            (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
+                            (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
+                            (0x10FFFE, 0x10FFFF) ]
 
+        illegal_ranges = ["%s-%s" % (unichr(low), unichr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
+        illegal_xml_re = re.compile(u'[%s]' % u''.join(illegal_ranges))
+        filestring = illegal_xml_re.sub('', filestring)'''
+
+        #try: xml.sax.parseString(filestring, self._handler)
         try: xml.sax.parse(filename, self._handler)
         except:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            raise RuntimeError('VASP output corrupted or not finalized: ' + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
-
+            #exc_type, exc_value, exc_tb = sys.exc_info()
+            raise RuntimeError('VASP output corrupted or not correctly finalized!') # + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
+        
+        self.info['finished'] = 1 # if we are here, we are always correct
+        
         # TODO: reorganize
         for k in ["vasp_version", "incar",
                 "parameters", "potcar_symbols",
@@ -305,7 +325,7 @@ class XML_Output(Output):
                 "ionic_steps", "dos_error",
                 "dynmat", "finished"]:
             setattr(self, k, getattr(self._handler, k))
-
+        
         self.energy = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
         self.info['prog'] = 'VASP ' + self.vasp_version
         self.info['finished'] = self.finished

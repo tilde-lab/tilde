@@ -48,10 +48,10 @@ for task in tasks:
         print filename, error
         continue
 
-    calc, error = work.classify(calc)
+    '''calc, error = work.classify(calc)
     if error:
         print filename, error
-        continue
+        continue'''
 
     subprograms = work.postprocess(calc)
     
@@ -59,7 +59,7 @@ for task in tasks:
     #mull_sum = round(sum(calc.structures[-1].get_initial_charges()), 2)
     #assert mull_sum == 0.0, "Sum of charges is %s" % mull_sum
     
-    print calc.phonons['td']
+    print calc.electrons['dos']
         
     # bridge with pymatgen k-point finder
     # currently serves the only aim to determine the labels of k-points 

@@ -29,6 +29,7 @@
     <entity cid="22" category="code" source='prog' sort="23" has_column="1" has_label="1" descr=""/>
      
     <entity cid="23" category="modeling time, hr" source='duration' sort="1003" has_column="1" descr=""/>
+    <entity cid="27" category="parsing time, sc" source='perf' sort="1004" has_column="1" descr=""/>
      
     <entity cid="24" category="conductivity" source='etype' sort="24" has_column="1" has_label="1" descr=""/>
     <entity cid="25" category="min. band gap" html="Min. band gap, {units-energy}" source='bandgap' sort="25" has_column="1" descr=""/>
