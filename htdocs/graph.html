@@ -12,7 +12,7 @@ v281213 -->
     stroke:#ccc;
     stroke-width:1px;
 }
-.edge.influences{
+.edge.does{
     stroke:#06c;
 }
 circle{
@@ -33,8 +33,7 @@ text.shadow{
     stroke-width:3px;
     stroke-opacity:0.8;
 }
-/* marker#belongs{fill:#ccc;} */
-marker#influences{fill:#06c;}
+marker#does{fill:#06c;}
 </style>
 
 <script type="text/javascript" src="/static/d3.v3.min.js"></script>
@@ -51,7 +50,7 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
     var actson={}, actedby={};
     
     if (standalone){
-        source = [{'source': 'primary', 'target': 'secondary', 'type': 'belongs' }, {'source': 'primary', 'target': 'ternary', 'type': 'influences' }, {'source': 'secondary', 'target': 'ternary', 'type': 'actson' },{'source': 'ternary', 'target': 'secondary', 'type': 'actedby' }];
+        source = [{'source': 'Alpha', 'target': 'Gamma', 'type': 'belongs' }, {'source': 'Alpha', 'target': 'Beta', 'type': 'does' }, {'source': 'Gamma', 'target': 'Beta', 'type': 'actson' },{'source': 'Alpha', 'target': 'Beta', 'type': 'actson' },{'source': 'Beta', 'target': 'Gamma', 'type': 'actedby' },{'source': 'Beta', 'target': 'Alpha', 'type': 'actedby' }];
     } else {    
         source = JSON.parse(window.parent._tilde.graph_comm);
     }
@@ -111,7 +110,7 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         
     // Per-type markers
     svg.append("defs").selectAll("marker")
-        .data(["influences"])
+        .data(["does"])
         .enter().append("marker")
         .attr("id", function(d){return d})
         .attr("viewBox", "0 0 40 20")

@@ -64,7 +64,7 @@ class Ontology:
                 rel = RelationshipElement(i)
                 conntype = rel.getTitle()
                 
-                if conntype == 'influences': predicate = self.TILDE.influences
+                if conntype == 'does': predicate = self.TILDE.does
                 else: predicate = self.TILDE.belongsto
                 
                 self.g.add((  self.TILDE[vertices_names[ rel.getEnd1ID() ]], predicate, self.TILDE[vertices_names[ rel.getEnd2ID() ]]  ))
@@ -80,21 +80,21 @@ class Ontology:
             self.g.add((  self.TILDE.inv_belongsto, self.OWL.inverseOf, self.TILDE.belongsto  ))
             self.g.add((  self.TILDE.inv_belongsto, self.OWL.equivalentProperty, self.TILDE.belongsto  ))
             
-            # rule influences
-            self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.TransitiveProperty  ))           
+            # rule does
+            self.g.add((  self.TILDE.does, rdflib.RDF.type, self.OWL.ObjectProperty  ))
+            self.g.add((  self.TILDE.does, rdflib.RDF.type, self.OWL.TransitiveProperty  ))           
             
-            # rule INVERSE(influences)
-            self.g.add((  self.TILDE.inv_influences, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.inv_influences, self.OWL.inverseOf, self.TILDE.influences  ))
+            # rule INVERSE(does)
+            self.g.add((  self.TILDE.inv_does, rdflib.RDF.type, self.OWL.ObjectProperty  ))
+            self.g.add((  self.TILDE.inv_does, self.OWL.inverseOf, self.TILDE.does  ))
             
             # rule actson
             self.g.add((  self.TILDE.actson, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.parse(data='''
             @prefix owl: <http://www.w3.org/2002/07/owl#> .
             @prefix tilde: <http://tilde.pro/#> .
-            tilde:actson owl:propertyChainAxiom ( tilde:belongsto tilde:influences ) .
-            tilde:actson owl:propertyChainAxiom ( tilde:influences tilde:belongsto ) .
+            tilde:actson owl:propertyChainAxiom ( tilde:belongsto tilde:does ) .
+            tilde:actson owl:propertyChainAxiom ( tilde:does tilde:belongsto ) .
             ''' , format='n3')
             self.g.add((  self.TILDE.actson, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
             
@@ -125,21 +125,21 @@ class Ontology:
                 edges.append({'source': s, 'target': o, 'type': 'actson' })
             else:   
                 # Here we combine some rules outside the reasoner           
-                for s, o in self.g.subject_objects(predicate=self.TILDE.influences):
+                for s, o in self.g.subject_objects(predicate=self.TILDE.does):
                     edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actson' })
                         
                 for s, o in self.g.subject_objects(predicate=self.TILDE.actedby):
                     edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
                     
-                for s, o in self.g.subject_objects(predicate=self.TILDE.inv_influences):
+                for s, o in self.g.subject_objects(predicate=self.TILDE.inv_does):
                     edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
                     
                 # Original graph
-                # belongs and influences
+                # belongs and does
                 for s, o in self.org.subject_objects(predicate=self.TILDE.belongsto):
                     edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'belongs' })        
-                for s, o in self.org.subject_objects(predicate=self.TILDE.influences):
-                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'influences' })
+                for s, o in self.org.subject_objects(predicate=self.TILDE.does):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'does' })
         
         return json.dumps(edges)
             

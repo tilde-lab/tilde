@@ -297,7 +297,7 @@ function process_uploaded(resp, error){
 function run_graph(){
     $('div.pane').hide();
     if ($('#mmreasoner').is(':empty')){
-        $('#mmreasoner').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html?9"></iframe>').show();
+        $('#mmreasoner').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html?12"></iframe>').show();
     } else {
         $('#mmreasoner').show();
         document.getElementById('f_reasoner').contentWindow.build_graph();
