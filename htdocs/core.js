@@ -286,7 +286,7 @@ function gather_tags(area, myself){
 function process_uploaded(resp, error){
     $('#mmreasoner_upload > form > input[type=file]').attr('value', '');
     if (error){
-        notify('Warning, an error while upload occured:<br />'+error);
+        notify('Warning, an error while processing occured:<br />'+error);
         return;
     }
     if (resp.length){
@@ -297,7 +297,7 @@ function process_uploaded(resp, error){
 function run_graph(){
     $('div.pane').hide();
     if ($('#mmreasoner').is(':empty')){
-        $('#mmreasoner').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html"></iframe>').show();
+        $('#mmreasoner').empty().append('<iframe id=f_reasoner frameborder=0 scrolling="no" width="100%" height="1400" src="/static/graph.html?9"></iframe>').show();
     } else {
         $('#mmreasoner').show();
         document.getElementById('f_reasoner').contentWindow.build_graph();

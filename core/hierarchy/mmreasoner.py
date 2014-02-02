@@ -58,7 +58,6 @@ class Ontology:
                 node['label'] = i.getElementsByTagName('labels')[0].firstChild.firstChild.nodeValue if i.getElementsByTagName('labels') else ''
                 vertices_names[ i.attributes['id'].value ] = node['title']
                 self.g.add((  self.TILDE[ node['title'] ], rdflib.RDF.type, self.OWL.Class  ))
-                self.g.add((  self.TILDE[ node['title'] ], self.TILDE.participates, self.TILDE.true  ))
 
             rels = RelationshipsElement(sheet._getRelationships())
             for i in rels.iterChildNodesByTagName(TAG_RELATIONSHIP):
@@ -69,58 +68,83 @@ class Ontology:
                 else: predicate = self.TILDE.belongsto
                 
                 self.g.add((  self.TILDE[vertices_names[ rel.getEnd1ID() ]], predicate, self.TILDE[vertices_names[ rel.getEnd2ID() ]]  ))
-                        
+            
+            # Main ruleset:
+            
+            # rule belongsto
             self.g.add((  self.TILDE.belongsto, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.add((  self.TILDE.belongsto, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
-
+            
+            # rule belongsto = INVERSE(belongsto)
+            self.g.add((  self.TILDE.inv_belongsto, rdflib.RDF.type, self.OWL.ObjectProperty  ))
+            self.g.add((  self.TILDE.inv_belongsto, self.OWL.inverseOf, self.TILDE.belongsto  ))
+            self.g.add((  self.TILDE.inv_belongsto, self.OWL.equivalentProperty, self.TILDE.belongsto  ))
+            
+            # rule influences
             self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
-
-            self.g.add((  self.TILDE.comprises, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.comprises, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
-            self.g.add((  self.TILDE.comprises, self.OWL.inverseOf, self.TILDE.belongsto  ))
-
+            self.g.add((  self.TILDE.influences, rdflib.RDF.type, self.OWL.TransitiveProperty  ))           
+            
+            # rule INVERSE(influences)
+            self.g.add((  self.TILDE.inv_influences, rdflib.RDF.type, self.OWL.ObjectProperty  ))
+            self.g.add((  self.TILDE.inv_influences, self.OWL.inverseOf, self.TILDE.influences  ))
+            
+            # rule actson
             self.g.add((  self.TILDE.actson, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            self.g.add((  self.TILDE.actson, self.OWL.equivalentProperty, self.TILDE.influences  ))
-            self.g.add((  self.TILDE.actedby, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.parse(data='''
             @prefix owl: <http://www.w3.org/2002/07/owl#> .
             @prefix tilde: <http://tilde.pro/#> .
             tilde:actson owl:propertyChainAxiom ( tilde:belongsto tilde:influences ) .
-            tilde:actson owl:propertyChainAxiom ( tilde:influences tilde:comprises ) .
-            tilde:actson owl:propertyChainAxiom ( tilde:belongsto tilde:influences tilde:comprises ) .
-            ''' , format='n3') # How to input self.OWL.propertyChainAxiom in rdflib?
+            tilde:actson owl:propertyChainAxiom ( tilde:influences tilde:belongsto ) .
+            ''' , format='n3')
             self.g.add((  self.TILDE.actson, rdflib.RDF.type, self.OWL.TransitiveProperty  ))
+            
+            # rule actedby
+            self.g.add((  self.TILDE.actedby, rdflib.RDF.type, self.OWL.ObjectProperty  ))
             self.g.add((  self.TILDE.actedby, self.OWL.inverseOf, self.TILDE.actson  ))
             
-            self.g.add((  self.TILDE.participates, rdflib.RDF.type, self.OWL.ObjectProperty  ))
-            
     def reason(self):
+        edges = []
         self.org = copy.deepcopy(self.g)
         try:
             DeductiveClosure(OWLRL_Extension).expand(self.g)
         except:
-            self.error = 'Unable to apply reasoner!'        
+            self.error = 'Unable to apply reasoner!'
+        else:
+            #vertices = list(set(vertices))                    
+            
+            # Expanded graph
+            # actson and actedby
+            
+            # Make consistency check
+            for s, o in self.g.subject_objects(predicate=self.TILDE.actson):
+                s = Ontology.uri2term(s)
+                o = Ontology.uri2term(o)
+                if s == o:
+                    self.error = 'Consistency error for term %s!' % s
+                    break
+                edges.append({'source': s, 'target': o, 'type': 'actson' })
+            else:   
+                # Here we combine some rules outside the reasoner           
+                for s, o in self.g.subject_objects(predicate=self.TILDE.influences):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actson' })
+                        
+                for s, o in self.g.subject_objects(predicate=self.TILDE.actedby):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
+                    
+                for s, o in self.g.subject_objects(predicate=self.TILDE.inv_influences):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
+                    
+                # Original graph
+                # belongs and influences
+                for s, o in self.org.subject_objects(predicate=self.TILDE.belongsto):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'belongs' })        
+                for s, o in self.org.subject_objects(predicate=self.TILDE.influences):
+                    edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'influences' })
         
+        return json.dumps(edges)
+            
     def dump(self):
         return self.g.serialize(format='turtle')
-        
-    def to_json(self):
-        edges = []
-        
-        #vertices = list(set(vertices))
-        
-        for s, o in self.org.subject_objects(predicate=self.TILDE.belongsto):
-            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'belongs' })        
-        for s, o in self.org.subject_objects(predicate=self.TILDE.influences):
-            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'influences' })
-            
-        for s, o in self.g.subject_objects(predicate=self.TILDE.actson):
-            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actson' })            
-        for s, o in self.g.subject_objects(predicate=self.TILDE.actedby):
-            edges.append({'source': Ontology.uri2term(s), 'target': Ontology.uri2term(o), 'type': 'actedby' })
-        
-        return json.dumps(edges)   
 
 if __name__ == '__main__':
     
@@ -136,7 +160,7 @@ if __name__ == '__main__':
         ontograph.reason()
     error = ontograph.error
     
-    print ontograph.to_json()
+    print ontograph.dump()
     
     '''if not error:
         try:

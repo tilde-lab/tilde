@@ -22,7 +22,7 @@ circle{
     cursor:pointer;
 }
 text{
-    font-size:12px;
+    font-size:14px;
     font-weight:bold;
     cursor:pointer;
     text-shadow:0 2px 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, -2px 0 0 #fff;
@@ -33,7 +33,7 @@ text.shadow{
     stroke-width:3px;
     stroke-opacity:0.8;
 }
-marker#belongs{fill:#ccc;}
+/* marker#belongs{fill:#ccc;} */
 marker#influences{fill:#06c;}
 </style>
 
@@ -56,26 +56,32 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         source = JSON.parse(window.parent._tilde.graph_comm);
     }
     
-    // Legend
-    if (!window.has_legend){
-        var legend_html = 'Legend:<div id="graph_legend_inferred" style="display:none;" class="graph_legends"><div style="color:#0c3;">node influences on<div style="float:right;width:16px;height:16px;background:#0c3;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div><div style="color:#f00;">node is influenced by<div style="float:right;width:16px;height:16px;background:#f00;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div></div><div id="graph_legend_none" style="display:none;" class="graph_legends">no conclusions made</div><div id="graph_legend_init" style="display:none;" class="graph_legends">touch or drag any node to start</div>';
-        var legend_css = 'position:fixed;z-index:99999;bottom:4px;left:4px;padding:10px;width:350px;height:100px;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;background:#fc0;line-height:1.4em;font-size:1.15em;font-weight:bold;';
-        var ref;
-        
-        if (standalone) ref = document;
-        else ref = window.parent.document;
-        
+    var ref;        
+    if (standalone) ref = document;
+    else ref = window.parent.document;
+    
+    // Legend   
+    if (!window.has_mmreasoner_legend){
+        var legend_html = 'Legend:<div style="float:right;width:16px;height:16px;cursor:pointer;background:url(/static/images/cancel.gif) no-repeat;" id="_close_"></div><div id="graph_legend_inferred" style="display:none;" class="graph_legends"><div style="color:#0c3;">node acts on<div style="float:right;width:16px;height:16px;background:#0c3;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div><div style="color:#f00;">node is acted by<div style="float:right;width:16px;height:16px;background:#f00;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;"></div></div></div><div id="graph_legend_none" style="display:none;" class="graph_legends">no conclusions made</div><div id="graph_legend_init" style="display:none;" class="graph_legends">touch or drag any node to start</div>';
+        var legend_css = 'position:fixed;z-index:99999;bottom:4px;left:4px;padding:10px;width:350px;height:100px;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px;background:#ffc;line-height:1.4em;font-size:1.15em;font-weight:bold;';
         var graph_legend = ref.createElement( 'div' );
         graph_legend.innerHTML = legend_html;
         graph_legend.style.cssText = legend_css;
+        graph_legend.setAttribute('id', 'mmreasoner_legend');
         ref.getElementsByTagName('body')[0].appendChild( graph_legend );
         
-        var l_a = ref.getElementsByClassName('graph_legends'),
-        l_1 = ref.getElementById('graph_legend_inferred'),
-        l_2 = ref.getElementById('graph_legend_none'),
-        l_3 = ref.getElementById('graph_legend_init');
-        window.has_legend = true;
-    }
+        var cr = ref.getElementById('_close_');
+        cr.onclick = function(e){
+            var ml = ref.getElementById('mmreasoner_legend');
+            ml.parentNode.removeChild(ml);
+            window.has_mmreasoner_legend = false;
+        };       
+        window.has_mmreasoner_legend = true;
+    }  
+    var l_a = ref.getElementsByClassName('graph_legends'),
+    l_1 = ref.getElementById('graph_legend_inferred'),
+    l_2 = ref.getElementById('graph_legend_none'),
+    l_3 = ref.getElementById('graph_legend_init');
     
     // Filter edges and compute the distinct nodes from the links
     source.forEach(function(link){
@@ -105,7 +111,7 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         
     // Per-type markers
     svg.append("defs").selectAll("marker")
-        .data(["belongs", "influences"])
+        .data(["influences"])
         .enter().append("marker")
         .attr("id", function(d){return d})
         .attr("viewBox", "0 0 40 20")
@@ -121,9 +127,9 @@ var standalone = !("_tilde" in window.parent) || !("graph_comm" in window.parent
         .nodes(d3.values(nodes))
         .links(edges)
         .size([width, height*=2/3])
-        .linkDistance(100)
+        .linkDistance(150)
         .gravity(0.1)
-        .charge(-1200)
+        .charge(-1500)
         .on("tick", tick)
         .start();
         

@@ -549,11 +549,8 @@ class DuplexConnectionHandler:
         ontograph.compile(userobj['mapfile'])
         error = ontograph.error
         if not error:
-            ontograph.reason()
-        error = ontograph.error
-        if not error:
-            data = ontograph.to_json()
-        
+            data = ontograph.reason()
+            error = ontograph.error
         return (data, error)
 
 
