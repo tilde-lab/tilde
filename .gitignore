@@ -1,6 +1,7 @@
 *.py[co]
 .directory
 debug.log
+nohup.out
 windows/cef/debug.log
 core/build
 core/_spglib.so
