@@ -36,7 +36,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
-from common import dict2ase, html_formula
+from common import dict2ase, html_formula, str2html
 from plotter import plotter
 
 
@@ -207,7 +207,10 @@ class Request_Handler:
             for item in Tilde.hierarchy:
                 if 'has_column' in item and item['cid'] in Users[session_id].usettings['cols']:
                     if 'source' in item and '#' in item['source']: continue # todo
-                    data += '<th rel=' + str(item['cid']) + '>' + item['category'][0].upper() + item['category'][1:] + '</th>'
+                    
+                    catname = str2html(item['html']) if 'html' in item else item['category'][0].upper() + item['category'][1:]
+                    
+                    data += '<th rel=' + str(item['cid']) + '>' + catname + '</th>'
             
             # compulsory part
             if Users[session_id].usettings['objects_expand']: data += '<th class="not-sortable">More...</th>'

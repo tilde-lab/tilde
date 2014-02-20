@@ -16,7 +16,7 @@ class Ebands():
         self.stripes = obj['stripes']
         self.ticks = obj['ticks']
         
-    def is_metal(self):
+    def is_conductor(self):
         for s in self.stripes:
             top, bottom = max(s), min(s)
             if bottom < 0 and top > 0: return True

@@ -16,7 +16,7 @@ import installation
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.01'
+DB_SCHEMA_VERSION = '1.02'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_DB = 'default.db'

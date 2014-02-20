@@ -31,15 +31,14 @@ def u(obj, encoding='utf-8'):
         return unicode(obj, encoding)
     else: return obj
     
-def html2str(i):
+def str2html(i):
     # TODO
     tokens = { \
-    '<sub>': '_',
-    '</sub>': '',
-    '<sup>': '^',
-    '</sup>': '',
-    '<span class=units-energy>': '',
-    '</span>': '',
+    '{{units-energy}}': '<span class=units-energy></span>',
+    ',,': '<sub>',
+    '__': '</sub>',
+    '^^': '<sup>',
+    '**': '</sup>',
     }
     i = str(i)
     for k, v in tokens.iteritems():

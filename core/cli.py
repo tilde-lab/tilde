@@ -31,7 +31,6 @@ except ImportError:
     except ImportError: sys.exit('\n\nI cannot proceed. Please, install python sqlite3 module!\n\n')
 
 from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR
-from common import html2str
 from common import write_cif
 from symmetry import DEFAULT_ACCURACY
 from api import API
@@ -229,7 +228,7 @@ for target in args.path:
 
             j, out = 0, ''
             for t in found_topics:
-                t = map(html2str, t)
+                #t = map(html2str, t)
                 out += "  " + t[0] + ': ' + ', '.join(t[1:])
                 out += "\t\t" if not j%2 else "\n"
                 j+=1

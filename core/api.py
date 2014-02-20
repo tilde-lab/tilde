@@ -538,8 +538,8 @@ class API:
         # electronic properties reasoning
         # by bands
         if calc.electrons['bands']:
-            if calc.electrons['bands'].is_metal():
-                calc.info['etype'] = 'metal'
+            if calc.electrons['bands'].is_conductor():
+                calc.info['etype'] = 'conductor'
                 calc.info['bandgap'] = 0.0
             else:
                 gap, is_direct = calc.electrons['bands'].get_bandgap()                
@@ -562,7 +562,7 @@ class API:
                 if gap:
                     if gap<=1.0: calc.info['etype'] = 'semiconductor'
                     else: calc.info['etype'] = 'insulator'
-                else: calc.info['etype'] = 'metal'
+                else: calc.info['etype'] = 'conductor'
         
         calc.benchmark() # this call must be at the very end of parsing
 
