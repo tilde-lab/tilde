@@ -1,14 +1,12 @@
 
 # Tilde project: installation and actions to be always done
-# v271113
+
+# PostgreSQL implementation
 
 import sys
 import os
 import re
 import json
-
-try: import sqlite3
-except: from pysqlite2 import dbapi2 as sqlite3
 
 # EXTENSIONS COMPILATION
 import installation
@@ -35,13 +33,11 @@ DEFAULT_SETUP = {
                 'title': None,
                 'update_server': "http://tilde.pro/VERSION"
                 }
-DB_SCHEMA = '''
-CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
-CREATE TABLE "topics" ("tid" INTEGER PRIMARY KEY NOT NULL, "categ" INTEGER NOT NULL, "topic" TEXT);
-CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL, FOREIGN KEY(tid) REFERENCES topics(tid));
-CREATE TABLE "pragma" ("content" TEXT);
-'''
-DB_SCHEMA += 'INSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
+DB_SCHEMA = '''CREATE TABLE "results" ("id" SERIAL PRIMARY KEY, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+CREATE TABLE "topics" ("tid" SERIAL PRIMARY KEY, "categ" INTEGER NOT NULL, "topic" TEXT);
+CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL);
+CREATE TABLE "pragma" ("content" TEXT);'''
+DB_SCHEMA += '\nINSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
 repositories = []
 
 
@@ -60,7 +56,7 @@ def write_settings(settings):
     else:
         return True
         
-def write_db(name):
+'''def write_db(name):
     if not len(name) or not re.match('^[\w-]+$', name):
         return 'Invalid database name: ' + name
 
@@ -71,19 +67,20 @@ def write_db(name):
     
     if os.path.exists(DATA_DIR + os.sep + name) or not os.access(DATA_DIR, os.W_OK):
         return 'Cannot write database file, please, check the path ' + DATA_DIR + os.sep + name
-
-    conn = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + name  ) )
-    conn.row_factory = sqlite3.Row
-    conn.text_factory = str
+    
+    conn = psycopg2.connect("dbname=postgres user=eb")
+    #conn.row_factory = sqlite3.Row
+    #conn.text_factory = str
     
     cursor = conn.cursor()
     for i in DB_SCHEMA.splitlines():
         cursor.execute( i )
     conn.commit()
     conn.close()
-    os.chmod(os.path.abspath(  DATA_DIR + os.sep + name  ), 0777) # to avoid (or create?) IO problems with multiple users
+    #os.chmod(os.path.abspath(  DATA_DIR + os.sep + name  ), 0777) # to avoid (or create?) IO problems with multiple users
     
     return False
+'''
 
 def userdbchoice(options, choice=None, add_msg="", create_allowed=True):
     ''' Auxiliary procedure to simplify UI '''
@@ -139,15 +136,15 @@ def read_hierarchy():
     
 def check_db_version(db_conn):
     cursor = db_conn.cursor()
-    try: cursor.execute( "SELECT name FROM sqlite_master WHERE type='table' AND name='pragma'" ) # is there such a table?
-    except: raise RuntimeError('Fatal error: ' + "%s" % sys.exc_info()[1])
-    row = cursor.fetchone()
-    if row is None:
-        return True
+    #try: cursor.execute( "SELECT name FROM sqlite_master WHERE type='table' AND name='pragma'" ) # is there such a table?
+    #except: raise RuntimeError('Fatal error: ' + "%s" % sys.exc_info()[1])
+    #row = cursor.fetchone()
+    #if row is None:
+    #    return True
     try: cursor.execute( "SELECT content FROM pragma" )
     except: raise RuntimeError('Fatal error: ' + "%s" % sys.exc_info()[1])
     row = cursor.fetchone()
-    if row['content'] != DB_SCHEMA_VERSION:
+    if row[0] != DB_SCHEMA_VERSION:
         return True
     else:
         return False
@@ -170,18 +167,18 @@ except NameError:
     
 # CREATE DB IF NOT FOUND
 
-if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) ):
-    error = write_db(settings['default_db'][:-3])
-    if error: raise RuntimeError(error)
+#if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) ):
+#    error = write_db(settings['default_db'][:-3])
+#    if error: raise RuntimeError(error)
         
 # DB POOL
 
-for file in os.listdir( os.path.realpath(DATA_DIR) ):
+'''for file in os.listdir( os.path.realpath(DATA_DIR) ):
     if file[-3:] == '.db':
         if len(file) > 21: raise RuntimeError('Please, do not use long names for the databases!')
         repositories.append(file)
 if len(repositories) > MAX_CONCURRENT_DBS:
-    raise RuntimeError('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
+    raise RuntimeError('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)'''
     
 # SETTINGS COMBINATIONS
 

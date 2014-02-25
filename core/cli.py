@@ -2,7 +2,8 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v271113
+
+# PostgreSQL implementation
 
 import sys
 import os
@@ -25,10 +26,7 @@ try:
     from numpy.linalg import det
 except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
-try: import sqlite3
-except ImportError:
-    try: from pysqlite2 import dbapi2 as sqlite3
-    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python sqlite3 module!\n\n')
+import psycopg2
 
 from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR
 from common import write_cif
@@ -93,38 +91,40 @@ if args.shortcut: args.recursive, args.convergence, args.info, args.terse = True
     
 db = None
 if args.add:
-    if args.add == 'DIALOG':
+    '''if args.add == 'DIALOG':
         uc = userdbchoice(repositories) # NB. this spoils benchmarking
     else:
         uc = userdbchoice(repositories, choice=args.add) # NB. this spoils benchmarking
 
     if not os.access(os.path.abspath(DATA_DIR + os.sep + uc), os.W_OK): sys.exit("Sorry, database file is write-protected!")
-        
-    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
-    db.row_factory = sqlite3.Row
-    db.text_factory = str
+    '''
+    
+    db = psycopg2.connect("dbname=tilde user=eb")
+    #db.row_factory = sqlite3.Row
+    #db.text_factory = str
     
     # check DB_SCHEMA_VERSION
-    incompatible = check_db_version(db)
+    '''incompatible = check_db_version(db)
     if incompatible:
         sys.exit('Sorry, database ' + DATA_DIR + os.sep + uc + ' is incompatible.')
     else:
         print "The database selected:", uc
+    '''
     
 if args.datamining:
-    uc = userdbchoice(repositories, create_allowed=False) # NB. this spoils benchmarking
+    '''uc = userdbchoice(repositories, create_allowed=False) # NB. this spoils benchmarking'''
     
-    db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
-    db.row_factory = sqlite3.Row
-    db.text_factory = str
+    db = psycopg2.connect("dbname=tilde user=eb")
+    #db.row_factory = sqlite3.Row
+    #db.text_factory = str
     
     # check DB_SCHEMA_VERSION
-    incompatible = check_db_version(db)
+    '''incompatible = check_db_version(db)
     if incompatible:
         sys.exit('Sorry, database ' + DATA_DIR + os.sep + uc + ' is incompatible.')
     else:
         print "The database selected:", uc
-
+    '''
 
 Tilde = API(db_conn=db, settings=settings)
 
@@ -165,11 +165,12 @@ if args.datamining:
         if L > 50:
             result = result[:50]
             postmessage = "\n...\n%s more" % (L-50)        
-        i=0        
-        for row in result:
-            if i==0: out += "   ".join( row.keys() ) + "\n"
-            for k in row.keys():
-                out += str(row[k]) + "   "
+        i=0
+        for row in result:            
+            #if i==0: out += "   ".join( row.keys() ) + "\n"
+            #for k in row.keys():
+            #    out += str(row[k]) + "   "
+            out += str(row)
             out += "\n"
             i+=1
     print out + postmessage

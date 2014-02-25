@@ -6,7 +6,7 @@
 import sys
 import os
 import math
-import sqlite3
+import psycopg2
 import json
 import time
 
@@ -15,15 +15,15 @@ starttime = time.time() # benchmarking
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.settings import check_db_version
 
-try: workpath = sys.argv[1]
+'''try: workpath = sys.argv[1]
 except IndexError: sys.exit('No path defined!')
 workpath = os.path.abspath(workpath)
-if not os.path.exists(workpath): sys.exit('Invalid path!')
+if not os.path.exists(workpath): sys.exit('Invalid path!')'''
 
 
-db = sqlite3.connect(os.path.abspath(workpath))
-db.row_factory = sqlite3.Row
-db.text_factory = str
+db = psycopg2.connect("dbname=tilde user=eb")
+#db.row_factory = sqlite3.Row
+#db.text_factory = str
 cursor = db.cursor()
 
 # check DB_SCHEMA_VERSION
@@ -41,8 +41,8 @@ objects = {}
 while 1:
     row = cursor.fetchone()
     if not row: break
-    item = json.loads(row['info'])
-    item['e'] = row['energy']
+    item = json.loads(row[0])
+    item['e'] = row[1]
     if not item['standard'] in objects:
         if 'bandgap' in item and 0 < item['bandgap'] < 15: # avoid non-physical things
             objects[ item['standard'] ] = {'e': item['e'], 'gap': item['bandgap'] }

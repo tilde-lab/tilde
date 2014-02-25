@@ -598,17 +598,17 @@ class API:
             for topic in found_topics:
                 if not topic: topic = 'none' # Warning! None-values spoil database with duplicate empty entries!
                 
-                try: cursor.execute( 'SELECT tid FROM topics WHERE categ = ? AND topic = ?', (i['cid'], topic) )
+                try: cursor.execute( 'SELECT tid FROM topics WHERE categ = %s AND topic = CAST(%s AS TEXT)', (i['cid'], topic) )
                 except: return 'Fatal error: %s' % sys.exc_info()[1]
                 tid = cursor.fetchone()
                 if tid: tid = tid[0]
                 else:
-                    try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (?, ?)', (i['cid'], topic) )
+                    try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (%s, %s)', (i['cid'], topic) )
                     except: return 'Fatal error: %s' % sys.exc_info()[1]
                     tid = cursor.lastrowid
                 tags.append( (for_checksum, tid) )
 
-        try: cursor.executemany( 'INSERT INTO tags (checksum, tid) VALUES (?, ?)', tags )
+        try: cursor.executemany( 'INSERT INTO tags (checksum, tid) VALUES (%s, %s)', tags )
         except: return 'Fatal error: %s' % sys.exc_info()[1]
 
         return False
@@ -688,7 +688,7 @@ class API:
         # check unique
         try:
             cursor = self.db_conn.cursor()
-            cursor.execute( 'SELECT id FROM results WHERE checksum = ?', (checksum,) )
+            cursor.execute( 'SELECT id FROM results WHERE checksum = %s', (checksum,) )
             row = cursor.fetchone()
             if row: return (checksum, None)
         except:
@@ -704,7 +704,7 @@ class API:
 
         # save extracted data
         try:
-            cursor.execute( 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( ?, ?, ?, ?, ?, ?, ? )', \
+            cursor.execute( 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( %s, %s, %s, %s, %s, %s, %s )', \
             (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
         except:
             error = 'Fatal error: %s' % sys.exc_info()[1]
