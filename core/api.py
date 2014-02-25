@@ -1,6 +1,7 @@
 
 # Tilde project: core
-# v271113
+
+# PostgreSQL implementation
 
 __version__ = "0.2.4"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
                         # SYNCHRONIZE WITH root/VERSION

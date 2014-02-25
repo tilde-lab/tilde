@@ -19,8 +19,8 @@ import logging
 from numpy import dot
 from numpy import array
 
-try: import sqlite3
-except: from pysqlite2 import dbapi2 as sqlite3
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+import psycopg2
 
 # this is done to have all third-party code in deps folder
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
@@ -34,7 +34,8 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
+#from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
+from settings import settings, write_settings, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula, str2html
 from plotter import plotter
@@ -65,19 +66,19 @@ class DataMap:
         self.error = None
         cursor = Repo_pool[db_name].cursor()
         try: cursor.execute( 'SELECT checksum, tid FROM tags' )
-        except: self.error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        except: self.error = 'DataMap error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
             for row in result:
-                i = int(row['tid'])
+                i = int(row[1])
 
-                try: self.c2t[ row['checksum'] ]
-                except KeyError: self.c2t[ row['checksum'] ] = [ i ]
-                else: self.c2t[ row['checksum'] ].append( i )
+                try: self.c2t[ row[0] ]
+                except KeyError: self.c2t[ row[0] ] = [ i ]
+                else: self.c2t[ row[0] ].append( i )
 
                 try: self.t2c[ i ]
-                except KeyError: self.t2c[ i ] = [ row['checksum'] ]
-                else: self.t2c[ i ].append( row['checksum'] )
+                except KeyError: self.t2c[ i ] = [ row[0] ]
+                else: self.t2c[ i ].append( row[0] )
 
     def c_by_t(self, *args):
         checksums = self.t2c[ int(args[0]) ]
@@ -181,18 +182,24 @@ class Request_Handler:
         if tids:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
             rlen = len(data_clause)
-            data_clause = '","'.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
+            #data_clause = ', '.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
+            data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
+            #data_clause = map(lambda x: "'%s'" % x, data_clause)
 
         elif 'hashes' in userobj:
             data_clause = userobj['hashes']
             rlen = len(data_clause)
             if not rlen or not isinstance(data_clause, list) or len(data_clause[0]) != 56: return (data, 'Invalid browsing!')
-            data_clause = '","'.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
+            #data_clause = ', '.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
+            data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
+            #data_clause = map(lambda x: "'%s'" % x, data_clause)
 
         else: return (data, 'Error: neither tid nor hash was provided!')
 
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN ("%s")' % data_clause)
+        try:
+            print cursor.mogrify('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))
+            cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))            
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
@@ -223,14 +230,14 @@ class Request_Handler:
                 # building data table rows
                 rescount += 1
                 data_obj = {}
-                data_obj['structures'] = json.loads(row['structures'])
-                data_obj['energy'] = row['energy']
-                data_obj['info'] = json.loads(row['info'])
-                data_obj['apps'] = json.loads(row['apps'])
+                data_obj['structures'] = json.loads(row[1])
+                data_obj['energy'] = row[2]
+                data_obj['info'] = json.loads(row[3])
+                data_obj['apps'] = json.loads(row[4])
 
                 # compulsory part
-                data += '<tr id=i_' + row['checksum'] + '>'
-                data += '<td><input type=checkbox id=d_cb_'+ row['checksum'] + ' class=SHFT_cb></td>'
+                data += '<tr id=i_' + row[0] + '>'
+                data += '<td><input type=checkbox id=d_cb_'+ row[0] + ' class=SHFT_cb></td>'
 
                 # dynamic part
                 for item in Tilde.hierarchy:
@@ -269,23 +276,23 @@ class Request_Handler:
                 tags = []
                 result = cursor.fetchall()
                 for item in result:
-                    if not item['tid'] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
+                    if not item[0] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
                     
-                    try: match = [x for x in Tilde.hierarchy if x['cid'] == item['categ']][0]
+                    try: match = [x for x in Tilde.hierarchy if x['cid'] == item[1]][0]
                     except IndexError: return (data, 'Schema and data do not match: different versions of code and database?')
                     
                     if not 'has_label' in match or not match['has_label']: continue
                     
-                    if match['cid'] in [1, 511, 521, 522]: i = html_formula(item['topic']) # TODO!!!
-                    else: i = item['topic']
+                    if match['cid'] in [1, 511, 521, 522]: i = html_formula(item[2]) # TODO!!!
+                    else: i = item[2]
 
                     if not 'sort' in match: sort = 1000
                     else: sort = match['sort']
                     for n, tag in enumerate(tags):
                         if tag['category'] == match['category']:
-                            tags[n]['content'].append( {'tid': item['tid'], 'topic': i} )
+                            tags[n]['content'].append( {'tid': item[0], 'topic': i} )
                             break
-                    else: tags.append({'category': match['category'], 'sort': sort, 'content': [ {'tid': item['tid'], 'topic': i} ]})
+                    else: tags.append({'category': match['category'], 'sort': sort, 'content': [ {'tid': item[0], 'topic': i} ]})
 
                 tags.sort(key=lambda x: x['sort'])
         else:
@@ -298,35 +305,35 @@ class Request_Handler:
     def phonons(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
-            data = row['phonons']
+            data = row[0]
         return (data, error)
 
     @staticmethod
     def summary(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: error = 'No objects found!'
             else:
-                try: cursor.execute( 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = ?', (userobj['datahash'], ) )
+                try: cursor.execute( 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = %s', (userobj['datahash'], ) )
                 except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
                 else:
                     tagrow = cursor.fetchall()
                     tags = []
                     for t in tagrow:
-                        o = [x for x in Tilde.hierarchy if x['cid'] == t['categ']][0]
+                        o = [x for x in Tilde.hierarchy if x['cid'] == t[1]][0]
 
                         cat = o['category']
 
-                        if o['cid'] in [1, 511, 521, 522]: i = html_formula(t['topic']) # TODO!!!
-                        else: i = t['topic']
+                        if o['cid'] in [1, 511, 521, 522]: i = html_formula(t[0]) # TODO!!!
+                        else: i = t[0]
 
                         if not 'sort' in o: sort = 1000
                         else: sort = o['sort']
@@ -338,14 +345,14 @@ class Request_Handler:
                     tags.sort(key=lambda x: x['sort'])
 
                     phon_flag = False
-                    if len(row['phonons'])>10: phon_flag = True # avoids json.loads
+                    if len(row[2])>10: phon_flag = True # avoids json.loads
 
                     e_flag = {'dos': True, 'bands': True}
                     # avoids json.loads
-                    if '"dos": {}' in row['electrons'] and '"projected": []' in row['electrons']: e_flag['dos'] = False
-                    if '"bands": {}' in row['electrons']: e_flag['bands'] = False
+                    if '"dos": {}' in row[3] and '"projected": []' in row[3]: e_flag['dos'] = False
+                    if '"bands": {}' in row[3]: e_flag['bands'] = False
 
-                    data = json.dumps({  'structures': row['structures'][-1], 'energy': row['energy'], 'phonons': phon_flag, 'electrons': e_flag, 'info': row['info'], 'tags': tags  })
+                    data = json.dumps({  'structures': row[0][-1], 'energy': row[1], 'phonons': phon_flag, 'electrons': e_flag, 'info': row[4], 'tags': tags  })
         return (data, error)
 
     @staticmethod
@@ -384,18 +391,19 @@ class Request_Handler:
             for i in ['cols', 'colnum', 'objects_expand']:
                 Users[session_id].usettings[i] = userobj['settings'][i]
 
-        # *server + client-side* settings
-        elif userobj['area'] == 'switching':
-            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect database!')
-            Users[session_id].cur_db = userobj['switching']
-            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
-            if Users[session_id].cur_db in Tilde_tags:
-                # force update tags in memory
-                Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
-                if Tilde_tags[ Users[session_id].cur_db ].error:
-                    error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
-            logging.debug('Switched to ' + userobj['switching'])
-
+            # *server + client-side* settings
+            '''elif userobj['area'] == 'switching':
+                if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect database!')
+                Users[session_id].cur_db = userobj['switching']
+                Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
+                if Users[session_id].cur_db in Tilde_tags:
+                    # force update tags in memory
+                    Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+                    if Tilde_tags[ Users[session_id].cur_db ].error:
+                        error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
+                logging.debug('Switched to ' + userobj['switching'])
+            '''
+        
         else: error = 'Unknown settings context area!'
 
         if not data: data = 1
@@ -410,17 +418,17 @@ class Request_Handler:
         if not 'id' in userobj or not 'db' in userobj or not userobj['id'] or not userobj['db']: return (data, 'Action invalid!')
         if len(userobj['id']) != 56 or not userobj['db'] in Repo_pool: return (data, 'Action invalid!')
         cursor = Repo_pool[ userobj['db'] ].cursor()
-        cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (userobj['id'],) )
+        cursor.execute( 'SELECT info FROM results WHERE checksum = %s', (userobj['id'],) )
         row = cursor.fetchone()
         if not row: return (data, 'Object not found!')
         else:
-            info = json.loads(row['info'])
+            info = json.loads(row[0])
             if os.path.exists(info['location']):
                 data = 1
                 return (data, error)
             else: return (data, 'Sorry, i have no access to source file anymore!')
 
-    @staticmethod
+    '''@staticmethod
     def db_create(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
@@ -439,8 +447,9 @@ class Request_Handler:
             data, error = 1, None
         
         return (data, error)
-
-    @staticmethod
+    '''
+    
+    '''@staticmethod
     def db_copy(userobj, session_id):
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
@@ -465,6 +474,7 @@ class Request_Handler:
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
         data = 1
         return (data, error)
+    '''
     
     # TODO: delegate content of these four methods to plotter!
     
@@ -472,15 +482,15 @@ class Request_Handler:
     def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         if row is None: return (data, 'No information found!')
-        if row['phonons'] is None: return (data, 'No phonons for this object!')
+        if row[1] is None: return (data, 'No phonons for this object!')
 
-        s = json.loads(row['structures'])
-        p = json.loads(row['phonons'])
+        s = json.loads(row[0])
+        p = json.loads(row[1])
 
         # gamma-projected eigenvalues and gamma-projected atomic impacts from eigenvectors
         eigenvalues, impacts = [], []
@@ -520,16 +530,16 @@ class Request_Handler:
     def ph_bands(userobj, session_id): # currently supported for: CRYSTAL, "VASP"
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         
         if row is None: return (data, 'No information found!')
-        if row['phonons'] is None: return (data, 'No phonons for this object!')
+        if row[1] is None: return (data, 'No phonons for this object!')
 
-        s = json.loads(row['structures'])
-        p = json.loads(row['phonons'])
+        s = json.loads(row[0])
+        p = json.loads(row[1])
 
         values = {}
         for set in p: values[ set['bzpoint'] ] = set['freqs']
@@ -540,15 +550,15 @@ class Request_Handler:
     def e_dos(userobj, session_id): # currently supported for: EXCITING, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         
         if row is None: return (data, 'No information found!')            
             
-        s = json.loads(row['structures'])
-        e = json.loads(row['electrons'])
+        s = json.loads(row[0])
+        e = json.loads(row[1])
 
         if not len(e['dos']) and not len(e['projected']): return (data, 'Electron information is not full: plotting impossible!') # and (not 'e_proj_eigvals' in e or not 'impacts' in e):
 
@@ -581,14 +591,14 @@ class Request_Handler:
     def e_bands(userobj, session_id): # currently supported for: EXCITING
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = ?', (userobj['datahash'], ) )
+        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
         except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         if row is None: return (data, 'No information found!')
         
-        s = json.loads(row['structures'])
-        e = json.loads(row['electrons'])
+        s = json.loads(row[0])
+        e = json.loads(row[1])
 
         if not len(e['bands']): return (data, 'Band structure is missing!')
 
@@ -608,10 +618,12 @@ class Request_Handler:
         
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         
-        data_clause = '","'.join(userobj['hashes'])
+        #data_clause = "','".join(userobj['hashes'])
+        data_clause = userobj['hashes']
+        #data_clause = map(lambda x: "'%s'" % x, data_clause)
         try:
-            cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
-            cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
+            cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
+            cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
             Repo_pool[ Users[session_id].cur_db ].commit()
         except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
         else:
@@ -768,22 +780,22 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
         
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT structures, info, apps FROM results WHERE checksum = ?', (hash,) )
+            cursor.execute( 'SELECT structures, info, apps FROM results WHERE checksum = %s', (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
             raise tornado.web.HTTPError(500)
         else:
-            overlay_data = json.loads(row['apps'])
+            overlay_data = json.loads(row[2])
             overlayed_apps = {}
             for appkey in Tilde.Apps.keys():
                 if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
                     overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
 
-            symmetry = json.loads(row['info'])
+            symmetry = json.loads(row[1])
             symmetry = symmetry['ng']
             
-            ase_obj = dict2ase(json.loads(row['structures'])[-1])                        
+            ase_obj = dict2ase(json.loads(row[0])[-1])                        
                         
             #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
             
@@ -836,13 +848,13 @@ class DataExportHandler(tornado.web.RequestHandler):
 
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT info FROM results WHERE checksum = ?', (hash,) )
+            cursor.execute( 'SELECT info FROM results WHERE checksum = %s', (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
             raise tornado.web.HTTPError(500)
         else:
-            info = json.loads(row['info'])
+            info = json.loads(row[0])
             if os.path.exists(info['location']):
                 file = open(info['location']).read()
                 self.set_header('Content-type', 'application/download;')
@@ -878,7 +890,7 @@ if __name__ == "__main__":
     #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
     logging.basicConfig( level=loglevel, stream=sys.stdout )
 
-    for r in repositories:
+    '''for r in repositories:
         Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
         Repo_pool[r].row_factory = sqlite3.Row
         Repo_pool[r].text_factory = str
@@ -894,6 +906,11 @@ if __name__ == "__main__":
         if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
     
     if not settings['default_db'] in Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_db'] + " is incompatible, please, remove it to proceed.")
+    '''
+    
+    Repo_pool[settings['default_db']] = psycopg2.connect("dbname=tilde user=eb")
+    Tilde_tags[settings['default_db']] = DataMap( settings['default_db'] )
+    if Tilde_tags[settings['default_db']].error: sys.exit('DataMap creation error: ' + Tilde_tags[settings['default_db']].error)
     
     Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
 
