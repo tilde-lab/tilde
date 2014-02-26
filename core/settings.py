@@ -33,9 +33,9 @@ DEFAULT_SETUP = {
                 'title': None,
                 'update_server': "http://tilde.pro/VERSION"
                 }
-DB_SCHEMA = '''CREATE TABLE "results" ("id" SERIAL PRIMARY KEY, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+DB_SCHEMA = '''CREATE TABLE "results" ("id" SERIAL PRIMARY KEY, "checksum" TEXT, "structures" TEXT, "energy" FLOAT8, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
 CREATE TABLE "topics" ("tid" SERIAL PRIMARY KEY, "categ" INTEGER NOT NULL, "topic" TEXT);
-CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL);
+CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL REFERENCES topics(tid));
 CREATE TABLE "pragma" ("content" TEXT);'''
 DB_SCHEMA += '\nINSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
 repositories = []

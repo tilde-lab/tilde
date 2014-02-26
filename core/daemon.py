@@ -182,23 +182,21 @@ class Request_Handler:
         if tids:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
             rlen = len(data_clause)
-            #data_clause = ', '.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
-            data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
-            #data_clause = map(lambda x: "'%s'" % x, data_clause)
 
         elif 'hashes' in userobj:
             data_clause = userobj['hashes']
             rlen = len(data_clause)
             if not rlen or not isinstance(data_clause, list) or len(data_clause[0]) != 56: return (data, 'Invalid browsing!')
-            #data_clause = ', '.join(  data_clause[ startn : Users[session_id].usettings['colnum']+1 ]  )
-            data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
-            #data_clause = map(lambda x: "'%s'" % x, data_clause)
 
         else: return (data, 'Error: neither tid nor hash was provided!')
-
+        
+        
+        data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
+        data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgres
+        if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgres
+        
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try:
-            print cursor.mogrify('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))
             cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))            
         except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
         else:
@@ -618,9 +616,10 @@ class Request_Handler:
         
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         
-        #data_clause = "','".join(userobj['hashes'])
         data_clause = userobj['hashes']
-        #data_clause = map(lambda x: "'%s'" % x, data_clause)
+        data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgres
+        if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgres
+        
         try:
             cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
             cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))

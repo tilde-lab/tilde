@@ -604,9 +604,9 @@ class API:
                 tid = cursor.fetchone()
                 if tid: tid = tid[0]
                 else:
-                    try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (%s, %s)', (i['cid'], topic) )
+                    try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (%s, %s) RETURNING tid', (i['cid'], topic) )
                     except: return 'Fatal error: %s' % sys.exc_info()[1]
-                    tid = cursor.lastrowid
+                    tid = cursor.fetchone()[0]
                 tags.append( (for_checksum, tid) )
 
         try: cursor.executemany( 'INSERT INTO tags (checksum, tid) VALUES (%s, %s)', tags )
