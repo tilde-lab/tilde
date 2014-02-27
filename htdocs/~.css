@@ -121,15 +121,15 @@ table.freqs_holder tbody tr td{font-style:italic;line-height:18px;}
 table.freqs_holder th{border-bottom:1px solid #000;}
 table.freqs_holder td.white{border:0;}
 div.tagcol{display:none;width:100%;clear:both;}
-div.tagcapt{float:left;width:250px;padding:2px 10px 2px 10px;margin:2px;font-size:1.1em;height:22px;word-wrap:break-word;font-weight:bold;vertical-align:top;}
+div.tagcapt{float:left;width:250px;color:#06c;padding:2px 10px 2px 10px;margin:2px;font-size:1.2em;height:22px;word-wrap:break-word;font-weight:normal;vertical-align:top;}
 div.tagarea{float:left;width:72%;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
 a.tagmore, a.tagless{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
 a.tagless{height:24px}
-a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;border:1px solid #06c;color:#06c;background:#fff;text-decoration:none;padding:2px;margin:2px;text-align:center;}
-a.taglink:hover{color:#fff;background:#06c;}
-a.activetag{color:#fff;background:#06c;}
-a.activetag:hover{color:#fff;background:#06c;}
+a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;border:1px solid #333;color:#333;background:#fff;text-decoration:none;padding:2px;margin:2px;text-align:center;}
+a.taglink:hover{color:#fff;background:#333;}
+a.activetag{color:#fff;background:#333;}
+a.activetag:hover{color:#fff;background:#333;}
 
 /* PROFILE DYNPANE */
 #profile_holder{display:none;z-index:500;position:fixed;right:3px;top:56px;width:550px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
