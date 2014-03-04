@@ -26,6 +26,7 @@ try:
     from numpy.linalg import det
 except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 import psycopg2
 
 from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR

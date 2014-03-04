@@ -6,13 +6,14 @@
 import sys
 import os
 import math
-import psycopg2
 import json
 import time
 
 starttime = time.time() # benchmarking
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+import psycopg2
+
 from core.settings import check_db_version
 
 '''try: workpath = sys.argv[1]
