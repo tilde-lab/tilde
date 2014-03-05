@@ -1,6 +1,6 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v301113
+# v050314
 
 import os
 import sys
@@ -120,9 +120,7 @@ class INFOOUT(Output):
             elif 'Structure-optimization module started' in line:
                 opt_flag = True
                 # First cycle convergence statuses
-                for n in range(len(energies)):
-                    try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                    except IndexError: pass
+                self.convergence = self.compare_vals(energies)
                 self.ncycles.append(len(self.convergence))              
                 
             elif '| Updated atomic positions ' in line: # Lithium
@@ -130,9 +128,7 @@ class INFOOUT(Output):
                 
                 if first_cycle_lithium:
                     # First cycle convergence statuses
-                    for n in range(len(energies)):
-                        try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                        except IndexError: pass
+                    self.convergence = self.compare_vals(energies)
                     first_cycle_lithium = False             
             
             elif '| Optimization step ' in line: # Beryllium
@@ -194,9 +190,7 @@ class INFOOUT(Output):
         
         if not self.convergence:
             # First cycle convergence statuses
-            for n in range(len(energies)):
-                try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                except (IndexError, ValueError): pass
+            self.convergence = self.compare_vals(energies)
         
         if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Unexpected convergence data format!")
         else:
@@ -317,7 +311,15 @@ class INFOOUT(Output):
                 self.phonons['ph_eigvecs'][ k_coords ] = ph_eigvecs
 
             f.close()
-        
+    
+    def compare_vals(self, vals):
+        cmp = []        
+        for n in range(len(vals)):
+            try: cmp.append( int( math.floor( math.log( abs( vals[n] - vals[n+1] ), 10 ) ) )  )
+            except IndexError: pass
+            except ValueError: cmp.append(cmp[-1] - 1) # to prevent log math domain error when the value is the same
+        return cmp
+    
     @staticmethod
     def fingerprints(test_string):
         if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True

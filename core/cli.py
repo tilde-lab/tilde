@@ -229,7 +229,7 @@ for target in args.path:
             j, out = 0, ''
             for t in found_topics:
                 #t = map(html2str, t)
-                out += "  " + t[0] + ': ' + ', '.join(t[1:])
+                out += "  " + t[0] + ': ' + ', '.join(map(str, t[1:]))
                 out += "\t\t" if not j%2 else "\n"
                 j+=1
             output_lines += out[:-1] + "\n"
