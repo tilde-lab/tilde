@@ -313,11 +313,10 @@ class INFOOUT(Output):
             f.close()
     
     def compare_vals(self, vals):
-        cmp = []        
+        cmp = []
         for n in range(len(vals)):
             try: cmp.append( int( math.floor( math.log( abs( vals[n] - vals[n+1] ), 10 ) ) )  )
-            except IndexError: pass
-            except ValueError: cmp.append(cmp[-1] - 1) # to prevent log math domain error when the value is the same
+            except (IndexError, ValueError): pass # beware log math domain error when the adjacent values are the same
         return cmp
     
     @staticmethod
