@@ -458,7 +458,7 @@ class API:
                     
                     # CRYSTAL
                     if i=='anderson': calc.info['techs'].append(i)
-                    elif i=='fmixing':
+                    elif i=='fmixing': # note CRYSTAL14 default fmixing
                         if 0<calc.method['technique'][i]<=25:    calc.info['techs'].append(i + '<25%')
                         elif 25<calc.method['technique'][i]<=50: calc.info['techs'].append(i + ' 25-50%')
                         elif 50<calc.method['technique'][i]<=75: calc.info['techs'].append(i + ' 50-75%')
@@ -494,14 +494,17 @@ class API:
                         calc.info['techs'].append('spin-orbit coupling')
                     elif i=='empty_states':
                         calc.info['techs'].append('%s empty states' % calc.method['technique'][i])
-
+            
+            # ALL
             if 'vac' in calc.info['properties']:
                 if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
                 else: calc.info['techs'].append('vacancy defect: void space')
-
+            
+            # CRYSTAL
             if calc.method['perturbation']:
                 calc.info['techs'].append('perturbation: ' + calc.method['perturbation'])
-
+            
+            # ALL
             for n, i in enumerate(calc.info['techs']):
                 calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
 

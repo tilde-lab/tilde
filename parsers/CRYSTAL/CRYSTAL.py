@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v220114
+# v060314
 
 import os
 import sys
@@ -16,7 +16,7 @@ from numpy import cross
 from numpy import append
 
 from ase.data import chemical_symbols, atomic_numbers
-from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
+from ase.lattice.spacegroup.cell import cellpar_to_cell
 from ase.units import Hartree
 from ase import Atoms
 
@@ -82,7 +82,7 @@ class CRYSTOUT(Output):
         # it matches other (parent) CRYSTAL output
         # by _coupler_ property (E_tot).
         # However if we have received *missing_props*,
-        # we do parse it now
+        # we do parse them now
 
         if not missing_props: self._coupler_ = self.is_coupling(file)
         if not self._coupler_ or missing_props is not None:

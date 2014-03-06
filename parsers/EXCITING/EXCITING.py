@@ -1,14 +1,14 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v050314
+# v060314
 
 import os
 import sys
 import math
+from fractions import Fraction
 
 from xml.etree import ElementTree as ET
 
-from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.units import Bohr, Hartree
 from ase import Atoms
 
@@ -22,11 +22,9 @@ from core.electron_structure import Edos, Ebands
 from core.constants import Constants
 
 # INFO.OUT parser
-
 class INFOOUT(Output):
     def __init__(self, file, **kwargs):
-        Output.__init__(self, file)
-        self.data = open(file).readlines()
+        Output.__init__(self, file)        
         
         cur_folder = os.path.dirname(file)
         
@@ -46,6 +44,9 @@ class INFOOUT(Output):
         100:'PBE-GGA/PBE-GGA'
         }
         
+        self.data = open(file).readlines()
+        
+        # BOF Main loop
         for n in range(len(self.data)):
             line = self.data[n]
             if ' EXCITING ' in line:
@@ -180,6 +181,7 @@ class INFOOUT(Output):
                 
             elif 'Number of empty states' in line:
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
+        # EOF Main loop
         
         if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
         
@@ -211,8 +213,6 @@ class INFOOUT(Output):
             self.structures.append(self.structures[-1])
             self.tresholds.append([0.0, 0.0, 0.0, 0.0, energies[-1]])
         
-        # Forces
-        
         # Warnings
         #try: w = map(lambda x: x.strip(), open(cur_folder + '/WARNINGS.OUT').readlines())
         #except IOError: pass
@@ -221,10 +221,9 @@ class INFOOUT(Output):
         #   # Warning(charge)
         #   self.warning( " ".join(w) )        
                    
-        # Electronic properties
-        
-        # look for full DOS in xml
-        '''if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
+        # Electronic properties: the best case, currently too good
+        '''# look for full DOS in xml
+        if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
             f = open(os.path.join(cur_folder, 'dos.xml'),'r')
             try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
             except: self.warning("Error in dos.xml file!")
@@ -237,7 +236,7 @@ class INFOOUT(Output):
             except: self.warning("Error in bandstructure.xml file!")
             finally: f.close()'''
         
-        # worst case: look for DOS (total) and raw bands        
+        # Electronic properties: the worst case, look for total DOS and raw bands in EIGVAL.OUT
         if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']):
             f = open(os.path.join(cur_folder, 'EIGVAL.OUT'),'r')
             # why such a call? we need to spare RAM
@@ -272,7 +271,7 @@ class INFOOUT(Output):
         if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")        
             
         # Phonons
-        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO
+        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO: account all the dispacements
             f = open(os.path.join(cur_folder, 'PHONON.OUT'), 'r')
             linelist = f.readlines()
             filelen = len(linelist)
@@ -281,7 +280,7 @@ class INFOOUT(Output):
             while n_line < filelen:
                 n_line += 1
                 modes, irreps, ph_eigvecs = [], [], []
-                k_coords = " ".join(map(lambda x: "%1.2f" % float(x), linelist[n_line].split()[1:4]))
+                k_coords = " ".join(  map(lambda x: "%s" % Fraction(x), linelist[n_line].split()[1:4])  ) # TODO : find weight of every symmetry k-point!
                 
                 # next line is empty
                 n_line += 2
@@ -310,7 +309,10 @@ class INFOOUT(Output):
                 self.phonons['irreps'][ k_coords ] = irreps
                 self.phonons['ph_eigvecs'][ k_coords ] = ph_eigvecs
 
-            f.close()
+            f.close()            
+            
+            for i in self.phonons['modes'].keys():
+                self.phonons['ph_k_degeneracy'][ i ] = 1 # TODO : find weight of every symmetry k-point!
     
     def compare_vals(self, vals):
         cmp = []
@@ -324,9 +326,7 @@ class INFOOUT(Output):
         if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True
         else: return False
 
-
 # dos.xml parser
-
 def parse_dosxml(fp, symbols):
     dos_obj = {'x': [],}
     dos = []
@@ -376,7 +376,6 @@ def parse_dosxml(fp, symbols):
     return dos_obj
 
 # bandstructure.xml parser
-
 def parse_bandsxml(fp):
     band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
     first_cyc = True
@@ -401,7 +400,6 @@ def parse_bandsxml(fp):
     return band_obj
 
 # EIGVAL.OUT parser
-
 def parse_eigvals(fp, e_last):
     kpts = []
     columns = []
