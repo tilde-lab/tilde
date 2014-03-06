@@ -542,7 +542,9 @@ class API:
                 calc.info['etype'] = 'conductor'
                 calc.info['bandgap'] = 0.0
             else:
-                gap, is_direct = calc.electrons['bands'].get_bandgap()                
+                try: gap, is_direct = calc.electrons['bands'].get_bandgap()
+                except ElectronStructureError as e:
+                    return (None, e.value)
                 calc.info['bandgap'] = round(gap, 2)
                 calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
                 if gap<=1.0: calc.info['etype'] = 'semiconductor'
