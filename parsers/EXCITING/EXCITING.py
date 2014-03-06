@@ -105,12 +105,14 @@ class INFOOUT(Output):
             elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
                 self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
                 
-            elif 'orrelation type :' in line:
+            elif 'orrelation type ' in line:
                 
                 #if 'Correlation type :' in line:                   
                 #if 'Exchange-correlation type :' in line:                  
+                #if 'Exchange-correlation type' in line:
                 
-                h = int(line.split(":")[-1])
+                try: h = int(line.split(":")[-1])
+                except ValueError: pass # then this is not what we want
                 try: self.method['H'] = H_mapping[h]
                 except KeyError: self.method['H'] = h
                 
