@@ -8,6 +8,7 @@ import math
 from fractions import Fraction
 
 from xml.etree import ElementTree as ET
+import xml.dom.minidom
 
 from ase.units import Bohr, Hartree
 from ase import Atoms
@@ -271,6 +272,12 @@ class INFOOUT(Output):
             finally: f.close()
             
         if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")        
+        
+        # Input
+        try:
+            inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
+            self.info['input'] = inp.toprettyxml(newl="", indent=" ")
+        except IOError: pass
             
         # Phonons
         if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO: account all the dispacements
@@ -313,8 +320,10 @@ class INFOOUT(Output):
 
             f.close()            
             
-            for i in self.phonons['modes'].keys():
-                self.phonons['ph_k_degeneracy'][ i ] = 1 # TODO : find weight of every symmetry k-point!
+            kset = self.phonons['modes'].keys()
+            if kset > 1:
+                for i in kset:
+                    self.phonons['ph_k_degeneracy'][ i ] = 1 # TODO : find weight of every symmetry k-point!
     
     def compare_vals(self, vals):
         cmp = []

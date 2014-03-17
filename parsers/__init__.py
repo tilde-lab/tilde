@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+
 # Tilde project: abstract class of a generic parser
-# v240913
+# v060314
 
 import os
 import sys
@@ -34,16 +34,11 @@ class Output:
         # (II)
         # Tilde ORM objects
         # mapped onto database
-        self.energy = None # in eV      
+        self.energy = None # in eV
         
-        self.structures = []   # consists of {'cell': [], 'atoms': [], 'periodicity': periodicity, 'ab_normal': vector, 'a_direction': vector} dicts
-                               # *list* cell is [a, b, c, alpha, beta, gamma]
-                               # *list* atoms has lists of atoms with coordinates in cartesian system
-                               # *int* periodicity determination is a responsibility of parser
-                               # *vector* ab_normal, *vector* a_direction are needed for correct cell parameters manipulations
-                               # TODO: switch to ASE system?
+        self.structures = [] # list of ASE objects with additional "hanged on" properties (e.g. periodicity: determination is a responsibility of a parser)
 
-        self.symops = ['+x,+y,+z']
+        self.symops = ['+x,+y,+z'] # legacy value
 
         self.electrons = {
             'basis_set':       {'bs': {}, 'ps': {}}, # valence and core electrons
@@ -78,6 +73,7 @@ class Output:
             'location':   filename,
             'finished':   0,  # -1 for not, 0 for n/a, +1 for yes
             'duration':   None,
+            'input':      None,
             
             'standard':   '',
             'formula':    '',
@@ -100,7 +96,6 @@ class Output:
         # or not fully mapped onto database
         self.forces = array([])
         self.charges = None
-        self.input = None
         self.convergence = []
         self.ncycles = []
         self.tresholds = []

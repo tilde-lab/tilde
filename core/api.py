@@ -13,10 +13,10 @@ import inspect
 import traceback
 import json
 
-from numpy import dot, array, cross
-from numpy.linalg import det, norm
+from numpy import dot, array
+from numpy.linalg import det
 
-from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, ModuleError, html_formula
+from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, html_formula
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
 
@@ -24,7 +24,6 @@ from settings import DEFAULT_SETUP, read_hierarchy
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
 from parsers import Output
-from core.deps.ase import Atoms
 from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
 from core.electron_structure import ElectronStructureError
 
@@ -334,52 +333,6 @@ class API:
 
         return (calc, error)
 
-    def postprocess(self, calc, with_module=None):
-        '''
-        Invokes module(s) API
-        NB: this may be run from outside
-        @returns apps_dict
-        '''
-        apps = {}
-        for appname, appclass in self.Apps.iteritems():
-            if with_module and with_module != appname: continue
-
-            run_permitted = False
-
-            # scope-conditions
-            if appclass['apptarget']:
-                for key in appclass['apptarget']:
-                    negative = False
-                    if appclass['apptarget'][key].startswith('!'):
-                        negative = True
-                        scope_prop = appclass['apptarget'][key][1:]
-                    else:
-                        scope_prop = appclass['apptarget'][key]
-
-                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
-                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
-                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
-                            run_permitted = True
-                        else:
-                            run_permitted = False
-                            break
-
-            else: run_permitted = True
-
-            # module code running
-            if run_permitted:
-                apps[appname] = {'error': None, 'data': None}
-                try: AppInstance = appclass['appmodule'](calc)
-                except ModuleError as e:
-                    apps[appname]['error'] = e.value
-                except:
-                    exc_type, exc_value, exc_tb = sys.exc_info()
-                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
-                else:
-                    try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
-                    except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
-        return apps
-
     def classify(self, calc, symprec=None):
         '''
         Invokes hierarchy API
@@ -396,14 +349,16 @@ class API:
             return (None, 'data do not satisfy the filter')
             
         # account surface case (and vacuum creation method)
-        # TODO : replace with the more robust method!
+        # where Z is 2x larger than X*Y
+        # TODO : replace with the more robust method
         cellpar = cell_to_cellpar( calc.structures[-1].cell ).tolist()
         if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
             calc.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
+            # FOR ALL:
             for i in range(len(calc.structures)):
                 calc.structures[i].set_pbc((True, True, False))
         
-        # extend ASE object with useful properties
+        # extend ASE object with useful info
         for i in range(len(calc.structures)):
             calc.structures[i].periodicity = sum(calc.structures[i].get_pbc())
             calc.structures[i].dims = abs(det(calc.structures[i].cell))
@@ -520,8 +475,11 @@ class API:
         elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
         elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
         elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
+        
+        # properties determined by classifiers
         for k, v in calc.info['properties'].iteritems():
             calc.info[k] = v
+        del calc.info['properties']
 
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
@@ -573,9 +531,56 @@ class API:
 
         return (calc, error)
 
+    def postprocess(self, calc, with_module=None):
+        '''
+        Invokes module(s) API
+        NB: this may be run from outside
+        @returns apps_dict
+        '''
+        apps = {}
+        for appname, appclass in self.Apps.iteritems():
+            if with_module and with_module != appname: continue
+
+            run_permitted = False
+
+            # scope-conditions
+            if appclass['apptarget']:
+                for key in appclass['apptarget']:
+                    negative = False
+                    if appclass['apptarget'][key].startswith('!'):
+                        negative = True
+                        scope_prop = appclass['apptarget'][key][1:]
+                    else:
+                        scope_prop = appclass['apptarget'][key]
+
+                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
+                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
+                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
+                            run_permitted = True
+                        else:
+                            run_permitted = False
+                            break
+
+            else: run_permitted = True
+
+            # module code running
+            if run_permitted:
+                apps[appname] = {'error': None, 'data': None}
+                try: AppInstance = appclass['appmodule'](calc)
+                #except ModuleError as e:
+                #    apps[appname]['error'] = e.value
+                except:
+                    exc_type, exc_value, exc_tb = sys.exc_info()
+                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+                else:
+                    try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
+                    except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
+        return apps
+
     def _save_tags(self, for_checksum, tags_obj, update=False):
         '''
         Saves tags with checking
+        only those marked with *has_label* and having *source* values are considered
         @returns error
         '''
         tags = []
@@ -662,6 +667,9 @@ class API:
         # prepare structural data
         #calc.structures[-1].orig_cif = generate_cif( calc.structures[-1], symops=calc['symops'] )
         calc.structures = [ase2dict(ase_obj) for ase_obj in calc.structures]
+        
+        # TODO : BAD DESIGN
+        calc.info['refinedcell'] = json.dumps(ase2dict(calc.info['refinedcell']))
         
         # prepare electron data
         for i in ['dos', 'bands']: # projected?

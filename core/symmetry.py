@@ -1,17 +1,13 @@
 
-# Tilde project:
-#
-# *SymmetryFinder*: platform-dependent symmetry finder for 3D-systems, wrapping Spglib and FINDSYM codes:
-# FINDSYM is written by H. T. Stokes and D. M. Hatch: http://dx.doi.org/10.1107/S0021889804031528
-# Spglib is written by Atsushi Togo: http://spglib.sourceforge.net
-# their results are found to coincide in all my tests at DEFAULT_ACCURACY=1e-04;
-# more info at http://sourceforge.net/mailarchive/forum.php?forum_name=spglib-users
-#
-# *SymmetryHandler*: symmetry inferences basing on known mapping
-#
-# v220913
+# *SymmetryFinder*: platform-independent symmetry finder, wrapping Spglib code
+# *SymmetryHandler*: symmetry inferences for 0D, 1D, 2D and 3D-systems
+# v170314
 
 import os, sys
+
+from numpy import array
+from numpy import zeros
+from numpy.linalg import det
 
 # this is done to have all third-party code in deps folder
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
@@ -19,54 +15,80 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/latti
 from ase.atoms import Atoms
 from spacegroup.cell import cell_to_cellpar
 
-# Dirty hack to provide cross-platform compatibility : TODO
+# Dirty hack to provide cross-platform compatibility
 try:
     if 'win' in sys.platform: sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../windows/spglib/'))
     import _spglib as spg
 except ImportError: raise RuntimeError('Cannot start symmetry finder!')
 
 
-# recommended accuracy value = 0.0001
-DEFAULT_ACCURACY=1e-04
-
-class SymmetryFinder:
-    def __init__(self, tilde_obj, accuracy):
+class SymmetryFinder:    
+    accuracy = 1e-04 # recommended accuracy value = 0.0001
+    
+    def __init__(self, accuracy=None):
         self.error = None
-        self.angle_tolerance=4
+        self.accuracy=accuracy if accuracy else SymmetryFinder.accuracy
+        self.angle_tolerance=4   
+
+    def get_spacegroup(self, tilde_obj):
         try: symmetry = spg.spacegroup(
             tilde_obj['structures'][-1].get_cell().T.copy(),
             tilde_obj['structures'][-1].get_scaled_positions().copy(),
-            tilde_obj['structures'][-1].get_atomic_numbers(),
-            accuracy,
-            self.angle_tolerance)
+            array(tilde_obj['structures'][-1].get_atomic_numbers(), dtype='intc'),
+            self.accuracy,
+            self.angle_tolerance)            
         except Exception, ex:
-            self.error = 'Symmetry finder error: %s' % ex
+            self.error = 'Symmetry finder error: %s' % ex            
         else:
             symmetry = symmetry.split()
             self.n = int( symmetry[1].replace("(", "").replace(")", "") )
             self.i = symmetry[0]
 
+    def refine_cell(self, tilde_obj):
+        # Atomic positions have to be specified by scaled positions for spglib
+        num_atom = tilde_obj['structures'][-1].get_number_of_atoms()
+        lattice = tilde_obj['structures'][-1].get_cell().T.copy()
+        pos = zeros((num_atom * 4, 3), dtype='double')
+        pos[:num_atom] = tilde_obj['structures'][-1].get_scaled_positions()
+
+        numbers = zeros(num_atom * 4, dtype='intc')
+        numbers[:num_atom] = array(tilde_obj['structures'][-1].get_atomic_numbers(), dtype='intc')
+        try: num_atom_bravais = spg.refine_cell(lattice,
+                                           pos,
+                                           numbers,
+                                           num_atom,
+                                           self.accuracy,
+                                           self.angle_tolerance)
+        except Exception, ex:
+            self.error = 'Symmetry finder error: %s' % ex  
+        else:
+            # TODO : BAD DESIGN
+            self.refinedcell = Atoms(numbers=numbers[:num_atom_bravais].copy(),
+                                    cell=lattice.T.copy(),
+                                    scaled_positions=pos[:num_atom_bravais].copy(),
+                                    pbc=tilde_obj['structures'][-1].get_pbc())
+            self.refinedcell.periodicity = sum(self.refinedcell.get_pbc())
+            self.refinedcell.dims = abs(det(tilde_obj['structures'][-1].cell))
+            
 '''
 # Dummy class for testing purposes
-class SymmetryFinder:
-        def __init__(self, tilde_obj):
-            self.error = None
-            self.n = 1
-            self.i = 'P1'
+class SymmetryHandler(SymmetryFinder):
+    def __init__(self, tilde_obj, accuracy=None):
+        SymmetryFinder.__init__(self)
+        self.n = 1
+        self.i = 'P1'
 '''
 
 class SymmetryHandler(SymmetryFinder):
     def __init__(self, tilde_obj, accuracy=None):
         self.i = None
-        self.s = None # only given by findsym
         self.n = None
-        self.cif = None # only given by findsym
         self.symmetry = None
         self.pg = None
         self.dg = None
-        if not accuracy: accuracy=DEFAULT_ACCURACY
 
-        SymmetryFinder.__init__(self, tilde_obj, accuracy)
+        SymmetryFinder.__init__(self, accuracy)
+        SymmetryFinder.get_spacegroup(self, tilde_obj)
 
         # Tables from Bandura-Evarestov book
         # "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X

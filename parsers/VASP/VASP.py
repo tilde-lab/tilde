@@ -330,7 +330,7 @@ class XML_Output(Output):
         
         self.info['prog'] = 'VASP ' + self.vasp_version
         self.info['finished'] = self.finished
-        self.input = str(self.incar)
+        self.info['input'] = str(self.incar)
 
         # basis sets
         self.potcar_sequence = [s.split()[1] for s in self.potcar_symbols]

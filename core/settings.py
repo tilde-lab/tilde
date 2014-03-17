@@ -1,6 +1,6 @@
 
 # Tilde project: installation and actions to be always done
-# v271113
+# v060314
 
 import sys
 import os
@@ -16,7 +16,7 @@ import installation
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.02'
+DB_SCHEMA_VERSION = '1.03'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_DB = 'default.db'

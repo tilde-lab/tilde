@@ -32,7 +32,7 @@ except ImportError:
 
 from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR
 from common import write_cif
-from symmetry import DEFAULT_ACCURACY
+from symmetry import SymmetryFinder
 from api import API
 
 from deps.ase.lattice.spacegroup.cell import cell_to_cellpar
@@ -56,7 +56,7 @@ parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invok
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
-parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
+parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-d", dest="datamining", action="store", help="query on data (experimental)", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 

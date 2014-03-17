@@ -6,7 +6,7 @@ import sys
 import math
 import json
 
-from numpy import dot, array, matrix, cross, trace, sum
+from numpy import dot, array, matrix
 
 # this is done to have all third-party code in deps folder
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/latti
 from spacegroup.cell import cell_to_cellpar
 
 
-class ModuleError(Exception):
+class ModuleError(Exception): # not working! TODO
     def __init__(self, value):
         self.value = value        
 
@@ -112,6 +112,12 @@ def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     for n, i in enumerate(structure):
         cif_data += "%s   % 1.8f   % 1.8f   % 1.8f\n" % (i.symbol, pos[n][0], pos[n][1], pos[n][2])
     return cif_data
+    
+def generate_xyz(atoms):
+    xyz_data = "%s" % len(atoms) + "\nXYZ\n"
+    for i in range(len(atoms)):
+        xyz_data += atoms[i].symbol + " " + "%2.4f" % atoms[i].x + " " + "%2.4f" % atoms[i].y + " " + "%2.4f" % atoms[i].z + "\n"
+    return xyz_data[0:-1]
     
 def write_cif(filename, structure, comment=None):
     try:

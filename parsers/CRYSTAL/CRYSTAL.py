@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v060314
+# v120314
 
 import os
 import sys
@@ -23,40 +23,43 @@ from ase import Atoms
 from parsers import Output
 from core.common import metric
 
-patterns = {}
-patterns['Etot'] = re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL)
-patterns['pEtot'] = re.compile(r"\n\sTOTAL ENERGY\s(.+?)\sCONVERGENCE")
-patterns['syminfos'] = re.compile(r"SYMMOPS - TRANSLATORS IN FRACTIONA\w{1,2} UNITS(.+?)\n\n", re.DOTALL)
-patterns['frac_primitive_cells'] = re.compile(r"\n\sPRIMITIVE CELL(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL)
-patterns['molecules'] = re.compile(r"\n\sATOMS IN THE ASYMMETRIC UNIT(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL)
-patterns['cart_vectors'] = re.compile(r"DIRECT LATTICE VECTORS CARTESIAN COMPONENTS \(ANGSTROM\)(.+?)\n\n", re.DOTALL)
-patterns['crystallographic_cell'] = re.compile(r"\n\sCRYSTALLOGRAPHIC(.+)\n\sT\s=", re.DOTALL)
-patterns['at_str'] = re.compile(r"^\s{0,3}\d{1,4}\s")
-patterns['charges'] = re.compile(r"ALPHA\+BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL)
-patterns['magmoms'] = re.compile(r"ALPHA-BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL)
-patterns['icharges'] = re.compile(r"\n\sATOMIC NUMBER(.{4}),\sNUCLEAR CHARGE(.{7}),")
-patterns['starting'] = re.compile(r"EEEEEEEEEE STARTING(.+?)\n")
-patterns['ending'] = re.compile(r"EEEEEEEEEE TERMINATION(.+?)\n")
-patterns['freqs'] = re.compile(r"DISPERSION K POINT(.+?)FREQ\(CM\*\*\-1\)", re.DOTALL)
-patterns['gamma_freqs'] = re.compile(r"\(HARTREE\*\*2\)   \(CM\*\*\-1\)     \(THZ\)             \(KM\/MOL\)(.+?)NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES", re.DOTALL)
-patterns['ph_eigvecs'] = re.compile(r"NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES(.+?)\*{79}", re.DOTALL)
-patterns['needed_disp'] = re.compile(r"\d{1,4}\s{2,6}(\d{1,4})\s{1,3}\w{1,2}\s{11,12}(\w{1,2})\s{11,12}\d{1,2}")
-patterns['symdisps'] = re.compile(r"N   LABEL SYMBOL DISPLACEMENT     SYM.(.*)NUMBER OF IRREDUCIBLE ATOMS", re.DOTALL)
-patterns['ph_k_degeneracy'] = re.compile(r"K       WEIGHT       COORD(.*)AND RECIPROCAL LATTICE VECTORS", re.DOTALL)
-patterns['supmatrix'] = re.compile(r"EXPANSION MATRIX OF PRIMITIVE CELL(.+?)\sNUMBER OF ATOMS PER SUPERCELL", re.DOTALL)
-patterns['cyc'] = re.compile(r"\n\sCYC\s(.+?)\n")
-patterns['enes'] = re.compile(r"\n\sTOTAL ENERGY\((.+?)\n")
-patterns['k1'] = re.compile(r"\n\sMAX\sGRADIENT(.+?)\n")
-patterns['k2'] = re.compile(r"\n\sRMS\sGRADIENT(.+?)\n")
-patterns['k3'] = re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n")
-patterns['k4'] = re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n")
-patterns['version'] = re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL)
-patterns['pv'] = re.compile(r"\n PV            :\s(.*)\n")
-patterns['ts'] = re.compile(r"\n TS            :\s(.*)\n")
-patterns['et'] = re.compile(r"\n ET            :\s(.*)\n")
-patterns['T'] = re.compile(r"\n AT \(T =(.*)MPA\):\n")
+
+patterns = { \
+    'Etot' :        re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL),
+    'pEtot' :       re.compile(r"\n\sTOTAL ENERGY\s(.+?)\sCONVERGENCE"),
+    'syminfos' :    re.compile(r"SYMMOPS - TRANSLATORS IN FRACTIONA\w{1,2} UNITS(.+?)\n\n", re.DOTALL),
+    'frac_primitive_cells' : re.compile(r"\n\sPRIMITIVE CELL(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
+    'molecules' :   re.compile(r"\n\sATOMS IN THE ASYMMETRIC UNIT(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
+    'cart_vectors' : re.compile(r"DIRECT LATTICE VECTORS CARTESIAN COMPONENTS \(ANGSTROM\)(.+?)\n\n", re.DOTALL),
+    'crystallographic_cell' : re.compile(r"\n\sCRYSTALLOGRAPHIC(.+?)\n\sT\s=", re.DOTALL),
+    'at_str' :      re.compile(r"^\s{0,3}\d{1,4}\s"),
+    'charges' :     re.compile(r"ALPHA\+BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
+    'magmoms' :     re.compile(r"ALPHA-BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
+    'icharges' :    re.compile(r"\n\sATOMIC NUMBER(.{4}),\sNUCLEAR CHARGE(.{7}),"),
+    'starting' :    re.compile(r"EEEEEEEEEE STARTING(.+?)\n"),
+    'ending' :      re.compile(r"EEEEEEEEEE TERMINATION(.+?)\n"),
+    'freqs' :       re.compile(r"DISPERSION K POINT(.+?)FREQ\(CM\*\*\-1\)", re.DOTALL),
+    'gamma_freqs' : re.compile(r"\(HARTREE\*\*2\)   \(CM\*\*\-1\)     \(THZ\)             \(KM\/MOL\)(.+?)NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES", re.DOTALL),
+    'ph_eigvecs' :  re.compile(r"NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES(.+?)\*{79}", re.DOTALL),
+    'needed_disp' : re.compile(r"\d{1,4}\s{2,6}(\d{1,4})\s{1,3}\w{1,2}\s{11,12}(\w{1,2})\s{11,12}\d{1,2}"),
+    'symdisps' :    re.compile(r"N   LABEL SYMBOL DISPLACEMENT     SYM.(.*)NUMBER OF IRREDUCIBLE ATOMS", re.DOTALL),
+    'ph_k_degeneracy' : re.compile(r"K       WEIGHT       COORD(.*)AND RECIPROCAL LATTICE VECTORS", re.DOTALL),
+    'supmatrix' :   re.compile(r"EXPANSION MATRIX OF PRIMITIVE CELL(.+?)\sNUMBER OF ATOMS PER SUPERCELL", re.DOTALL),
+    'cyc' :         re.compile(r"\n\sCYC\s(.+?)\n"),
+    'enes' :        re.compile(r"\n\sTOTAL ENERGY\((.+?)\n"),
+    'k1' :          re.compile(r"\n\sMAX\sGRADIENT(.+?)\n"),
+    'k2' :          re.compile(r"\n\sRMS\sGRADIENT(.+?)\n"),
+    'k3' :          re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n"),
+    'k4' :          re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n"),
+    'version' :     re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL),
+    'pv' :          re.compile(r"\n PV            :\s(.*)\n"),
+    'ts' :          re.compile(r"\n TS            :\s(.*)\n"),
+    'et' :          re.compile(r"\n ET            :\s(.*)\n"),
+    'T' :           re.compile(r"\n AT \(T =(.*)MPA\):\n"),
+}
 
 def find_all(a_str, sub):
+    ''' str finder iterator '''
     start = 0
     while True:
         start = a_str.find(sub, start)
@@ -69,7 +72,7 @@ class CRYSTOUT(Output):
         Output.__init__(self, file)
         self.properties_calc, self.crystal_calc = False, False
 
-        if kwargs:
+        '''if kwargs:
             if not 'basis_set' in kwargs or not 'atomtypes' in kwargs:
                 raise RuntimeError( 'Invalid missing properties defined!' )
             missing_props = kwargs
@@ -84,7 +87,8 @@ class CRYSTOUT(Output):
         # However if we have received *missing_props*,
         # we do parse them now
 
-        if not missing_props: self._coupler_ = self.is_coupling(file)
+        if not missing_props: self._coupler_ = self.is_coupling(file)'''
+        
         if not self._coupler_ or missing_props is not None:
 
             # normalize breaks and get rid of possible odd MPI incusions in important data
@@ -114,18 +118,11 @@ class CRYSTOUT(Output):
                 self.info['duration'] = self.get_duration()
                 self.info['finished'] = self.is_finished()
 
-                self.comment, self.input, self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
+                self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
                 self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
-                
-                # this is to account correct cart->frac atomic coords conversion using cellpar_to_cell ASE routine
-                # 3x3 cell is used only here to obtain ab_normal and a_direction
-                cell = self.get_cart2frac()
-                self.ab_normal = [0,0,1] if self.molecular_case else metric(cross(cell[0], cell[1]))
-                self.a_direction = None if self.molecular_case else metric(cell[0])
-                
+
                 self.energy = self.get_etot()
                 self.structures = self.get_structures()
-                self.symops = self.get_symops()
                 
                 self.set_charges()
                 
@@ -156,8 +153,7 @@ class CRYSTOUT(Output):
                     for i in range(len(bz)):
                         self.phonons['ph_k_degeneracy'][bz[i]] = d[i]
 
-            if self.properties_calc and not self.crystal_calc and not missing_props:
-                raise RuntimeError( 'PROPERTIES with insufficient information omitted!' )
+            if self.properties_calc and not self.crystal_calc and not missing_props: raise RuntimeError( 'PROPERTIES output with insufficient information omitted!' )
 
             '''if self.properties_calc:
                 if not missing_props:
@@ -183,7 +179,7 @@ class CRYSTOUT(Output):
 
     def is_coupling(self, file):
         '''
-        determine if this output should be *coupled* with another one, i.e. needed information is present there (which is expensive to extract).
+        determines if this output should be *coupled* with another one, i.e. needed information is present there (which may be expensive to extract).
         This should be done as fast as possible because the file may be very large. So there are 4 criteria:
         (1) PROPERTIES-type output
         (2) present eigenvalues
@@ -209,7 +205,7 @@ class CRYSTOUT(Output):
         if " RESTART WITH NEW K POINTS NET" in piece_of_data or " CRYSTAL - PROPERTIES" in piece_of_data or "Wavefunction file can not be found" in piece_of_data: return True
         else: return False
 
-    def get_symops(self):
+    '''def get_symops(self):
         syms = patterns['syminfos'].findall(self.data)
         if not syms:
             self.warning( 'No sym info found, assuming P1!' )
@@ -245,7 +241,7 @@ class CRYSTOUT(Output):
             symops.append(sym_pos)
         if len(symops) == 0:
             raise RuntimeError( 'Sym info is invalid!' )
-        return symops
+        return symops'''
         
     def get_cart2frac(self):
         matrix = []
@@ -283,9 +279,15 @@ class CRYSTOUT(Output):
 
             crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
 
+            # this is to account correct cart->frac atomic coords conversion using cellpar_to_cell ASE routine
+            # 3x3 cell is used only here to obtain ab_normal and a_direction
+            cell = self.get_cart2frac()
+            ab_normal = [0,0,1] if self.molecular_case else metric(cross(cell[0], cell[1]))
+            a_direction = None if self.molecular_case else metric(cell[0])
+
             oth = patterns['crystallographic_cell'].search(crystal_data)
             if oth is not None: crystal_data = crystal_data.replace(oth.group(), "") # delete other cells info except primitive cell
-            
+
             lines = crystal_data.splitlines()
             for li in range(len(lines)):
                 if 'ALPHA      BETA       GAMMA' in lines[li]:
@@ -299,7 +301,7 @@ class CRYSTOUT(Output):
                             try: atom[i] = round(float(atom[i]), 10)
                             except ValueError: raise RuntimeError('Atomic coordinates are invalid!')
                         
-                        # Warning: we lose non-equivalency in the same atom types, denoted by integer! For magmoms refer to corresp. property!
+                        # Warning: we lose here the non-equivalency in the same atom types, denoted by integer! For magmoms refer to corresp. property!
                         atom[3] = ''.join([letter for letter in atom[3] if not letter.isdigit()]).capitalize()
                         if atom[3] == 'Xx': atom[3] = 'X'
                         symbols.append( atom[3] )
@@ -321,7 +323,7 @@ class CRYSTOUT(Output):
                         for j in range(0, len(atoms)):
                             atoms[j][i] /= self.PERIODIC_LIMIT
 
-                matrix = cellpar_to_cell(parameters, self.ab_normal, self.a_direction) # TODO : ab_normal, a_direction may belong to completely other structure
+                matrix = cellpar_to_cell(parameters, ab_normal, a_direction) # TODO : ab_normal, a_direction may in some cases belong to completely other structure!
                 structures.append(Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=periodicity))
             else:
                 structures.append(Atoms(symbols=symbols, positions=atoms, pbc=False))
@@ -348,7 +350,7 @@ class CRYSTOUT(Output):
             return None'''
 
     def get_phonons(self):
-        if not "FFFFF  RRRR   EEEE   EEE   U   U  EEEE  N   N   CCC  Y   Y" in self.data: return None, None, None, None
+        if not "U   U  EEEE  N   N   CCC  Y   Y" in self.data: return None, None, None, None
         freqdata = []
         freqsp = patterns['freqs'].findall(self.data)
         if freqsp:
@@ -591,13 +593,13 @@ class CRYSTOUT(Output):
             if 'NUMERICAL GRADIENT COMPUTED WITH A SINGLE DISPLACEMENT (+-dx) FOR EACH' in self.data: plusminus = True
             disps, magnitude = [], 0
             for n in lines:
-                r=patterns['needed_disp'].search(n)                
+                r=patterns['needed_disp'].search(n)
                 if r:
                     disps.append([ int(r.group(1)), r.group(2).replace('D', '').lower() ])
                     if plusminus:
                         disps.append([ int(r.group(1)), r.group(2).replace('D', '-').lower() ])
-                elif 'dx=' in n:
-                    magnitude = float(n.replace('dx=', ''))
+                elif '= ' in n: # TODO CRYSTAL06 !
+                    magnitude = float(n.split()[1])
             if magnitude == 0: raise RuntimeError( 'Cannot find displacement magnitude in FREQCALC output!')
             if not len(disps): raise RuntimeError( 'Cannot find valid displacement data in FREQCALC output!')
             return disps, magnitude
@@ -612,10 +614,11 @@ class CRYSTOUT(Output):
 
     def get_bs(self):
         gbasis = { 'bs': {}, 'ps': {} }
-
-        # BASIS SET
-        bs = self.data.split(" ATOM  X(AU)  Y(AU)  Z(AU)    NO. TYPE  EXPONENT ")
-        if len(bs) < 2:
+        
+        if " ATOM   X(AU)   Y(AU)   Z(AU)  N. TYPE" in self.data: bs = self.data.split(" ATOM   X(AU)   Y(AU)   Z(AU)  N. TYPE") # CRYSTAL<14
+        else: bs = self.data.split(" ATOM  X(AU)  Y(AU)  Z(AU)    NO. TYPE  EXPONENT ") # CRYSTAL14
+        
+        if len(bs) == 1:
             self.warning('Basis set is absent in output, input may be not enough!')
             return self.get_bs_input()
         bs = bs[-1].split("*******************************************************************************\n", 1)[-1] # NO BASE FIXINDEX IMPLEMENTED!
@@ -718,13 +721,13 @@ class CRYSTOUT(Output):
         bs_notation = {1:'n-21G outer valence shell', 2: 'n-21G inner valence shell', 3: '3-21G core shell', 6: '6-21G core shell'}
         ps_sequence = ['W0', 'P0', 'P1', 'P2', 'P3', 'P4']
         ps_keywords = {'INPUT':None, 'HAYWLC':'Hay-Wadt large core', 'HAYWSC':'Hay-Wadt small core', 'BARTHE':'Durand-Barthelat', 'DURAND':'Durand-Barthelat'}
-        if not self.input:
+        if not self.info['input']:
             raise RuntimeError( 'No basis set found!')
 
         read = False
         read_pseud, read_bs = False, False
 
-        for line in self.input.splitlines():
+        for line in self.info['input'].splitlines():
             if line.startswith('END'):
                 read = True
                 continue
@@ -985,7 +988,7 @@ class CRYSTOUT(Output):
         return duration
 
     def get_convergence(self):
-        if self.input is not None and "ONELOG" in self.input:
+        if self.info['input'] is not None and "ONELOG" in self.info['input']:
             self.warning("ONELOG keyword is not yet supported!")
             return None, None, None
         convergdata = []

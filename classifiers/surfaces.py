@@ -10,7 +10,6 @@ import fractions
 # hierarchy API: __order__ to apply classifier
 __order__ = 40
 
-
 def classify(tilde_obj):    
     ''' determine count of layers and adsorption '''
     
