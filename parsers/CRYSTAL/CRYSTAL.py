@@ -89,88 +89,86 @@ class CRYSTOUT(Output):
 
         if not missing_props: self._coupler_ = self.is_coupling(file)'''
         
-        if not self._coupler_ or missing_props is not None:
+        # normalize breaks and get rid of possible odd MPI incusions in important data
+        raw_data = open(file).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
+        parts_pointer = list(find_all(raw_data, "*                              MAIN AUTHORS"))
 
-            # normalize breaks and get rid of possible odd MPI incusions in important data
-            raw_data = open(file).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
-            parts_pointer = list(find_all(raw_data, "*                              MAIN AUTHORS"))
-
-            # determine whether to deal with CRYSTAL and/or PROPERTIES output formats
-            if len(parts_pointer) > 1:
-                if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
-                len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs
-                    raise RuntimeError( 'File contains several merged outputs - currently not supported!' )
-                else:
-                    self.data = raw_data[ parts_pointer[0] : parts_pointer[1] ]
-                    self.pdata = raw_data[ parts_pointer[1]: ]
-                    self.properties_calc, self.crystal_calc = True, True
+        # determine whether to deal with CRYSTAL and/or PROPERTIES output formats
+        if len(parts_pointer) > 1:
+            if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
+            len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs
+                raise RuntimeError( 'File contains several merged outputs - currently not supported!' )
             else:
-                if not self.is_properties(raw_data[ parts_pointer[0]: ]):
-                    self.data = raw_data[ parts_pointer[0]: ]
-                    self.crystal_calc = True
-                else:
-                    self.pdata = raw_data[ parts_pointer[0]: ]
-                    self.properties_calc = True
+                self.data = raw_data[ parts_pointer[0] : parts_pointer[1] ]
+                self.pdata = raw_data[ parts_pointer[1]: ]
+                self.properties_calc, self.crystal_calc = True, True
+        else:
+            if not self.is_properties(raw_data[ parts_pointer[0]: ]):
+                self.data = raw_data[ parts_pointer[0]: ]
+                self.crystal_calc = True
+            else:
+                self.pdata = raw_data[ parts_pointer[0]: ]
+                self.properties_calc = True
 
-            if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format is similar to CRYSTAL format, it is unknown!' )
+        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format is similar to CRYSTAL format, it is unknown!' )
 
-            if self.crystal_calc:
-                self.info['duration'] = self.get_duration()
-                self.info['finished'] = self.is_finished()
+        if self.crystal_calc:
+            self.info['duration'] = self.get_duration()
+            self.info['finished'] = self.is_finished()
 
-                self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
-                self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
+            self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
+            self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
 
-                self.energy = self.get_etot()
-                self.structures = self.get_structures()
-                
-                self.set_charges()
-                
-                self.electrons['basis_set'] = self.get_bs()
+            self.energy = self.get_etot()
+            self.structures = self.get_structures()
+            
+            self.set_charges()
+            
+            self.electrons['basis_set'] = self.get_bs()
 
-                self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
-                self.phonons['modes'], self.phonons['irreps'], self.phonons['ir_active'], self.phonons['raman_active'] = self.get_phonons()
-                self.phonons['ph_eigvecs'] = self.get_ph_eigvecs()
-                self.phonons['dfp_disps'], self.phonons['dfp_magnitude'] = self.get_ph_sym_disps()
-                self.phonons['dielectric_tensor'] = self.get_static_dielectric_tensor()
+            self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
+            self.phonons['modes'], self.phonons['irreps'], self.phonons['ir_active'], self.phonons['raman_active'] = self.get_phonons()
+            self.phonons['ph_eigvecs'] = self.get_ph_eigvecs()
+            self.phonons['dfp_disps'], self.phonons['dfp_magnitude'] = self.get_ph_sym_disps()
+            self.phonons['dielectric_tensor'] = self.get_static_dielectric_tensor()
 
-                self.convergence, self.ncycles, self.tresholds = self.get_convergence()
+            self.convergence, self.ncycles, self.tresholds = self.get_convergence()
 
-                self.set_method()
-                
-                # extract zero-point energy, depending on phonons presence
-                if self.phonons['modes']:                    
-                    self.phonons['zpe'] = self.get_zpe()
-                    self.phonons['td'] = self.get_td()
-                
-                # format ph_k_degeneracy
-                if self.phonons['ph_k_degeneracy']:
-                    bz, d = [], []
-                    for k, v in self.phonons['ph_k_degeneracy'].iteritems():
-                        bz.append( self.phonons['ph_k_degeneracy'][k]['bzpoint'] )
-                        d.append( self.phonons['ph_k_degeneracy'][k]['degeneracy'] )
-                    self.phonons['ph_k_degeneracy'] = {}
-                    for i in range(len(bz)):
-                        self.phonons['ph_k_degeneracy'][bz[i]] = d[i]
+            self.set_method()
+            
+            # extract zero-point energy, depending on phonons presence
+            if self.phonons['modes']:                    
+                self.phonons['zpe'] = self.get_zpe()
+                self.phonons['td'] = self.get_td()
+            
+            # format ph_k_degeneracy
+            if self.phonons['ph_k_degeneracy']:
+                bz, d = [], []
+                for k, v in self.phonons['ph_k_degeneracy'].iteritems():
+                    bz.append( self.phonons['ph_k_degeneracy'][k]['bzpoint'] )
+                    d.append( self.phonons['ph_k_degeneracy'][k]['degeneracy'] )
+                self.phonons['ph_k_degeneracy'] = {}
+                for i in range(len(bz)):
+                    self.phonons['ph_k_degeneracy'][bz[i]] = d[i]
 
-            if self.properties_calc and not self.crystal_calc and not missing_props: raise RuntimeError( 'PROPERTIES output with insufficient information omitted!' )
+        if self.properties_calc and not self.crystal_calc and not missing_props: raise RuntimeError( 'PROPERTIES output with insufficient information omitted!' )
 
-            '''if self.properties_calc:
-                if not missing_props:
-                    missing_props = {
-                        'atomtypes': [i[0] for i in self.structures[-1]['atoms']],
-                        'basis_set': self.electrons['basis_set']['bs']
-                        }
+        '''if self.properties_calc:
+            if not missing_props:
+                missing_props = {
+                    'atomtypes': [i[0] for i in self.structures[-1]['atoms']],
+                    'basis_set': self.electrons['basis_set']['bs']
+                    }
 
-                # TODO: this should be workaround-ed with iterative parsing
-                #try: self.electrons['eigvals'] = self.get_e_eigvals()
-                #except MemoryError: raise RuntimeError( 'Sorry, the file is too large!' )
+            # TODO: this should be workaround-ed with iterative parsing
+            #try: self.electrons['eigvals'] = self.get_e_eigvals()
+            #except MemoryError: raise RuntimeError( 'Sorry, the file is too large!' )
 
-                #self.electrons['proj_eigv_impacts'] = self.get_e_impacts(self.get_e_eigvecs(), missing_props['atomtypes'], missing_props['basis_set'])
+            #self.electrons['proj_eigv_impacts'] = self.get_e_impacts(self.get_e_eigvecs(), missing_props['atomtypes'], missing_props['basis_set'])
 
-                #if self.electrons['proj_eigv_impacts'] and self.crystal_calc:
-                #    self.info['prog'] += '+PROPERTIES'
-            '''
+            #if self.electrons['proj_eigv_impacts'] and self.crystal_calc:
+            #    self.info['prog'] += '+PROPERTIES'
+        '''
 
     @staticmethod
     def fingerprints(test_string):

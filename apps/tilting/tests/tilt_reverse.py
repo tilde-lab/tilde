@@ -9,13 +9,13 @@ import math
 import random
 from numpy import array
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../'))
 from core.api import API
 from parsers import Output
 from core.constants import Perovskite_Structure
 from apps.tilting.tilting import Tilting # for MAX_TILTING_DEGREE
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../core/deps'))
 from ase import Atoms
 from ase.lattice.spacegroup import crystal
 
