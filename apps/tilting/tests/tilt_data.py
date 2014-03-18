@@ -13,7 +13,7 @@ data_dir = os.path.realpath(os.path.dirname(__file__) + '/outputs')
 
 # Data for this test are published in:
 # (1) Surf.Sci.602 3674 (2008) http://dx.doi.org/10.1016/j.susc.2008.10.002
-# (2) Evgeny Blokhin's master thesis
+# (2) Evgeny Blokhin's MSc. thesis
 # (3) Phys. Rev. B 83, 134108 (2011), http://dx.doi.org/10.1103/PhysRevB.83.134108
 # (4) Phys. Rev. B 88, 241407 (2013), http://dx.doi.org/10.1103/PhysRevB.88.241407
 # NB: in Euler notation delta is gamma, delta plus/minus phi is alpha

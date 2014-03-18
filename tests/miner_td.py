@@ -10,25 +10,24 @@ import sqlite3
 import json
 import time
 
-from numpy import array
+import numpy
+numpy.seterr(all='ignore') # Caution!
 
 starttime = time.time() # benchmarking
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.settings import check_db_version
-
 from core.constants import Constants
-
 from apps.vibtd.thermal_properties import ThermalProperties
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps/'))
 from ase.units import Hartree
 
+
 try: workpath = sys.argv[1]
 except IndexError: sys.exit('No path defined!')
 workpath = os.path.abspath(workpath)
 if not os.path.exists(workpath): sys.exit('Invalid path!')
-
 
 db = sqlite3.connect(os.path.abspath(workpath))
 db.row_factory = sqlite3.Row
@@ -42,7 +41,7 @@ if incompatible:
 
 # ^^^ above was the obligatory formal code, the actual procedures of interest are below VVV
 
-try: cursor.execute( 'SELECT info, phonons, apps FROM results WHERE phonons != "false"' )
+try: cursor.execute( 'SELECT info, phonons, apps FROM results WHERE phonons != "false" AND checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=22 AND s.topic=?)', ('CRYSTAL',) )
 except: sys.exit('Fatal error: ' + "%s" % sys.exc_info()[1])
 
 print "\t\t\t Internal code\t\tExternal code   (eV)"
@@ -69,8 +68,9 @@ while 1:
                 for d in range(0, degeneracy_repeat):
                     eigenvalues.append( (i*Constants.cm2THz)**2 )
 
-    T = ThermalProperties(array([eigenvalues]), factor=1)
+    T = ThermalProperties(numpy.array([eigenvalues]), factor=1)
     
+    # td property must exist
     if len(a['td']['t']) == 1:
         T.set_thermal_properties(
             t_max=a['td']['t'][0],

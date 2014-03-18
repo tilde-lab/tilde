@@ -1,6 +1,6 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v060314
+# v180314
 
 import os
 import sys
@@ -29,6 +29,7 @@ class INFOOUT(Output):
         
         cur_folder = os.path.dirname(file)
         
+        self.info['framework'] = 'EXCITING'
         self.info['finished'] = -1
         
         fracts_holder = [[]]

@@ -115,7 +115,8 @@ class CRYSTOUT(Output):
         if self.crystal_calc:
             self.info['duration'] = self.get_duration()
             self.info['finished'] = self.is_finished()
-
+            
+            self.info['framework'] = 'CRYSTAL'
             self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
             self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
 
@@ -291,7 +292,7 @@ class CRYSTOUT(Output):
                 if 'ALPHA      BETA       GAMMA' in lines[li]:
                     parameters = lines[li+1].split()
                     try: parameters = [float(i) for i in parameters]
-                    except ValueError: raise RuntimeError( 'Cell data is invalid!' )
+                    except ValueError: raise RuntimeError( 'Cell data are invalid: ' + lines[li+1] )
                 elif patterns['at_str'].search(lines[li]):
                     atom = lines[li].split()
                     if len(atom) in [7, 8] and len(atom[-2]) > 7:

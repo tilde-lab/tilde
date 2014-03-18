@@ -351,9 +351,8 @@ class API:
         # account surface case (and vacuum creation method)
         # where Z is 2x larger than X*Y
         # TODO : replace with the more robust method
-        cellpar = cell_to_cellpar( calc.structures[-1].cell ).tolist()
-        if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
-            calc.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
+        if calc.info['cellpar'][2] > 2 * calc.info['cellpar'][0] * calc.info['cellpar'][1]:
+            calc.method['technique'].update({'vacuum2d': int(round(calc.info['cellpar'][2]))})
             # FOR ALL:
             for i in range(len(calc.structures)):
                 calc.structures[i].set_pbc((True, True, False))

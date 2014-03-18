@@ -1,6 +1,6 @@
 
 # Tilde project: abstract class of a generic parser
-# v060314
+# v180314
 
 import os
 import sys
@@ -68,7 +68,8 @@ class Output:
         # API call *classify* extends it with the new items
         self.info = {
             'warns':      [],
-            'prog':       'unknown',
+            'framework':  'unknown', # code name
+            'prog':       'unknown', # code version
             'perf':       None,
             'location':   filename,
             'finished':   0,  # -1 for not, 0 for n/a, +1 for yes
