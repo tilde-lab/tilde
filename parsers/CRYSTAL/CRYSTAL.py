@@ -151,7 +151,7 @@ class CRYSTOUT(Output):
                 for i in range(len(bz)):
                     self.phonons['ph_k_degeneracy'][bz[i]] = d[i]
 
-        if self.properties_calc and not self.crystal_calc and not missing_props: raise RuntimeError( 'PROPERTIES output with insufficient information omitted!' )
+        if self.properties_calc and not self.crystal_calc: raise RuntimeError( 'PROPERTIES output with insufficient information omitted!' )
 
         '''if self.properties_calc:
             if not missing_props:
