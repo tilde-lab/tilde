@@ -2,14 +2,13 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v271113
+# v190314
 
 import sys
 import os
 import subprocess
 import json
 import time
-import pprint
 
 starttime = time.time() # benchmarking
 
@@ -36,6 +35,7 @@ from symmetry import SymmetryFinder
 from api import API
 
 from deps.ase.lattice.spacegroup.cell import cell_to_cellpar
+
 
 registered_modules = []
 for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../apps') ):
@@ -204,10 +204,9 @@ for target in args.path:
         
         if args.info:
             found_topics = []
+            skip_topics = ['location', 'refinedcell', 'element#', 'nelem', 'natom', ]
             for n, i in enumerate(Tilde.hierarchy):
-                
-                if not 'source' in i: continue
-                
+                if i['cid'] > 1999 or i['source'] in skip_topics: continue # apps hierarchy
                 if '#' in i['source']:
                     n=0
                     while 1:
@@ -224,15 +223,13 @@ for target in args.path:
                     except KeyError:
                         if 'negative_tagging' in i: found_topics.append( [ i['category'], 'none' ] )
 
-            if calc.info['perf']: found_topics.append( ['parsing time, sc', calc.info['perf']] )
-
             j, out = 0, ''
             for t in found_topics:
                 #t = map(html2str, t)
-                out += "  " + t[0] + ': ' + ', '.join(map(str, t[1:]))
-                out += "\t\t" if not j%2 else "\n"
+                out += "\t" + t[0] + ': ' + ', '.join(map(str, t[1:]))
+                out += "\t" if not j%2 else "\n"
                 j+=1
-            output_lines += out[:-1] + "\n"
+            output_lines += out[:-1]
 
         if args.convergence:
             if calc.convergence:

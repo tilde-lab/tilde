@@ -1,6 +1,6 @@
 
 # Tilde project: core
-# v180314
+# v190314
 
 __version__ = "0.2.6"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
                         # SYNCHRONIZE WITH root/VERSION
@@ -126,6 +126,7 @@ class API:
         '''
         Cell wrappers
         for customizing the GUI data table
+        TODO : must coincide with hierarchy.xml!
         '''
         html_class = '' # for GUI javascript
         out = ''
@@ -133,40 +134,38 @@ class API:
         if 'cell_wrapper' in categ: # this bound type is currently defined by apps only
             out = categ['cell_wrapper'](obj)
         else:
-            if categ['cid'] in [1, 511, 521, 522]:
+            if categ['source'] in ['standard', 'adsorbent', 'termination']:
                 out = html_formula(obj['info'][ categ['source'] ]) if categ['source'] in obj['info'] else '&mdash;'
                 
-            elif categ['cid'] == 24:
+            elif categ['source'] == 'etype':
                 out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
                 
-            elif categ['cid'] == 25:
+            elif categ['source'] == 'bandgap':
                 html_class = ' class=_g'
                 out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
                 
-            elif categ['cid'] == 26:
+            elif categ['source'] == 'bandgaptype':
                 out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
-                
-            elif categ['cid'] == 1001:
+            
+            # pseudo-source (derivative determination)    
+            elif categ['source'] == 'natom':
                 out = "%3d" % len( obj['structures'][-1]['symbols'] )
                 
-            elif categ['cid'] == 1002:
+            elif categ['source'] == 'e':
                 html_class = ' class=_e'
                 out = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
                 
-            elif categ['cid'] == 1003:
+            elif categ['source'] == 'dims':
                 out = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
-                
-            elif categ['cid'] == 1005:
-                out = "<div class=tiny>%s</div>" % obj['info']['location']
-                
-            elif categ['cid'] == 1006:
+                               
+            elif categ['source'] == 'finished':
                 f = int(obj['info']['finished'])
                 if f > 0: out = 'yes'
                 elif f == 0: out = 'n/a'
                 elif f < 0: out = 'no'
             
             else:
-                out = obj['info'][ categ['source'] ] if 'source' in categ and categ['source'] in obj['info'] else '&mdash;'
+                out = obj['info'][ categ['source'] ] if categ['source'] in obj['info'] else '&mdash;'
         return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
 
     def reload(self, db_conn=None, settings=None):
@@ -587,7 +586,7 @@ class API:
         for n, i in enumerate(self.hierarchy):
             found_topics = []
             
-            if not 'has_label' in i or not 'source' in i: continue
+            if not 'has_label' in i: continue
             
             if '#' in i['source']:
                 n=0

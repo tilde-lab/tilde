@@ -4,7 +4,7 @@
     <entity cid="2" category="containing element" source="element#" sort="2" has_label="1" descr=""/>
     <entity cid="3" category="host elements number" source="nelem" sort="3" has_label="1" descr=""/>
     <entity cid="4" category="formula units" source="expanded" sort="4" has_column="1" has_label="1" descr=""/>
-    <entity cid="1001" category="number of atoms" html="N,,atoms__" sort="5" has_column="1" descr=""/>
+    <entity cid="1001" category="number of atoms" source="natom" html="N,,atoms__" sort="5" has_column="1" descr=""/>
     
     <entity cid="5" category="periodicity" source="periodicity" sort="6" has_column="1" has_label="1" descr=""/> 
     <entity cid="9" category="crystal system" source="symmetry" sort="7" has_column="1" has_label="1" descr=""/>
@@ -15,7 +15,7 @@
 
     <entity cid="8" category="system type" source="tag#" sort="12" has_label="1" descr=""/>
     <entity cid="6" category="calculation type" source="calctype#" sort="13" has_label="1" descr=""/>
-    <entity cid="7" category="XC-potential" html="XC-potential" source="H" sort="14" has_column="1" has_label="1" descr=""/>
+    <entity cid="7" category="XC-potential" source="H" html="XC-potential" sort="14" has_column="1" has_label="1" descr=""/>
     <entity cid="14" category="main tolerance" source="tol" sort="15" has_column="1" has_label="1" descr=""/>
     <entity cid="15" category="spin-polarized" source="spin" sort="16" negative_tagging="1" has_column="1" has_label="1" descr=""/>
     <entity cid="16" category="locked magn.state" source="lockstate" sort="17" has_column="1" has_label="1" descr=""/>
@@ -43,11 +43,10 @@
 
     <entity cid="501" category="basis set" source="bs#" sort="10000" has_label="1" descr=""/>    
     
-    <entity cid="1002" category="total energy" html="E,,el.tot__/cell, {{units-energy}}" sort="1000" has_column="1" descr=""/>
-    <entity cid="1003" category="cell vol.or area" html="Cell, A^^2** or A^^3**" sort="4" has_column="1" descr=""/>
-    <entity cid="1005" category="source file" sort="999" has_column="1" descr=""/>
-    <entity cid="1006" category="finished" html="Finished?" sort="1001" has_column="1" descr=""/>
+    <entity cid="1002" category="total energy" source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="1000" has_column="1" descr=""/>
+    <entity cid="1003" category="cell vol.or area" source='dims' html="Cell, A^^2** or A^^3**" sort="4" has_column="1" descr=""/>
+    <entity cid="1005" category="source file" source='location' sort="999" has_column="1" descr=""/>
+    <entity cid="1006" category="finished" source='finished' html="Finished?" sort="1001" has_column="1" descr=""/>
     
-    <entity cid="2000" category="sample example" sort="1002" has_column="1" has_label="1" descr=""/>
-    <!-- cid no more than 2000 -->
+    <!-- cid no more than 1999 -->
 </schema>

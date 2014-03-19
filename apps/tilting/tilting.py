@@ -35,14 +35,14 @@ class Tilting():
         for k in obj['apps'][selfname]:
             nonzero = filter(None, obj['apps'][selfname][k])
             if len(nonzero) == 0:
-                repr = "&mdash;"
+                repr += "&mdash;  "
             elif len(nonzero) == 1:
-                repr = str(nonzero[0])
+                repr += str(nonzero[0]) + ', '
             else:
                 for i in obj['apps'][selfname][k]:
                     repr += str(i) + ', '
-                repr = repr[:-2]
-                #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
+            repr = repr[:-2]
+            #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
             repr += '<br />'
         return "<div class=sml>%s</div>" % repr
 
