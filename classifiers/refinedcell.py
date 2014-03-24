@@ -1,7 +1,5 @@
 
-# refines cell and stores it for further investigations
-
-import os, sys
+# refines cell and stores it for the further investigations (crucial for correct perovskite tilting extraction)
 
 from core.symmetry import SymmetryFinder
 

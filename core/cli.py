@@ -229,7 +229,7 @@ for target in args.path:
                 out += "\t" + t[0] + ': ' + ', '.join(map(str, t[1:]))
                 out += "\t" if not j%2 else "\n"
                 j+=1
-            output_lines += out[:-1]
+            output_lines += out[:-1] + "\n"
 
         if args.convergence:
             if calc.convergence:

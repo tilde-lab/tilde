@@ -1,5 +1,5 @@
 
-# determines perovskite structure
+# determines perovskite structures: classifies by vacancy and substitutional defects (impurities)
 # v011013
 
 import os
@@ -14,9 +14,7 @@ from core.constants import Perovskite_Structure
 # hierarchy API: __order__ to apply classifier
 __order__ = 10
 
-def classify(tilde_obj):    
-    ''' classification by vacancy and substitutional defects (impurities) in perovskites '''
-    
+def classify(tilde_obj):
     if len(tilde_obj.info['elements']) == 1: return tilde_obj
 
     C_site = [e for e in tilde_obj.info['elements'] if e in Perovskite_Structure.C]

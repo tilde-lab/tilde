@@ -1,5 +1,5 @@
 
-# classifies slabs by their structure
+# classifies slabs by their structure: determines layers count and adsorption
 # v220913
 
 import os
@@ -7,12 +7,11 @@ import sys
 import math
 import fractions
 
+
 # hierarchy API: __order__ to apply classifier
 __order__ = 40
 
-def classify(tilde_obj):    
-    ''' determine count of layers and adsorption '''
-    
+def classify(tilde_obj):
     if tilde_obj.structures[-1].periodicity != 2: return tilde_obj
     
     vectors = []

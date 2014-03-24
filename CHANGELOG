@@ -1,3 +1,7 @@
+0.2.6
+bugfixes and minor enhancements in code structure and UI
+fixed bugs with tilting calculation (adopted to ASE), added tests
+
 0.2.4
 data hierarchy is now outside the code
 switched to spglib for symmetry
@@ -9,6 +13,7 @@ electron properties of EXCITING, both of plain-text and XML formats
 phonons of EXCITING
 
 0.2.2
+switched to ASE to handle atomic structure
 added experimental CIF and EXCITING format support (work in progress)
 WIEN2K and GAUSSIAN format support is only a courage experiment
 enhanced player.html (module API extensions, full screen mode)

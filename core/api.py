@@ -347,21 +347,6 @@ class API:
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
             return (None, 'data do not satisfy the filter')
             
-        # account surface case (and vacuum creation method)
-        # where Z is 2x larger than X*Y
-        # TODO : replace with the more robust method
-        if calc.info['cellpar'][2] > 2 * calc.info['cellpar'][0] * calc.info['cellpar'][1]:
-            calc.method['technique'].update({'vacuum2d': int(round(calc.info['cellpar'][2]))})
-            # FOR ALL:
-            for i in range(len(calc.structures)):
-                calc.structures[i].set_pbc((True, True, False))
-        
-        # extend ASE object with useful info
-        for i in range(len(calc.structures)):
-            calc.structures[i].periodicity = sum(calc.structures[i].get_pbc())
-            calc.structures[i].dims = abs(det(calc.structures[i].cell))
-        calc.info['dims'] = calc.structures[-1].dims        
-
         # TODO (?)
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
