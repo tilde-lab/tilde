@@ -15,7 +15,7 @@
 
 DAEMON_NAME=tilde
 DIR=/var/wwwtilda
-DAEMON="$DIR/core/daemon.py 1" # 1 means SILENCE_FLAG
+DAEMON="$DIR/core/daemon.py 1" # 1 means SILENCE_FLAG : TODO!
 DAEMON_USER=www-data
 PIDFILE=/var/run/$DAEMON_NAME.pid
 
