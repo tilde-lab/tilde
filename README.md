@@ -61,6 +61,7 @@ Not only Tilde represents the community need for a new instrument in scientific 
 - Materials Project (Python), http://www.materialsproject.org
 - PAULING FILE world largest database for inorganic compounds, http://paulingfile.com
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
+- QMForge (Python), http://qmforge.sourceforge.net
 - Quixote, http://quixote.wikispot.org
 - Scipio (Java), https://scipio.iciq.es
 - WebMO: Web-based interface to computational chemistry packages (Java, Perl), http://webmo.net

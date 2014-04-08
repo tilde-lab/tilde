@@ -4,7 +4,7 @@
 # (currently acting as a GUI service)
 # Provides a user interface for database management
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
-# v271113
+# v080414
 
 import os
 import sys
@@ -39,6 +39,11 @@ from api import API
 from common import dict2ase, html_formula, str2html
 from plotter import plotter
 
+
+# Silent run?
+try: sys.argv[1]
+except IndexError: SILENCE_FLAG = False
+else: SILENCE_FLAG = True
 
 DELIM = '~#~#~'
 EDITION = settings['title'] if settings['title'] else 'Tilde ' + API.version
@@ -859,7 +864,7 @@ class UpdateServiceHandler(tornado.web.RequestHandler):
 if __name__ == "__main__":
     
     # check new version
-    if not settings['demo_regime'] and 'update_server' in settings:
+    if not settings['demo_regime'] and 'update_server' in settings and not SILENCE_FLAG:
         updatemsg = ''
         try:
             updatemsg = urllib2.urlopen(settings['update_server'], timeout=2.5).read()
@@ -873,8 +878,8 @@ if __name__ == "__main__":
                 else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
         print updatemsg
 
-    debug = True if settings['debug_regime'] else False
-    loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
+    debug = True if settings['debug_regime'] and not SILENCE_FLAG else False
+    loglevel = logging.DEBUG if settings['debug_regime'] and not SILENCE_FLAG else logging.ERROR
     #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
     logging.basicConfig( level=loglevel, stream=sys.stdout )
 
@@ -921,13 +926,13 @@ if __name__ == "__main__":
         logging.critical( errmsg )
         print errmsg
     else:
-        if 'linux' in sys.platform:
+        if 'linux' in sys.platform and not SILENCE_FLAG:
             try: address = socket.gethostname() # socket.gethostbyname(socket.gethostname())
             except: address = 'localhost'
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "Welcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
+        if not SILENCE_FLAG: print "Welcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: io_loop.start()
         except KeyboardInterrupt: sys.exit("\nBye-bye.")
