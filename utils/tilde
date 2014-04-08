@@ -19,7 +19,7 @@ DAEMON="$DIR/core/daemon.py 1" # 1 means SILENCE_FLAG
 DAEMON_USER=www-data
 PIDFILE=/var/run/$DAEMON_NAME.pid
 
-if [ ! -f $DIR ]; then
+if [ ! -d $DIR ]; then
     echo "Wrong \$DIR specified!";exit 1;
 fi
 
