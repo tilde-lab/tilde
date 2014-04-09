@@ -30,4 +30,4 @@ if not 'win' in sys.platform and not os.path.exists( os.path.join( os.path.dirna
     
     os.chdir(prev_location)
     
-    print 'Prepared to run successfully!\n'
+    print '\nPrepared to run successfully!\n'
