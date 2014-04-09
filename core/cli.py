@@ -271,7 +271,6 @@ for target in args.path:
         if args.freqs:
             if not calc.phonons['modes']:
                 print task, 'has no phonons!'
-                continue
             for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 output_lines += "\tK-POINT: " + bzpoint + "\n"
                 compare = 0

@@ -30,7 +30,13 @@ class INFOOUT(Output):
         cur_folder = os.path.dirname(file)
         
         self.info['framework'] = 'EXCITING'
-        self.info['finished'] = -1
+        self.info['finished'] = -1        
+        
+        # dealing with replicas of INFO.OUT (e.g. in case of phonons) means
+        # we need to match corresponding EIGVAL.OUT, xmls etc. for them
+        # (not implemented yet)
+        if os.path.basename(file) == 'INFO.OUT': self.INITIAL_CALC = True
+        else: self.INITIAL_CALC = False
         
         fracts_holder = [[]]
         cell = []
@@ -241,9 +247,9 @@ class INFOOUT(Output):
             finally: f.close()'''
         
         # Electronic properties: the worst case, look for total DOS and raw bands in EIGVAL.OUT
-        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']):
+        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']) and self.INITIAL_CALC: # TODO: account all the dispacements
             f = open(os.path.join(cur_folder, 'EIGVAL.OUT'),'r')
-            # why such a call? we need to spare RAM
+            # why such a call? we try to spare RAM
             # so let's look whether these variables are filled
             # and fill them only if needed
             try: kpts, columns = parse_eigvals(f, e_last)
@@ -275,13 +281,14 @@ class INFOOUT(Output):
         if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")        
         
         # Input
-        try:
-            inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
-            self.info['input'] = inp.toprettyxml(newl="", indent=" ")
-        except IOError: pass
+        if self.INITIAL_CALC:
+            try:
+                inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
+                self.info['input'] = inp.toprettyxml(newl="", indent=" ")
+            except IOError: pass
             
         # Phonons
-        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO: account all the dispacements
+        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and self.INITIAL_CALC: # TODO: account all the dispacements
             f = open(os.path.join(cur_folder, 'PHONON.OUT'), 'r')
             linelist = f.readlines()
             filelen = len(linelist)
