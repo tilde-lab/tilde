@@ -1,4 +1,3 @@
-#/usr/bin/env python
 #PBS -l nodes=4:ppn=8
 #PBS -l walltime=02:15:00
 

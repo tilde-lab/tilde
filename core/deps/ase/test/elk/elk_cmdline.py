@@ -1,4 +1,7 @@
-from ase.tasks.main import run
+from ase.test import cli, require
 
-atoms, task = run("elk bulk Al -x fcc -a 4.04 --k-point-density=3.0 -p tasks=0,xc=PBE,rgkmax=5.0,tforce=True")
-atoms, task = run('elk bulk Al -s')
+# warning! parameters are not converged - only an illustration!
+require('elk')
+cli("""ase-build -x fcc -a 4.04 Al | \
+ase-run elk -p \
+"tasks=0,kpts=1.5,rgkmax=5.0,tforce=True,smearing=(fermi-dirac,0.05)" """)

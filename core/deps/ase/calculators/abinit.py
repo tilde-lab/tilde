@@ -291,10 +291,10 @@ class Abinit(FileIOCalculator):
         if not os.path.isfile(filename):
             raise ReadError
 
-        self.state = read_abinit(self.label + '.in')
+        self.atoms = read_abinit(self.label + '.in')
         self.parameters = Parameters.read(self.label + '.ase')
 
-        self.initialize(self.state)
+        self.initialize(self.atoms)
         self.read_results()
 
     def read_results(self):

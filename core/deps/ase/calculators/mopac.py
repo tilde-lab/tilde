@@ -107,7 +107,7 @@ class Mopac(Calculator):
             mopac_input += 'RELSCF=' + str(self.float_params['RELSCF']) + ' '
             
         #write charge
-        charge = sum(atoms.get_charges())
+        charge = sum(atoms.get_initial_charges())
         if charge != 0:
             mopac_input += 'CHARGE=%i ' % (charge)
         

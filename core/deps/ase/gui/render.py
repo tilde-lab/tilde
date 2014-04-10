@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import gtk
 from gettext import gettext as _
 from ase.gui.widgets import pack, Help, oops
@@ -271,8 +270,10 @@ class Render(gtk.Window):
 
     def get_colors(self):
         colors = self.gui.get_colors(rgb = True)
+        colors_tmp = []
         for n in range(self.natoms):
-            colors[n] = list(colors[n]) + [0,self.default_transparency.value]
+            colors_tmp.append(list(colors[n]) + [0,self.default_transparency.value])
+        colors = colors_tmp
         for mat in self.materials:
             sel   = mat[1]
             trans = mat[4].get_value()

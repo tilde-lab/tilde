@@ -316,8 +316,8 @@ def bulk(name, crystalstructure, a=None, c=None, covera=None,
         Construct cubic unit cell.
     """
 
-    #warnings.warn('This function is deprecated.  Use the ' +
-    #              'ase.lattice.bulk.bulk() function instead.')
+    warnings.warn('This function is deprecated.  Use the ' +
+                  'ase.lattice.bulk() function instead.')
 
     if a is not None:
         a = float(a)

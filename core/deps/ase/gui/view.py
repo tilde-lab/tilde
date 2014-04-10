@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Emacs: treat this as -*- python -*-
 
 import os

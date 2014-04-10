@@ -5,17 +5,22 @@ from math import pi, sqrt
 
 import numpy as np
 
-from ase.calculators.test import numeric_force
-
 
 class ReadError(Exception):
     pass
 
 
+all_properties = ['energy', 'forces', 'stress', 'dipole',
+                  'charges', 'magmom', 'magmoms']
+
+
+all_changes = ['positions', 'numbers', 'cell', 'pbc', 'charges', 'magmoms']
+
+
 # Recognized names of calculators sorted alphabetically:
 names = ['abinit', 'aims', 'asap', 'castep', 'dftb', 'eam', 'elk', 'emt',
          'exciting', 'fleur', 'gpaw', 'gaussian', 'hotbit', 'jacapo',
-         'lammps', 'lj', 'mopac', 'morse',
+         'lammps', 'lammpslib', 'lj', 'mopac', 'morse',
          'nwchem', 'siesta', 'turbomole', 'vasp']
 
 
@@ -24,6 +29,7 @@ special = {'eam': 'EAM',
            'emt': 'EMT',
            'fleur': 'FLEUR',
            'lammps': 'LAMMPS',
+           'lammpslib': 'LAMMPSlib',
            'lj': 'LennardJones',
            'morse': 'MorsePotential',
            'nwchem': 'NWChem'}
@@ -44,14 +50,21 @@ def get_calculator(name):
     return Calculator
 
 
-def equal(a, b):
+def equal(a, b, tol=None):
     """ndarray-enabled comparison function."""
     if isinstance(a, np.ndarray):
         b = np.array(b)
-        return a.shape == b.shape and (a == b).all()
+        if a.shape != b.shape:
+            return False
+        if tol is None:
+            return (a == b).all()
+        else:
+            return np.allclose(a, b, rtol=tol, atol=tol)
     if isinstance(b, np.ndarray):
-        return equal(b, a)
-    return a == b
+        return equal(b, a, tol)
+    if tol is None:
+        return a == b
+    return abs(a - b) < tol * abs(b) + tol
 
 
 def kptdensity2monkhorstpack(atoms, kptdensity=3.5, even=True):
@@ -96,6 +109,8 @@ class Parameters(dict):
     """
     
     def __getattr__(self, key):
+        if key not in self:
+            return dict.__getattribute__(self, key)
         return self[key]
 
     def __setattr__(self, key, value):
@@ -157,13 +172,13 @@ class Calculator:
             unit-cell updated from file.
         """
 
-        self.state = None  # copy of atoms object from last calculation
+        self.atoms = None  # copy of atoms object from last calculation
         self.results = {}  # calculated properties (energy, forces, ...)
         self.parameters = None  # calculational parameters
 
         if restart is not None:
             try:
-                self.read(restart)  # read parameters, state and results
+                self.read(restart)  # read parameters, atoms and results
             except ReadError:
                 if ignore_bad_restart_file:
                     self.reset()
@@ -182,13 +197,13 @@ class Calculator:
 
         if atoms is not None:
             atoms.calc = self
-            if self.state is not None:
-                # State was read from file.  Update atoms:
-                if not (equal(atoms.numbers, self.state.numbers) and
-                        (atoms.pbc == self.state.pbc).all()):
+            if self.atoms is not None:
+                # Atoms were read from file.  Update atoms:
+                if not (equal(atoms.numbers, self.atoms.numbers) and
+                        (atoms.pbc == self.atoms.pbc).all()):
                     raise RuntimeError('Atoms not compatible with file')
-                atoms.positions = self.state.positions
-                atoms.cell = self.state.cell
+                atoms.positions = self.atoms.positions
+                atoms.cell = self.atoms.cell
                 
         self.set(**kwargs)
 
@@ -221,14 +236,15 @@ class Calculator:
         return Parameters(copy.deepcopy(self.default_parameters))
 
     def todict(self):
-        data = copy.deepcopy(self.parameters)
-        data['name'] = self.name
-        return data
+        default = self.get_default_parameters()
+        return dict((key, value)
+                    for key, value in self.parameters.items()
+                    if key not in default or value != default[key])
 
     def reset(self):
         """Clear all information from old calculation."""
 
-        self.state = None
+        self.atoms = None
         self.results = {}
 
     def read(self, label):
@@ -239,23 +255,23 @@ class Calculator:
         message from the calculation, a ReadError should also be
         raised.  In case of succes, these attributes must set:
 
-        state: Atoms object
+        atoms: Atoms object
             The state of the atoms from last calculation.
         parameters: Parameters object
             The parameter dictionary.
         results: dict
             Calculated properties like energy and forces.
 
-        The FileIOCalculator.read() method will typically read state
+        The FileIOCalculator.read() method will typically read atoms
         and parameters and get the results dict by calling the
         read_results() method."""
 
         self.set_label(label)
 
     def get_atoms(self):
-        if self.state is None:
+        if self.atoms is None:
             raise ValueError('Calculator has no atoms')
-        atoms = self.state.copy()
+        atoms = self.atoms.copy()
         atoms.calc = self
         return atoms
 
@@ -302,70 +318,78 @@ class Calculator:
 
         return changed_parameters
 
-    def check_state(self, atoms):
+    def check_state(self, atoms, tol=1e-15):
         """Check for system changes since last calculation."""
-        if self.state is None:
-            system_changes = ['positions', 'numbers', 'cell', 'pbc',
-                              'charges', 'magmoms']
+        if self.atoms is None:
+            system_changes = all_changes
         else:
             system_changes = []
-            if not equal(self.state.positions, atoms.positions):
+            if not equal(self.atoms.positions, atoms.positions, tol):
                 system_changes.append('positions')
-            if not equal(self.state.numbers, atoms.numbers):
+            if not equal(self.atoms.numbers, atoms.numbers):
                 system_changes.append('numbers')
-            if not equal(self.state.cell, atoms.cell):
+            if not equal(self.atoms.cell, atoms.cell, tol):
                 system_changes.append('cell')
-            if not equal(self.state.pbc, atoms.pbc):
+            if not equal(self.atoms.pbc, atoms.pbc):
                 system_changes.append('pbc')
-            if not equal(self.state.get_initial_magnetic_moments(),
-                         atoms.get_initial_magnetic_moments()):
+            if not equal(self.atoms.get_initial_magnetic_moments(),
+                         atoms.get_initial_magnetic_moments(), tol):
                 system_changes.append('magmoms')
-            if not equal(self.state.get_initial_charges(),
-                         atoms.get_initial_charges()):
+            if not equal(self.atoms.get_initial_charges(),
+                         atoms.get_initial_charges(), tol):
                 system_changes.append('charges')
 
         return system_changes
 
-    def get_potential_energy(self, atoms, force_consistent=False):
+    def get_potential_energy(self, atoms=None, force_consistent=False):
         energy = self.get_property('energy', atoms)
         if force_consistent:
             return self.results.get('free_energy', energy)
         else:
             return energy
 
-    def get_forces(self, atoms):
+    def get_forces(self, atoms=None):
         return self.get_property('forces', atoms).copy()
 
-    def get_stress(self, atoms):
+    def get_stress(self, atoms=None):
         return self.get_property('stress', atoms).copy()
 
-    def get_dipole_moment(self, atoms):
+    def get_dipole_moment(self, atoms=None):
         return self.get_property('dipole', atoms).copy()
 
-    def get_charges(self, atoms):
+    def get_charges(self, atoms=None):
         return self.get_property('charges', atoms)
 
-    def get_magnetic_moment(self, atoms):
+    def get_magnetic_moment(self, atoms=None):
         return self.get_property('magmom', atoms)
 
-    def get_magnetic_moments(self, atoms):
+    def get_magnetic_moments(self, atoms=None):
         return self.get_property('magmoms', atoms).copy()
 
-    def get_property(self, name, atoms):
+    def get_property(self, name, atoms=None):
         if name not in self.implemented_properties:
             raise NotImplementedError
 
-        system_changes = self.check_state(atoms)
-        if system_changes:
-            self.reset()
+        if atoms is None:
+            atoms = self.atoms
+            system_changes = []
+        else:
+            system_changes = self.check_state(atoms)
+            if system_changes:
+                self.reset()
 
         if name not in self.results:
-            self.state = atoms.copy()
             try:
                 self.calculate(atoms, [name], system_changes)
             except Exception:
                 self.reset()
                 raise
+
+        if name == 'magmom' and 'magmom' not in self.results:
+            return 0.0
+
+        if name == 'magmoms' and 'magmoms' not in self.results:
+            return np.zeros(len(atoms))
 
         return self.results[name]
 
@@ -378,11 +402,10 @@ class Calculator:
                 return True
         return False
         
-    def calculate(self, atoms, properties, system_changes):
+    def calculate(self, atoms=None, properties=['energy'],
+                  system_changes=all_changes):
         """Do the calculation.
 
-        atoms: Atoms object
-            Contains positions, unit-cell, ...
         properties: list of str
             List of what needs to be calculated.  Can be any combination
             of 'energy', 'forces', 'stress', 'dipole', 'charges', 'magmom'
@@ -393,23 +416,31 @@ class Calculator:
             'pbc', 'charges' and 'magmoms'.
 
         Subclasses need to implement this, but can ignore properties
-        and system_changes if they want.
+        and system_changes if they want.  Calculated properties should
+        be inserted into results dictionary like shown in this dummy
+        example::
+
+            self.results = {'energy': 0.0,
+                            'forces': np.zeros((len(atoms), 3)),
+                            'stress': np.zeros(6),
+                            'dipole': np.zeros(3),
+                            'charges': np.zeros(len(atoms)),
+                            'magmom': 0.0,
+                            'magmoms': np.zeros(len(atoms))}
+
+        The subclass implementation should first call this
+        implementation to set the atoms attribute.
         """
 
-        # Dummy calculation:
-        self.results = {'energy': 0.0,
-                        'forces': np.zeros((len(atoms), 3)),
-                        'stress': np.zeros(6),
-                        'dipole': np.zeros(3),
-                        'charges': np.zeros(len(atoms)),
-                        'magmom': 0.0,
-                        'magmoms': np.zeros(len(atoms))}
-                        
+        if atoms is not None:
+            self.atoms = atoms.copy()
+
     def calculate_numerical_forces(self, atoms, d=0.001):
         """Calculate numerical forces using finite difference.
 
         All atoms will be displaced by +d and -d in all directions."""
 
+        from ase.calculators.test import numeric_force
         return np.array([[numeric_force(atoms, a, i, d)
                           for i in range(3)] for a in range(len(atoms))])
 
@@ -440,8 +471,10 @@ class FileIOCalculator(Calculator):
             name = 'ASE_' + self.name.upper() + '_COMMAND'
             self.command = os.environ.get(name, self.command)
 
-    def calculate(self, atoms, properties=None, system_changes=None):
-        self.write_input(atoms, properties, system_changes)
+    def calculate(self, atoms=None, properties=['energy'],
+                  system_changes=all_changes):
+        Calculator.calculate(self, atoms, properties, system_changes)
+        self.write_input(self.atoms, properties, system_changes)
         if self.command is None:
             raise RuntimeError('Please set $%s environment variable ' %
                                ('ASE_' + self.name.upper() + '_COMMAND') +

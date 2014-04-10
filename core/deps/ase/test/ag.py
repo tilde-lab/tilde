@@ -1,10 +1,14 @@
-'Some ag tests.'
-
 import os
 import sys
 
-# Make sure ag can run in terminal mode without $DISPLAY and gtk:
-sys.argv = ['ag', '--terminal']
+from ase import Atoms
+from ase.io import write
+
+
+write('x.json', Atoms('X'))
+
+# Make sure ase-gui can run in terminal mode without $DISPLAY and gtk:
+sys.argv = ['ase-gui', '--terminal', 'x.json']
 display = os.environ.pop('DISPLAY', None)
 error = False
 try:

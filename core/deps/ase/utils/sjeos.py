@@ -54,7 +54,7 @@ class EquationOfStateSJEOS:
 
         self.v0 = None
         for t in np.roots(fit1):
-            if t > 0 and fit2(t) > 0:
+            if isinstance(t, float) and t > 0 and fit2(t) > 0:
                 self.v0 = t**-3
                 break
 

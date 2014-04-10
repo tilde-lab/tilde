@@ -175,6 +175,10 @@ class ColorWindow(gtk.Window):
                 return
         else:
             self.radio_velocity.set_sensitive(True)
+        if not self.gui.images.q.any():
+            self.radio_charge.set_sensitive(False)
+        else:
+            self.radio_charge.set_sensitive(True)
         self.radio_manual.set_sensitive(self.gui.images.natoms <= 1000)
         # Now check what the current color mode is
         if cm == 'jmol':

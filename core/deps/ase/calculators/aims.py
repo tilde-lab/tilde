@@ -191,8 +191,8 @@ class Aims(FileIOCalculator):
             if key == 'kpts':
                 mp = kpts2mp(atoms, self.parameters.kpts)
                 output.write('%-35s%d %d %d\n' % (('k_grid',) + tuple(mp)))
-                dk = 0.5 - 0.5 / mp
-                output.write('%-35s%d %d %d\n' % (('k_offset',) + tuple(dk)))
+                dk = 0.5 - 0.5 / np.array(mp)
+                output.write('%-35s%f %f %f\n' % (('k_offset',) + tuple(dk)))
             elif key == 'species_dir':
                 continue
             elif key == 'smearing':
@@ -234,7 +234,7 @@ class Aims(FileIOCalculator):
             if not os.path.isfile(filename):
                 raise ReadError
 
-        self.state = read_aims(geometry)
+        self.atoms = read_aims(geometry)
         self.parameters = Parameters.read(os.path.join(self.directory,
                                                        'parameters.ase'))
         self.read_results()
@@ -254,7 +254,7 @@ class Aims(FileIOCalculator):
             'compute_analytical_stress' in self.parameters):
             self.read_stress()
         if ('dipole' in self.parameters.get('output', []) and
-            not self.state.pbc.any()):
+            not self.atoms.pbc.any()):
             self.read_dipole()
 
     def write_species(self, atoms, filename='control.in'):
@@ -321,10 +321,10 @@ class Aims(FileIOCalculator):
         in the output file will be returned, in other case only the
         forces for the last ionic configuration are returned."""
         lines = open(self.out, 'r').readlines()
-        forces = np.zeros([len(self.state), 3])
+        forces = np.zeros([len(self.atoms), 3])
         for n, line in enumerate(lines):
             if line.rfind('Total atomic forces') > -1:
-                for iatom in range(len(self.state)):
+                for iatom in range(len(self.atoms)):
                     data = lines[n + iatom + 1].split()
                     for iforce in range(3):
                         forces[iatom, iforce] = float(data[2 + iforce])

@@ -100,7 +100,7 @@ def get_bandpath(points, cell, npoints=50):
         X.append(x0)
     kpts.append(points[-1])
     x.append(x0)
-    return kpts, np.array(x), np.array(X)
+    return np.array(kpts), np.array(x), np.array(X)
 
 
 # The following is a list of the critical points in the 1. Brillouin zone

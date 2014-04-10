@@ -10,7 +10,7 @@ try:
 except ImportError:
     raise NotAvailable('This needs scipy module.')
 
-from ase.structure import bulk
+from ase.lattice import bulk
 
 from ase.io.trajectory import PickleTrajectory
 

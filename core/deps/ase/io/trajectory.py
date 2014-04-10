@@ -8,9 +8,10 @@ import errno
 try:
     WindowsError
 except NameError:
-    class WindowsError(OSError): pass
+    class WindowsError(OSError):
+        pass
 
-from ase.calculators.singlepoint import SinglePointCalculator
+from ase.calculators.singlepoint import SinglePointCalculator, all_properties
 from ase.atoms import Atoms
 from ase.parallel import rank, barrier
 from ase.utils import devnull
@@ -42,7 +43,7 @@ class PickleTrajectory:
             'r' is read mode, the file should already exist, and
             no atoms argument should be specified.
 
-            'w' is write mode.  If the file already exists, is it
+            'w' is write mode.  If the file already exists, it is
             renamed by appending .bak to the file name.  The atoms
             argument specifies the Atoms object to be written to the
             file, if not given it must instead be given as an argument
@@ -86,12 +87,12 @@ class PickleTrajectory:
         """
         self.fd = filename
         if mode == 'r':
-            if isinstance(filename, str):
+            if isinstance(filename, (str, unicode)):
                 self.fd = open(filename, 'rb')
             self.read_header()
         elif mode == 'a':
             exists = True
-            if isinstance(filename, str):
+            if isinstance(filename, (str, unicode)):
                 exists = os.path.isfile(filename)
                 if exists:
                     exists = os.path.getsize(filename) > 0
@@ -106,7 +107,7 @@ class PickleTrajectory:
                     self.fd = devnull
         elif mode == 'w':
             if self.master:
-                if isinstance(filename, str):
+                if isinstance(filename, (str, unicode)):
                     if self.backup and os.path.isfile(filename):
                         try:
                             os.rename(filename, filename + '.bak')
@@ -132,6 +133,10 @@ class PickleTrajectory:
         self.atoms = atoms
 
     def read_header(self):
+        if hasattr(self.fd, 'name'):
+            if os.path.isfile(self.fd.name):
+                if os.path.getsize(self.fd.name) == 0:
+                    return
         self.fd.seek(0)
         try:
             if self.fd.read(len('PickleTrajectory')) != 'PickleTrajectory':
@@ -296,8 +301,11 @@ class PickleTrajectory:
                           constraint=constraints)
             if 'energy' in d:
                 calc = SinglePointCalculator(
-                    d.get('energy', None), d.get('forces', None),
-                    d.get('stress', None), magmoms, atoms)
+                    atoms,
+                    energy=d.get('energy', None),
+                    forces=d.get('forces', None),
+                    stress=d.get('stress', None),
+                    magmoms=magmoms)
                 atoms.set_calculator(calc)
             return atoms
 
@@ -490,25 +498,24 @@ def write_trajectory(filename, images):
     for atoms in images:
         # Avoid potentially expensive calculations:
         calc = atoms.get_calculator()
-        if calc is not None:
-            if  hasattr(calc, 'calculation_required'):
-                if calc.calculation_required(atoms, ['energy']):
-                    traj.write_energy = False
-                if calc.calculation_required(atoms, ['forces']):
-                    traj.write_forces = False
-                if calc.calculation_required(atoms, ['stress']):
-                    traj.write_stress = False
-                if calc.calculation_required(atoms, ['charges']):
-                    traj.write_charges = False
-                if calc.calculation_required(atoms, ['magmoms']):
-                    traj.write_magmoms = False
+        if hasattr(calc, 'check_state'):
+            nochange = len(calc.check_state(atoms)) == 0
+            for property in all_properties:
+                if not (nochange and property in calc.results):
+                    setattr(traj, 'write_' + property, False)
+        elif hasattr(calc, 'calculation_required'):
+            # Old interface:
+            for property in all_properties:
+                if calc.calculation_required(atoms, [property]):
+                    setattr(traj, 'write_' + property, False)
         else:
-            traj.write_energy = False
-            traj.write_forces = False
-            traj.write_stress = False
-            traj.write_magmoms = False
+            for property in all_properties:
+                setattr(traj, 'write_' + property, False)
+            break
 
+    for atoms in images:
         traj.write(atoms)
+
     traj.close()
 
 

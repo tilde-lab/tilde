@@ -77,18 +77,22 @@ def read(filename, index=-1, format=None):
     =========================  =============
 
     """
-    if isinstance(filename, str):
-        p = filename.rfind('@')
-        if p != -1:
-            try:
-                index = string2index(filename[p + 1:])
-            except ValueError:
-                pass
-            else:
-                filename = filename[:p]
+    if isinstance(filename, str) and ('.json@' in filename or
+                                      '.db@' in filename):
+        filename, index = filename.rsplit('@', 1)
+    else:
+        if isinstance(filename, str):
+            p = filename.rfind('@')
+            if p != -1:
+                try:
+                    index = string2index(filename[p + 1:])
+                except ValueError:
+                    pass
+                else:
+                    filename = filename[:p]
 
-    if isinstance(index, str):
-        index = string2index(index)
+        if isinstance(index, str):
+            index = string2index(index)
 
     if format is None:
         format = filetype(filename)
@@ -121,8 +125,8 @@ def read(filename, index=-1, format=None):
         else:
             magmoms = None
 
-        atoms.calc = SinglePointDFTCalculator(energy, forces, None, magmoms,
-                                              atoms)
+        atoms.calc = SinglePointDFTCalculator(atoms, energy=energy,
+                                              forces=forces, magmoms=magmoms)
         kpts = []
         if r.has_array('IBZKPoints'):
             for w, kpt, eps_n, f_n in zip(r.get('IBZKPointWeights'), 
@@ -135,6 +139,10 @@ def read(filename, index=-1, format=None):
         atoms.calc.kpts = kpts
 
         return atoms
+
+    if format in ['json', 'db']:
+        from ase.db import connect
+        return connect(filename, format)[index]
 
     if format == 'castep':
         from ase.io.castep import read_castep
@@ -280,12 +288,12 @@ def read(filename, index=-1, format=None):
         from ase.io.gen import read_gen
         return read_gen(filename)
 
-    if format == 'db':
+    if format == 'cmr':
         from ase.io.cmr_io import read_db
         return read_db(filename, index)
 
     if format == 'lammps':
-        from ase.io.lammps import read_lammps_dump
+        from ase.io.lammpsrun import read_lammps_dump
         return read_lammps_dump(filename, index)
 
     if format == 'eon':
@@ -362,6 +370,8 @@ def write(filename, images, format=None, **kwargs):
     EON reactant.con file      eon
     Gromacs coordinates        gro
     GROMOS96 (only positions)  g96
+    X3D                        x3d
+    X3DOM HTML                 html
 
     =========================  ===========
 
@@ -412,6 +422,11 @@ def write(filename, images, format=None, **kwargs):
     ``image_plane``, ``camera_type``, ``point_lights``,
     ``area_light``, ``background``, ``textures``, ``celllinewidth``,
     ``bondlinewidth``, ``bondatoms``
+
+    The ``xyz`` format accepts a comment string using the ``comment`` keyword:
+
+    comment: str (default '')
+      Optional comment written on the second line of the file.
     """
 
     if format is None:
@@ -439,7 +454,11 @@ def write(filename, images, format=None, **kwargs):
 ##                       'in': 'aims',
 ##                       'tmol': 'turbomole',
 ##                       }.get(suffix, suffix)
-
+            
+    if format in ['json', 'db']:
+        from ase.db import connect
+        connect(filename, format).write(filename, images)
+        return
     if format == 'castep_cell':
         from ase.io.castep import write_cell
         write_cell(filename, images, **kwargs)
@@ -453,7 +472,7 @@ def write(filename, images, format=None, **kwargs):
         write_cif(filename, images)
     if format == 'xyz':
         from ase.io.xyz import write_xyz
-        write_xyz(filename, images)
+        write_xyz(filename, images, **kwargs)
         return
     if format == 'gen':
         from ase.io.gen import write_gen
@@ -485,7 +504,7 @@ def write(filename, images, format=None, **kwargs):
         writer.write_atoms(images[0])
         writer.close()
         return
-    elif format == 'db' or format == 'cmr':
+    elif format == 'cmr':
         from ase.io.cmr_io import write_db
         return write_db(filename, images, **kwargs)
     elif format == 'eon':
@@ -499,6 +518,10 @@ def write(filename, images, format=None, **kwargs):
     elif format == 'g96':
         from ase.io.gromos import write_gromos
         write_gromos(filename, images)
+        return
+    elif format == 'html':
+        from ase.io.x3d import write_html
+        write_html(filename, images)
         return
 
     format = {'traj': 'trajectory',
@@ -550,8 +573,14 @@ def filetype(filename):
     if len(s3) == 0:
         raise IOError('Empty file: ' + filename)
 
-    if filename.lower().endswith('.db') or filename.lower().endswith('.cmr'):
+    if s3.startswith('{"'):
+        return 'json'
+
+    if filename.endswith('.db'):
         return 'db'
+
+    if filename.lower().endswith('.cmr'):
+        return 'cmr'
 
     if is_tarfile(filename):
         return 'gpw'

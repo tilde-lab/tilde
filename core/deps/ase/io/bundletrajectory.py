@@ -345,10 +345,11 @@ class BundleTrajectory:
                 magmoms = self.backend.read(framedir, 'magmoms')
             else:
                 magmoms = None
-            calc = SinglePointCalculator(smalldata.get('energy'),
-                                         forces,
-                                         smalldata.get('stress'),
-                                         magmoms, atoms)
+            calc = SinglePointCalculator(atoms,
+                                         energy=smalldata.get('energy'),
+                                         forces=forces,
+                                         stress=smalldata.get('stress'),
+                                         magmoms=magmoms)
             atoms.set_calculator(calc)
         return atoms
 

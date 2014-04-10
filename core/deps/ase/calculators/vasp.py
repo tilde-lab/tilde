@@ -198,6 +198,8 @@ bool_keys = [
     'lnebcell',   # Turn on SS-NEB
     'lglobal',    # Optmizize NEB globally for LBFGS (IOPT = 1)
     'llineopt',   # Use force based line minimizer for translation (IOPT = 1)
+    'lbeefens',   # Switch on print of BEE energy contritions in OUTCAR
+    'lbeefbas',   # Switch off print of all BEEs in OUTCAR
 ]
 
 list_keys = [
@@ -359,7 +361,7 @@ class Vasp(Calculator):
                 try :
                     #special_setup[self.input_params['setups'][m]] = int(m)
                     special_setups.append(int(m))
-                except:
+                except ValueError:
                     #print 'setup ' + m + ' is a groups setup'
                     continue
             #print 'special_setups' , special_setups
@@ -676,6 +678,8 @@ class Vasp(Calculator):
 
     def get_stress(self, atoms):
         self.update(atoms)
+        if self.stress is None:
+              raise NotImplementedError
         return self.stress
 
     def read_stress(self):
@@ -1031,8 +1035,16 @@ class Vasp(Calculator):
 
     def read_nbands(self):
         for line in open('OUTCAR', 'r'):
+            line = self.strip_warnings(line)
             if line.rfind('NBANDS') > -1:
                 return int(line.split()[-1])
+
+    def strip_warnings(self, line):
+        """Returns empty string instead of line from warnings in OUTCAR."""
+        if line[0] == "|":
+            return ""
+        else:
+            return line
 
     def read_convergence(self):
         """Method that checks whether a calculation has converged."""
@@ -1307,6 +1319,20 @@ class Vasp(Calculator):
 
         self.input_params['xc'] = xc_dict[xc_flag]
 
+    def get_nonselfconsistent_energies(self, bee_type):
+        """ Method that reads and returns BEE energy contributions
+            written in OUTCAR file.
+        """
+        assert bee_type == 'beefvdw'
+        p = os.popen('grep -32 "BEEF xc energy contributions" OUTCAR | tail -32','r')
+        s = p.readlines()
+        p.close()
+        xc = np.array([])
+        for i, l in enumerate(s):
+            l_ = float(l.split(":")[-1])
+            xc = np.append(xc, l_)
+        assert len(xc) == 32
+        return xc
 
 class VaspChargeDensity(object):
     """Class for representing VASP charge density"""
@@ -1691,6 +1717,8 @@ class xdat2traj:
             del(lines[0:6])
         elif len(lines[4].split())==0:
             del(lines[0:5])
+        elif lines[7].split()[0]=='Direct':
+            del(lines[0:8])
         step = 0
         iatom = 0
         scaled_pos = []
@@ -1711,9 +1739,9 @@ class xdat2traj:
                 iatom = 0
                 step += 1
             else:
-
-                iatom += 1
-                scaled_pos.append([float(line.split()[n]) for n in range(3)])
+                if not line.split()[0]=='Direct':
+                    iatom += 1
+                    scaled_pos.append([float(line.split()[n]) for n in range(3)])
 
         # Write also the last image
         # I'm sure there is also more clever fix...

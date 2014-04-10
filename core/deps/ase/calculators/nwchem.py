@@ -100,6 +100,8 @@ class NWChem(FileIOCalculator):
 
         if p.xc == 'RHF':
             task = 'scf'
+        elif p.xc == 'MP2':
+            task = 'mp2'
         else:
             if p.spinorbit:
                 task = 'sodft'
@@ -121,7 +123,7 @@ class NWChem(FileIOCalculator):
                         f.write('  convergence %s %s\n' %
                                 (key, p.convergence[key]))
             if p.smearing is not None:
-                assert p.smearing[0].lower() == 'gaussian'
+                assert p.smearing[0].lower() == 'gaussian', p.smearing
                 f.write('  smear %s\n' % (p.smearing[1] / Hartree))
             if 'mult' not in p:
                 # Obtain multiplicity from magnetic momenta:
@@ -165,7 +167,7 @@ class NWChem(FileIOCalculator):
             positions.append([float(word) for word in words[1:]])
 
         self.parameters = Parameters.read(self.label + '.ase')
-        self.state = Atoms(symbols, positions,
+        self.atoms = Atoms(symbols, positions,
                            magmoms=self.parameters.pop('magmoms'))
         self.read_results()
 
@@ -236,7 +238,7 @@ class NWChem(FileIOCalculator):
                     value = value * Bohr
                     dipolemoment.append(value)
         if len(dipolemoment) == 0:
-            assert len(self.state) == 1
+            assert len(self.atoms) == 1
             dipolemoment = [0.0, 0.0, 0.0]
         return np.array(dipolemoment)
 
@@ -246,15 +248,17 @@ class NWChem(FileIOCalculator):
         lines = iter(text.split('\n'))
 
         # Energy:
+        estring = 'Total '
+        if self.parameters.xc == 'RHF':
+            estring += 'SCF'
+        elif self.parameters.xc == 'MP2':
+            estring += 'MP2'
+        else:
+            estring += 'DFT'
+        estring += ' energy'
         for line in lines:
-            estring = 'Total '
-            if self.parameters.xc == 'RHF':
-                estring += 'SCF'
-            else:
-                estring += 'DFT'
-            estring += ' energy'
             if line.find(estring) >= 0:
-                energy = float(line.split()[4])
+                energy = float(line.split()[-1])
                 break
         self.results['energy'] = energy * Hartree
 
@@ -283,10 +287,10 @@ class NWChem(FileIOCalculator):
         for i, line in enumerate(lines):
             if line.find('ENERGY GRADIENTS') >= 0:
                 gradients = []
-                for j in range(i + 4, i + 4 + len(self.state)):
+                for j in range(i + 4, i + 4 + len(self.atoms)):
                     word = lines[j].split()
                     gradients.append([float(word[k]) for k in range(5, 8)])
-                    
+
         self.results['forces'] = -np.array(gradients) * Hartree / Bohr
 
     def get_eigenvalues(self, kpt=0, spin=0):

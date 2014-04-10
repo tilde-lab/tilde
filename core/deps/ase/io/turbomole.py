@@ -131,7 +131,7 @@ def read_turbomole_gradient(filename='gradient', index=-1):
                 break
 
         # calculator
-        calc = SinglePointCalculator(energy, forces, None, None, atoms)
+        calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
         atoms.set_calculator(calc)
 
         # save frame
@@ -152,38 +152,29 @@ def write_turbomole(filename, atoms):
 
     if isinstance(filename, str):
         f = open(filename, 'w')
-    else: # Assume it's a 'file-like object'
+    else:  # Assume it's a 'file-like object'
         f = filename
 
     coord = atoms.get_positions()
     symbols = atoms.get_chemical_symbols()
-    printfixed = False
 
+    fix_index = []
     if atoms.constraints:
         for constr in atoms.constraints:
             if isinstance(constr, FixAtoms):
-                fix_index=constr.index
-                printfixed=True
-    #print sflags
-        
-    if (printfixed):
-        fix_str=[]
-        for i in fix_index:
-            if i == 1:
-                fix_str.append("f")
-            else:
-                fix_str.append(" ")
+                fix_index.extend(constr.index)
+    fix_index = np.unique(fix_index)
 
+    fix_str = []
+    for i in range(len(atoms)):
+        if i in fix_index:
+            fix_str.append('f')
+        else:
+            fix_str.append('')
 
-    f.write("$coord\n")
-    if (printfixed):
-        for (x, y, z), s, fix in zip(coord,symbols,fix_str):
-            f.write('%20.14f  %20.14f  %20.14f      %2s  %2s \n' 
-                    % (x/Bohr, y/Bohr, z/Bohr, s.lower(), fix))
+    f.write('$coord\n')
+    for (x, y, z), s, fix in zip(coord, symbols, fix_str):
+        f.write('%20.14f  %20.14f  %20.14f      %2s  %2s \n'
+                % (x / Bohr, y / Bohr, z / Bohr, s.lower(), fix))
 
-    else:
-        for (x, y, z), s in zip(coord,symbols):
-            f.write('%20.14f  %20.14f  %20.14f      %2s \n' 
-                    % (x/Bohr, y/Bohr, z/Bohr, s.lower()))
-    f.write("$end\n")
-    
+    f.write('$end\n')

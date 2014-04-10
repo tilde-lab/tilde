@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from ase.visualize.vtk import requirevtk
 
 requirevtk()

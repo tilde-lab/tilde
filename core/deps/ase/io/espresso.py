@@ -4,7 +4,7 @@ for typical output of input files made with ASE -- that is, ibrav=0."""
 import numpy as np
 from ase.atoms import Atoms, Atom
 from ase import units
-from ase.calculators.singlepoint import SinglePointDFTCalculator
+from ase.calculators.singlepoint import SinglePointCalculator
 
 
 def read_espresso_out(fileobj, index):
@@ -104,8 +104,7 @@ def make_atoms(index, lines, key, cell):
         atom_number = int(words[1]) - 1
         forces[atom_number] = (fx, fy, fz)
     forces *= units.Ry / units.Bohr
-    calc = SinglePointDFTCalculator(energy, forces, None, None, atoms,
-                                    None)
+    calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
     atoms.set_calculator(calc)
     return atoms
 

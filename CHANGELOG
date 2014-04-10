@@ -1,10 +1,11 @@
 0.2.6
 bugfixes and minor enhancements in code structure and UI
 fixed bugs with tilting calculation (adopted to ASE), added tests
+updated ASE to 3.8.1
 
 0.2.4
 data hierarchy is now outside the code
-switched to spglib for symmetry
+switched to spglib (1.5.2) for symmetry
 added database pragma containing schema version
 
 0.2.3

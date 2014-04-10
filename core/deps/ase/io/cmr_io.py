@@ -3,6 +3,7 @@ from ase.atoms import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.data import atomic_numbers
 
+
 def get_atoms(cmr_data):
     if type(cmr_data)==str:
         raise RuntimeError('cmr db-file: the specified cmr group file does not contain any images, only references.\n'+
@@ -37,8 +38,8 @@ def get_atoms(cmr_data):
     else:
         magmoms = None
 
-    atoms.calc = SinglePointCalculator(energy, forces, None, magmoms,
-                                           atoms)
+    atoms.calc = SinglePointCalculator(atoms, energy=energy, forces=forces,
+                                       magmoms=magmoms)
     return atoms
 
 def read_db(filename, index):

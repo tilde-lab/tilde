@@ -160,8 +160,7 @@ def read_xsf(fileobj, index=-1, read_data=False):
         image = Atoms(numbers, positions, cell=cell, pbc=pbc)
 
         if forces is not None:
-            image.set_calculator(SinglePointCalculator(None, forces, None,
-                                                       None, image))
+            image.set_calculator(SinglePointCalculator(image, forces=forces))
         images.append(image)
 
     if read_data:

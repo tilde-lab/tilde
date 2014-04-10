@@ -1,10 +1,12 @@
 import os
 
 from ase import Atoms, Atom
+from ase.io import write
 from ase.calculators.jacapo import Jacapo
 
 atoms = Atoms([Atom('H',[0,0,0])],
-            cell=(2,2,2))
+              cell=(2,2,2),
+              pbc=True)
 
 calc = Jacapo('Jacapo-test.nc',
               pw=200,
@@ -18,4 +20,5 @@ calc = Jacapo('Jacapo-test.nc',
 atoms.set_calculator(calc)
 
 print atoms.get_potential_energy()
-os.system('rm -f Jacapo-test.nc Jacapo-test.txt')
+write('Jacapo-test.traj', atoms)
+os.system('rm -f Jacapo-test.nc Jacapo-test.txt Jacapo-test.traj')
