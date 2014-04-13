@@ -63,6 +63,8 @@ parser.add_argument("-d", dest="datamining", action="store", help="query on data
 
 args = parser.parse_args()
 
+if settings['demo_regime']: print "\nRestricted mode (demo_regime): on\n"
+
 # GUI:
 # run GUI service daemon if no other commands are given
 
