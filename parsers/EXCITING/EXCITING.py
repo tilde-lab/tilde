@@ -84,7 +84,7 @@ class INFOOUT(Output):
                     n += 1
                     if 'atomic positions (' in self.data[n]:
                         if not self.cartesian:
-                            if 'artesian' in self.data[n]: self.cartesian = True
+                            if not 'lattice' in self.data[n]: self.cartesian = True
                         while 1:
                             n += 1
                             a = self.data[n].split()
@@ -112,10 +112,10 @@ class INFOOUT(Output):
                 self.method['k'] = "x".join(line.split(":")[-1].split())
                 
             elif 'Smallest muffin-tin radius times maximum |G+k|' in line: # Lithium
-                self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
+                self.method['tol'] = float(line.split(":")[-1].strip())
                 
             elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
-                self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
+                self.method['tol'] = float(line.split(":")[-1].strip())
                 
             elif 'orrelation type ' in line:
                 
