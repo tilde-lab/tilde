@@ -38,7 +38,9 @@ class INFOOUT(Output):
         if os.path.basename(file) == 'INFO.OUT': self.INITIAL_CALC = True
         else: self.INITIAL_CALC = False
         
-        fracts_holder = [[]]
+        self.cartesian = False
+        
+        atoms_holder = [[]]
         cell = []
         forces, energies, energies_opt, optmethods = [], [], [], []
         
@@ -80,15 +82,17 @@ class INFOOUT(Output):
                 symb = line.split('(')[-1][:-2].encode('ascii')
                 while 1:                    
                     n += 1
-                    if 'atomic positions (lattice)' in self.data[n]:
+                    if 'atomic positions (' in self.data[n]:
+                        if not self.cartesian:
+                            if 'artesian' in self.data[n]: self.cartesian = True
                         while 1:
                             n += 1
                             a = self.data[n].split()
                             try: int(a[0])
                             except (ValueError, IndexError): break
                             else:
-                                fracts_holder[-1].append([symb])
-                                fracts_holder[-1][-1].extend( map(float, [a[2], a[3], a[4]]) )
+                                atoms_holder[-1].append([symb])
+                                atoms_holder[-1][-1].extend( map(float, [a[2], a[3], a[4]]) )
                         break
                     #elif 'muffin-tin radius' in self.data[n]:
                 
@@ -135,7 +139,7 @@ class INFOOUT(Output):
                 self.ncycles.append(len(self.convergence))              
                 
             elif '| Updated atomic positions ' in line: # Lithium
-                fracts_holder.append([])
+                atoms_holder.append([])
                 
                 if first_cycle_lithium:
                     # First cycle convergence statuses
@@ -144,14 +148,14 @@ class INFOOUT(Output):
             
             elif '| Optimization step ' in line: # Beryllium
                 self.info['finished'] = -1
-                fracts_holder.append([])
+                atoms_holder.append([])
                 optmethods.append(line.split('method =')[-1][:-2])
                 while 1:
                     n += 1
                     
                     try: self.data[n]
                     except IndexError:
-                        fracts_holder.pop()
+                        atoms_holder.pop()
                         optmethods.pop()
                         break
                     
@@ -168,8 +172,8 @@ class INFOOUT(Output):
                             n += 1
                             if 'atom' in self.data[n]:
                                 a = self.data[n].split()
-                                fracts_holder[-1].append([a[2]])
-                                fracts_holder[-1][-1].extend( map(float, a[4:]) )
+                                atoms_holder[-1].append([a[2]])
+                                atoms_holder[-1][-1].extend( map(float, a[4:]) )
                             else: break
                         break
                         
@@ -193,7 +197,7 @@ class INFOOUT(Output):
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
         # EOF Main loop
         
-        if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
+        if not cell or not atoms_holder[-1]: raise RuntimeError("Structure not found!")
         
         if energies_opt: self.energy = energies_opt[-1]
         else:
@@ -210,13 +214,14 @@ class INFOOUT(Output):
                 self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
             
         # lattice is always the same
-        for structure in fracts_holder:
+        for structure in atoms_holder:
             symbols = []
             pos = []
             for a in structure:
                 symbols.append(a[0])
                 pos.append(a[1:])
-            self.structures.append(Atoms(symbols=symbols, cell=cell, scaled_positions=pos, pbc=True))
+            if self.cartesian: self.structures.append(Atoms(symbols=symbols, cell=cell, positions=pos, pbc=True))
+            else: self.structures.append(Atoms(symbols=symbols, cell=cell, scaled_positions=pos, pbc=True))
         
         # Check if convergence achieved right away from the first cycle and account that
         if opt_flag and len(self.structures) == 1:

@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v120314
+# v120414
 
 import os
 import sys
@@ -527,7 +527,8 @@ class CRYSTOUT(Output):
                     elif val[1] == 'Xx': val[3] = -float(val[3]) # this needs checking! TODO
                     else: raise RuntimeError('Unexpected atomic symbol: ' + val[1] )
                     charges.append(val[3])
-            self.structures[-1].set_initial_charges(charges)
+            try: self.structures[-1].set_initial_charges(charges)
+            except ValueError: self.warning('Number of atoms and found charges does not match!') # some issues with CRYSTAL03
         else: self.warning( 'No charges available!' )
         
         if atommagmoms is not None:
@@ -538,7 +539,8 @@ class CRYSTOUT(Output):
                     val = i.split()
                     val[3] = val[3][:6] # erroneous by stars
                     magmoms.append(float(val[3]))
-            self.structures[-1].set_initial_magnetic_moments(magmoms)
+            try: self.structures[-1].set_initial_magnetic_moments(magmoms)
+            except ValueError: self.warning('Number of atoms and found magmoms does not match!') # some issues with CRYSTAL03
         else: self.warning( 'No magmoms available!' )
 
     def get_input_and_version(self, inputdata):
@@ -721,7 +723,8 @@ class CRYSTOUT(Output):
         ps_sequence = ['W0', 'P0', 'P1', 'P2', 'P3', 'P4']
         ps_keywords = {'INPUT':None, 'HAYWLC':'Hay-Wadt large core', 'HAYWSC':'Hay-Wadt small core', 'BARTHE':'Durand-Barthelat', 'DURAND':'Durand-Barthelat'}
         if not self.info['input']:
-            raise RuntimeError( 'No basis set found!')
+            self.warning('No basis set found!')
+            return gbasis
 
         read = False
         read_pseud, read_bs = False, False
@@ -823,7 +826,8 @@ class CRYSTOUT(Output):
                 read_pseud, read_bs = True, False
 
         if not gbasis['bs']:
-            raise RuntimeError( 'No basis set found!')
+            self.warning('No basis set found!')
+            return gbasis
 
         return self.__correct_bs_ghost(gbasis)
 

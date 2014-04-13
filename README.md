@@ -45,19 +45,21 @@ Use the right menu at [GitHub](http://github.com/jam31/wwwtilda) to download / c
 
 ## Related projects
 
-Not only Tilde represents the community need for a new instrument in scientific data management and exchange. Other known related projects are:
+Not only Tilde represents the community need for a new instrument in scientific data management and exchange. Other known related projects are (in alphabetic order):
 
 - Accelrys Pipeline Pilot and Materials Studio, http://accelrys.com/products
+- ADMIRAL framework: Advanced Data-Mining for Improved Research And Learning (Trinity College, Dublin)
 - AFLOW framework and Aflowlib.org repository, http://www.aflowlib.org
 - AIDA (AiiDA): Automated Infrastructure and Database for Ab-initio design (Bosch LLC), http://www.cecam.org/workshop-4-717.html?presentation_id=9102
 - Blue Obelisk Data Repository (XSLT, XML), http://bodr.sourceforge.net
+- Catapp, http://www.slac.stanford.edu/~strabo/catapp
 - CCLib (Python), http://cclib.sf.net
 - CDF (Python), http://kitchingroup.cheme.cmu.edu/cdf
 - CMR (Python), https://wiki.fysik.dtu.dk/cmr
 - Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
 - cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net
 - ESTEST (Python, XQuery), http://estest.ucdavis.edu
-- J-ICE online viewer (based on Jmol, Java), http://j-ice.sourceforge.net
+- J-ICE (based on Jmol, Java), http://j-ice.sourceforge.net
 - Materials Project (Python), http://www.materialsproject.org
 - PAULING FILE world largest database for inorganic compounds, http://paulingfile.com
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
