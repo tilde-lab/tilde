@@ -290,7 +290,7 @@ class INFOOUT(Output):
             try:
                 inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
                 self.info['input'] = inp.toprettyxml(newl="", indent=" ")
-            except IOError: pass
+            except: pass
             
         # Phonons
         if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and self.INITIAL_CALC: # TODO: account all the dispacements
