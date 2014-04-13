@@ -130,7 +130,10 @@ class MinimaHopping:
                 atoms = io.read('qn%05i.traj' % (qncount - 1), index=-1)
                 self._previous_optimum = atoms.copy()
                 self._previous_energy = atoms.get_potential_energy()
-            atoms = io.read('qn%05i.traj' % qncount, index=-1)
+            if os.path.getsize('qn%05i.traj' % qncount) > 0:
+                atoms = io.read('qn%05i.traj' % qncount, index=-1)
+            else:
+                atoms = io.read('md%05i.traj' % qncount, index=-3)
             self._atoms.positions = atoms.get_positions()
             fmax = np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
             if fmax < self._fmax:
@@ -488,30 +491,34 @@ class MHPlot:
         f = open(os.path.join(self._rundirectory, self._logname), 'r')
         lines = f.read().splitlines()
         f.close()
+        step_almost_over = False
         step_over = False
         for line in lines:
-            if line[:24] == 'msg: Molecular dynamics:':
+            if line.startswith('msg: Molecular dynamics:'):
                 status = 'performing MD'
-            elif line[:18] == 'msg: Optimization:':
+            elif line.startswith('msg: Optimization:'):
                 status = 'performing QN'
-            elif line[:4] == 'ene:':
+            elif line.startswith('ene:'):
                 status = 'local optimum reached'
                 energy = floatornan(line.split()[1])
-            elif line[:26] == 'msg: Accepted new minimum.':
+            elif line.startswith('msg: Accepted new minimum.'):
                 status = 'accepted'
-                step_over = True
-            elif line[:36] == 'msg: Found previously found minimum.':
+                step_almost_over = True
+            elif line.startswith('msg: Found previously found minimum.'):
                 status = 'previously found minimum'
-                step_over = True
-            elif line[:27] == 'msg: Re-found last minimum.':
+                step_almost_over = True
+            elif line.startswith('msg: Re-found last minimum.'):
                 status = 'previous minimum'
-                step_over = True
-            elif line[:25] == 'msg: Rejected new minimum':
+                step_almost_over = True
+            elif line.startswith('msg: Rejected new minimum'):
                 status = 'rejected'
-                step_over = True
-            elif line[:5] == 'par: ':
+                step_almost_over = True
+            elif line.startswith('par: '):
                 temperature = floatornan(line.split()[1])
                 ediff = floatornan(line.split()[2])
+                if step_almost_over:
+                    step_over = True
+                    step_almost_over = False
             if step_over:
                 data.append([energy, status, temperature, ediff])
                 step_over = False
@@ -570,6 +577,7 @@ class MHPlot:
             self._plot_qn(step, line)
             self._plot_md(step, line)
         self._plot_parameters()
+        self._ax.set_xlim(self._ax.ax1.get_xlim())
 
     def _plot_energy(self, step, line):
         """Plots energy and annotation for acceptance."""
@@ -599,7 +607,12 @@ class MHPlot:
         for atoms in traj:
             energies.append(atoms.get_potential_energy())
         xi = step - 1 + .5
-        xf = xi + (step + 0.25 - xi) * len(energies) / (len(energies) - 2.)
+        if len(energies) > 2:
+            xf = xi + (step + 0.25 - xi) * len(energies) / (len(energies) - 2.)
+        else:
+            xf = step
+        if xf > (step + .75):
+            xf = step
         self._ax.plot(np.linspace(xi, xf, num=len(energies)), energies,
                       '-k')
 
@@ -623,10 +636,9 @@ class MHPlot:
         """Adds a plot of temperature and Ediff to the plot."""
         steps, Ts, ediffs = [], [], []
         for step, line in enumerate(self._data):
-            if step > 0:
-                steps.extend([step - 0.5, step + 0.5])
-                Ts.extend([line[2]] * 2)
-                ediffs.extend([line[3]] * 2)
+            steps.extend([step + 0.5, step + 1.5])
+            Ts.extend([line[2]] * 2)
+            ediffs.extend([line[3]] * 2)
         self._ax.tempax.plot(steps, Ts)
         self._ax.ediffax.plot(steps, ediffs)
 

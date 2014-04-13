@@ -1,4 +1,3 @@
-#/usr/bin/env python
 #PBS -l nodes=4:ppn=8
 #PBS -l walltime=13:00:00
 from ase.optimize import QuasiNewton

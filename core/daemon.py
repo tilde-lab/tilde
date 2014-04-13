@@ -4,7 +4,7 @@
 # (currently acting as a GUI service)
 # Provides a user interface for database management
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
-# v271113
+# v080414
 
 import os
 import sys
@@ -870,7 +870,7 @@ class UpdateServiceHandler(tornado.web.RequestHandler):
 if __name__ == "__main__":
     
     # check new version
-    if not settings['demo_regime'] and 'update_server' in settings:
+    if not settings['demo_regime']:
         updatemsg = ''
         try:
             updatemsg = urllib2.urlopen(settings['update_server'], timeout=2.5).read()

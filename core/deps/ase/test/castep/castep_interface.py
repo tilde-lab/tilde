@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """Simple shallow test of the CASTEP interface"""
 
 import os

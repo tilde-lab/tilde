@@ -1,5 +1,5 @@
 
-# determines organic molecules
+# determines organic molecules by content
 
 import os
 import sys
@@ -9,7 +9,6 @@ import sys
 __order__ = 30
 
 def classify(tilde_obj):
-    ''' classification of organic compounds by content '''
     if not 'C' in tilde_obj.info['elements'] or not 'H' in tilde_obj.info['elements']:
         return tilde_obj
     elif tilde_obj.structures[-1].periodicity in [2, 3]:

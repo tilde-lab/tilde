@@ -75,5 +75,5 @@ for image in images:
 
 if locals().get('display'):
     import os
-    error = os.system('ag mep.traj@-7:')
+    error = os.system('ase-gui mep.traj@-7:')
     assert error == 0

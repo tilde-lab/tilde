@@ -259,7 +259,7 @@ class Phonons(Displacement):
        
     Example:
 
-    >>> from ase.structure import bulk
+    >>> from ase.lattice import bulk
     >>> from ase.phonons import Phonons
     >>> from gpaw import GPAW, FermiDirac
     >>> atoms = bulk('Si', 'diamond', a=5.4)

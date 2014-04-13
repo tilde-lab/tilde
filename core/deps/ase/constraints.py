@@ -43,7 +43,10 @@ class FixConstraint:
         of the underlying atoms object for the assignment of
         multiplied constraints to work.
         """
-        raise NotImplementedError
+        msg = ("Repeat is not compatible with your atoms' constraints."
+               " Use atoms.set_constraint() before calling repeat to "
+               "remove your constraints.")
+        raise NotImplementedError(msg)
 
 
 class FixConstraintSingle(FixConstraint):
@@ -137,6 +140,14 @@ class FixAtoms(FixConstraint):
         if self.index.dtype == bool:
             return 'FixAtoms(mask=%s)' % ints2string(self.index.astype(int))
         return 'FixAtoms(indices=%s)' % ints2string(self.index)
+
+    def todict(self):
+        dct = {'__name__': 'ase.constraints.FixAtoms'}
+        if self.index.dtype == bool:
+            dct['mask'] = self.index
+        else:
+            dct['indices'] = self.index
+        return dct
 
     def repeat(self, m, n):
         i0 = 0
@@ -793,6 +804,7 @@ class Hookean(FixConstraint):
             self.indices = [a1, a2]
         elif len(a2) == 3:
             self._type = 'point'
+            self.index = a1
             self.origin = np.array(a2)
         elif len(a2) == 4:
             self._type = 'plane'

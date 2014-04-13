@@ -245,7 +245,9 @@ def read_aims_output(filename, index = -1):
                 f.append([float(inp[2]),float(inp[3]),float(inp[4])])
             if not found_aims_calculator:
                 e = images[-1].get_potential_energy()
-                images[-1].set_calculator(SinglePointCalculator(e,f,None,None,atoms))
+                images[-1].set_calculator(SinglePointCalculator(atoms,
+                                                                energy=e,
+                                                                forces=f))
             e = None
             f = None
         if "Total energy corrected" in line:
@@ -254,7 +256,7 @@ def read_aims_output(filename, index = -1):
                 atoms.set_cell(cell)
                 atoms.pbc = True
             if not found_aims_calculator:
-                atoms.set_calculator(SinglePointCalculator(e,None,None,None,atoms))
+                atoms.set_calculator(SinglePointCalculator(atoms, energy=e))
             if not molecular_dynamics: 
                 if len(fix):
                     atoms.set_constraint([FixAtoms(indices=fix)]+fix_cart)

@@ -12,7 +12,7 @@ elk_parameters = {
     }
 
 class ELK(FileIOCalculator):
-    command = 'elk'
+    command = 'elk > elk.out'
     implemented_properties = ['energy', 'forces']
 
     def __init__(self, restart=None, ignore_bad_restart_file=False,
@@ -92,7 +92,7 @@ class ELK(FileIOCalculator):
             vkloff = []  # is this below correct?
             for nk in mp:
                 if nk % 2 == 0:  # shift kpoint away from gamma point
-                    vkloff.append(0.5 / nk)
+                    vkloff.append(0.5)
                 else:
                     vkloff.append(0)
             inp['vkloff'] = vkloff
@@ -134,19 +134,23 @@ class ELK(FileIOCalculator):
         # atoms
         species = {}
         symbols = []
-        for a, (symbol, m) in enumerate(zip(atoms.get_chemical_symbols(), atoms.get_initial_magnetic_moments())):
+        for a, (symbol, m) in enumerate(
+            zip(atoms.get_chemical_symbols(),
+                atoms.get_initial_magnetic_moments())):
             if symbol in species:
                 species[symbol].append((a, m))
             else:
                 species[symbol] = [(a, m)]
                 symbols.append(symbol)
         fd.write('atoms\n%d\n' % len(species))
-        scaled = atoms.get_scaled_positions()
+        #scaled = atoms.get_scaled_positions(wrap=False)
+        scaled = np.linalg.solve(atoms.cell.T, atoms.positions.T).T
         for symbol in symbols:
             fd.write("'%s.in' : spfname\n" % symbol)
             fd.write('%d\n' % len(species[symbol]))
             for a, m in species[symbol]:
-                fd.write('%.14f %.14f %.14f 0.0 0.0 %.14f\n' % (tuple(scaled[a])+ (m,)))
+                fd.write('%.14f %.14f %.14f 0.0 0.0 %.14f\n' %
+                         (tuple(scaled[a])+ (m,)))
         # species
         species_path = self.parameters.get('species_dir')
         if species_path is None:
@@ -169,10 +173,10 @@ class ELK(FileIOCalculator):
                 raise ReadError
 
         # read state from elk.in because *.OUT do not provide enough digits!
-        self.state = read_elk(os.path.join(self.directory, 'elk.in'))
+        self.atoms = read_elk(os.path.join(self.directory, 'elk.in'))
         self.parameters = Parameters.read(os.path.join(self.directory,
                                                        'parameters.ase'))
-        self.initialize(self.state)
+        self.initialize(self.atoms)
         self.read_results()
 
     def read_results(self):
@@ -206,7 +210,7 @@ class ELK(FileIOCalculator):
 
     def read_forces(self):
         lines = open(self.out, 'r').readlines()
-        forces = np.zeros([len(self.state), 3])
+        forces = np.zeros([len(self.atoms), 3])
         forces = []
         atomnum = 0
         for line in lines:

@@ -293,8 +293,14 @@ class Vibrations:
         mode[self.indices] = (self.modes[n] * self.im).reshape((-1, 3))
         return mode
 
-    def write_mode(self, n, kT=units.kB * 300, nimages=30):
-        """Write mode to trajectory file."""
+    def write_mode(self, n=None, kT=units.kB * 300, nimages=30):
+        """Write mode number n to trajectory file. If n is not specified,
+        writes all non-zero modes."""
+        if n == None:
+            for index, energy in enumerate(self.get_energies()):
+                if abs(energy) > 1e-5:
+                    self.write_mode(n=index, kT=kT, nimages=nimages)
+            return
         mode = self.get_mode(n) * sqrt(kT / abs(self.hnu[n]))
         p = self.atoms.positions.copy()
         n %= 3 * len(self.indices)

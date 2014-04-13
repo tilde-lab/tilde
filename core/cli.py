@@ -5,12 +5,13 @@
 
 # PostgreSQL implementation
 
+# v130414
+
 import sys
 import os
 import subprocess
 import json
 import time
-import pprint
 
 starttime = time.time() # benchmarking
 
@@ -31,10 +32,11 @@ import psycopg2
 
 from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR
 from common import write_cif
-from symmetry import DEFAULT_ACCURACY
+from symmetry import SymmetryFinder
 from api import API
 
 from deps.ase.lattice.spacegroup.cell import cell_to_cellpar
+
 
 registered_modules = []
 for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../apps') ):
@@ -55,7 +57,7 @@ parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invok
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
-parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % DEFAULT_ACCURACY, type=float, metavar="N", nargs='?', const=None, default=None)
+parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-d", dest="datamining", action="store", help="query on data (experimental)", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 
@@ -206,10 +208,9 @@ for target in args.path:
         
         if args.info:
             found_topics = []
+            skip_topics = ['location', 'refinedcell', 'element#', 'nelem', 'natom', ]
             for n, i in enumerate(Tilde.hierarchy):
-                
-                if not 'source' in i: continue
-                
+                if i['cid'] > 1999 or i['source'] in skip_topics: continue # apps hierarchy
                 if '#' in i['source']:
                     n=0
                     while 1:
@@ -226,13 +227,11 @@ for target in args.path:
                     except KeyError:
                         if 'negative_tagging' in i: found_topics.append( [ i['category'], 'none' ] )
 
-            if calc.info['perf']: found_topics.append( ['parsing time, sc', calc.info['perf']] )
-
             j, out = 0, ''
             for t in found_topics:
                 #t = map(html2str, t)
-                out += "  " + t[0] + ': ' + ', '.join(t[1:])
-                out += "\t\t" if not j%2 else "\n"
+                out += "\t" + t[0] + ': ' + ', '.join(map(str, t[1:]))
+                out += "\t" if not j%2 else "\n"
                 j+=1
             output_lines += out[:-1] + "\n"
 
@@ -275,8 +274,7 @@ for target in args.path:
 
         if args.freqs:
             if not calc.phonons['modes']:
-                print task, 'has no phonons!'
-                continue
+                output_lines += 'no phonons'
             for bzpoint, frqset in calc.phonons['modes'].iteritems():
                 output_lines += "\tK-POINT: " + bzpoint + "\n"
                 compare = 0

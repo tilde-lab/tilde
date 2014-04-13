@@ -34,6 +34,7 @@ class Ebands():
                     return (bottom - lvb, homok == lumok)
                 else:
                     return (0.0, None)
+        raise ElectronStructureError("Unexpected data in band structure: no band above zero found!")
                     
     def todict(self):
         return {'abscissa': self.abscissa, 'ticks': self.ticks, 'stripes': self.stripes}

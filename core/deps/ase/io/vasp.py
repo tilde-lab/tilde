@@ -233,10 +233,10 @@ def read_vasp_out(filename='OUTCAR',index = -1):
 
     try:          # try to read constraints, first from CONTCAR, then from POSCAR
         constr = read_vasp('CONTCAR').constraints
-    except:
+    except Exception:
         try:
             constr = read_vasp('POSCAR').constraints
-        except:
+        except Exception:
             constr = None
 
     if isinstance(filename, str):
@@ -268,7 +268,8 @@ def read_vasp_out(filename='OUTCAR',index = -1):
             for ispecies in range(len(species)):
                 species_num += [int(temp[ispecies+4])]
                 natoms += species_num[-1]
-                for iatom in range(species_num[-1]): symbols += [species[ispecies]]
+                for iatom in range(species_num[-1]):
+                    symbols += [species[ispecies]]
         if 'direct lattice vectors' in line:
             cell = []
             for i in range(3):
@@ -278,8 +279,9 @@ def read_vasp_out(filename='OUTCAR',index = -1):
         if 'FREE ENERGIE OF THE ION-ELECTRON SYSTEM' in line:
             energy = float(data[n+4].split()[6])
             if ecount < poscount:
-                # reset energy for LAST set of atoms, not current one - VASP 5.11? and up
-                images[-1].calc.energy = energy
+                # reset energy for LAST set of atoms, not current one -
+                # VASP 5.11? and up
+                images[-1].calc.results['energy'] = energy
             ecount += 1
         if 'magnetization (x)' in line:
             magnetization = []
@@ -288,10 +290,13 @@ def read_vasp_out(filename='OUTCAR',index = -1):
         if 'POSITION          ' in line:
             forces = []
             for iatom in range(natoms):
-                temp    = data[n+2+iatom].split()
-                atoms  += Atom(symbols[iatom],[float(temp[0]),float(temp[1]),float(temp[2])])
+                temp = data[n+2+iatom].split()
+                atoms += Atom(symbols[iatom],
+                              [float(temp[0]), float(temp[1]), float(temp[2])])
                 forces += [[float(temp[3]),float(temp[4]),float(temp[5])]]
-                atoms.set_calculator(SinglePointCalculator(energy,forces,None,None,atoms))
+                atoms.set_calculator(SinglePointCalculator(atoms,
+                                                           energy=energy,
+                                                           forces=forces))
             images += [atoms]
             if len(magnetization) > 0:
                 images[-1].calc.magmoms = np.array(magnetization, float)

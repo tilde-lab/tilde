@@ -1099,8 +1099,8 @@ msgid ""
 "    <c>ans[-i]</c>:\tith last calculated result\n"
 "    <c>exec file</c>: executes commands listed in file\n"
 "    <c>cov[Z]</c>:(read only): covalent radius of atomic number Z\n"
-"    <c>gui</c>:\tadvanced: ag window python object\n"
-"    <c>img</c>:\tadvanced: ag images object\n"
+"    <c>gui</c>:\tadvanced: ase-gui window python object\n"
+"    <c>img</c>:\tadvanced: ase-gui images object\n"
 "    "
 msgstr ""
 "\n"
@@ -1140,8 +1140,8 @@ msgstr ""
 "    <c>ans[-i]</c>:\t最后第i个计算结果\n"
 "    <c>exec file</c>: 执行文件中列出的命令\n"
 "    <c>cov[Z]</c>:(仅仅读取): 原子数为Z的原子共价半径\n"
-"    <c>gui</c>:\t高级：ag 窗口 python 对象\n"
-"    <c>img</c>:\t高级： ag 图像 对象\n"
+"    <c>gui</c>:\t高级：ase-gui 窗口 python 对象\n"
+"    <c>img</c>:\t高级：ase-gui 图像 对象\n"
 "    "
 
 #: ../execute.py:67
@@ -1976,8 +1976,8 @@ msgid "Help for slice ..."
 msgstr "切片帮助"
 
 #: ../gui.py:1207
-msgid "AG INTERNAL ERROR: strange response in Save,"
-msgstr "AG内部错误：对保存命令的响应出错"
+msgid "ase-gui INTERNAL ERROR: strange response in Save,"
+msgstr "ase-gui内部错误：对保存命令的响应出错"
 
 #: ../gui.py:1226
 msgid "Unknown output format!"

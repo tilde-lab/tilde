@@ -1,5 +1,3 @@
-Library: spglib-1.4.1
-Author: Atsushi Togo
-Web: http://sourceforge.net/projects/spglib
-Packed by: Materials Project, Shyue Ping Ong
-Comment: In order for spglib to be compiled properly on most machines with openmp, src/symmetry.c was patched to remove the #include<omp.h> dependency and the setup.py does not contain compiler options to link openmp.
+Library: spglib-1.5.2
+Author: Atsushi Togo, http://github.com/atztogo/spglib
+Initially packed by: Shyue Ping Ong, Materials Project

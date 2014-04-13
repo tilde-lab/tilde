@@ -1205,8 +1205,8 @@ msgid ""
 "    <c>ans[-i]</c>:\tith last calculated result\n"
 "    <c>exec file</c>: executes commands listed in file\n"
 "    <c>cov[Z]</c>:(read only): covalent radius of atomic number Z\n"
-"    <c>gui</c>:\tadvanced: ag window python object\n"
-"    <c>img</c>:\tadvanced: ag images object\n"
+"    <c>gui</c>:\tadvanced: ase-gui window python object\n"
+"    <c>img</c>:\tadvanced: ase-gui images object\n"
 "    "
 msgstr ""
 "\n"
@@ -1246,8 +1246,8 @@ msgstr ""
 "    <c>ans[-i]</c>:\tith last calculated result\n"
 "    <c>exec file</c>: executes commands listed in file\n"
 "    <c>cov[Z]</c>:(read only): covalent radius of atomic number Z\n"
-"    <c>gui</c>:\tadvanced: ag window python object\n"
-"    <c>img</c>:\tadvanced: ag images object\n"
+"    <c>gui</c>:\tadvanced: ase-gui window python object\n"
+"    <c>img</c>:\tadvanced: ase-gui images object\n"
 "    "
 
 #: ../execute.py:67
@@ -2144,8 +2144,8 @@ msgid "Help for slice ..."
 msgstr "Help for slice ..."
 
 #: ../gui.py:1234
-msgid "AG INTERNAL ERROR: strange response in Save,"
-msgstr "AG INTERNAL ERROR: strange response in Save,"
+msgid "ase-gui INTERNAL ERROR: strange response in Save,"
+msgstr "ase-gui INTERNAL ERROR: strange response in Save,"
 
 #: ../gui.py:1253
 msgid "Unknown output format!"

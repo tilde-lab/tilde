@@ -184,7 +184,7 @@ def plot(runs, data,
         c = [d[r][k][failkey] for k in d[r].keys() if failkey in d[r][k]]
         stats['converged'].append(len([s for s in c if s is not None]))
     import matplotlib
-    matplotlib.use('Agg')
+    #matplotlib.use('Agg')
     from matplotlib import pylab, ticker
     num=1
     scale = [i for i in range(len(runs))]

@@ -578,9 +578,10 @@ class MinModeAtoms:
             if (hasattr(self.calc, 'calculation_required') \
                and not self.calc.calculation_required(self.atoms,
                ['energy', 'forces'])) or force_calculation:
-                calc = SinglePointCalculator( \
-                       self.atoms.get_potential_energy(), \
-                       self.atoms.get_forces(), None, None, self.atoms0)
+                calc = SinglePointCalculator(
+                    self.atoms0,
+                    energy=self.atoms.get_potential_energy(),
+                    forces=self.atoms.get_forces())
                 self.atoms0.set_calculator(calc)
 
     def initialize_eigenmodes(self, method=None, eigenmodes=None, \

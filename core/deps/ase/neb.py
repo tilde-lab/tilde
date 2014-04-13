@@ -228,11 +228,10 @@ class SingleCalculatorNEB(NEB):
             if calc is not None:
                 if not isinstance(calc, SinglePointCalculator):
                     self.images[i].set_calculator(
-                        SinglePointCalculator(image.get_potential_energy(),
-                                              image.get_forces(),
-                                              None,
-                                              None,
-                                              image))
+                        SinglePointCalculator(
+                            image,
+                            energy=image.get_potential_energy(),
+                            forces=image.get_forces()))
                 self.emax = min(self.emax, image.get_potential_energy())
 
         if all and self.calculators[0] is None:

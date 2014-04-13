@@ -74,7 +74,7 @@ def read_gaussian_out(filename, index=-1, quantity='atoms'):
         forces = None
 
     energy *= ase.units.Hartree  # Convert the energy from a.u. to eV
-    calc = SinglePointCalculator(energy, forces, None, None, atoms)
+    calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
     atoms.set_calculator(calc)
 
     if (quantity == 'energy'):

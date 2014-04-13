@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
+
 import numpy as np
+
 from ase.optimize.optimize import Optimizer
 from ase.utils.linesearch import LineSearch
+
 
 class LBFGS(Optimizer):
     """Limited memory BFGS optimizer.
@@ -13,15 +16,15 @@ class LBFGS(Optimizer):
 
     """
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
-                 maxstep=None, memory=100, damping = 1.0, alpha = 10.0,
+                 maxstep=None, memory=100, damping=1.0, alpha=70.0,
                  use_line_search=False):
         """
         Parameters:
 
         restart: string
-            Pickle file used to store vectors for updating the inverse of Hessian
-            matrix. If set, file with such a name will be searched and information
-            stored will be used, if the file exists.
+            Pickle file used to store vectors for updating the inverse of
+            Hessian matrix. If set, file with such a name will be searched
+            and information stored will be used, if the file exists.
 
         logfile: string
             Where should output go. None for no output, '-' for stdout.
@@ -40,7 +43,7 @@ class LBFGS(Optimizer):
 
         damping: float
             The calculated step is multiplied with this number before added to
-            the positions. 
+            the positions.
 
         alpha: float
             Initial guess for the Hessian (curvature of energy surface). A
@@ -54,7 +57,8 @@ class LBFGS(Optimizer):
         if maxstep is not None:
             if maxstep > 1.0:
                 raise ValueError('You are using a much too large value for ' +
-                                 'the maximum step size: %.1f Angstrom' % maxstep)
+                                 'the maximum step size: %.1f Angstrom' %
+                                 maxstep)
             self.maxstep = maxstep
         else:
             self.maxstep = 0.04
@@ -74,8 +78,8 @@ class LBFGS(Optimizer):
         self.iteration = 0
         self.s = []
         self.y = []
-        self.rho = [] # Store also rho, to avoid calculationg the dot product
-                      # again and again
+        self.rho = []  # Store also rho, to avoid calculationg the dot product
+                       # again and again
 
         self.r0 = None
         self.f0 = None
@@ -95,7 +99,6 @@ class LBFGS(Optimizer):
         Use the given forces, update the history and calculate the next step --
         then take it"""
         r = self.atoms.get_positions()
-        p0 = self.p
     
         self.update(r, f, self.r0, self.f0)
         
@@ -108,7 +111,7 @@ class LBFGS(Optimizer):
         a = np.empty((loopmax,), dtype=np.float64)
 
         ### The algorithm itself:
-        q = - f.reshape(-1) 
+        q = -f.reshape(-1)
         for i in range(loopmax - 1, -1, -1):
             a[i] = rho[i] * np.dot(s[i], q)
             q -= a[i] * y[i]
@@ -125,17 +128,17 @@ class LBFGS(Optimizer):
         if self.use_line_search == True:
             e = self.func(r)
             self.line_search(r, g, e)
-            dr = (self.alpha_k * self.p).reshape(len(self.atoms),-1)
+            dr = (self.alpha_k * self.p).reshape(len(self.atoms), -1)
         else:
             self.force_calls += 1
             self.function_calls += 1
             dr = self.determine_step(self.p) * self.damping
-        self.atoms.set_positions(r+dr)
+        self.atoms.set_positions(r + dr)
         
         self.iteration += 1
         self.r0 = r
         self.f0 = -g
-        self.dump((self.iteration, self.s, self.y, 
+        self.dump((self.iteration, self.s, self.y,
                    self.rho, self.r0, self.f0, self.e0, self.task))
 
     def determine_step(self, dr):
@@ -171,7 +174,6 @@ class LBFGS(Optimizer):
             self.s.pop(0)
             self.y.pop(0)
             self.rho.pop(0)
-
 
     def replay_trajectory(self, traj):
         """Initialize history from old trajectory."""
@@ -209,7 +211,7 @@ class LBFGS(Optimizer):
         self.p = self.p.ravel()
         p_size = np.sqrt((self.p **2).sum())
         if p_size <= np.sqrt(len(self.atoms) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(self.atoms)*1e-10))
+            self.p /= (p_size / np.sqrt(len(self.atoms) * 1e-10))
         g = g.ravel()
         r = r.ravel()
         ls = LineSearch()
@@ -218,11 +220,12 @@ class LBFGS(Optimizer):
                            maxstep=self.maxstep, c1=.23,
                            c2=.46, stpmax=50.)
         if self.alpha_k is None:
-            raise RuntimeError("LineSearch failed!")
+            raise RuntimeError('LineSearch failed!')
 
+            
 class LBFGSLineSearch(LBFGS):
-    """This optimizer uses the LBFGS algorithm, but does a line search that fulfills
-    the Wolff conditions.
+    """This optimizer uses the LBFGS algorithm, but does a line search that
+    fulfills the Wolff conditions.
     """
 
     def __init__(self, *args, **kwargs):
@@ -239,7 +242,7 @@ class LBFGSLineSearch(LBFGS):
 #    better than the old one.
 #    """
 #    def __init__(self, *args, **kwargs):
-#        self.dR = kwargs.pop('dR', 0.1)         
+#        self.dR = kwargs.pop('dR', 0.1)
 #        LBFGS.__init__(self, *args, **kwargs)
 #
 #    def update(self, r, f, r0, f0):
@@ -278,7 +281,7 @@ class LBFGSLineSearch(LBFGS):
 #        # Unit-vector along the search direction
 #        du = dr / np.sqrt(np.dot(dr.reshape(-1), dr.reshape(-1)))
 #
-#        # We keep the old step determination before we figure 
+#        # We keep the old step determination before we figure
 #        # out what is the best to do.
 #        maxstep = self.maxstep * np.sqrt(3 * len(self.atoms))
 #
@@ -296,12 +299,13 @@ class LBFGSLineSearch(LBFGS):
 #            #    RdR = self.sign(RdR) * maxstep
 #        else:
 #            Fp = (Fp1 + Fp2) * 0.5
-#            RdR = Fp / CR 
+#            RdR = Fp / CR
 #            if abs(RdR) > maxstep:
 #                RdR = np.sign(RdR) * maxstep
 #            else:
 #                RdR += self.dR * 0.5
 #        return du * RdR
+
 
 class HessLBFGS(LBFGS):
     """Backwards compatibiliyt class"""
@@ -310,6 +314,7 @@ class HessLBFGS(LBFGS):
             del kwargs['method']
         sys.stderr.write('Please use LBFGS instead of HessLBFGS!')
         LBFGS.__init__(self, *args, **kwargs)
+
 
 class LineLBFGS(LBFGSLineSearch):
     """Backwards compatibiliyt class"""

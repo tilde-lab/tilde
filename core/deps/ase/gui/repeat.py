@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import gtk
 from math import sqrt
 from gettext import gettext as _

@@ -1,5 +1,5 @@
 
-# tries to find vacancy defects
+# tries to find vacancy defects: detects vacant places of host atoms
 
 import os
 import sys
@@ -9,9 +9,7 @@ import fractions
 # hierarchy API: __order__ to apply classifier
 __order__ = 20
 
-def classify(tilde_obj):    
-    ''' detect vacant places of host atoms '''
-    
+def classify(tilde_obj):
     if len(tilde_obj.info['elements']) < 2: return tilde_obj
     elif tilde_obj.structures[-1].periodicity in [0, 1, 2]: return tilde_obj
     

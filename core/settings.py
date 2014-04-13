@@ -1,7 +1,7 @@
 
 # Tilde project: installation and actions to be always done
-
 # PostgreSQL implementation
+# v140414
 
 import sys
 import os
@@ -14,7 +14,7 @@ import installation
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.02'
+DB_SCHEMA_VERSION = '1.05'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_DB = 'default.db'
@@ -51,6 +51,7 @@ def write_settings(settings):
         f = open(DATA_DIR + os.sep + SETTINGS_FILE, 'w')
         f.writelines(json.dumps(settings, indent=0))
         f.close()
+        os.chmod(os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ), 0777) # to avoid (or create?) IO problems with multiple users
     except IOError:
         return False
     else:
@@ -161,7 +162,8 @@ if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ) ):
 try: settings
 except NameError:
     try: settings = json.loads( open( DATA_DIR + os.sep + SETTINGS_FILE ).read() )
-    except ValueError: raise RuntimeError('Your settings JSON seems to be bad-formatted, please, pay attention to commas and quotes!')
+    except ValueError: raise RuntimeError('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' seems to be bad-formatted, please, pay attention to commas and quotes!')
+    except IOError: raise RuntimeError('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' is not accessible!')
     DEFAULT_SETUP.update(settings)
     settings = DEFAULT_SETUP
     
@@ -189,3 +191,4 @@ if settings['demo_regime'] and settings['debug_regime']: settings['debug_regime'
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3: raise RuntimeError('Path skipping directive must not contain more than 3 symbols due to memory limits!')
 if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')): settings['local_dir'] = EXAMPLE_DIR
 if not settings['local_dir'].endswith(os.sep): settings['local_dir'] += os.sep
+if not 'http://' in settings['update_server']: raise RuntimeError('Directive update_server must be a valid url!')

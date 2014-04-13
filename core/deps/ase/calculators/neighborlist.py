@@ -77,8 +77,7 @@ class NeighborList:
                 n = 0
             N.append(n)
             
-        offsets = np.empty((len(atoms), 3), int)
-        (scaled0 - scaled).round(out=offsets)
+        offsets = (scaled0 - scaled).round().astype(int)
         positions0 = np.dot(scaled0, self.cell)
         natoms = len(atoms)
         indices = np.arange(natoms)

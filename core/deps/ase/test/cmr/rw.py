@@ -28,13 +28,13 @@ from ase.structure import molecule
 m1 = molecule('O2')
 m1.center(2.0)
 
-write("O2.db", images=m1)
+write("O2.cmr", images=m1)
 
 m1.set_calculator(EMT())
 e1 = m1.get_potential_energy()
 f1 = m1.get_forces()
 
-m2 = read("O2.db")
+m2 = read("O2.cmr")
 
 m2.set_calculator(EMT())
 e2 = m2.get_potential_energy()
@@ -45,6 +45,6 @@ assert abs(e1-e2) < 1.e-6, str(e1) + ' ' + str(e2)
 assert array_almost_equal(f1, f2, tol=1.e-6)
 
 # clean
-filename = "O2.db"
+filename = "O2.cmr"
 if os.path.exists(filename): os.unlink(filename)
 

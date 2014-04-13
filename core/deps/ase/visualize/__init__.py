@@ -5,7 +5,8 @@ from ase.io import write
 import ase.parallel as parallel
 from ase.old import OldASEListOfAtomsWrapper
 
-def view(atoms, data=None, viewer='ag', repeat=None, block=False):
+
+def view(atoms, data=None, viewer='ase-gui', repeat=None, block=False):
     # Ignore for parallel calculations:
     if parallel.size != 1:
         return
@@ -16,12 +17,12 @@ def view(atoms, data=None, viewer='ag', repeat=None, block=False):
 
     vwr = viewer.lower()
     
-    if vwr == 'ag':
+    if vwr == 'ase-gui':
         format = 'traj'
         if repeat is None:
-            command = 'ag'
+            command = 'ase-gui'
         else:
-            command = 'ag --repeat=%d,%d,%d' % tuple(repeat)
+            command = 'ase-gui --repeat=%d,%d,%d' % tuple(repeat)
             repeat = None
     elif vwr == 'vmd':
         format = 'cube'
@@ -58,7 +59,7 @@ def view(atoms, data=None, viewer='ag', repeat=None, block=False):
         os.system('%s %s' % (command, filename))
         os.remove(filename)
     else:
-        if os.name in ['ce', 'nt']: # Win
+        if os.name in ['ce', 'nt']:  # Win
             # XXX: how to make it non-blocking?
             os.system('%s %s' % (command, filename))
             os.remove(filename)

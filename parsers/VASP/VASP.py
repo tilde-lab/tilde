@@ -1,7 +1,7 @@
 
 # Tilde project: VASP XML parser
 # contains code from pymatgen iovasp module (author: Shyue Ping Ong)
-# v310114
+# v180314
 
 import os
 import sys
@@ -328,9 +328,10 @@ class XML_Output(Output):
         try: self.energy = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
         except KeyError: pass # for unphysical cases
         
+        self.info['framework'] = 'VASP'
         self.info['prog'] = 'VASP ' + self.vasp_version
         self.info['finished'] = self.finished
-        self.input = str(self.incar)
+        self.info['input'] = str(self.incar)
 
         # basis sets
         self.potcar_sequence = [s.split()[1] for s in self.potcar_symbols]

@@ -1013,6 +1013,12 @@ than density cutoff %i' % (pw, dw))
 
         log.debug('setting atoms to: %s' % str(atoms))
 
+        if False in atoms.pbc:
+            msg = ('Non-periodic boundary conditions encountered in one or'
+                   ' more dimensions. Dacapo only supports periodic boundary'
+                   ' conditions. Use atoms.set_pbc(True).')
+            raise NotImplementedError(msg)
+
         if hasattr(self, 'atoms') and self.atoms is not None:
             #return if the atoms are the same. no change needs to be made
             if self.atoms_are_equal(atoms):
@@ -3352,7 +3358,8 @@ s.recv(14)
 
         atoms = Atoms(symbols=symbols,
                       positions=pos,
-                      cell=cell)
+                      cell=cell,
+                      pbc=True)
 
         if 'AtomTags' in nc.variables:
             tags = nc.variables['AtomTags'][:]

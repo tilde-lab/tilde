@@ -1,5 +1,4 @@
 standard k-paths based on existing k-paths (?)
-cross-platform auto-compilation of C code
 handle electron bands and DOS and phonon bands and DOS fully
 correct defects handling in 2d
 provide a method to recreate symmetry-equivalent atoms (actual for WIEN2K)
@@ -7,3 +6,4 @@ make client code cleaner: plug in javascript MVC framework, templates, history d
 make core code cleaner
 make stress tests
 get rid of windows errors concerned with spaces in program path
+check, whether storing of refinedcell is needed

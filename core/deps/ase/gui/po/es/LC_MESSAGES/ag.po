@@ -1236,8 +1236,8 @@ msgid ""
 "    <c>ans[-i]</c>:\tith last calculated result\n"
 "    <c>exec file</c>: executes commands listed in file\n"
 "    <c>cov[Z]</c>:(read only): covalent radius of atomic number Z\n"
-"    <c>gui</c>:\tadvanced: ag window python object\n"
-"    <c>img</c>:\tadvanced: ag images object\n"
+"    <c>gui</c>:\tadvanced: ase-gui window python object\n"
+"    <c>img</c>:\tadvanced: ase-gui images object\n"
 "    "
 msgstr ""
 "\n"
@@ -2182,8 +2182,8 @@ msgid "Help for slice ..."
 msgstr "Ayuda para trozar ..."
 
 #: ../gui.py:1234
-msgid "AG INTERNAL ERROR: strange response in Save,"
-msgstr "ERROR INTERNO DE AG: respuesta extraña en guardar,"
+msgid "ase-gui INTERNAL ERROR: strange response in Save,"
+msgstr "ERROR INTERNO DE ase-gui: respuesta extraña en guardar,"
 
 #: ../gui.py:1253
 msgid "Unknown output format!"

@@ -3,14 +3,19 @@ from ase.atoms import Atom, Atoms
 from ase.calculators.singlepoint import SinglePointDFTCalculator
 from ase.calculators.singlepoint import SinglePointKPoint
 
+
 def read_gpaw_text(fileobj, index=-1):
     if isinstance(fileobj, str):
         fileobj = open(fileobj, 'rU')
 
+    notfound = [] 
     def index_startswith(lines, string):
+        if string in notfound:
+            raise ValueError
         for i, line in enumerate(lines):
             if line.startswith(string):
                 return i
+        notfound.append(string)
         raise ValueError
 
     lines = fileobj.readlines()
@@ -37,20 +42,40 @@ def read_gpaw_text(fileobj, index=-1):
         except ValueError:
             break
 
-        atoms = Atoms(cell=cell, pbc=pbc)
+        symbols = []
+        positions = []
         for line in lines[i + 1:]:
             words = line.split()
             if len(words) != 5:
                 break
             n, symbol, x, y, z = words
-            symbol = symbol.split('.')[0]
-            atoms.append(Atom(symbol, [float(x), float(y), float(z)]))
+            symbols.append(symbol.split('.')[0])
+            positions.append([float(x), float(y), float(z)])
+        if len(symbols):
+            atoms = Atoms(symbols=symbols, positions=positions, cell=cell, pbc=pbc)
+        else:
+            atoms = Atoms(cell=cell, pbc=pbc)
         lines = lines[i + 5:]
+        ene = { 
+            # key        position
+            'Kinetic:' : 1,
+            'Potential:' : 2,
+            'XC:' : 4,
+            }
         try:
             i = lines.index('-------------------------\n')
         except ValueError:
             e = None
         else:
+            for key in ene:
+                pos = ene[key]
+                ene[key] = None
+                line = lines[i + pos]
+                try:
+                    assert line.startswith(key)
+                    ene[key] = float(line.split()[-1])
+                except ValueError:
+                    pass
             line = lines[i + 9]
             assert line.startswith('Zero Kelvin:')
             e = float(line.split()[-1])
@@ -140,11 +165,11 @@ def read_gpaw_text(fileobj, index=-1):
             break
 
         if e is not None or f is not None:
-            calc = SinglePointDFTCalculator(e, f, None, magmoms, atoms, eFermi)
+            calc = SinglePointDFTCalculator(atoms, energy=e, forces=f,
+                                            dipole=dipole, magmoms=magmoms,
+                                            eFermi=eFermi)
             if kpts is not None:
                 calc.kpts = kpts
-            if dipole is not None:
-                calc.set_dipole_moment(dipole)
             atoms.set_calculator(calc)
         if q is not None and len(atoms) > 0:
             n = len(atoms)

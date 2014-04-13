@@ -3,7 +3,9 @@
 
 # PostgreSQL implementation
 
-__version__ = "0.2.4"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+# v130414
+
+__version__ = "0.2.6"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
                         # SYNCHRONIZE WITH root/VERSION
 import os
 import sys
@@ -14,10 +16,10 @@ import inspect
 import traceback
 import json
 
-from numpy import dot, array, cross
-from numpy.linalg import det, norm
+from numpy import dot, array
+from numpy.linalg import det
 
-from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, ModuleError, html_formula
+from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, html_formula
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
 
@@ -25,7 +27,6 @@ from settings import DEFAULT_SETUP, read_hierarchy
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
 from parsers import Output
-from core.deps.ase import Atoms
 from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
 from core.electron_structure import ElectronStructureError
 
@@ -128,6 +129,7 @@ class API:
         '''
         Cell wrappers
         for customizing the GUI data table
+        TODO : must coincide with hierarchy.xml!
         '''
         html_class = '' # for GUI javascript
         out = ''
@@ -135,40 +137,38 @@ class API:
         if 'cell_wrapper' in categ: # this bound type is currently defined by apps only
             out = categ['cell_wrapper'](obj)
         else:
-            if categ['cid'] in [1, 511, 521, 522]:
+            if categ['source'] in ['standard', 'adsorbent', 'termination']:
                 out = html_formula(obj['info'][ categ['source'] ]) if categ['source'] in obj['info'] else '&mdash;'
                 
-            elif categ['cid'] == 24:
+            elif categ['source'] == 'etype':
                 out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
                 
-            elif categ['cid'] == 25:
+            elif categ['source'] == 'bandgap':
                 html_class = ' class=_g'
                 out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
                 
-            elif categ['cid'] == 26:
+            elif categ['source'] == 'bandgaptype':
                 out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
-                
-            elif categ['cid'] == 1001:
+            
+            # pseudo-source (derivative determination)    
+            elif categ['source'] == 'natom':
                 out = "%3d" % len( obj['structures'][-1]['symbols'] )
                 
-            elif categ['cid'] == 1002:
+            elif categ['source'] == 'e':
                 html_class = ' class=_e'
                 out = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
                 
-            elif categ['cid'] == 1003:
+            elif categ['source'] == 'dims':
                 out = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
-                
-            elif categ['cid'] == 1005:
-                out = "<div class=tiny>%s</div>" % obj['info']['location']
-                
-            elif categ['cid'] == 1006:
+                               
+            elif categ['source'] == 'finished':
                 f = int(obj['info']['finished'])
                 if f > 0: out = 'yes'
                 elif f == 0: out = 'n/a'
                 elif f < 0: out = 'no'
             
             else:
-                out = obj['info'][ categ['source'] ] if 'source' in categ and categ['source'] in obj['info'] else '&mdash;'
+                out = obj['info'][ categ['source'] ] if categ['source'] in obj['info'] else '&mdash;'
         return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
 
     def reload(self, db_conn=None, settings=None):
@@ -335,52 +335,6 @@ class API:
 
         return (calc, error)
 
-    def postprocess(self, calc, with_module=None):
-        '''
-        Invokes module(s) API
-        NB: this may be run from outside
-        @returns apps_dict
-        '''
-        apps = {}
-        for appname, appclass in self.Apps.iteritems():
-            if with_module and with_module != appname: continue
-
-            run_permitted = False
-
-            # scope-conditions
-            if appclass['apptarget']:
-                for key in appclass['apptarget']:
-                    negative = False
-                    if appclass['apptarget'][key].startswith('!'):
-                        negative = True
-                        scope_prop = appclass['apptarget'][key][1:]
-                    else:
-                        scope_prop = appclass['apptarget'][key]
-
-                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
-                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
-                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
-                            run_permitted = True
-                        else:
-                            run_permitted = False
-                            break
-
-            else: run_permitted = True
-
-            # module code running
-            if run_permitted:
-                apps[appname] = {'error': None, 'data': None}
-                try: AppInstance = appclass['appmodule'](calc)
-                except ModuleError as e:
-                    apps[appname]['error'] = e.value
-                except:
-                    exc_type, exc_value, exc_tb = sys.exc_info()
-                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
-                else:
-                    try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
-                    except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
-        return apps
-
     def classify(self, calc, symprec=None):
         '''
         Invokes hierarchy API
@@ -396,20 +350,6 @@ class API:
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
             return (None, 'data do not satisfy the filter')
             
-        # account surface case (and vacuum creation method)
-        # TODO : replace with the more robust method!
-        cellpar = cell_to_cellpar( calc.structures[-1].cell ).tolist()
-        if cellpar[2] > 2 * cellpar[0] * cellpar[1]:
-            calc.method['technique'].update({'vacuum2d': int(round(cellpar[2]))})
-            for i in range(len(calc.structures)):
-                calc.structures[i].set_pbc((True, True, False))
-        
-        # extend ASE object with useful properties
-        for i in range(len(calc.structures)):
-            calc.structures[i].periodicity = sum(calc.structures[i].get_pbc())
-            calc.structures[i].dims = abs(det(calc.structures[i].cell))
-        calc.info['dims'] = calc.structures[-1].dims        
-
         # TODO (?)
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
@@ -459,7 +399,7 @@ class API:
                     
                     # CRYSTAL
                     if i=='anderson': calc.info['techs'].append(i)
-                    elif i=='fmixing':
+                    elif i=='fmixing': # note CRYSTAL14 default fmixing
                         if 0<calc.method['technique'][i]<=25:    calc.info['techs'].append(i + '<25%')
                         elif 25<calc.method['technique'][i]<=50: calc.info['techs'].append(i + ' 25-50%')
                         elif 50<calc.method['technique'][i]<=75: calc.info['techs'].append(i + ' 50-75%')
@@ -495,14 +435,17 @@ class API:
                         calc.info['techs'].append('spin-orbit coupling')
                     elif i=='empty_states':
                         calc.info['techs'].append('%s empty states' % calc.method['technique'][i])
-
+            
+            # ALL
             if 'vac' in calc.info['properties']:
                 if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
                 else: calc.info['techs'].append('vacancy defect: void space')
-
+            
+            # CRYSTAL
             if calc.method['perturbation']:
                 calc.info['techs'].append('perturbation: ' + calc.method['perturbation'])
-
+            
+            # ALL
             for n, i in enumerate(calc.info['techs']):
                 calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
 
@@ -518,8 +461,11 @@ class API:
         elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
         elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
         elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
+        
+        # properties determined by classifiers
         for k, v in calc.info['properties'].iteritems():
             calc.info[k] = v
+        del calc.info['properties']
 
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
@@ -543,7 +489,9 @@ class API:
                 calc.info['etype'] = 'conductor'
                 calc.info['bandgap'] = 0.0
             else:
-                gap, is_direct = calc.electrons['bands'].get_bandgap()                
+                try: gap, is_direct = calc.electrons['bands'].get_bandgap()
+                except ElectronStructureError as e:
+                    return (None, e.value)
                 calc.info['bandgap'] = round(gap, 2)
                 calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
                 if gap<=1.0: calc.info['etype'] = 'semiconductor'
@@ -569,9 +517,56 @@ class API:
 
         return (calc, error)
 
+    def postprocess(self, calc, with_module=None):
+        '''
+        Invokes module(s) API
+        NB: this may be run from outside
+        @returns apps_dict
+        '''
+        apps = {}
+        for appname, appclass in self.Apps.iteritems():
+            if with_module and with_module != appname: continue
+
+            run_permitted = False
+
+            # scope-conditions
+            if appclass['apptarget']:
+                for key in appclass['apptarget']:
+                    negative = False
+                    if appclass['apptarget'][key].startswith('!'):
+                        negative = True
+                        scope_prop = appclass['apptarget'][key][1:]
+                    else:
+                        scope_prop = appclass['apptarget'][key]
+
+                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
+                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
+                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
+                            run_permitted = True
+                        else:
+                            run_permitted = False
+                            break
+
+            else: run_permitted = True
+
+            # module code running
+            if run_permitted:
+                apps[appname] = {'error': None, 'data': None}
+                try: AppInstance = appclass['appmodule'](calc)
+                #except ModuleError as e:
+                #    apps[appname]['error'] = e.value
+                except:
+                    exc_type, exc_value, exc_tb = sys.exc_info()
+                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+                else:
+                    try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
+                    except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
+        return apps
+
     def _save_tags(self, for_checksum, tags_obj, update=False):
         '''
         Saves tags with checking
+        only those marked with *has_label* and having *source* values are considered
         @returns error
         '''
         tags = []
@@ -579,7 +574,7 @@ class API:
         for n, i in enumerate(self.hierarchy):
             found_topics = []
             
-            if not 'has_label' in i or not 'source' in i: continue
+            if not 'has_label' in i: continue
             
             if '#' in i['source']:
                 n=0
@@ -658,6 +653,9 @@ class API:
         # prepare structural data
         #calc.structures[-1].orig_cif = generate_cif( calc.structures[-1], symops=calc['symops'] )
         calc.structures = [ase2dict(ase_obj) for ase_obj in calc.structures]
+        
+        # TODO : BAD DESIGN
+        calc.info['refinedcell'] = json.dumps(ase2dict(calc.info['refinedcell']))
         
         # prepare electron data
         for i in ['dos', 'bands']: # projected?

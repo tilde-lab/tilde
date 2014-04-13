@@ -3,6 +3,7 @@ import os
 import platform
 import sys
 import unittest
+import subprocess
 from glob import glob
 
 import numpy as np
@@ -12,6 +13,14 @@ class NotAvailable(Exception):
     pass
 
 
+test_calculator_names = []
+
+
+def require(calcname):
+    if calcname not in test_calculator_names:
+        raise NotAvailable
+        
+        
 # Custom test case/suite for embedding unittests in the test scripts
 
 if sys.version_info < (2, 4, 0, 'final', 0):
@@ -54,7 +63,7 @@ class ScriptTestCase(unittest.TestCase):
             raise RuntimeError('Keyboard interrupt')
         except ImportError, ex:
             module = ex.args[0].split()[-1].split('.')[0]
-            if module in ['scipy', 'cmr', 'Scientific']:
+            if module in ['scipy', 'cmr', 'Scientific', 'lxml']:
                 sys.__stdout__.write('(skipped) ')
             else:
                 raise
@@ -79,6 +88,7 @@ class ScriptTestCase(unittest.TestCase):
 
 def test(verbosity=1, calculators=[],
          dir=None, display=True, stream=sys.stdout):
+    test_calculator_names.extend(calculators)
     disable_calculators([name for name in calc_names
                          if name not in calculators])
     ts = unittest.TestSuite()
@@ -147,6 +157,14 @@ def disable_calculators(names):
             pass
         else:
             cls.__init__ = __init__
+
+
+def cli(command, calculator_name=None):
+    if (calculator_name is not None and
+        calculator_name not in test_calculator_names):
+        return
+    error = subprocess.call(' '.join(command.split('\n')), shell=True)
+    assert error == 0
 
 
 class World:

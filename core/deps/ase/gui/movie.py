@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import gtk
 from gettext import gettext as _
 import gobject

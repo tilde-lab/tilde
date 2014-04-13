@@ -391,10 +391,15 @@ class Spacegroup(object):
                     kinds.append(kind)
         return np.array(sites), kinds
 
-    def symmetry_normalised_sites(self, scaled_positions):
+    def symmetry_normalised_sites(self, scaled_positions, 
+                                  map_to_unitcell=True):
         """Returns an array of same size as *scaled_positions*,
-        containing the corresponding symmetry-equivalent sites within
-        the unit cell of lowest indices.
+        containing the corresponding symmetry-equivalent sites of
+        lowest indices.
+
+        If *map_to_unitcell* is true, the returned positions are all
+        mapped into the unit cell, i.e. lattice translations are
+        included as symmetry operator.
 
         Example:
 
@@ -409,17 +414,22 @@ class Spacegroup(object):
         rot, trans = self.get_op()
         for i, pos in enumerate(scaled):
             sympos = np.dot(rot, pos) + trans
-            # Must be done twice, see the scaled_positions.py test
-            sympos %= 1.0
-            sympos %= 1.0
+            if map_to_unitcell:
+                # Must be done twice, see the scaled_positions.py test
+                sympos %= 1.0
+                sympos %= 1.0
             j = np.lexsort(sympos.T)[0]
             normalised[i,:] = sympos[j]
         return normalised
 
-    def unique_sites(self, scaled_positions, symprec=1e-3, output_mask=False):
+    def unique_sites(self, scaled_positions, symprec=1e-3, output_mask=False,
+                     map_to_unitcell=True):
         """Returns a subset of *scaled_positions* containing only the
         symmetry-unique positions.  If *output_mask* is True, a boolean
         array masking the subset is also returned.
+
+        If *map_to_unitcell* is true, all sites are first mapped into
+        the unit cell making e.g. [0, 0, 0] and [1, 0, 0] equivalent.
 
         Example:
 
@@ -433,7 +443,7 @@ class Spacegroup(object):
                [ 0.5,  0. ,  0. ]])
         """
         scaled = np.array(scaled_positions, ndmin=2)
-        symnorm = self.symmetry_normalised_sites(scaled)
+        symnorm = self.symmetry_normalised_sites(scaled, map_to_unitcell)
         perm = np.lexsort(symnorm.T)
         iperm = perm.argsort()
         xmask = np.abs(np.diff(symnorm[perm], axis=0)).max(axis=1) > symprec
@@ -495,7 +505,10 @@ def format_symbol(symbol):
     s = s[0].upper() + s[1:].lower()
     for c in s:
         if c.isalpha():
-            fixed.append(' ' + c + ' ')
+            if len(fixed) and fixed[-1] == '/':
+                fixed.append(c)
+            else:
+                fixed.append(' ' + c + ' ')
         elif c.isspace():
             fixed.append(' ')
         elif c.isdigit():
@@ -503,7 +516,7 @@ def format_symbol(symbol):
         elif c == '-':
             fixed.append(' ' + c)
         elif c == '/':
-            fixed.append(' ' + c)
+            fixed.append(c)
     s = ''.join(fixed).strip()
     return ' '.join(s.split())
 

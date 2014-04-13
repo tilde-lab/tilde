@@ -35,7 +35,12 @@ class Calculator:
         Check if the quantities in the *quantities* list have already
         been calculated for the atomic configuration *atoms*.  The
         quantities can be one or more of: 'energy', 'forces', 'stress',
-        and 'magmoms'."""
+        'charges' and 'magmoms'.
+        
+        This method is used to check if a quantity is available without
+        further calculations.  For this reason, calculators should 
+        react to unknown/unsupported quantities by returning True,
+        indicating that the quantity is *not* available."""
         return False
 
 

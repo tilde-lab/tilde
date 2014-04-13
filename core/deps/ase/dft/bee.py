@@ -14,43 +14,44 @@ class BEEF_Ensemble:
             else:
                 if isinstance(atoms, Atoms):
                     calc = atoms.get_calculator()
+                    self.atoms = atoms
                 else:
                     calc = atoms
+                    self.atoms = calc.atoms
                 xc = calc.get_xc_functional()
             self.calc = calc
             self.e = e
             self.contribs = contribs
             self.xc = xc
             self.done = False
-            if self.xc in ['BEEF-vdW', 'BEEF-1']:
+            if self.xc in ['BEEF-vdW', 'BEEF', 'BEEF-1', 'PBE']:
                 self.beef_type = 'beefvdw'
             elif self.xc == 'mBEEF':
                 self.beef_type = 'mbeef'
             else:
                 raise NotImplementedError('No ensemble for xc = %s' % self.xc)
 
-    def get_ensemble_energies(self, size=2000, seed=0, safe=True):
+    def get_ensemble_energies(self, size=2000, seed=0):
         """Returns an array of ensemble total energies"""
-        self.size = size
         self.seed = seed
         if rank == 0:
             print '\n'
-            print '%s ensemble started' % self.xc
+            print '%s ensemble started' % self.beef_type
 
         if self.contribs is None:
             self.contribs = self.calc.get_nonselfconsistent_energies(self.beef_type)
-            self.e = self.calc.get_potential_energy()
+            self.e = self.calc.get_potential_energy(self.atoms)
         if self.beef_type == 'beefvdw':
             assert len(self.contribs) == 32
             coefs = self.get_beefvdw_ensemble_coefs(size, seed)
         elif self.beef_type == 'mbeef':
             assert len(self.contribs) == 64
-            coefs = self.get_mbeef_ensemble_coefs(size, seed, safe)
+            coefs = self.get_mbeef_ensemble_coefs(size, seed)
         self.de = np.dot(coefs, self.contribs)
         self.done = True
 
         if rank == 0:
-            print '%s ensemble finished' % self.xc
+            print '%s ensemble finished' % self.beef_type
             print '\n'
 
         return self.de
@@ -60,13 +61,12 @@ class BEEF_Ensemble:
         from pars_beefvdw import uiOmega as omega
         assert np.shape(omega) == (31, 31)
 
-        Wo, Vo = np.linalg.eig(omega)
-        generator = np.random.RandomState(seed)
+        W, V, generator = self.eigendecomposition(omega, seed)
         RandV = generator.randn(31, size)
 
-        for j in range(self.size):
+        for j in range(size):
             v = RandV[:,j]
-            coefs_i = (np.dot(np.dot(Vo, np.diag(np.sqrt(Wo))), v)[:])
+            coefs_i = (np.dot(np.dot(V, np.diag(np.sqrt(W))), v)[:])
             if j == 0:
                 ensemble_coefs = coefs_i
             else:
@@ -74,21 +74,20 @@ class BEEF_Ensemble:
         PBEc_ens = -ensemble_coefs[:, 30]
         return (np.vstack((ensemble_coefs.T, PBEc_ens))).T
 
-    def get_mbeef_ensemble_coefs(self, size=2000, seed=0, safe=True):
+    def get_mbeef_ensemble_coefs(self, size=2000, seed=0):
         """Pertubation coefficients of the mBEEF ensemble"""
-        if safe:
-            from coefs_mbeef import ens_coefs
-            assert np.shape(ens_coefs) == (2000,64)
-            return ens_coefs
-        else:
-            from pars_mbeef import uiOmega as omega
-            assert np.shape(omega) == (64, 64)
+        from pars_mbeef import uiOmega as omega
+        assert np.shape(omega) == (64, 64)
 
-            Wo, Vo = np.linalg.eig(omega)
-            generator = np.random.RandomState(seed)
-            mu, sigma = 0.0, 1.0
-            rand = np.array(generator.normal(mu, sigma, (len(Wo), size)))
-            return (np.sqrt(2.)*np.dot(np.dot(Vo, np.diag(np.sqrt(Wo))), rand)[:]).T
+        W, V, generator = self.eigendecomposition(omega, seed)
+        mu, sigma = 0.0, 1.0
+        rand = np.array(generator.normal(mu, sigma, (len(W), size)))
+        return (np.sqrt(2.)*np.dot(np.dot(V, np.diag(np.sqrt(W))), rand)[:]).T
+
+    def eigendecomposition(self, omega, seed=0):
+        u, s, v = np.linalg.svd(omega) # unsafe: W, V = np.linalg.eig(omega)
+        generator = np.random.RandomState(seed)
+        return s, v.T, generator
 
     def write(self, fname):
         """Write ensemble data file"""

@@ -18,10 +18,8 @@ University of Science and Technology (KAUST), Saudi Arabia.
 See accompanying license files for details.
 """
 import os
-import glob
-import numpy as np
 
-from ase.calculators.general import Calculator
+from ase.calculators.calculator import FileIOCalculator
 
 """
 Gaussian has two generic classes of keywords:  link0 and route.
@@ -34,55 +32,20 @@ For more information on the Link0 commands see:
 For more information on the route section keywords, see:
     http://www.gaussian.com/g_tech/g_ur/l_keywords09.htm
 """
-link0_str_keys = ['chk',
-                  'mem',
-                  'rwf',
-                  'int',
-                  'd2e',
-                  'lindaworkers',
-                  'kjob',
-                  'subst',
-                  'save',
-                  'nosave',
-                 ]
-
-link0_int_keys = ['nprocshared',
-                  'nproc',
-                 ]
-
-# Multiplicity isn't really a route keyword, but we will put it here anyways
-route_int_keys = ['multiplicity',
-                  'cachesize',
-                  'cbsextrapolate',
-                  'constants',
-                 ]
-
-route_str_keys = ['method',
-                  'functional',
-                  'basis',
-                  'maxdisk',
-                  'cphf',
-                  'density',
-                  'densityfit',
-                  'ept',
-                  'field',
-                  'geom',
-                  'guess',
-                  'gvb',
-                  'integral',
-                  'irc',
-                  'ircmax',
-                  'name',
-                  'nmr',
-                  'nodensityfit',
-                  'oniom',
-                  'output',
-                  'punch',
-                  'scf',
-                  'symmetry',
-                  'td',
-                  'units',
-                 ]
+link0_keys = [\
+              'chk',
+              'mem',
+              'rwf',
+              'int',
+              'd2e',
+              'lindaworkers',
+              'kjob',
+              'subst',
+              'save',
+              'nosave',
+              'nprocshared',
+              'nproc',
+             ]
 
 # This one is a little strange.  Gaussian has several keywords where you just
 # specify the keyword, but the keyword itself has several options.
@@ -106,152 +69,117 @@ route_self_keys = ['opt',
                    'volume',
                   ]
 
-route_float_keys = ['pressure',
-                    'scale',
-                    'temperature',
-                   ]
+route_keys = [\
+# int keys
+# Multiplicity and charge are not really route keywords, but we will
+# put them here anyways
+              'cachesize',
+              'cbsextrapolate',
+              'constants',
+# str keys
+              'functional',
+              'maxdisk',
+              'cphf',
+              'density',
+              'densityfit',
+              'ept',
+              'field',
+              'geom',
+              'guess',
+              'gvb',
+              'integral',
+              'irc',
+              'ircmax',
+              'name',
+              'nmr',
+              'nodensityfit',
+              'oniom',
+              'output',
+              'punch',
+              'scf',
+              'symmetry',
+              'td',
+              'units',
+# Float keys
+              'pressure',
+              'scale',
+              'temperature',
+             ]
 
-route_bool_keys = [
-                  ]
 
-
-class Gaussian(Calculator):
+class Gaussian(FileIOCalculator):
     """
     Gaussian calculator
     """
     name = 'Gaussian'
-    def __init__(self, label='ase', ioplist=list(), basisfile=None,
-                 directory=None, **kwargs):
-        Calculator.__init__(self)
 
-# Form a set of dictionaries for each input variable type
-        self.link0_int_params = dict()
-        self.link0_str_params = dict()
-        self.route_str_params = dict()
-        self.route_int_params = dict()
-        self.route_float_params = dict()
-        self.route_bool_params = dict()
-        self.route_self_params = dict()
+    implemented_properties = ['energy', 'forces', 'charges', 'dipole']
+    command = 'g09 < PREFIX.com > PREFIX.log'
 
-        for key in link0_int_keys:
-            self.link0_int_params[key] = None
-        for key in link0_str_keys:
-            self.link0_str_params[key] = None
-        for key in route_str_keys:
-            self.route_str_params[key] = None
-        for key in route_int_keys:
-            self.route_int_params[key] = None
-        for key in route_float_keys:
-            self.route_float_params[key] = None
-        for key in route_bool_keys:
-            self.route_bool_params[key] = None
-        for key in route_self_keys:
-            self.route_self_params[key] = None
+    def __init__(self, restart=None, ignore_bad_restart_file=False,
+                 label='g09', atoms=None, scratch=None, ioplist=list(),
+                 basisfile=None, **kwargs):
 
-        self.set(**kwargs)
+        """Constructs a Gaussian-calculator object.
 
-        self.atoms = None
-        self.positions = None
-        self.old_positions = None
-        self.old_link0_str_params = None
-        self.old_link0_int_params = None
-        self.old_route_str_params = None
-        self.old_route_int_params = None
-        self.old_route_float_params = None
-        self.old_route_bool_params = None
-        self.old_route_self_params = None
-        self.old_basisfile = None
-        self.old_label = None
-        self.old_ioplist = None
+        """
 
+        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                  label, atoms, **kwargs)
+
+        self.ioplist = ioplist
+        self.scratch = scratch
         self.basisfile = basisfile
-        self.label = label
-        self.ioplist = list(ioplist)[:]
-        self.directory = directory
-        self.multiplicity = 1
-        self.converged = False
 
     def set(self, **kwargs):
-        """Assigns values to dictionary keys"""
-        for key in kwargs:
-            if key in self.link0_str_params:
-                self.link0_str_params[key] = kwargs[key]
-            elif key in self.link0_int_params:
-                self.link0_int_params[key] = kwargs[key]
-            elif key in self.route_str_params:
-                self.route_str_params[key] = kwargs[key]
-            elif key in self.route_int_params:
-                self.route_int_params[key] = kwargs[key]
-            elif key in self.route_float_params:
-                self.route_float_params[key] = kwargs[key]
-            elif key in self.route_bool_params:
-                self.route_bool_params[key] = kwargs[key]
-            elif key in self.route_self_params:
-                self.route_self_params[key] = kwargs[key]
+        changed_parameters = FileIOCalculator.set(self, **kwargs)
+        if changed_parameters:
+            self.reset()
+        return changed_parameters
 
     def initialize(self, atoms):
-        if (self.route_int_params['multiplicity'] is None):
-            self.multiplicity = 1
-        else:
-            self.multiplicity = self.route_int_params['multiplicity']
-
 # Set some default behavior
-        if (self.route_str_params['method'] is None):
-            self.route_str_params['method'] = 'hf'
+        if ('multiplicity' not in self.parameters):
+            self.parameters['multiplicity'] = 1
 
-        if (self.route_str_params['basis'] is None):
-            self.route_str_params['basis'] = '6-31g*'
+        if ('charge' not in self.parameters):
+            self.parameters['charge'] = 0
 
-        if (self.route_self_params['force'] is None):
-            self.route_self_params['force'] = 'force'
+        if ('method' not in self.parameters):
+            self.parameters['method'] = 'hf'
+
+        if ('basis' not in self.parameters):
+            self.parameters['basis'] = '6-31g*'
+
+        if ('force' not in self.parameters):
+            self.parameters['force'] = 'force'
 
         self.converged = None
 
-    def write_input(self, filename, atoms):
+    def write_input(self, atoms, properties=None, system_changes=None):
         """Writes the input file"""
+        FileIOCalculator.write_input(self, atoms, properties, system_changes)
+        self.initialize(atoms)
+
+        filename = self.label + '.com'
         inputfile = open(filename, 'w')
 
-# First print the Link0 commands
-        for key, val in self.link0_str_params.items():
-            if val is not None:
-                inputfile.write('%%%s=%s\n' % (key, val))
+        link0 = str()
+        route = '#p %s/%s' % (self.parameters['method'],
+                              self.parameters['basis'])
 
-        for key, val in self.link0_int_params.items():
-            if val is not None:
-                inputfile.write('%%%s=%i\n' % (key, val))
-
-# Print the route commands.  By default we will always use "#p" to start.
-        route = '#p %s/%s' % (self.route_str_params['method'],
-                              self.route_str_params['basis'])
-
-# Add keywords and IOp options
-# For the 'self' keywords, there are several suboptions available, and if more
-# than 1 is given, then they are wrapped in ()'s and separated by a ','.
-        for key, val in self.route_self_params.items():
-            if val is not None:
-                if (val == key):
+        for key, val in self.parameters.items():
+            if key.lower() in link0_keys:
+                link0 += ('%%%s=%s\n' % (key, val))
+            elif key.lower() in route_self_keys:
+                if (val.lower() == key.lower()):
                     route += (' ' + val)
                 else:
                     if ',' in val:
                         route += ' %s(%s)' % (key, val)
                     else:
                         route += ' %s=%s' % (key, val)
-
-        for key, val in self.route_float_params.items():
-            if val is not None:
-                route += ' %s=%f' % (key, val)
-
-        for key, val in self.route_int_params.items():
-            if (val is not None) and (key is not 'multiplicity'):
-                route += ' %s=%i' % (key, val)
-
-        for key, val in self.route_str_params.items():
-            if (val is not None) and (key is not 'method') and \
-                (key is not 'basis'):
-                route += ' %s=%s' % (key, val)
-
-        for key, val in self.route_bool_params.items():
-            if val is not None:
+            elif key.lower() in route_keys:
                 route += ' %s=%s' % (key, val)
 
         if (self.ioplist):
@@ -262,12 +190,12 @@ class Gaussian(Calculator):
                     route += ','
             route += ')'
 
+        inputfile.write(link0)
         inputfile.write(route)
         inputfile.write(' \n\n')
         inputfile.write('Gaussian input prepared by ASE\n\n')
-
-        charge = sum(atoms.get_charges())
-        inputfile.write('%i %i\n' % (charge, self.multiplicity))
+        inputfile.write('%i %i\n' % (self.parameters['charge'],
+                                     self.parameters['multiplicity']))
 
         symbols = atoms.get_chemical_symbols()
         coordinates = atoms.get_positions()
@@ -279,7 +207,7 @@ class Gaussian(Calculator):
 
         inputfile.write('\n')
 
-        if (self.route_str_params['basis'].lower() == 'gen'):
+        if ('gen' in self.parameters['basis'].lower()):
             if (self.basisfile is None):
                 raise RuntimeError('Please set basisfile.')
             elif (not os.path.isfile(self.basisfile)):
@@ -301,75 +229,18 @@ class Gaussian(Calculator):
 
         inputfile.close()
 
-    def read_output(self, filename, quantity):
+    def read(self, label):
+        """Used to read the results of a previous calculation if restarting"""
+        FileIOCalculator.read(self, label)
+
+    def read_results(self):
         """Reads the output file using GaussianReader"""
         from ase.io.gaussian import read_gaussian_out
-        if (quantity == 'energy'):
-            return read_gaussian_out(filename, quantity='energy')
-        elif (quantity == 'forces'):
-            forces = read_gaussian_out(filename, quantity='forces')
-            return forces
-        elif (quantity == 'dipole'):
-            return read_gaussian_out(filename, quantity='dipole')
-        elif (quantity == 'version'):
-            return read_gaussian_out(filename, quantity='version')
+        filename = self.label + '.log'
 
-    def read_energy(self):
-        """Reads and returns the energy"""
-        energy = self.read_output(self.label + '.log', 'energy')
-        return [energy, energy]
-
-    def read_forces(self, atoms):
-        """Reads and returns the forces"""
-        forces = self.read_output(self.label + '.log', 'forces')
-        return forces
-
-    def read_dipole(self):
-        """Reads and returns the dipole"""
-        dipole = self.read_output(self.label + '.log', 'dipole')
-        return dipole
-
-    def read_fermi(self):
-        """No fermi energy, so return 0.0"""
-        return 0.0
-
-    def read_stress(self):
-        raise NotImplementedError
-
-    def update(self, atoms):
-        """Updates and does a check to see if a calculation is required"""
-        if self.calculation_required(atoms, ['energy']):
-            if (self.atoms is None or
-                self.atoms.positions.shape != atoms.positions.shape):
-                self.clean()
-
-            if (self.directory is not None):
-                curdir = os.getcwd()
-                if not os.path.exists(self.directory):
-                    os.makedirs(self.directory)
-                os.chdir(self.directory)
-                self.calculate(atoms)
-                os.chdir(curdir)
-            else:
-                self.calculate(atoms)
-
-    def calculation_required(self, atoms, quantities):
-        """Checks if a calculation is required"""
-        if (self.positions is None or
-           (self.atoms != atoms) or
-           (self.link0_str_params != self.old_link0_str_params) or
-           (self.link0_int_params != self.old_link0_int_params) or
-           (self.route_str_params != self.old_route_str_params) or
-           (self.route_int_params != self.old_route_int_params) or
-           (self.route_float_params != self.old_route_float_params) or
-           (self.route_bool_params != self.old_route_bool_params) or
-           (self.route_self_params != self.old_route_self_params) or
-           (self.basisfile != self.old_basisfile) or
-           (self.label != self.old_label) or
-           (self.ioplist != self.old_ioplist)):
-
-            return True
-        return False
+        self.results['energy'] = read_gaussian_out(filename, quantity='energy')
+        self.results['forces'] = read_gaussian_out(filename, quantity='forces')
+        self.results['dipole'] = read_gaussian_out(filename, quantity='dipole')
 
     def clean(self):
         """Cleans up from a previous run"""
@@ -384,34 +255,6 @@ class Gaussian(Calculator):
                     os.remove(f)
             except OSError:
                 pass
-
-    def get_command(self):
-        """Return command string if program installed, otherwise None.  """
-        command = None
-        if ('GAUSS_EXEDIR' in os.environ) \
-                and ('GAUSSIAN_COMMAND' in os.environ):
-            command = os.environ['GAUSSIAN_COMMAND']
-        return command
-
-    def run(self):
-        """Runs Gaussian"""
-
-        command = self.get_command()
-        if command is None:
-            raise RuntimeError('GAUSS_EXEDIR or GAUSSIAN_COMMAND not set')
-        exitcode = os.system('%s < %s > %s'
-                             % (command, self.label + '.com', self.label + '.log'))
-
-        if (exitcode != 0):
-            raise RuntimeError('Gaussian exited with error code' % exitcode)
-
-    def calculate(self, atoms):
-        """initializes calculation and runs Gaussian"""
-        self.initialize(atoms)
-        self.write_input(self.label + '.com', atoms)
-        self.run()
-        self.converged = self.read_convergence()
-        self.set_results(atoms)
 
     def read_convergence(self):
         """Determines if calculations converged"""
@@ -431,22 +274,6 @@ class Gaussian(Calculator):
                 converged = False
 
         return converged
-
-    def set_results(self, atoms):
-        """Sets results"""
-        self.read(atoms)
-        self.atoms = atoms.copy()
-        self.old_positions = atoms.get_positions().copy()
-        self.old_link0_str_params = self.link0_str_params.copy()
-        self.old_link0_int_params = self.link0_int_params.copy()
-        self.old_route_str_params = self.route_str_params.copy()
-        self.old_route_int_params = self.route_int_params.copy()
-        self.old_route_float_params = self.route_float_params.copy()
-        self.old_route_bool_params = self.route_bool_params.copy()
-        self.old_route_self_params = self.route_self_params.copy()
-        self.old_basisfile = self.basisfile
-        self.old_label = self.label
-        self.old_ioplist = self.ioplist[:]
 
     def get_version(self):
         return self.read_output(self.label + '.log', 'version')

@@ -984,8 +984,8 @@ msgid ""
 "    <c>ans[-i]</c>:\tith last calculated result\n"
 "    <c>exec file</c>: executes commands listed in file\n"
 "    <c>cov[Z]</c>:(read only): covalent radius of atomic number Z\n"
-"    <c>gui</c>:\tadvanced: ag window python object\n"
-"    <c>img</c>:\tadvanced: ag images object\n"
+"    <c>gui</c>:\tadvanced: ase-gui window python object\n"
+"    <c>img</c>:\tadvanced: ase-gui images object\n"
 "    "
 msgstr ""
 
@@ -1798,7 +1798,7 @@ msgid "Help for slice ..."
 msgstr ""
 
 #: ../gui.py:1207
-msgid "AG INTERNAL ERROR: strange response in Save,"
+msgid "ase-gui INTERNAL ERROR: strange response in Save,"
 msgstr ""
 
 #: ../gui.py:1226

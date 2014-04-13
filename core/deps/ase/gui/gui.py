@@ -54,6 +54,7 @@ from ase.gui.energyforces import EnergyForces
 from ase.gui.minimize import Minimize
 from ase.gui.scaling import HomogeneousDeformation
 from ase.gui.quickinfo import QuickInfo
+from ase.gui.save import SaveWindow
 from ase.version import version
 
 
@@ -199,7 +200,7 @@ class GUI(View, Status):
              self.open),
              ('New', gtk.STOCK_NEW, _('_New'), '<control>N',
              _('New ase.gui window'),
-             lambda widget: os.system('ag &')),
+             lambda widget: os.system('ase-gui &')),
             ('Save', gtk.STOCK_SAVE, _('_Save'), '<control>S',
              _('Save current file'),
              self.save),
@@ -1164,115 +1165,8 @@ class GUI(View, Status):
         self.set_colors()
         self.set_coordinates(self.images.nimages - 1, focus=True)
 
-    def save(self, action):
-        chooser = gtk.FileChooserDialog(
-            _('Save ...'), None, gtk.FILE_CHOOSER_ACTION_SAVE,
-            (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-             gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-        try:
-            fname = sys.argv[1]
-        except IndexError:
-            fname = "<<filename>>"
-        chooser.set_filename(fname)
-
-        # Add a file type filter
-        types = []
-        name_to_suffix = {}
-        for name, suffix in [(_('Automatic'), None),
-                             (_('XYZ file'), 'xyz'),
-                             (_('ASE trajectory'), 'traj'),
-                             (_('PDB file'), 'pdb'),
-                             (_('Gaussian cube file'), 'cube'),
-                             (_('Python script'), 'py'),
-                             (_('VNL file'), 'vnl'),
-                             (_('Portable Network Graphics'), 'png'),
-                             (_('Persistence of Vision'), 'pov'),
-                             (_('Encapsulated PostScript'), 'eps'),
-                             (_('FHI-aims geometry input'), 'in'),
-                             (_('CASTEP geom file'),'cell'),
-                             (_('VASP geometry input'), 'POSCAR'),
-                             (_('ASE bundle trajectory'), 'bundle'),
-                             (_('cif file'), 'cif'),
-                             ]:
-            if suffix is None:
-                name = _(name)
-            else:
-                name = '%s (%s)' % (_(name), suffix)
-            filt = gtk.FileFilter()
-            filt.set_name(name)
-            if suffix is None:
-                filt.add_pattern('*')
-            elif suffix == 'POSCAR':
-                filt.add_pattern('*POSCAR*')
-            else:
-                filt.add_pattern('*.'+suffix)
-            if suffix is not None:
-                types.append(suffix)
-                name_to_suffix[name] = suffix
-                
-            chooser.add_filter(filt)
-
-        if self.images.nimages > 1:
-            img_vbox = gtk.VBox()
-            button = gtk.CheckButton(_('Save current image only (#%d)') %
-                                     self.frame)
-            pack(img_vbox, button)
-            entry = gtk.Entry(10)
-            pack(img_vbox, [gtk.Label(_('Slice: ')), entry,
-                                        help(_('Help for slice ...'))])
-            entry.set_text('0:%d' % self.images.nimages)
-            img_vbox.show()
-            chooser.set_extra_widget(img_vbox)
-
-        while True:
-            # Loop until the user selects a proper file name, or cancels.
-            response = chooser.run()
-            if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
-                chooser.destroy()
-                return
-            elif response != gtk.RESPONSE_OK:
-                print >>sys.stderr, _("AG INTERNAL ERROR: strange response in Save,"), response
-                chooser.destroy()
-                return
-                
-            filename = chooser.get_filename()
-
-            suffix = os.path.splitext(filename)[1][1:]
-            if 'POSCAR' in filename or 'CONTCAR' in filename:
-                suffix = 'POSCAR'
-            if suffix == '':
-                # No suffix given.  If the user has chosen a special
-                # file type, use the corresponding suffix.
-                filt = chooser.get_filter().get_name()
-                suffix = name_to_suffix[filt]
-                filename = filename + '.' + suffix
-                
-            # XXX FIXME the window saying unknown output format
-            # cannot be closed
-            if suffix not in types:
-                oops(message=_('Unknown output format!'),
-                     message2=_('Use one of: %s') % ', '.join(types[1:]))
-                continue
-                
-            if self.images.nimages > 1:
-                if button.get_active():
-                    filename += '@%d' % self.frame
-                else:
-                    filename += '@' + entry.get_text()
-
-            break
-        
-        chooser.destroy()
-
-        bbox = np.empty(4)
-        size = np.array([self.width, self.height]) / self.scale
-        bbox[0:2] = np.dot(self.center, self.axes[:, :2]) - size / 2
-        bbox[2:] = bbox[:2] + size
-        suc = self.ui.get_widget('/MenuBar/ViewMenu/ShowUnitCell').get_active()
-        extra_args = {}
-        if suffix in ['eps', 'png', 'pov', 'png']:
-            extra_args['colors'] = self.get_colors(rgb=True)
-        self.images.write(filename, self.axes, show_unit_cell=suc, bbox=bbox, **extra_args)
+    def save(self, menuitem):
+        SaveWindow(self)
         
     def quick_info_window(self, menuitem):
         QuickInfo(self)

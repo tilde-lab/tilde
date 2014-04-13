@@ -1,6 +1,7 @@
 import sys
 import time
 import atexit
+import pickle
 
 import numpy as np
 
@@ -99,6 +100,26 @@ else:
 rank = world.rank
 size = world.size
 barrier = world.barrier
+
+
+def broadcast(obj, root=0, comm=world):
+    """Broadcast a Python object across an MPI communicator and return it."""
+    if comm.rank == root:
+        string = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
+        n = np.array(len(string), int)
+    else:
+        string = None
+        n = np.empty(1, int)
+    comm.broadcast(n, root)
+    if comm.rank == root:
+        string = np.fromstring(string, np.int8)
+    else:
+        string = np.zeros(n, np.int8)
+    comm.broadcast(string, root)
+    if comm.rank == root:
+        return obj
+    else:
+        return pickle.loads(string.tostring())
 
 
 def register_parallel_cleanup_function():

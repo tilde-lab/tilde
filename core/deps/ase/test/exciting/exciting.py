@@ -3,18 +3,11 @@ from ase import Atoms
 from ase.io import read, write
 from ase.calculators.exciting import Exciting
 from ase.units import Bohr, Hartree
-from ase.test import NotAvailable
 
-try:
-    import lxml
-except ImportError:
-    raise NotAvailable('This test need lxml module.')
 
 a = Atoms('N3O',
           [(0, 0, 0), (1, 0, 0), (0, 0, 1), (0.5, 0.5, 0.5)],
           pbc=True)
-
-raise NotAvailable('Problem with lxml module.')
 
 write('geo.exi', a)
 b = read('geo.exi')

@@ -5,6 +5,7 @@
 import sys
 import os
 import math
+#import sqlite3
 import json
 import time
 
@@ -30,6 +31,17 @@ if not os.path.exists(workpath): sys.exit('Invalid path!')'''
 db = psycopg2.connect("dbname=tilde user=eb")
 #db.row_factory = sqlite3.Row
 #db.text_factory = str
+
+'''try: workpath = sys.argv[1]
+except IndexError: sys.exit('No path defined!')
+workpath = os.path.abspath(workpath)
+if not os.path.exists(workpath): sys.exit('Invalid path!')'''
+
+
+'''db = sqlite3.connect(os.path.abspath(workpath))
+db.row_factory = sqlite3.Row
+db.text_factory = str'''
+
 cursor = db.cursor()
 
 # check DB_SCHEMA_VERSION
@@ -39,6 +51,7 @@ if incompatible:
 
 # ^^^ above was the obligatory formal code, the actual procedures of interest are below VVV
 
+#try: cursor.execute( 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=?)', ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
 try: cursor.execute( 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=%s)', ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
 except: sys.exit('Fatal error: ' + "%s" % sys.exc_info()[1])
 

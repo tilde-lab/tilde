@@ -188,7 +188,9 @@ def read_cfg(f):
     auxstrs   = [ ]
     for i in range(naux):
         s  = read_str_key(f, 'auxiliary[%1.1i]' % i, 'auxiliary[%2.2i]' % i)
-        auxstrs += [ s[:s.find('[')].strip() ]
+        if '[' in s:
+            s = s[:s.find('[')]
+        auxstrs.append(s.strip())
 
     spos     = np.zeros( [ nat, 3 ] )
     masses   = np.zeros( nat )

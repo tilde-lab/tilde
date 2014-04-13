@@ -89,21 +89,25 @@ class EMT(Calculator):
         self.nl = NeighborList([0.5 * self.rc + 0.25] * len(atoms),
                                self_interaction=False)
 
-    def calculate(self, atoms, properties, changes):
-        if 'numbers' in changes:
-            self.initialize(atoms)
+    def calculate(self, atoms=None, properties=['energy'],
+                  system_changes=['positions', 'numbers', 'cell',
+                                  'pbc', 'charges','magmoms']):
+        Calculator.calculate(self, atoms, properties, system_changes)
 
-        positions = atoms.positions
-        numbers = atoms.numbers
-        cell = atoms.cell
+        if 'numbers' in system_changes:
+            self.initialize(self.atoms)
+
+        positions = self.atoms.positions
+        numbers = self.atoms.numbers
+        cell = self.atoms.cell
         
-        self.nl.update(atoms)
+        self.nl.update(self.atoms)
         
         self.energy = 0.0
         self.sigma1[:] = 0.0
         self.forces[:] = 0.0
 
-        natoms = len(atoms)
+        natoms = len(self.atoms)
 
         for a1 in range(natoms):
             Z1 = numbers[a1]

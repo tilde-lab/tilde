@@ -1,14 +1,15 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v301113
+# v180314
 
 import os
 import sys
 import math
+from fractions import Fraction
 
 from xml.etree import ElementTree as ET
+import xml.dom.minidom
 
-from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.units import Bohr, Hartree
 from ase import Atoms
 
@@ -22,17 +23,24 @@ from core.electron_structure import Edos, Ebands
 from core.constants import Constants
 
 # INFO.OUT parser
-
 class INFOOUT(Output):
     def __init__(self, file, **kwargs):
-        Output.__init__(self, file)
-        self.data = open(file).readlines()
+        Output.__init__(self, file)        
         
         cur_folder = os.path.dirname(file)
         
-        self.info['finished'] = -1
+        self.info['framework'] = 'EXCITING'
+        self.info['finished'] = -1        
         
-        fracts_holder = [[]]
+        # dealing with replicas of INFO.OUT (e.g. in case of phonons) means
+        # we need to match corresponding EIGVAL.OUT, xmls etc. for them
+        # (not implemented yet)
+        if os.path.basename(file) == 'INFO.OUT': self.INITIAL_CALC = True
+        else: self.INITIAL_CALC = False
+        
+        self.cartesian = False
+        
+        atoms_holder = [[]]
         cell = []
         forces, energies, energies_opt, optmethods = [], [], [], []
         
@@ -46,6 +54,9 @@ class INFOOUT(Output):
         100:'PBE-GGA/PBE-GGA'
         }
         
+        self.data = open(file).readlines()
+        
+        # BOF Main loop
         for n in range(len(self.data)):
             line = self.data[n]
             if ' EXCITING ' in line:
@@ -71,15 +82,17 @@ class INFOOUT(Output):
                 symb = line.split('(')[-1][:-2].encode('ascii')
                 while 1:                    
                     n += 1
-                    if 'atomic positions (lattice)' in self.data[n]:
+                    if 'atomic positions (' in self.data[n]:
+                        if not self.cartesian:
+                            if 'artesian' in self.data[n]: self.cartesian = True
                         while 1:
                             n += 1
                             a = self.data[n].split()
                             try: int(a[0])
                             except (ValueError, IndexError): break
                             else:
-                                fracts_holder[-1].append([symb])
-                                fracts_holder[-1][-1].extend( map(float, [a[2], a[3], a[4]]) )
+                                atoms_holder[-1].append([symb])
+                                atoms_holder[-1][-1].extend( map(float, [a[2], a[3], a[4]]) )
                         break
                     #elif 'muffin-tin radius' in self.data[n]:
                 
@@ -104,12 +117,14 @@ class INFOOUT(Output):
             elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
                 self.method['tol'] = 'rkmax %s' % float(line.split(":")[-1].strip())
                 
-            elif 'orrelation type :' in line:
+            elif 'orrelation type ' in line:
                 
                 #if 'Correlation type :' in line:                   
                 #if 'Exchange-correlation type :' in line:                  
+                #if 'Exchange-correlation type' in line:
                 
-                h = int(line.split(":")[-1])
+                try: h = int(line.split(":")[-1])
+                except ValueError: pass # then this is not what we want
                 try: self.method['H'] = H_mapping[h]
                 except KeyError: self.method['H'] = h
                 
@@ -120,31 +135,27 @@ class INFOOUT(Output):
             elif 'Structure-optimization module started' in line:
                 opt_flag = True
                 # First cycle convergence statuses
-                for n in range(len(energies)):
-                    try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                    except IndexError: pass
+                self.convergence = self.compare_vals(energies)
                 self.ncycles.append(len(self.convergence))              
                 
             elif '| Updated atomic positions ' in line: # Lithium
-                fracts_holder.append([])
+                atoms_holder.append([])
                 
                 if first_cycle_lithium:
                     # First cycle convergence statuses
-                    for n in range(len(energies)):
-                        try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                        except IndexError: pass
+                    self.convergence = self.compare_vals(energies)
                     first_cycle_lithium = False             
             
             elif '| Optimization step ' in line: # Beryllium
                 self.info['finished'] = -1
-                fracts_holder.append([])
+                atoms_holder.append([])
                 optmethods.append(line.split('method =')[-1][:-2])
                 while 1:
                     n += 1
                     
                     try: self.data[n]
                     except IndexError:
-                        fracts_holder.pop()
+                        atoms_holder.pop()
                         optmethods.pop()
                         break
                     
@@ -161,8 +172,8 @@ class INFOOUT(Output):
                             n += 1
                             if 'atom' in self.data[n]:
                                 a = self.data[n].split()
-                                fracts_holder[-1].append([a[2]])
-                                fracts_holder[-1][-1].extend( map(float, a[4:]) )
+                                atoms_holder[-1].append([a[2]])
+                                atoms_holder[-1][-1].extend( map(float, a[4:]) )
                             else: break
                         break
                         
@@ -184,8 +195,9 @@ class INFOOUT(Output):
                 
             elif 'Number of empty states' in line:
                 self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
+        # EOF Main loop
         
-        if not cell or not fracts_holder[-1]: raise RuntimeError("Structure not found!")
+        if not cell or not atoms_holder[-1]: raise RuntimeError("Structure not found!")
         
         if energies_opt: self.energy = energies_opt[-1]
         else:
@@ -194,9 +206,7 @@ class INFOOUT(Output):
         
         if not self.convergence:
             # First cycle convergence statuses
-            for n in range(len(energies)):
-                try: self.convergence.append( int( math.floor( math.log( abs( energies[n] - energies[n+1] ), 10 ) ) )  )
-                except (IndexError, ValueError): pass
+            self.convergence = self.compare_vals(energies)
         
         if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Unexpected convergence data format!")
         else:
@@ -204,20 +214,19 @@ class INFOOUT(Output):
                 self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
             
         # lattice is always the same
-        for structure in fracts_holder:
+        for structure in atoms_holder:
             symbols = []
             pos = []
             for a in structure:
                 symbols.append(a[0])
                 pos.append(a[1:])
-            self.structures.append(Atoms(symbols=symbols, cell=cell, scaled_positions=pos, pbc=True))
+            if self.cartesian: self.structures.append(Atoms(symbols=symbols, cell=cell, positions=pos, pbc=True))
+            else: self.structures.append(Atoms(symbols=symbols, cell=cell, scaled_positions=pos, pbc=True))
         
         # Check if convergence achieved right away from the first cycle and account that
         if opt_flag and len(self.structures) == 1:
             self.structures.append(self.structures[-1])
             self.tresholds.append([0.0, 0.0, 0.0, 0.0, energies[-1]])
-        
-        # Forces
         
         # Warnings
         #try: w = map(lambda x: x.strip(), open(cur_folder + '/WARNINGS.OUT').readlines())
@@ -227,10 +236,9 @@ class INFOOUT(Output):
         #   # Warning(charge)
         #   self.warning( " ".join(w) )        
                    
-        # Electronic properties
-        
-        # look for full DOS in xml
-        '''if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
+        # Electronic properties: the best case, currently too good
+        '''# look for full DOS in xml
+        if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
             f = open(os.path.join(cur_folder, 'dos.xml'),'r')
             try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
             except: self.warning("Error in dos.xml file!")
@@ -243,10 +251,10 @@ class INFOOUT(Output):
             except: self.warning("Error in bandstructure.xml file!")
             finally: f.close()'''
         
-        # worst case: look for DOS (total) and raw bands        
-        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']):
+        # Electronic properties: the worst case, look for total DOS and raw bands in EIGVAL.OUT
+        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] and not self.electrons['bands']) and self.INITIAL_CALC: # TODO: account all the dispacements
             f = open(os.path.join(cur_folder, 'EIGVAL.OUT'),'r')
-            # why such a call? we need to spare RAM
+            # why such a call? we try to spare RAM
             # so let's look whether these variables are filled
             # and fill them only if needed
             try: kpts, columns = parse_eigvals(f, e_last)
@@ -276,9 +284,16 @@ class INFOOUT(Output):
             finally: f.close()
             
         if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")        
+        
+        # Input
+        if self.INITIAL_CALC:
+            try:
+                inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
+                self.info['input'] = inp.toprettyxml(newl="", indent=" ")
+            except IOError: pass
             
         # Phonons
-        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and os.path.basename(file) == 'INFO.OUT': # TODO
+        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and self.INITIAL_CALC: # TODO: account all the dispacements
             f = open(os.path.join(cur_folder, 'PHONON.OUT'), 'r')
             linelist = f.readlines()
             filelen = len(linelist)
@@ -287,7 +302,7 @@ class INFOOUT(Output):
             while n_line < filelen:
                 n_line += 1
                 modes, irreps, ph_eigvecs = [], [], []
-                k_coords = " ".join(map(lambda x: "%1.2f" % float(x), linelist[n_line].split()[1:4]))
+                k_coords = " ".join(  map(lambda x: "%s" % Fraction(x), linelist[n_line].split()[1:4])  ) # TODO : find weight of every symmetry k-point!
                 
                 # next line is empty
                 n_line += 2
@@ -316,16 +331,26 @@ class INFOOUT(Output):
                 self.phonons['irreps'][ k_coords ] = irreps
                 self.phonons['ph_eigvecs'][ k_coords ] = ph_eigvecs
 
-            f.close()
-        
+            f.close()            
+            
+            kset = self.phonons['modes'].keys()
+            if kset > 1:
+                for i in kset:
+                    self.phonons['ph_k_degeneracy'][ i ] = 1 # TODO : find weight of every symmetry k-point!
+    
+    def compare_vals(self, vals):
+        cmp = []
+        for n in range(len(vals)):
+            try: cmp.append( int( math.floor( math.log( abs( vals[n] - vals[n+1] ), 10 ) ) )  )
+            except (IndexError, ValueError): pass # beware log math domain error when the adjacent values are the same
+        return cmp
+    
     @staticmethod
     def fingerprints(test_string):
         if test_string.startswith('All units are atomic (Hartree, Bohr, etc.)') or test_string.startswith('| All units are atomic (Hartree, Bohr, etc.)'): return True
         else: return False
 
-
 # dos.xml parser
-
 def parse_dosxml(fp, symbols):
     dos_obj = {'x': [],}
     dos = []
@@ -375,7 +400,6 @@ def parse_dosxml(fp, symbols):
     return dos_obj
 
 # bandstructure.xml parser
-
 def parse_bandsxml(fp):
     band_obj = {'ticks': [], 'abscissa': [], 'stripes': [[],]}
     first_cyc = True
@@ -400,7 +424,6 @@ def parse_bandsxml(fp):
     return band_obj
 
 # EIGVAL.OUT parser
-
 def parse_eigvals(fp, e_last):
     kpts = []
     columns = []

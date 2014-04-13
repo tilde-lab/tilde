@@ -1,4 +1,4 @@
-from ase.dft import monkhorst_pack
+from ase.dft.kpoints import monkhorst_pack
 
 assert [0, 0, 0] in  monkhorst_pack((1, 3, 5)).tolist()
 assert [0, 0, 0] not in  monkhorst_pack((1, 3, 6)).tolist()

@@ -42,8 +42,7 @@ def read_dacapo_text(fileobj):
                     break
                 i2 -= 1
             energy = float(lines[i2].split()[column])
-            atoms.set_calculator(SinglePointCalculator(energy, None, None,
-                                                       None, atoms))
+            atoms.set_calculator(SinglePointCalculator(atoms, energy=energy))
 
     return atoms
 
@@ -79,7 +78,7 @@ def read_dacapo(filename):
     except KeyError: 
         energy = None 
         force = None 
-    calc = SinglePointCalculator(energy,force,None, None, atoms)  ### Fixme magmoms
+    calc = SinglePointCalculator(atoms, energy=energy, forces=force)  ### Fixme magmoms
     atoms.set_calculator(calc)
         
     return atoms

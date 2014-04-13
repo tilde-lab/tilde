@@ -6,6 +6,7 @@
 # guarantee implied provided you keep this notice in all copies.
 # *****END NOTICE************
 
+import time
 import numpy as np
 from numpy import atleast_1d, eye, mgrid, argmin, zeros, shape, empty, \
      squeeze, vectorize, asarray, absolute, sqrt, Inf, asfarray, isinf
@@ -81,7 +82,9 @@ class BFGSLineSearch(Optimizer):
     def step(self, f):
         atoms = self.atoms
         from ase.neb import NEB 
-        assert not isinstance(atoms, NEB) 
+        if isinstance(atoms, NEB):
+            raise TypeError('NEB calculations cannot use the BFGSLineSearch'
+                            ' optimizer. Use BFGS or another optimizer.')
         r = atoms.get_positions()
         r = r.reshape(-1)
         g = -f.reshape(-1) / self.alpha
@@ -183,6 +186,18 @@ class BFGSLineSearch(Optimizer):
             g0 = g.copy()
         self.r0 = r0
         self.g0 = g0
+
+    def log(self, forces):
+        fmax = sqrt((forces**2).sum(axis=1).max())
+        e = self.atoms.get_potential_energy()
+        T = time.localtime()
+        if self.logfile is not None:
+            name = self.__class__.__name__
+            self.logfile.write('%s: %3d[%3d]  %02d:%02d:%02d %15.6f %12.4f\n'
+                               % (name, self.nsteps, self.force_calls,
+                                  T[3], T[4], T[5], e, fmax))
+            self.logfile.flush()
+        
 
 def wrap_function(function, args):
     ncalls = [0]

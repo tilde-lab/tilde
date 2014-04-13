@@ -1,10 +1,9 @@
 import os
 import sys
+import time
 from math import sin, cos, radians, atan2, degrees
 
 import numpy as np
-
-from ase.parallel import world
 
 
 class DevNull:
@@ -26,7 +25,7 @@ class DevNull:
 devnull = DevNull()
 
 
-def opencew(filename, my_world=world):
+def opencew(filename, world=None):
     """Create and open filename exclusively for writing.
 
     If master cpu gets exclusive write access to filename, a file
@@ -34,7 +33,10 @@ def opencew(filename, my_world=world):
     slaves).  If the master cpu does not get write access, None is
     returned on all processors."""
 
-    if my_world.rank == 0:
+    if world is None:
+        from ase.parallel import world
+        
+    if world.rank == 0:
         try:
             fd = os.open(filename, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except OSError:
@@ -47,24 +49,30 @@ def opencew(filename, my_world=world):
         fd = devnull
 
     # Syncronize:
-    if my_world.sum(ok) == 0:
+    if world.sum(ok) == 0:
         return None
     else:
         return fd
 
 
 class Lock:
-    def __init__(self, name='lock'):
+    def __init__(self, name='lock', world=None):
         self.name = name
+        
+        if world is None:
+            from ase.parallel import world
+        self.world = world
 
     def acquire(self):
-        fd = None
-        while fd is None:
-            fd = opencew(self.name)
-
+        while True:
+            fd = opencew(self.name, self.world)
+            if fd is not None:
+                break
+            time.sleep(1.0)
+            
     def release(self):
-        world.barrier()
-        if world.rank == 0:
+        self.world.barrier()
+        if self.world.rank == 0:
             os.remove(self.name)
 
     def __enter__(self):
