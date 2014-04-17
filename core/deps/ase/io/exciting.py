@@ -143,6 +143,8 @@ def atoms2etree(images):
                 oldrmt = atoms.get_array('rmt')[aindex] / Bohr
                 if oldrmt > 0:
                     speciesnode.attrib['rmt'] = '%.4f' % oldrmt
+            if 'speciesfiles' in atoms.arrays:
+                speciesnode.attrib['speciesfile'] = atoms.get_array('speciesfiles')[aindex]
            
         atom = ET.SubElement(speciesnode, 'atom',
                              coord='%.14f %.14f %.14f' % tuple(scaled[aindex]))

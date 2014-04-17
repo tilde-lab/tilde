@@ -48,9 +48,9 @@ Use the right menu at [GitHub](http://github.com/jam31/wwwtilda) to download / c
 Not only Tilde represents the community need for a new instrument in scientific data management and exchange. Other known related projects are (in alphabetic order):
 
 - Accelrys Pipeline Pilot and Materials Studio, http://accelrys.com/products
-- ADMIRAL framework: Advanced Data-Mining for Improved Research And Learning (Trinity College, Dublin)
+- ADMIRAL framework: Advanced Data-Mining for Improved Research And Learning, Trinity College, Dublin
 - AFLOW framework and Aflowlib.org repository, http://www.aflowlib.org
-- AIDA (AiiDA): Automated Infrastructure and Database for Ab-initio design (Bosch LLC), http://www.cecam.org/workshop-4-717.html?presentation_id=9102
+- AIDA: Automated Infrastructure and Database for Ab-initio design, Bosch LLC, http://www.cecam.org/workshop-4-717.html?presentation_id=9102
 - Blue Obelisk Data Repository (XSLT, XML), http://bodr.sourceforge.net
 - Catapp, http://www.slac.stanford.edu/~strabo/catapp
 - CCLib (Python), http://cclib.sf.net
@@ -61,6 +61,7 @@ Not only Tilde represents the community need for a new instrument in scientific 
 - ESTEST (Python, XQuery), http://estest.ucdavis.edu
 - J-ICE (based on Jmol, Java), http://j-ice.sourceforge.net
 - Materials Project (Python), http://www.materialsproject.org
+- OQMD and qmpy (Python), http://oqmd.org
 - PAULING FILE world largest database for inorganic compounds, http://paulingfile.com
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
 - QMForge (Python), http://qmforge.sourceforge.net
