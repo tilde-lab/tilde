@@ -15,8 +15,10 @@ Unpack, avoiding spaces and non-latin characters in the path. Run with "tilde.ba
 
 ## Example
 
-``$ D:\wwwtilda\tilde.bat C:\work -r -t -v -a``
-``$ /home/user/wwwtilda/tilde.sh /home/user/work1 /home/work2 -r -t -v -a``
+``
+$ D:\wwwtilda\tilde.bat C:\work -r -t -v -a
+$ /home/user/wwwtilda/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
+``
 
 ## GUI hints
 
