@@ -77,8 +77,9 @@
             <li rel="table">table</li>
             <li rel="units">units</li>
             <li rel="scan" class="protected">scan</li>
-            <li rel="admin">manage</li>
+            <li rel="admin">start/stop</li>
             <li rel="dbs">DBs</li>
+            <li rel="general"class="protected">general</li>
         </ul>
 
         <div class="ipane" rel="cols">
@@ -95,7 +96,7 @@
             <div class="left" style="clear:none;width:60%;margin-left:25px">Max. number of items in table:</div>
             <div id="ipane-maxitems-holder" class="right" style="clear:none;width:30%;margin-right:25px"></div>
             
-            <div><br /><input type="checkbox" id="settings_objects_expand" checked="" /> <label for="settings_objects_expand">click by row opens window with more info</label></div>
+            <div><br /><input type="checkbox" id="settings_objects_expand" /> <label for="settings_objects_expand">click by row opens window with more info</label></div>
             
             <div class="clear"></div>
 
@@ -113,23 +114,50 @@
         <div class="ipane" rel="scan">
             <form class="_hotkeyable" method="post" action="/">
                 <br /><br />
-                <div><input type="checkbox" id="settings_skip_unfinished" checked="" /> <label for="settings_skip_unfinished">skip uncompleted (without ending tag)</label></div>
-                <div><input type="checkbox" id="settings_skip_if_path" checked="" /> <label for="settings_skip_if_path">skip if name starts/ends with any of:</label> <input type="text" value="" maxlength="3" id="settings_skip_if_path_mask" style="border:1px solid #06c;height:30px;width:10%;float:right;" /></div>
+                <div><input type="checkbox" id="settings_skip_unfinished" /> <label for="settings_skip_unfinished">skip uncompleted (without ending tag)</label></div>
+                <div><input type="checkbox" id="settings_skip_if_path" /> <label for="settings_skip_if_path">skip if name starts/ends with any of:</label> <input type="text" value="" maxlength="3" id="settings_skip_if_path_mask" style="border:1px solid #06c;height:30px;width:10%;float:right;" /></div>
                 <br /><br />
                 <input type="submit" style="display:none" />
             </form>
             <div class="btn settings-apply _hotkey" style="width:120px;margin:0 auto;">apply and save</div>
         </div>
 
-        <div class="ipane" rel="admin" class="protected">
+        <div class="ipane" rel="admin">
             <div id="ui-restart" class="btn" style="width:200px;margin:75px auto 0;">restart user interface</div>
-            <div id="core-restart" class="btn" style="width:200px;margin:25px auto 0;">restart program core</div>
+            <div id="core-restart" class="btn protected" style="width:200px;margin:25px auto 0;">restart program core</div>
             <div id="core-terminate" class="btn btn3 protected" style="width:200px;margin:25px auto;">stop program core</div>
         </div>
 
         <div class="ipane" rel="dbs">
             <div style="width:100%">
             </div>
+        </div>
+        
+        <div class="ipane" rel="general" class="protected">
+            <form class="_hotkeyable" method="post" action="/">
+                <br /><br />
+                <div><label for="settings_title">Repo title:</label> <input type="text" value="" id="settings_title" style="border:1px solid #06c;height:30px;width:75%;float:right;" /></div>
+                <div style="clear:none;float:left;width:30%;margin-left:28px;padding-top:32px;"><input type="checkbox" id="settings_debug" /> <label for="settings_debug">debug</label></div>
+                <div style="clear:none;float:right;width:40%;margin-right:28px;"><input type="text" maxlength="5" value="" id="settings_webport" style="border:1px solid #06c;height:30px;width:50px;float:right;" /><label for="settings_webport" style="float:right;">Web port:&nbsp;</label></div>            
+                <div class="clear"></div>
+                <div style="padding:15px;"><input type="checkbox" id="settings_demo" /> <label for="settings_demo">protected mode (edit <i>settings.json</i> to disable)</label></div>
+                <br />
+                <div style="text-align:center;">Database type:</div>
+                <div style="text-align:center;">
+                    <input type="radio" name="settings_db_type" id="settings_db_type_sqlite" /><label for="settings_db_type_sqlite"> internal (sqlite)</label>&nbsp;&nbsp;
+                    <input type="radio" name="settings_db_type" id="settings_db_type_postgres" /><label for="settings_db_type_postgres"> external (postgres)</label>
+                </div>
+                <div id="settings_postgres" style="display:none;padding:0px;">
+                    <div style="clear:none;float:left;width:45%;padding-top:15px;"><label for="settings_postgres_host">Host:</label> <input type="text" value="" id="settings_postgres_host" style="border:1px solid #06c;height:30px;width:70%;float:right;" /></div>
+                    <div style="clear:none;float:right;width:50%;padding-top:15px;"><label for="settings_postgres_port">Port:</label> <input type="text" value="" maxlength="5" id="settings_postgres_port" style="border:1px solid #06c;height:30px;width:50px;float:right;" /></div>
+                    <div style="clear:none;float:left;width:45%;padding-top:15px;"><label for="settings_postgres_user">User:</label> <input type="text" value="" id="settings_postgres_user" style="border:1px solid #06c;height:30px;width:70%;float:right;" /></div>
+                    <div style="clear:none;float:right;width:50%;padding-top:15px;"><label for="settings_postgres_password">Password:</label> <input type="text" value="" id="settings_postgres_password" style="border:1px solid #06c;height:30px;width:55%;float:right;" /></div>
+                    <div style="clear:none;float:left;width:45%;padding-top:15px;"><label for="settings_postgres_dbname">DB:</label> <input type="text" value="" id="settings_postgres_dbname" style="border:1px solid #06c;height:30px;width:70%;float:right;" /></div>
+                </div>
+                <div class="clear"></div>
+                <input type="submit" style="display:none" />
+            </form>
+            <div class="btn settings-apply _hotkey" style="width:120px;margin:0 auto;">apply and save</div>
         </div>
     </div>
     </div>

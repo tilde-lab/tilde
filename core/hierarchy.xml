@@ -39,7 +39,7 @@
     <entity cid="521" category="adsorbent" source="adsorbent" sort="31" has_column="1" has_label="1" descr=""/>
     <entity cid="522" category="surface termination" source="termination" sort="32" has_column="1" has_label="1" descr=""/>
     
-    <entity cid="550" category="refined cell" source="refinedcell" sort="10001" descr="For cell experiments"/>
+    <!--entity cid="550" category="refined cell" source="refinedcell" sort="10001" descr="For cell experiments"/-->
 
     <entity cid="501" category="basis set" source="bs#" sort="10000" has_label="1" descr=""/>    
     

@@ -2,10 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-
-# PostgreSQL implementation
-
-# v130414
+# v260414
 
 import sys
 import os
@@ -28,9 +25,16 @@ try:
 except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-import psycopg2
 
-from settings import settings, userdbchoice, check_db_version, repositories, DATA_DIR
+from settings import settings
+
+if settings['db']['type'] == 'sqlite':
+    try: import sqlite3
+    except ImportError: from pysqlite2 import dbapi2 as sqlite3
+elif settings['db']['type'] == 'postgres':
+    import psycopg2
+
+from settings import connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
 from common import write_cif
 from symmetry import SymmetryFinder
 from api import API
@@ -43,7 +47,7 @@ for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../app
     if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
         registered_modules.append(appname)
 
-parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version, argument_default=argparse.SUPPRESS)
+parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version+" (" + settings['db']['type'] + " backend)", argument_default=argparse.SUPPRESS)
 
 parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-u", dest="daemon", action="store", help="run GUI service (default)", nargs='?', const='shell', default=False, choices=['shell', 'noshell'])
@@ -65,8 +69,8 @@ args = parser.parse_args()
 
 if settings['demo_regime']: print "\nRestricted mode (demo_regime): on\n"
 
-# GUI:
-# run GUI service daemon if no other commands are given
+# GUI
+# WHEN: run GUI service daemon if no other commands are given
 
 if not args.path and not args.daemon and not args.datamining: #if not len(vars(args)):
     args.daemon = 'shell'
@@ -91,45 +95,53 @@ if not args.path and not args.datamining:
 
 if args.shortcut: args.recursive, args.convergence, args.info, args.terse = True, True, True, True
 
-# CLI:
-# if there are commands, run command-line text interface
+# CLI
+# WHEN: if there are particular commands, run command-line text interface
     
 db = None
 if args.add:
-    '''if args.add == 'DIALOG':
-        uc = userdbchoice(repositories) # NB. this spoils benchmarking
-    else:
-        uc = userdbchoice(repositories, choice=args.add) # NB. this spoils benchmarking
-
-    if not os.access(os.path.abspath(DATA_DIR + os.sep + uc), os.W_OK): sys.exit("Sorry, database file is write-protected!")
-    '''
     
-    db = psycopg2.connect("dbname=tilde user=eb")
-    #db.row_factory = sqlite3.Row
-    #db.text_factory = str
+    user_choice = None
+    
+    if settings['db']['type'] == 'sqlite':
+        if args.add == 'DIALOG':
+            user_choice = user_db_choice(repositories) # NB. this spoils benchmarking
+        else:
+            user_choice = user_db_choice(repositories, choice=args.add) # NB. this spoils benchmarking
+
+        if not os.access(os.path.abspath(DATA_DIR + os.sep + user_choice), os.W_OK): sys.exit("Sorry, database file is write-protected!")
+    
+    elif settings['db']['type'] == 'postgres':
+        pass    
+    
+    db = connect_database(settings, user_choice) # NB. at this stage DB connection is already checked
     
     # check DB_SCHEMA_VERSION
-    '''incompatible = check_db_version(db)
+    incompatible = check_db_version(db)
     if incompatible:
-        sys.exit('Sorry, database ' + DATA_DIR + os.sep + uc + ' is incompatible.')
+        if user_choice: uc = DATA_DIR + os.sep + user_choice # sqlite
+        else: uc = 'at server' # postgres
+        sys.exit('Sorry, database ' + uc + ' is incompatible.')
     else:
-        print "The database selected:", uc
-    '''
+        if user_choice: print "The database selected:", user_choice
     
 if args.datamining:
-    '''uc = userdbchoice(repositories, create_allowed=False) # NB. this spoils benchmarking'''
     
-    db = psycopg2.connect("dbname=tilde user=eb")
-    #db.row_factory = sqlite3.Row
-    #db.text_factory = str
+    user_choice = None
+    
+    if settings['db']['type'] == 'sqlite':
+        user_choice = user_db_choice(repositories, create_allowed=False) # NB. this spoils benchmarking
+    
+    db = connect_database(settings, user_choice) # NB. at this stage DB connection is already checked
     
     # check DB_SCHEMA_VERSION
-    '''incompatible = check_db_version(db)
+    incompatible = check_db_version(db)
     if incompatible:
-        sys.exit('Sorry, database ' + DATA_DIR + os.sep + uc + ' is incompatible.')
+        if user_choice: uc = DATA_DIR + os.sep + user_choice # sqlite
+        else: uc = 'at server' # postgres
+        sys.exit('Sorry, database ' + uc + ' is incompatible.')
     else:
-        print "The database selected:", uc
-    '''
+        if user_choice: print "The database selected:", user_choice
 
 Tilde = API(db_conn=db, settings=settings)
 
@@ -138,12 +150,12 @@ if args.path:
     else: finalized = 'NO'
     print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
 
+# PROCESSING THE CALCULATIONS IN THE DATABASE
+# (ONLY EXPERIMENTAL SUPPORT HERE, REFER TO MINERS IN TESTS FOLDER FOR FURTHER INFO)
 
 if args.datamining:
     N = 10
     cursor = db.cursor()
-
-    #args.datamining = 'SELECT info, energy, apps FROM results WHERE energy IN (SELECT energy FROM results WHERE energy != "" ORDER BY energy LIMIT '+str(N)+')'
     
     clause, statement = [], []
     input = args.datamining.split()
@@ -171,16 +183,15 @@ if args.datamining:
             result = result[:50]
             postmessage = "\n...\n%s more" % (L-50)        
         i=0
-        for row in result:            
-            #if i==0: out += "   ".join( row.keys() ) + "\n"
-            #for k in row.keys():
-            #    out += str(row[k]) + "   "
+        for row in result:
             out += str(row)
             out += "\n"
             i+=1
     print out + postmessage
     sys.exit()
 
+# PROCESSING THE CALCULATIONS AT THE TARGET PATHS IN FILE SYSTEM
+# (BASIC USAGE)
 
 for target in args.path:
     
@@ -231,7 +242,6 @@ for target in args.path:
 
             j, out = 0, ''
             for t in found_topics:
-                #t = map(html2str, t)
                 out += "\t" + t[0] + ': ' + ', '.join(map(str, t[1:]))
                 out += "\t" if not j%2 else "\n"
                 j+=1

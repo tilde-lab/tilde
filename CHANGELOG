@@ -1,3 +1,8 @@
+0.2.7
+support of two backend types: sqlite and postgres
+extended settings control (including backend switching) in GUI
+updated manual
+
 0.2.6
 bugfixes and minor enhancements in code structure and UI
 fixed bugs with tilting calculation (adopted to ASE), added tests

@@ -1,11 +1,8 @@
 
 # Tilde project: core
+# v260414
 
-# PostgreSQL implementation
-
-# v130414
-
-__version__ = "0.2.6"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+__version__ = "0.2.7"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
                         # SYNCHRONIZE WITH root/VERSION
 import os
 import sys
@@ -50,7 +47,7 @@ class API:
         # (3) its file name repeats the name of parser folder
         All_parsers, self.Parsers = {}, {}
         for parsername in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
-            if settings['demo_regime']: continue
+            if self.settings['demo_regime']: continue
             
             if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ): continue
             if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
@@ -58,7 +55,7 @@ class API:
             try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ).read() )
             except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
             
-            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not settings['debug_regime']: continue  
+            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']: continue
             
             All_parsers[parsername] = getattr(getattr(__import__('parsers.' + parsername + '.' + parsername), parsername), parsername) # all imported modules will be stored here
         
@@ -345,6 +342,7 @@ class API:
         
         calc.info['formula'] = self.formula( calc.structures[-1].get_chemical_symbols() )
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
+        if calc.info['input']: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
         
         # applying filter: todo
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
@@ -594,18 +592,25 @@ class API:
             for topic in found_topics:
                 if not topic: topic = 'none' # Warning! None-values spoil database with duplicate empty entries!
                 
-                try: cursor.execute( 'SELECT tid FROM topics WHERE categ = %s AND topic = CAST(%s AS TEXT)', (i['cid'], topic) )
-                except: return 'Fatal error: %s' % sys.exc_info()[1]
+                sql = 'SELECT tid FROM topics WHERE categ = %(ph)s AND topic = CAST(%(ph)s AS TEXT)' % { 'ph': self.settings['ph'] }
+                try: cursor.execute( sql, (i['cid'], topic) )
+                except: return 'DB error: %s' % sys.exc_info()[1]
                 tid = cursor.fetchone()
                 if tid: tid = tid[0]
                 else:
-                    try: cursor.execute( 'INSERT INTO topics (categ, topic) VALUES (%s, %s) RETURNING tid', (i['cid'], topic) )
-                    except: return 'Fatal error: %s' % sys.exc_info()[1]
-                    tid = cursor.fetchone()[0]
+                    if self.settings['db']['type'] == 'sqlite': sql = 'INSERT INTO topics (categ, topic) VALUES (?, ?)'
+                    elif self.settings['db']['type'] == 'postgres': sql = 'INSERT INTO topics (categ, topic) VALUES (%s, %s) RETURNING tid'
+                    
+                    try: cursor.execute( sql, (i['cid'], topic) )
+                    except: return 'DB error: %s' % sys.exc_info()[1]
+                    
+                    if self.settings['db']['type'] == 'sqlite': tid = cursor.lastrowid
+                    elif self.settings['db']['type'] == 'postgres': tid = cursor.fetchone()[0]
                 tags.append( (for_checksum, tid) )
-
-        try: cursor.executemany( 'INSERT INTO tags (checksum, tid) VALUES (%s, %s)', tags )
-        except: return 'Fatal error: %s' % sys.exc_info()[1]
+        
+        sql = 'INSERT INTO tags (checksum, tid) VALUES (%(ph)s, %(ph)s)' % { 'ph': self.settings['ph'] }
+        try: cursor.executemany( sql, tags )
+        except: return 'DB error: %s' % sys.exc_info()[1]
 
         return False
 
@@ -687,11 +692,12 @@ class API:
         # check unique
         try:
             cursor = self.db_conn.cursor()
-            cursor.execute( 'SELECT id FROM results WHERE checksum = %s', (checksum,) )
+            sql = 'SELECT id FROM results WHERE checksum = %s' % self.settings['ph']
+            cursor.execute( sql, (checksum,) )
             row = cursor.fetchone()
             if row: return (checksum, None)
         except:
-            error = 'Fatal error: %s' % sys.exc_info()[1]
+            error = 'DB error: %s' % sys.exc_info()[1]
             return (None, error)
 
         # save tags
@@ -703,10 +709,10 @@ class API:
 
         # save extracted data
         try:
-            cursor.execute( 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( %s, %s, %s, %s, %s, %s, %s )', \
-            (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
+            sql = 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s )' % { 'ph': self.settings['ph'] }
+            cursor.execute( sql, (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
         except:
-            error = 'Fatal error: %s' % sys.exc_info()[1]
+            error = 'DB error: %s' % sys.exc_info()[1]
             return (None, error)
         self.db_conn.commit()
 

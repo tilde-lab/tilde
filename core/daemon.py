@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 #
 # Tilde project: daemon
-# (currently acting as a GUI service)
+# (acting as a GUI service)
 # Provides a user interface for database management
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
-# v080414
+# v260414
 
 import os
 import sys
 import json
 import socket
-import urllib2
 import time
 from itertools import ifilter
 import math
@@ -20,8 +19,17 @@ from numpy import dot
 from numpy import array
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-import psycopg2
 
+from settings import settings
+
+if settings['db']['type'] == 'sqlite':
+    try: import sqlite3
+    except ImportError: from pysqlite2 import dbapi2 as sqlite3
+    DEFAULT_DBTITLE = settings['default_sqlite_db']
+elif settings['db']['type'] == 'postgres':
+    import psycopg2
+    DEFAULT_DBTITLE = 'master.db'
+    
 # this is done to have all third-party code in deps folder
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
 
@@ -34,15 +42,14 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-#from settings import settings, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
-from settings import settings, write_settings, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
+from settings import connect_database, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula, str2html
 from plotter import plotter
 
 
 DELIM = '~#~#~'
-EDITION = settings['title'] if settings['title'] else 'Tilde ' + API.version
+CURRENT_TITLE = settings['title'] if settings['title'] else 'Tilde ' + API.version
 E_LOWER_DEFAULT = -7.0
 E_UPPER_DEFAULT = 7.0
 
@@ -57,7 +64,7 @@ Users, Repo_pool, Tilde_tags = {}, {}, {}
 class User:
     def __init__(self):
         self.usettings = {}
-        self.cur_db = settings['default_db']
+        self.cur_db = DEFAULT_DBTITLE
 
 class DataMap:
     def __init__(self, db_name):
@@ -97,7 +104,7 @@ class DataMap:
 class Request_Handler:
     @staticmethod
     def login(userobj, session_id):
-        data, error = { 'title': EDITION, 'version': API.version }, None
+        data, error = { 'title': CURRENT_TITLE, 'demo_regime': settings['demo_regime'], 'debug_regime': settings['debug_regime'], 'version': API.version }, None
         
         # *client-side* settings
         if userobj['settings']['colnum'] not in [50, 75, 100]: userobj['settings']['colnum'] = 75
@@ -116,13 +123,9 @@ class Request_Handler:
                 enabled = True if item['cid'] in userobj['settings']['cols'] else False
                 avcols.append({ 'cid': item['cid'], 'category': item['category'], 'sort': item['sort'], 'enabled': enabled })
 
-        # settings of object-scope (global flags)
-        data['demo_regime'] = 1 if settings['demo_regime'] else 0
-        if settings['debug_regime']: data['debug_regime'] = settings['debug_regime']
-
         # settings of specified scope
-        data['settings'] = { 'avcols': avcols, 'dbs': [settings['default_db']] + filter(lambda x: x != settings['default_db'], Repo_pool.keys()) }
-        for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path']:
+        data['settings'] = { 'avcols': avcols, 'dbs': [DEFAULT_DBTITLE] + filter(lambda x: x != DEFAULT_DBTITLE, Repo_pool.keys()) }
+        for i in ['exportability', 'quick_regime', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport', 'db']:
             if i in settings: data['settings'][i] = settings[i]
 
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
@@ -188,17 +191,17 @@ class Request_Handler:
             rlen = len(data_clause)
             if not rlen or not isinstance(data_clause, list) or len(data_clause[0]) != 56: return (data, 'Invalid browsing!')
 
-        else: return (data, 'Error: neither tid nor hash was provided!')
-        
+        else: return (data, 'Error: neither tid nor hash was provided!')        
         
         data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
         data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgres
         if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgres
         
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try:
-            cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))            
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        try:            
+            if settings['db']['type'] == 'sqlite':         cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN ("%s")' % ('","'.join(data_clause),))
+            elif settings['db']['type'] == 'postgres':     cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))
+        except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
             rescount = 0
@@ -269,7 +272,7 @@ class Request_Handler:
         if not tids:
             cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
             try: cursor.execute( 'SELECT tid, categ, topic FROM topics' )
-            except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+            except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
             else:
                 tags = []
                 result = cursor.fetchall()
@@ -303,8 +306,9 @@ class Request_Handler:
     def phonons(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        sql = 'SELECT phonons FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             data = row[0]
@@ -314,14 +318,16 @@ class Request_Handler:
     def summary(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        sql = 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: error = 'No objects found!'
             else:
-                try: cursor.execute( 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = %s', (userobj['datahash'], ) )
-                except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+                sql = 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = %s' % settings['ph']
+                try: cursor.execute( sql, (userobj['datahash'], ) )
+                except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
                 else:
                     tagrow = cursor.fetchall()
                     tags = []
@@ -366,12 +372,14 @@ class Request_Handler:
             for i in ['quick_regime', 'skip_unfinished', 'skip_if_path']:
                 settings[i] = userobj['settings'][i]
 
-            if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
+            if not write_settings(settings): return (data, 'I/O error: failed to save settings in ' + DATA_DIR)
 
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ], settings=settings )
         
         # *server-side* settings    
         elif userobj['area'] == 'path':
+            if settings['demo_regime']: return (data, 'Action not allowed!')
+            
             if not len(userobj['path']): return (data, 'Please, input a valid working path.')
             if not os.path.exists(userobj['path']) or not os.access(userobj['path'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
             if 'win' in sys.platform and userobj['path'].startswith('/'): return (data, 'Working path should not start with slash.')
@@ -382,29 +390,61 @@ class Request_Handler:
             settings['local_dir'] = userobj['path']
             data = userobj['path']
             
-            if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
+            if not write_settings(settings): return (data, 'I/O error: failed to save settings in ' + DATA_DIR)
+        
+        # *server-side* settings
+        elif userobj['area'] == 'general':
+            if settings['demo_regime']: return (data, 'Action not allowed!')
 
+            try:
+                userobj['settings']['webport'] = int(userobj['settings']['webport'])
+                userobj['settings']['db']['port'] = int(userobj['settings']['db']['port'])
+            except: return (data, 'Port is not correct!')
+            
+            new_settings = {}
+            new_settings.update(settings)
+            for i in ['webport', 'title', 'demo_regime', 'debug_regime', 'db']:
+                new_settings[i] = userobj['settings'][i]
+            
+            if not write_settings(new_settings): return (data, 'I/O error: failed to save settings in ' + DATA_DIR)
+        
         # *server + client-side* settings
         elif userobj['area'] == 'cols':
             for i in ['cols', 'colnum', 'objects_expand']:
                 Users[session_id].usettings[i] = userobj['settings'][i]
 
-            # *server + client-side* settings
-            '''elif userobj['area'] == 'switching':
-                if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Incorrect database!')
-                Users[session_id].cur_db = userobj['switching']
-                Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
-                if Users[session_id].cur_db in Tilde_tags:
-                    # force update tags in memory
-                    Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
-                    if Tilde_tags[ Users[session_id].cur_db ].error:
-                        error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
-                logging.debug('Switched to ' + userobj['switching'])
-            '''
+        # *server + client-side* settings
+        elif userobj['area'] == 'switching':
+            if settings['db']['type'] != 'sqlite': return (data, 'Database ' + userobj['switching'] + ' was left!')
+            if not userobj['switching'] in Repo_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Database ' + userobj['switching'] + ' was left!')
+            
+            Users[session_id].cur_db = userobj['switching']
+            Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
+            if Users[session_id].cur_db in Tilde_tags:
+                # force update tags in memory
+                Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+                if Tilde_tags[ Users[session_id].cur_db ].error:
+                    error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
+            logging.debug('Switched to ' + userobj['switching'])
         
         else: error = 'Unknown settings context area!'
 
         if not data: data = 1
+        return (data, error)
+    
+    @staticmethod    
+    def try_pgconn(userobj, session_id):
+        data, error = None, None
+        if settings['demo_regime']: return (data, 'Action not allowed!')
+        
+        try: import psycopg2
+        except ImportError: return (data, 'Your python environment does not support Postgres!')
+        
+        creds = {'db': userobj['creds']}
+
+        if not connect_database(creds, None): return (data, 'Connection to Postgres failed!')
+        
+        data = 1
         return (data, error)
 
     @staticmethod
@@ -416,7 +456,8 @@ class Request_Handler:
         if not 'id' in userobj or not 'db' in userobj or not userobj['id'] or not userobj['db']: return (data, 'Action invalid!')
         if len(userobj['id']) != 56 or not userobj['db'] in Repo_pool: return (data, 'Action invalid!')
         cursor = Repo_pool[ userobj['db'] ].cursor()
-        cursor.execute( 'SELECT info FROM results WHERE checksum = %s', (userobj['id'],) )
+        sql = 'SELECT info FROM results WHERE checksum = %s' % settings['ph']
+        cursor.execute( sql, (userobj['id'],) )
         row = cursor.fetchone()
         if not row: return (data, 'Object not found!')
         else:
@@ -426,10 +467,10 @@ class Request_Handler:
                 return (data, error)
             else: return (data, 'Sorry, i have no access to source file anymore!')
 
-    '''@staticmethod
+    @staticmethod
     def db_create(userobj, session_id):
         data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
+        if settings['demo_regime'] or settings['db']['type'] != 'sqlite': return (data, 'Action not allowed!')
         
         global Repo_pool
         
@@ -445,12 +486,11 @@ class Request_Handler:
             data, error = 1, None
         
         return (data, error)
-    '''
     
-    '''@staticmethod
+    @staticmethod
     def db_copy(userobj, session_id):
         data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
+        if settings['demo_regime'] or settings['db']['type'] != 'sqlite': return (data, 'Action not allowed!')
         if not 'tocopy' in userobj or not 'dest' in userobj or not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
         if not userobj['dest'] in Repo_pool: return (data, 'Copying destination invalid!')
 
@@ -458,7 +498,7 @@ class Request_Handler:
         data_clause = '","'.join(  userobj['tocopy']  )
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % data_clause )
-        except: error = 'Fatal error: ' + "%s" % sys.exc_info()[1]
+        except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             result = cursor.fetchall()
 
@@ -472,7 +512,6 @@ class Request_Handler:
             Tilde.reload( db_conn=Repo_pool[ Users[session_id].cur_db ] )
         data = 1
         return (data, error)
-    '''
     
     # TODO: delegate content of these four methods to plotter!
     
@@ -480,8 +519,9 @@ class Request_Handler:
     def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        sql = 'SELECT structures, phonons FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         if row is None: return (data, 'No information found!')
@@ -528,8 +568,9 @@ class Request_Handler:
     def ph_bands(userobj, session_id): # currently supported for: CRYSTAL, "VASP"
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, phonons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        sql = 'SELECT structures, phonons FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         
@@ -548,8 +589,9 @@ class Request_Handler:
     def e_dos(userobj, session_id): # currently supported for: EXCITING, VASP
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        sql = 'SELECT structures, electrons FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         
@@ -589,8 +631,9 @@ class Request_Handler:
     def e_bands(userobj, session_id): # currently supported for: EXCITING
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT structures, electrons FROM results WHERE checksum = %s', (userobj['datahash'], ) )
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        sql = 'SELECT structures, electrons FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         
         row = cursor.fetchone()
         if row is None: return (data, 'No information found!')
@@ -621,10 +664,15 @@ class Request_Handler:
         if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgres
         
         try:
-            cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
-            cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
+            if settings['db']['type'] == 'sqlite':
+                data_clause = '","'.join(data_clause)
+                cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
+                cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
+            elif settings['db']['type'] == 'postgres':
+                cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
+                cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
             Repo_pool[ Users[session_id].cur_db ].commit()
-        except: return (data, 'Fatal error: ' + "%s" % sys.exc_info()[1])
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         else:
             # force update tags in memory
             Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
@@ -636,7 +684,7 @@ class Request_Handler:
     @staticmethod
     def clean(userobj, session_id):
         data, error = None, None
-        if settings['demo_regime']: return (data, 'Action not allowed!')
+        if settings['demo_regime'] or settings['db']['type'] != 'sqlite': return (data, 'Action not allowed!')
         if userobj['db'] == Users[session_id].cur_db: return (data, 'Deletion of current database is prohibited!')
         global Tilde_tags, Repo_pool
         try: Repo_pool[ userobj['db'] ].close()
@@ -649,9 +697,9 @@ class Request_Handler:
             except:
                 return (data, 'Cannot delete database: ' + "%s" % sys.exc_info()[1])
 
-            if userobj['db'] == settings['default_db']:
-                settings['default_db'] = Users[session_id].cur_db
-                if not write_settings(settings): return (data, 'Fatal error: failed to save settings in ' + DATA_DIR)
+            if userobj['db'] == settings['default_sqlite_db']:
+                settings['default_sqlite_db'] = Users[session_id].cur_db
+                if not write_settings(settings): return (data, 'I/O error: failed to save settings in ' + DATA_DIR)
 
             data = 1
             return (data, error)
@@ -779,7 +827,8 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
         
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT structures, info, apps FROM results WHERE checksum = %s', (hash,) )
+            sql = 'SELECT structures, info, apps FROM results WHERE checksum = %s' % settings['ph']
+            cursor.execute( sql, (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
@@ -847,7 +896,8 @@ class DataExportHandler(tornado.web.RequestHandler):
 
         try:
             cursor = Repo_pool[ db ].cursor()
-            cursor.execute( 'SELECT info FROM results WHERE checksum = %s', (hash,) )
+            sql = 'SELECT info FROM results WHERE checksum = %s' % settings['ph']
+            cursor.execute( sql, (hash,) )
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
@@ -872,6 +922,7 @@ if __name__ == "__main__":
     # check new version
     if not settings['demo_regime']:
         updatemsg = ''
+        import urllib2
         try:
             updatemsg = urllib2.urlopen(settings['update_server'], timeout=2.5).read()
         except urllib2.URLError:
@@ -888,33 +939,34 @@ if __name__ == "__main__":
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
     #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
     logging.basicConfig( level=loglevel, stream=sys.stdout )
-
-    '''for r in repositories:
-        Repo_pool[r] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + r  ) )
-        Repo_pool[r].row_factory = sqlite3.Row
-        Repo_pool[r].text_factory = str
+    
+    if settings['db']['type'] == 'sqlite':
+        for r in repositories:
+            Repo_pool[r] = connect_database(settings, r) # NB. at this stage DB connection is already checked
+            
+            # check DB_SCHEMA_VERSION
+            incompatible = check_db_version(Repo_pool[r])
+            if incompatible:
+                del Repo_pool[r]
+                print 'Sorry, database ' + DATA_DIR + os.sep + r + ' is incompatible.'
+                continue
+            
+            Tilde_tags[r] = DataMap( r )
+            if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
         
-        # check DB_SCHEMA_VERSION
-        incompatible = check_db_version(Repo_pool[r])
-        if incompatible:
-            del Repo_pool[r]
-            print 'Sorry, database ' + DATA_DIR + os.sep + r + ' is incompatible.'
-            continue
-        
-        Tilde_tags[r] = DataMap( r )
-        if Tilde_tags[r].error: sys.exit('DataMap creation error: ' + Tilde_tags[r].error)
+        if not settings['default_sqlite_db'] in Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_sqlite_db'] + " is incompatible, please, remove it to proceed.")
+        default_conn = Repo_pool[settings['default_sqlite_db']]
     
-    if not settings['default_db'] in Repo_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_db'] + " is incompatible, please, remove it to proceed.")
-    '''
+    elif settings['db']['type'] == 'postgres':
+        Repo_pool[DEFAULT_DBTITLE] = connect_database(settings, None) # NB. at this stage DB connection is already checked
+        Tilde_tags[DEFAULT_DBTITLE] = DataMap( DEFAULT_DBTITLE )
+        if Tilde_tags[DEFAULT_DBTITLE].error: sys.exit('DataMap creation error: ' + Tilde_tags[DEFAULT_DBTITLE].error)
+        default_conn = Repo_pool[DEFAULT_DBTITLE]
     
-    Repo_pool[settings['default_db']] = psycopg2.connect("dbname=tilde user=eb")
-    Tilde_tags[settings['default_db']] = DataMap( settings['default_db'] )
-    if Tilde_tags[settings['default_db']].error: sys.exit('DataMap creation error: ' + Tilde_tags[settings['default_db']].error)
-    
-    Tilde.reload( db_conn=Repo_pool[settings['default_db']], settings=settings )
+    Tilde.reload( db_conn = default_conn, settings = settings )
 
     io_loop = tornado.ioloop.IOLoop.instance()
-    Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings={'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling'], 'client_timeout': 90}) # NB. three minutes of waiting is tough
+    Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings = {'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling'], 'client_timeout': 90}) # NB. three minutes of waiting is tough
     config = {"debug": debug}
 
     try:
@@ -943,7 +995,7 @@ if __name__ == "__main__":
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "Welcome to " + EDITION + " GUI service\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
+        print "Welcome to " + CURRENT_TITLE + " GUI (" + settings['db']['type'] + " backend)\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: io_loop.start()
         except KeyboardInterrupt: sys.exit("\nBye-bye.")

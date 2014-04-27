@@ -1,15 +1,13 @@
 
 # Tilde project: installation and actions to be always done
-# PostgreSQL implementation
-# v140414
+# v260414
 
 import sys
 import os
 import re
 import json
 
-# EXTENSIONS COMPILATION
-import installation
+import installation # EXTENSIONS COMPILATION
 
 from xml.etree import ElementTree as ET
 
@@ -17,33 +15,74 @@ from xml.etree import ElementTree as ET
 DB_SCHEMA_VERSION = '1.06'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
-DEFAULT_DB = 'default.db'
+DEFAULT_SQLITE_DB = 'default.db'
+DEFAULT_POSTGRES_DB = 'tilde_master'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 10
 DEFAULT_SETUP = {
                 'webport': 7777, # is it robust to use?
-                'default_db': DEFAULT_DB,
+                'default_sqlite_db': DEFAULT_SQLITE_DB,
                 'local_dir': EXAMPLE_DIR,
-                'exportability': True,
+                'exportability': False,
                 'demo_regime': False,
                 'debug_regime': False,
                 'skip_unfinished': False,
                 'skip_if_path': "-_~",
                 'title': None,
-                'update_server': "http://tilde.pro/VERSION"
+                'update_server': "http://tilde.pro/VERSION",
+                'db':{
+                    'type': 'sqlite',   # may be postgres
+                                        # if sqlite is chosen: further info is not used
+                    'host': 'localhost',
+                    'port': 5432, # may be 5433
+                    'user': 'nobody',
+                    'password': '',
+                    'dbname': DEFAULT_POSTGRES_DB,
+                    },
                 }
-DB_SCHEMA = '''CREATE TABLE "results" ("id" SERIAL PRIMARY KEY, "checksum" TEXT, "structures" TEXT, "energy" FLOAT8, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+SQLITE_DB_SCHEMA = '''CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
+CREATE TABLE "topics" ("tid" INTEGER PRIMARY KEY NOT NULL, "categ" INTEGER NOT NULL, "topic" TEXT);
+CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL, FOREIGN KEY(tid) REFERENCES topics(tid));
+CREATE TABLE "pragma" ("content" TEXT);'''
+SQLITE_DB_SCHEMA += '\nINSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
+
+POSTGRES_DB_SCHEMA = '''CREATE TABLE "results" ("id" SERIAL PRIMARY KEY, "checksum" TEXT, "structures" TEXT, "energy" FLOAT8, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
 CREATE TABLE "topics" ("tid" SERIAL PRIMARY KEY, "categ" INTEGER NOT NULL, "topic" TEXT);
 CREATE TABLE "tags" ("checksum" TEXT, "tid" INTEGER NOT NULL REFERENCES topics(tid));
 CREATE TABLE "pragma" ("content" TEXT);'''
-DB_SCHEMA += '\nINSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
+POSTGRES_DB_SCHEMA += '\nINSERT INTO "pragma" ("content") VALUES (' + DB_SCHEMA_VERSION + ');'
+
 repositories = []
 
-
 #
-# routines, which involve Tilde API and schema : TODO
+# BOF routines, which involve Tilde API and schema : TODO
 #
+def connect_database(settings, uc):
+    '''
+    Tries to connect DB
+    @returns handler on success
+    @returns False on failure
+    '''
+    if settings['db']['type'] == 'sqlite':
+        if uc is None: sys.exit('Sqlite DB name was not given!')
+        try: import sqlite3
+        except ImportError: from pysqlite2 import dbapi2 as sqlite3
+        try: db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
+        except: return False
+        else:
+            db.row_factory = sqlite3.Row
+            db.text_factory = str
+            return db
+        
+    elif settings['db']['type'] == 'postgres':
+        import psycopg2
+        try: db = psycopg2.connect(host = settings['db']['host'], port = settings['db']['port'], user = settings['db']['user'], password = settings['db']['password'], dbname = settings['db']['dbname'])
+        except: return False
+        else:
+            return db
+        
+    return False
 
 def write_settings(settings):
     if not os.access(DATA_DIR, os.W_OK): return False
@@ -57,7 +96,12 @@ def write_settings(settings):
     else:
         return True
         
-'''def write_db(name):
+def write_db(name):
+    '''
+    Write SQLite DB file
+    @returns False on success
+    @returns error on failure
+    '''        
     if not len(name) or not re.match('^[\w-]+$', name):
         return 'Invalid database name: ' + name
 
@@ -69,21 +113,20 @@ def write_settings(settings):
     if os.path.exists(DATA_DIR + os.sep + name) or not os.access(DATA_DIR, os.W_OK):
         return 'Cannot write database file, please, check the path ' + DATA_DIR + os.sep + name
     
-    conn = psycopg2.connect("dbname=postgres user=eb")
-    #conn.row_factory = sqlite3.Row
-    #conn.text_factory = str
+    conn = connect_database(settings, name)
+    if not conn:
+        return 'SQLite extension cannot write DB!'
     
     cursor = conn.cursor()
-    for i in DB_SCHEMA.splitlines():
+    for i in SQLITE_DB_SCHEMA.splitlines():
         cursor.execute( i )
     conn.commit()
     conn.close()
-    #os.chmod(os.path.abspath(  DATA_DIR + os.sep + name  ), 0777) # to avoid (or create?) IO problems with multiple users
+    os.chmod(os.path.abspath(  DATA_DIR + os.sep + name  ), 0777) # to avoid (or create?) IO problems with multiple users
     
     return False
-'''
 
-def userdbchoice(options, choice=None, add_msg="", create_allowed=True):
+def user_db_choice(options, choice=None, add_msg="", create_allowed=True):
     ''' Auxiliary procedure to simplify UI '''
     if choice is None:
         suggest = " (0) create new" if create_allowed else ""
@@ -97,34 +140,34 @@ def userdbchoice(options, choice=None, add_msg="", create_allowed=True):
     # Not numeric
     except ValueError:
         if choice not in options:
-            return userdbchoice(options, add_msg="Invalid choice!\n")
+            return user_db_choice(options, add_msg="Invalid choice!\n")
         else:
             return choice
     
     # Numeric    
     # invoke creation subroutine
     if choice == 0:
-        if not create_allowed: return userdbchoice(options, add_msg="Invalid choice!\n")
+        if not create_allowed: return user_db_choice(options, add_msg="Invalid choice!\n")
             
         choice = raw_input(add_msg + "Please, input name without \".db\" extension:\n")
         add_msg = ""
         
         error = write_db(choice)
         if error:
-            return userdbchoice(options, choice=0, add_msg=error + "\n")                
+            return user_db_choice(options, choice=0, add_msg=error + "\n")                
         else:
             return choice + '.db'
     
     # choice by index       
     try: choice = options[choice-1]
     except IndexError:
-        return userdbchoice(options, add_msg="Invalid choice!\n")
+        return user_db_choice(options, add_msg="Invalid choice!\n")
     else:
         return choice
 
 def read_hierarchy():
     try: tree = ET.parse(HIERARCHY_FILE)
-    except: raise RuntimeError('Fatal error: invalid file ' + HIERARCHY_FILE)
+    except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
     hierarchy = []
     doc = tree.getroot()
     for elem in doc.findall('entity'):
@@ -137,58 +180,81 @@ def read_hierarchy():
     
 def check_db_version(db_conn):
     cursor = db_conn.cursor()
-    #try: cursor.execute( "SELECT name FROM sqlite_master WHERE type='table' AND name='pragma'" ) # is there such a table?
-    #except: raise RuntimeError('Fatal error: ' + "%s" % sys.exc_info()[1])
-    #row = cursor.fetchone()
-    #if row is None:
-    #    return True
     try: cursor.execute( "SELECT content FROM pragma" )
-    except: raise RuntimeError('Fatal error: ' + "%s" % sys.exc_info()[1])
+    except: sys.exit('DB error: ' + "%s" % sys.exc_info()[1])
     row = cursor.fetchone()
     if row[0] != DB_SCHEMA_VERSION:
         return True
     else:
         return False
+#
+# EOF routines, which involve Tilde API and schema
+#
 
-
-# INSTALLATION
+# INSTALLATION / SETTINGS
 
 if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ) ):
     settings = DEFAULT_SETUP
     if not os.path.exists(DATA_DIR):
         try: os.makedirs(DATA_DIR)
-        except IOError: raise RuntimeError('Fatal error: failed write ' + DATA_DIR)
-    if not write_settings(settings): raise RuntimeError('Fatal error: failed to save settings in ' + DATA_DIR)
+        except IOError: sys.exit('I/O error: failed write ' + DATA_DIR)
+    if not write_settings(settings): sys.exit('I/O error: failed to save settings in ' + DATA_DIR)
 try: settings
 except NameError:
     try: settings = json.loads( open( DATA_DIR + os.sep + SETTINGS_FILE ).read() )
-    except ValueError: raise RuntimeError('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' seems to be bad-formatted, please, pay attention to commas and quotes!')
-    except IOError: raise RuntimeError('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' is not accessible!')
+    except ValueError: sys.exit('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' seems to be bad-formatted, please, pay attention to commas and quotes!')
+    except IOError: sys.exit('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' is not accessible!')
     DEFAULT_SETUP.update(settings)
     settings = DEFAULT_SETUP
-    
-# CREATE DB IF NOT FOUND
 
-#if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + settings['default_db']  ) ):
-#    error = write_db(settings['default_db'][:-3])
-#    if error: raise RuntimeError(error)
+# DB / CREATE IF NOT FOUND
+
+if settings['db']['type'] == 'sqlite':
+    try: import sqlite3
+    except ImportError:
+        try: from pysqlite2 import dbapi2 as sqlite3
+        except ImportError: sys.exit('\n\nI cannot proceed. Please, install python sqlite3 module!\n\n')
+    
+    if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + settings['default_sqlite_db']  ) ):
+        error = write_db(settings['default_sqlite_db'][:-3])
+        if error: 
+            sys.exit(error)
         
-# DB POOL
+    # DB POOL
+    for file in os.listdir( os.path.realpath(DATA_DIR) ):
+        if file[-3:] == '.db':
+            if len(file) > 21: sys.exit('Please, do not use long names for the databases!')
+            repositories.append(file)
+    if len(repositories) > MAX_CONCURRENT_DBS:
+        sys.exit('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
 
-'''for file in os.listdir( os.path.realpath(DATA_DIR) ):
-    if file[-3:] == '.db':
-        if len(file) > 21: raise RuntimeError('Please, do not use long names for the databases!')
-        repositories.append(file)
-if len(repositories) > MAX_CONCURRENT_DBS:
-    raise RuntimeError('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)'''
+elif settings['db']['type'] == 'postgres':
+    try: import psycopg2
+    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python psycopg2 module!\n\n')
     
-# SETTINGS COMBINATIONS
+    if not connect_database(settings, None):
+        sys.exit('Cannot connect to %s DB!' % settings['db']['dbname'])
 
-if settings['demo_regime'] and settings['debug_regime']: settings['debug_regime'] = 0
+else: sys.exit('DB type misconfigured!')
+    
+# SETTINGS COMBINATIONS & RESTRICTIONS
 
-# SETTINGS RESTRICTIONS
+if not settings['local_dir'].endswith(os.sep):
+    settings['local_dir'] += os.sep
 
-if settings['skip_if_path'] and len(settings['skip_if_path']) > 3: raise RuntimeError('Path skipping directive must not contain more than 3 symbols due to memory limits!')
-if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')): settings['local_dir'] = EXAMPLE_DIR
-if not settings['local_dir'].endswith(os.sep): settings['local_dir'] += os.sep
-if not 'http://' in settings['update_server']: raise RuntimeError('Directive update_server must be a valid url!')
+if settings['demo_regime'] and settings['debug_regime']:
+    settings['debug_regime'] = 0
+    
+if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
+    settings['local_dir'] = EXAMPLE_DIR
+    
+if settings['db']['type'] == 'sqlite':
+    settings['ph'] = '?'
+elif settings['db']['type'] == 'postgres':
+    settings['ph'] = '%s'
+    
+if settings['skip_if_path'] and len(settings['skip_if_path']) > 3:
+    sys.exit('Path skipping directive must not contain more than 3 symbols due to memory limits!')
+        
+if not 'http://' in settings['update_server']:
+    sys.exit('Directive update_server must be a valid url!')

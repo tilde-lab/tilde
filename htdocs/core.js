@@ -6,7 +6,7 @@
 */
 // common flags, settings and object for their storage
 var _tilde = {};
-_tilde.debug = false; // major debugging switch
+_tilde.debug_regime = false; // major debugging switch
 _tilde.demo_regime = false;
 _tilde.degradation = false;
 _tilde.hashes = [];
@@ -89,7 +89,7 @@ function bindTree(elem, resourse_type){
 }
 // UTILITIES
 function __send(act, req, nojson){
-    if (_tilde.debug) logger('REQUESTED: '+act);
+    if (_tilde.debug_regime) logger('REQUESTED: '+act);
     if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
     if (!nojson) req ? req = $.toJSON(req) : req = '';
     $('#loadbox').show();
@@ -290,31 +290,36 @@ function gather_tags(area, myself){
 */
 // RESPONCE FUNCTIONS
 function resp__login(req, data){
-    data = $.evalJSON(data);
-
-    // global switches
-    $('#version').text( data.version );
-    document.title = data.title;
-    if (data.debug_regime) _tilde.debug = true;
-    if (data.demo_regime){
-        _tilde.demo_regime = true;
-        $('div.protected, li.protected').hide();
-    }    
-
-    // something was not completed in production mode
+    // something was not completed in a production mode
     if (_tilde.last_request){
         var action = _tilde.last_request.split( _tilde.wsock_delim );
         __send(action[0], action[1], true);
     }
-
-    //if (_tilde.debug) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
-
+    
+    data = $.evalJSON(data);
+    
+    if (data.debug_regime){
+        _tilde.debug_regime = true;
+        $('#settings_debug').attr('checked', true);
+    }
+    
+    if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
     for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
-    //if (_tilde.debug) logger("ACTUAL SETTINGS: " + $.toJSON(_tilde.settings));
+    //if (_tilde.debug_regime) logger("FINAL SETTINGS: " + $.toJSON(_tilde.settings));
 
-    // render databases
+    // general switches (and settings)
+    $('#version').text(data.version);
+    document.title = data.title;
+    $('#settings_title').val(data.title);
+
+    if (data.demo_regime){
+        _tilde.demo_regime = true;
+        $('.protected').hide();
+    }
+    $('#settings_webport').val(data.settings.webport);
+    
+    // render DBs
     set_dbs();
-    //var dbs_str = '', btns = '<div class="btn right db-make-active-trigger">make active</div>';
     var dbs_str = '', btns = '';
     if (!_tilde.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
 
@@ -322,6 +327,15 @@ function resp__login(req, data){
         if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
         else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
     });
+    
+    // render DB type
+    if (_tilde.settings.db.type == 'sqlite') $('#settings_db_type_sqlite').attr('checked', true);
+    else if (_tilde.settings.db.type == 'postgres') { $('#settings_db_type_postgres').attr('checked', true); $('#settings_postgres').show(); }
+    
+    for (var attrname in data.settings.db){
+        if (attrname == 'type') continue;
+        $('#settings_postgres_'+attrname).val(data.settings.db[attrname]);
+    }
 
     if (!_tilde.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
     $('div[rel=dbs] div').html( dbs_str );
@@ -412,7 +426,7 @@ function resp__browse(req, data){
     // (2) any data request by hash
     // (3) tagcloud queries
     if ($.isEmptyObject(req)) {
-        notify('Switch to continue happened!')
+        notify('Switch to continue happened!');
     } else {
         if (req.hashes) req = {tids: false, defer_load: true};
         if (req.defer_load) __send('tags', {tids: req.tids, render: 'tagcloud', switchto: 'browse'});
@@ -538,7 +552,7 @@ function resp__report(obj, data){
                 _tilde.hashes = [];
                 $('#tagcloud_trigger').show();
                 $('#noclass_trigger').show();
-            } else $('span[rel="__read__'+obj.path+'"]').parent().html('(folder contains unsupported files)');
+            } else $('span[rel="__read__'+obj.path+'"]').parent().html('(all files were omitted)');
 
             logger( '===========END OF SCAN '+obj.path+'===========' );
 
@@ -638,7 +652,7 @@ function resp__settings(req, data){
         _tilde.settings.local_dir = data;
         $('#tilda-local-filepath input').val(_tilde.settings.local_dir);
         $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
-        __send('list',   {path:_tilde.filetree.root, transport:'local'} );
+        __send('list', {path:_tilde.filetree.root, transport:'local'} );
         $('#profile_holder').hide();
     } else if (req.area == 'cols'){
         // re-draw data table without modifying tags
@@ -653,6 +667,11 @@ function resp__settings(req, data){
         _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
         _tilde.settings.dbs.unshift(req.switching);
         set_dbs();
+    } else if (req.area == 'general'){
+        notify('Saving new settings and restarting...');
+        __send('restart');
+        logger('RESTART SIGNAL SENT');
+        setInterval(function(){document.location.reload()}, 1000); // setTimeout doesn't work here        
     }
     $.jStorage.set('tilde_settings', _tilde.settings);
     logger('SETTINGS SAVED!');
@@ -707,6 +726,10 @@ function resp__ph_bands(req, data){
 function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands-holder', 'E - E<sub>f</sub>, eV');
 }
+function resp__try_pgconn(req, data){
+    // continue our work
+    __send('settings',  {area: 'general', settings: _tilde.settings} );
+}
 /**
 *
 *
@@ -756,7 +779,7 @@ $(document).ready(function(){
         response.req = split[1].length ? $.evalJSON(split[1]) : {};
         response.error = split[2];
         response.data = split[3];
-        if (_tilde.debug) logger('RECEIVED: '+response.act);
+        if (_tilde.debug_regime) logger('RECEIVED: '+response.act);
         if (response.act != 'report' || response.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
         if (response.error && response.error.length>1){
             notify('Diagnostic message:<br />'+response.error);
@@ -767,12 +790,12 @@ $(document).ready(function(){
     });
 
     _tilde.socket.on('error', function(data){
-        if (_tilde.debug) logger('AN ERROR IN SOCKET HAS OCCURED!');
+        if (_tilde.debug_regime) logger('AN ERROR IN SOCKET HAS OCCURED!');
     });
 
     _tilde.socket.on('disconnect', function(data){
         logger('CONNECTION WITH PROGRAM CORE WAS LOST!');
-        if (_tilde.debug){
+        if (_tilde.debug_regime){
             notify('Program core does not respond. Please, try to <a href=javascript:document.location.reload()>restart</a>.');
         } else {
             _tilde.socket.socket.reconnect();
@@ -1039,11 +1062,11 @@ $(document).ready(function(){
     });
     $(document).on('click', '#d_cb_all', function(){
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
-            $('input.SHFT_cb').prop('checked', true);
+            $('input.SHFT_cb').attr('checked', true);
             $('#databrowser tr').addClass('shared');
             switch_menus();
         } else {
-            $('input.SHFT_cb').prop('checked', false);
+            $('input.SHFT_cb').attr('checked', false);
             $('#databrowser tr').removeClass('shared');
             switch_menus(true);
         }
@@ -1063,7 +1086,7 @@ $(document).ready(function(){
     
     // CANCEL CONTEXT MENU
     $('#cancelctx_trigger').click(function(){
-        $('input.SHFT_cb, #d_cb_all').prop('checked', false);
+        $('input.SHFT_cb, #d_cb_all').attr('checked', false);
         $('#databrowser tr').removeClass('shared');
         switch_menus(true);
     });
@@ -1153,7 +1176,6 @@ $(document).ready(function(){
         return false;
     });
 
-
     // TAGCLOUD TAG COMMANDS SINGLE CLICK
     $(document).on('click', '#tagcloud a.taglink', function(){
         $('#tagcloud').hide();
@@ -1235,7 +1257,7 @@ $(document).ready(function(){
             $('#profile_holder').hide();
         } else {
             $('#profile_holder').show();
-            open_ipane('cols');
+            _tilde.demo_regime ? open_ipane('cols') : open_ipane('general');
         }
     });
 
@@ -1345,8 +1367,31 @@ $(document).ready(function(){
             // re-draw data table without modifying tags
             if (!_tilde.last_browse_request) return;
             if (!$('#databrowser').is(':visible')) return;
-            __send('browse', _tilde.last_browse_request, true);         
+            __send('browse', _tilde.last_browse_request, true);
+        } else if ($('#settings_title').is(':visible')){
             
+            // TODO
+            // here is some mess, whether the piece of settings is stored inside _tilde or inside _tilde.settings
+            // we save all inside _tilde.settings as it is easier to process by a server
+            _tilde.settings.title = $('#settings_title').val();
+            _tilde.settings.debug_regime = $('#settings_debug').is(':checked');
+            _tilde.settings.demo_regime = $('#settings_demo').is(':checked');
+            _tilde.settings.webport = $('#settings_webport').val();
+            
+            if ($('#settings_db_type_sqlite').is(':checked')) _tilde.settings.db.type = 'sqlite';
+            else if ($('#settings_db_type_postgres').is(':checked')){
+                _tilde.settings.db.type = 'postgres';            
+                _tilde.settings.db.host = $('#settings_postgres_host').val();
+                _tilde.settings.db.user = $('#settings_postgres_user').val();
+                _tilde.settings.db.port = $('#settings_postgres_port').val();
+                _tilde.settings.db.password = $('#settings_postgres_password').val();
+                _tilde.settings.db.dbname = $('#settings_postgres_dbname').val();
+                __send('try_pgconn', {creds: _tilde.settings.db});
+                return;
+            }
+            
+            // SETTINGS: GENERAL
+            __send('settings',  {area: 'general', settings: _tilde.settings} );
         }
     });
 
@@ -1370,13 +1415,16 @@ $(document).ready(function(){
         $.jStorage.set('tilde_settings', _tilde.settings);
     });
 
+    // SETTINGS: GENERAL
+    $('#settings_db_type_postgres').click(function(){ $('#settings_postgres').show() });
+    $('#settings_db_type_sqlite').click(function(){ $('#settings_postgres').hide() });
+
     // SETTINGS: RESTART + TERMINATE
     $('#core-restart').click(function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
         __send('restart');
-        //logger('RESTART SIGNAL SENT');
-        //notify('Core is restarting... <a href=javascript:document.location.reload()>Reload page?</a>');
-        setInterval(function(){document.location.reload()}, 2000); // setTimeout doesn't work here
+        logger('RESTART SIGNAL SENT');
+        setInterval(function(){document.location.reload()}, 1000); // setTimeout doesn't work here
     });
     $('#core-terminate').click(function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
@@ -1385,14 +1433,6 @@ $(document).ready(function(){
         notify('This window is not functional now.');
     });
     $('#ui-restart').click(function(){ document.location.reload() });
-
-    // SETTINGS: USABILITY
-    /* $('#profile_holder').mouseleave(function(){
-        _tilde.timeout4 = setTimeout(function(){ $('#profile_holder').hide() }, 1500);
-    });
-    $('#profile_holder').mouseenter(function(){
-        clearTimeout(_tilde.timeout4);
-    }); */
 
     // ABOUT
     $('#about_trigger').click(function(){
