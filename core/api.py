@@ -342,7 +342,9 @@ class API:
         
         calc.info['formula'] = self.formula( calc.structures[-1].get_chemical_symbols() )
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
-        if calc.info['input']: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
+        if calc.info['input']:
+            try: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
+            except: pass
         
         # applying filter: todo
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
