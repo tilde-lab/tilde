@@ -438,11 +438,14 @@ class Request_Handler:
         if settings['demo_regime']: return (data, 'Action not allowed!')
         
         try: import psycopg2
-        except ImportError: return (data, 'Your python environment does not support Postgres!')
+        except ImportError: return (data, 'Current python environment does not support Postgres!')
         
         creds = {'db': userobj['creds']}
 
-        if not connect_database(creds, None): return (data, 'Connection to Postgres failed!')
+        db = connect_database(creds, None)
+        if not db: return (data, 'Connection to Postgres failed!')
+        incompatible = check_db_version(db)
+        if incompatible: return (data, 'Sorry, this DB is incompatible!')
         
         data = 1
         return (data, error)
@@ -959,6 +962,12 @@ if __name__ == "__main__":
     
     elif settings['db']['type'] == 'postgres':
         Repo_pool[DEFAULT_DBTITLE] = connect_database(settings, None) # NB. at this stage DB connection is already checked
+        
+        # check DB_SCHEMA_VERSION
+        incompatible = check_db_version(Repo_pool[DEFAULT_DBTITLE])
+        if incompatible:
+            sys.exit('Fatal error!\nCurrent DB is incompatible!')
+        
         Tilde_tags[DEFAULT_DBTITLE] = DataMap( DEFAULT_DBTITLE )
         if Tilde_tags[DEFAULT_DBTITLE].error: sys.exit('DataMap creation error: ' + Tilde_tags[DEFAULT_DBTITLE].error)
         default_conn = Repo_pool[DEFAULT_DBTITLE]

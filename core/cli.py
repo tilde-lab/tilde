@@ -54,13 +54,13 @@ parser.add_argument("-u", dest="daemon", action="store", help="run GUI service (
 parser.add_argument("-a", dest="add", action="store", help="if PATH(S): add results to database", type=str, metavar="file.db", nargs='?', const='DIALOG', default=False)
 parser.add_argument("-r", dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-t", dest="terse", action="store", help="terse print", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-v", dest="convergence", action="store", help="convergence print", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-v", dest="convergence", action="store", help="calculation convergence print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f", dest="freqs", action="store", help="if PATH(S): extract and print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze all", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
-parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)
+parser.add_argument("-y", dest="symprec", action="store", help="symmetry detecting tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-d", dest="datamining", action="store", help="query on data (experimental)", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
 
@@ -170,7 +170,7 @@ if args.datamining:
     
     print 'Query: ' + query
     
-    try: cursor.execute( query )
+    try: cursor.execute( query ) # this is risky, but we trust our user
     except: print 'Error for query: ' + "%s" % sys.exc_info()[1]
     else:
         result = cursor.fetchall()
@@ -181,7 +181,12 @@ if args.datamining:
             postmessage = "\n...\n%s more" % (L-50)        
         i=0
         for row in result:
-            out += str(row)
+            if settings['db']['type'] == 'sqlite':
+                if i==0: out += " ".join( row.keys() ) + "\n"
+                for k in row.keys():
+                    out += str(row[k]) + " "
+            elif settings['db']['type'] == 'postgres':
+                out += str(row)
             out += "\n"
             i+=1
     print out + postmessage

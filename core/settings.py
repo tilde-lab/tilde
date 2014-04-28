@@ -36,9 +36,9 @@ DEFAULT_SETUP = {
                                         # if sqlite is chosen: further info is not used
                     'host': 'localhost',
                     'port': 5432, # may be 5433
-                    'user': 'nobody',
+                    'user': 'postgres',
                     'password': '',
-                    'dbname': DEFAULT_POSTGRES_DB,
+                    'dbname': 'postgres',
                     },
                 }
 SQLITE_DB_SCHEMA = '''CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);
@@ -60,7 +60,7 @@ repositories = []
 #
 def connect_database(settings, uc):
     '''
-    Tries to connect DB
+    Tries to connect to a DB
     @returns handler on success
     @returns False on failure
     '''
@@ -85,6 +85,11 @@ def connect_database(settings, uc):
     return False
 
 def write_settings(settings):
+    '''
+    Saves user's settings
+    @returns True on success
+    @returns False on failure    
+    ''' 
     if not os.access(DATA_DIR, os.W_OK): return False
     try:
         f = open(DATA_DIR + os.sep + SETTINGS_FILE, 'w')
@@ -125,6 +130,21 @@ def write_db(name):
     os.chmod(os.path.abspath(  DATA_DIR + os.sep + name  ), 0777) # to avoid (or create?) IO problems with multiple users
     
     return False
+
+def check_db_version(db_conn):
+    '''
+    Checks, whether DB is known
+    @returns False on success
+    @returns True on failure
+    '''  
+    cursor = db_conn.cursor()
+    try: cursor.execute( "SELECT content FROM pragma" )
+    except: return True
+    row = cursor.fetchone()
+    if row[0] != DB_SCHEMA_VERSION:
+        return True
+    else:
+        return False
 
 def user_db_choice(options, choice=None, add_msg="", create_allowed=True):
     ''' Auxiliary procedure to simplify UI '''
@@ -177,16 +197,6 @@ def read_hierarchy():
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
         hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
     return hierarchy
-    
-def check_db_version(db_conn):
-    cursor = db_conn.cursor()
-    try: cursor.execute( "SELECT content FROM pragma" )
-    except: sys.exit('DB error: ' + "%s" % sys.exc_info()[1])
-    row = cursor.fetchone()
-    if row[0] != DB_SCHEMA_VERSION:
-        return True
-    else:
-        return False
 #
 # EOF routines, which involve Tilde API and schema
 #

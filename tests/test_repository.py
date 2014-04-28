@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Repo build test
+# Sqlite repo
+# build test
 
 import os
 import sys
@@ -16,8 +17,7 @@ except: from pysqlite2 import dbapi2 as sqlite3
 
 starttime = time.time()
 
-
-db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_db']))
+db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_sqlite_db']))
 db.row_factory = sqlite3.Row
 db.text_factory = str
 
@@ -47,4 +47,4 @@ for task in tasks:
 
     print filename + " added"
     
-print "Test repository done in %1.2f sec (on my PC ~8 sec)" % (time.time() - starttime)
+print "Test repository done in %1.2f sec" % (time.time() - starttime)

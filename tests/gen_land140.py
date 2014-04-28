@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
+# this is to generate input files on existing DB data
+# for landscape scanning in EXCITING
+#
+
 import sys
 import os
 import math
 import json
 
-sys.path.insert(0, '/home/eb/wwwtilda/core/deps')
-
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
 from ase.units import Bohr
 from ase.lattice.spacegroup import crystal
 from ase.calculators.exciting import Exciting
