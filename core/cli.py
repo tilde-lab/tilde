@@ -32,7 +32,7 @@ if settings['db']['type'] == 'sqlite':
     try: import sqlite3
     except ImportError: from pysqlite2 import dbapi2 as sqlite3
 elif settings['db']['type'] == 'postgres':
-    import psycopg2
+    import pg8000
 
 from settings import connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
 from common import write_cif

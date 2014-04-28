@@ -27,7 +27,7 @@ if settings['db']['type'] == 'sqlite':
     except ImportError: from pysqlite2 import dbapi2 as sqlite3
     DEFAULT_DBTITLE = settings['default_sqlite_db']
 elif settings['db']['type'] == 'postgres':
-    import psycopg2
+    import pg8000
     DEFAULT_DBTITLE = 'master.db'
     
 # this is done to have all third-party code in deps folder
@@ -437,7 +437,7 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         
-        try: import psycopg2
+        try: import pg8000
         except ImportError: return (data, 'Current python environment does not support Postgres!')
         
         creds = {'db': userobj['creds']}

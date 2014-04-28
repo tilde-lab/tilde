@@ -76,8 +76,8 @@ def connect_database(settings, uc):
             return db
         
     elif settings['db']['type'] == 'postgres':
-        import psycopg2
-        try: db = psycopg2.connect(host = settings['db']['host'], port = settings['db']['port'], user = settings['db']['user'], password = settings['db']['password'], dbname = settings['db']['dbname'])
+        import pg8000
+        try: db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
         except: return False
         else:
             return db
@@ -239,8 +239,8 @@ if settings['db']['type'] == 'sqlite':
         sys.exit('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
 
 elif settings['db']['type'] == 'postgres':
-    try: import psycopg2
-    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python psycopg2 module!\n\n')
+    try: import pg8000
+    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python pg8000 module!\n\n')
     
     if not connect_database(settings, None):
         sys.exit('Cannot connect to %s DB!' % settings['db']['dbname'])
