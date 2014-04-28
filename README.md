@@ -5,7 +5,14 @@ Tilde (alias wwwtilda) is a data organizer for computational (**ab initio**) mat
 
 ## Requirements
 
-On Windows no additional installations are required. On Unix/Mac Python is required (2.5 < version < 3.0), as well as Numpy and sqlite3 Python modules (typically, all these are pre-installed). Tilde was tested on Windows XP, 7, 8, Linux Debian and Suse operating systems.
+On Windows no additional installations are required.
+On Unix/Mac:
+
+- Python 2.x (x > 5)
+- numpy Python module
+- sqlite3 Python module
+
+Tilde was tested on Windows XP, 7, 8, Linux Debian and Suse operating systems.
 
 ## Usage
 
@@ -15,7 +22,9 @@ Unpack, avoiding spaces and non-latin characters in the path. Run with "tilde.ba
 
 ## Example
 
-    $ D:\wwwtilda\tilde.bat C:\work -r -t -v -a
+To scan folder(s) recursively (-r), with terse print (-t), showing information on calculation convergence (-v) and adding results to a database (-a):
+
+    $ D:\wwwtilda\tilde.bat C:\work1 C:\work2 -r -t -v -a
     $ /home/user/wwwtilda/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
 
 ## GUI hints
@@ -54,13 +63,13 @@ Other known similar projects are collected below (in an alphabetic order):
 
 ## Openness principle
 
-An initiative group with a symbolic name [Blue Obelisk](http://www.jcheminf.com/content/3/1/37) declared a principle of open data, open source code and open standards, inspiring Tilde creation.
+Tilde adopts the principle of open data, open source code and open standards declared by an initiative group with a symbolic name [Blue Obelisk](http://www.jcheminf.com/content/3/1/37).
 
 ![Blue Obelisk logo and tagline](https://wwwtilda.googlecode.com/files/blue_obelisk.gif)
 
 ## Contact
 
-Please, send your feedback, bugreports and wishlists to [Evgeny Blokhin](mailto:eb@tilde.pro) or post them at [GitHub](http://github.com/jam31/wwwtilda/issues).
+Please, send your feedback, bugreports and wishlists via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/wwwtilda) or [GitHub](http://github.com/jam31/wwwtilda/issues).
 
 ## Links
 

@@ -60,7 +60,6 @@ parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze
 parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
-parser.add_argument("-z", dest="shortcut", action="store", help="a combination of the most used options", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)
 parser.add_argument("-x", dest="xdebug", action="store", help="debug", type=bool, metavar="", nargs='?', const=True, default=None)
 parser.add_argument("-d", dest="datamining", action="store", help="query on data (experimental)", type=str, metavar="QUERY", nargs='?', const='COUNT(*)', default=None)
@@ -92,8 +91,6 @@ if args.daemon:
 if not args.path and not args.datamining:
     parser.print_help()
     sys.exit()
-
-if args.shortcut: args.recursive, args.convergence, args.info, args.terse = True, True, True, True
 
 # CLI
 # WHEN: if there are particular commands, run command-line text interface
@@ -287,13 +284,14 @@ for target in args.path:
         if args.freqs:
             if not calc.phonons['modes']:
                 output_lines += 'no phonons'
-            for bzpoint, frqset in calc.phonons['modes'].iteritems():
-                output_lines += "\tK-POINT: " + bzpoint + "\n"
-                compare = 0
-                for i in range(len(frqset)):
-                    # if compare == frqset[i]: continue
-                    output_lines += "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")" + "\n"
-                    compare = frqset[i]
+            else:
+                for bzpoint, frqset in calc.phonons['modes'].iteritems():
+                    output_lines += "\tK-POINT: " + bzpoint + "\n"
+                    compare = 0
+                    for i in range(len(frqset)):
+                        # if compare == frqset[i]: continue
+                        output_lines += "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")" + "\n"
+                        compare = frqset[i]
                     
         if args.add:
             checksum, error = Tilde.save(calc)
