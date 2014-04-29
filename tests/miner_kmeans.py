@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 
-# example of data-mining on band gaps and periodic table element groups using k-means as implemented in scikit-learn
+# example of data-mining on band gaps and periodic table element groups
+# using k-means as implemented in scikit-learn
+# v290414
 
 import sys
 import os
 import math
-#import sqlite3
 import json
 import time
 
 starttime = time.time() # benchmarking
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-import psycopg2
-
 from sklearn.cluster import KMeans
 
-from core.settings import check_db_version
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+from core.settings import settings, connect_database, check_db_version
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
 from ase.data import chemical_symbols
@@ -28,30 +27,15 @@ except IndexError: sys.exit('No path defined!')
 workpath = os.path.abspath(workpath)
 if not os.path.exists(workpath): sys.exit('Invalid path!')'''
 
-db = psycopg2.connect("dbname=tilde user=eb")
-#db.row_factory = sqlite3.Row
-#db.text_factory = str
-
-'''try: workpath = sys.argv[1]
-except IndexError: sys.exit('No path defined!')
-workpath = os.path.abspath(workpath)
-if not os.path.exists(workpath): sys.exit('Invalid path!')'''
-
-
-'''db = sqlite3.connect(os.path.abspath(workpath))
-db.row_factory = sqlite3.Row
-db.text_factory = str'''
-
-cursor = db.cursor()
-
+db = connect_database(settings, None)
 # check DB_SCHEMA_VERSION
 incompatible = check_db_version(db)
 if incompatible:
     sys.exit('Sorry, database ' + workpath + ' is incompatible.')
 
-# ^^^ above was the obligatory formal code, the actual procedures of interest are below VVV
+# ^^^ the obligatory code above, the actual procedures of interest below VVV
 
-#try: cursor.execute( 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=?)', ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
+cursor = db.cursor()
 try: cursor.execute( 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=%s)', ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
 except: sys.exit('Fatal error: ' + "%s" % sys.exc_info()[1])
 
