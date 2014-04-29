@@ -38,7 +38,7 @@ DEFAULT_SETUP = {
                     'port': 5432, # may be 5433
                     'user': 'postgres',
                     'password': '',
-                    'dbname': DEFAULT_POSTGRES_DB,
+                    'dbname': 'postgres', # for initial first-time connection
                     },
                 }
 SQLITE_DB_SCHEMA = '''CREATE TABLE "results" ("id" INTEGER PRIMARY KEY NOT NULL, "checksum" TEXT, "structures" TEXT, "energy" REAL, "phonons" TEXT, "electrons" TEXT, "info" TEXT, "apps" TEXT);

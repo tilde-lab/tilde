@@ -1,5 +1,9 @@
 # script for initial Postgres setup
 # creates Postgres DB with the schema
+#
+# Usage:
+# ./pg_db.py [creates only schema in the existing DB]
+# ./pg_db.py doall [creates DB and schema]
 
 import os, sys
 
@@ -23,7 +27,7 @@ if not skip_db_creation:
     # We can only be sure this DB exists!
     conn_setup['db']['dbname'] = 'postgres'
     try: db = psycopg2.connect(host = conn_setup['db']['host'], port = int(conn_setup['db']['port']), user = conn_setup['db']['user'], password = conn_setup['db']['password'], database = conn_setup['db']['dbname'])
-    except: sys.exit('Cannot connect with these creds: ' + str(conn_setup['db']))
+    except: sys.exit('Cannot connect for DB creation with these creds: ' + str(conn_setup['db']))
 
     db.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = db.cursor()
@@ -41,7 +45,7 @@ if not write_settings(settings):
 
 db = connect_database(settings, None)
 if not db:
-    sys.exit('Cannot connect with these creds: ' + str(settings['db']))
+    sys.exit('Cannot connect for schema creation with these creds: ' + str(settings['db']))
 
 cursor = db.cursor()
 for i in POSTGRES_DB_SCHEMA.splitlines():

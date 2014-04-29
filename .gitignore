@@ -15,4 +15,3 @@ parsers/WIEN2K/*
 parsers/FHIAIMS
 parsers/FHIAIMS/*
 tests/anlzr.py
-tests/sklearn
