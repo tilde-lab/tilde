@@ -310,4 +310,5 @@ for target in args.path:
         print header_line + add_msg + output_lines
         # NB: from here the calc instance is not functional anymore!
 
+if db: db.close()
 print "Done in %1.2f sc" % (time.time() - starttime)

@@ -137,15 +137,13 @@
             <form class="_hotkeyable" method="post" action="/">
                 <br /><br />
                 <div><label for="settings_title">Repo title:</label> <input type="text" value="" id="settings_title" style="border:1px solid #06c;height:30px;width:75%;float:right;" /></div>
-                <div style="clear:none;float:left;width:30%;margin-left:28px;padding-top:32px;"><input type="checkbox" id="settings_debug" /> <label for="settings_debug">debug</label></div>
-                <div style="clear:none;float:right;width:40%;margin-right:28px;"><input type="text" maxlength="5" value="" id="settings_webport" style="border:1px solid #06c;height:30px;width:50px;float:right;" /><label for="settings_webport" style="float:right;">Web port:&nbsp;</label></div>            
-                <div class="clear"></div>
-                <div style="padding:15px;"><input type="checkbox" id="settings_demo" /> <label for="settings_demo">protected mode (edit <i>settings.json</i> to disable)</label></div>
-                <br />
-                <div style="text-align:center;">Database type:</div>
+                <div style="clear:none;float:left;width:25%;margin-left:28px;padding-top:32px;"><input type="checkbox" id="settings_debug" /> <label for="settings_debug">debug</label></div>
+                <div style="clear:none;float:left;width:30%;padding-top:32px;"><input type="checkbox" id="settings_demo" /> <label for="settings_demo">protected mode</label></div>
+                <div style="clear:none;float:right;width:30%;margin-right:28px;"><input type="text" maxlength="5" value="" id="settings_webport" style="border:1px solid #06c;height:30px;width:50px;float:right;" /><label for="settings_webport" style="float:right;">Web port:&nbsp;</label></div>
+                <div class="clear" style="height:15px;padding:0;"></div>
                 <div style="text-align:center;">
-                    <input type="radio" name="settings_db_type" id="settings_db_type_sqlite" /><label for="settings_db_type_sqlite"> internal (sqlite)</label>&nbsp;&nbsp;
-                    <input type="radio" name="settings_db_type" id="settings_db_type_postgres" /><label for="settings_db_type_postgres"> external (postgres)</label>
+                    <input type="radio" name="settings_db_type" id="settings_db_type_sqlite" /><label for="settings_db_type_sqlite"> internal DB (sqlite)</label>
+                    <input type="radio" name="settings_db_type" id="settings_db_type_postgres" /><label for="settings_db_type_postgres"> external DB (postgres)</label>
                 </div>
                 <div id="settings_postgres" style="display:none;padding:0px;">
                     <div style="clear:none;float:left;width:45%;padding-top:15px;"><label for="settings_postgres_host">Host:</label> <input type="text" value="" id="settings_postgres_host" style="border:1px solid #06c;height:30px;width:70%;float:right;" /></div>
