@@ -278,7 +278,7 @@ class INFOOUT(Output):
                         bz_vec_ref = bz_vec_cur        
                         d += linalg.norm( bz_vec_dir )
                         band_obj['abscissa'].append(d)
-                    band_obj['stripes'] = transpose(array(columns)).tolist()
+                    band_obj['stripes'] = transpose(columns).tolist()
                     self.electrons['bands'] = Ebands(band_obj)
                         
             finally: f.close()
@@ -449,5 +449,7 @@ def parse_eigvals(fp, e_last):
             else:
                 n, e, occ = s.split()
                 columns[-1].append(float(e)*Hartree)
-    columns.pop() # last []            
+    columns.pop() # last []
+    columns = array(columns)
+    if columns.ndim != 2: raise ValueError
     return kpts, columns

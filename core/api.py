@@ -1,6 +1,6 @@
 
 # Tilde project: core
-# v260414
+# v290414
 
 __version__ = "0.2.7"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
@@ -299,18 +299,17 @@ class API:
         NB: this may be run from outside
         @returns (Tilde_obj, error)
         '''
-        calc, error = None, None
+        calc, error = None, None        
         try: f = open(file, 'r')
-        except IOError: return (None, 'read error!')
+        except IOError: return (None, 'read error!')        
+        if is_binary_string(f.read(2048)): return (None, 'nothing found (binary data)...')
+        f.seek(0)
         i = 0
-        stop_read, binary_check = False, True
+        stop_read = False
         while 1:
             if i>700 or stop_read: break # criterion: parser must detect its working format in first N lines of output
             str = f.readline()
             if not str: break
-            if binary_check:
-                if is_binary_string(str): break
-                else: binary_check = False
             str = str.replace('\r\n', '\n').replace('\r', '\n')
             for name, Parser in self.Parsers.iteritems():
                 if Parser.fingerprints(str):
