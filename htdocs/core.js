@@ -151,6 +151,9 @@ function open_ipane(cmd, target){
         case 'vib':
             __send('phonons',  {datahash: target} );
             break;
+        case 'optstory':
+            __send(cmd,  {datahash: target} );
+            break;
     }
     _tilde.tab_buffer.push(target+'_'+cmd);
 }
@@ -619,6 +622,8 @@ function resp__summary(req, data){
         $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cw/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
     }
     
+    if ($.inArray('optimization', info.calctypes) != -1){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
+    
     if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
     
@@ -646,6 +651,9 @@ function resp__summary(req, data){
     } else {
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('ii').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
     }
+}
+function resp__optstory(req, data){
+    console.log(data);
 }
 function resp__settings(req, data){
     if (req.area == 'path'){

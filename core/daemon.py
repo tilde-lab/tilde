@@ -318,7 +318,7 @@ class Request_Handler:
     def summary(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        sql = 'SELECT structures, energy, phonons, electrons, info FROM results WHERE checksum = %s' % settings['ph']
+        sql = 'SELECT phonons, electrons, info FROM results WHERE checksum = %s' % settings['ph']
         try: cursor.execute( sql, (userobj['datahash'], ) )
         except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
@@ -349,14 +349,27 @@ class Request_Handler:
                     tags.sort(key=lambda x: x['sort'])
 
                     phon_flag = False
-                    if len(row[2])>10: phon_flag = True # avoids json.loads
+                    if len(row[0])>10: phon_flag = True # avoids json.loads
 
-                    e_flag = {'dos': True, 'bands': True}
-                    # avoids json.loads
-                    if '"dos": {}' in row[3] and '"projected": []' in row[3]: e_flag['dos'] = False
-                    if '"bands": {}' in row[3]: e_flag['bands'] = False
-
-                    data = json.dumps({  'structures': row[0][-1], 'energy': row[1], 'phonons': phon_flag, 'electrons': e_flag, 'info': row[4], 'tags': tags  })
+                    e_flag = {'dos': True, 'bands': True}                    
+                    if '"dos": {}' in row[1] and '"projected": []' in row[1]: e_flag['dos'] = False # avoids json.loads
+                    if '"bands": {}' in row[1]: e_flag['bands'] = False
+                        
+                    data = json.dumps({ 'phonons': phon_flag, 'electrons': e_flag, 'info': row[2], 'tags': tags  })
+        return (data, error)
+        
+    @staticmethod
+    def optstory(userobj, session_id):
+        data, error = None, None
+        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
+        sql = 'SELECT structures, info FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])        
+        
+        row = cursor.fetchone()
+        if row is None: return (data, 'No objects found!')
+        data = json.dumps({ 'optstory': row[0]})
+        
         return (data, error)
 
     @staticmethod

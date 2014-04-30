@@ -190,6 +190,7 @@ if args.datamining:
             out += "\n"
             i+=1
     print out + postmessage
+    db.close()
     sys.exit()
 
 # PROCESSING THE CALCULATIONS AT THE TARGET PATHS IN FILE SYSTEM
