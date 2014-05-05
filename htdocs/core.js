@@ -184,14 +184,37 @@ function iframe_download( request, scope, hash ){
     $('body').append('<form style="display:none;" id="data-download-form" action="/' + request + '/' + scope + '/' + hash + '" target="file-process" method="get"></form>');
     $('#data-download-form').submit().remove();
 }
+function e_plotter(req, plot, divclass, ordinate){
+    // no eval JSON here!
+    var options = {
+        legend: {show: false},
+        series: {lines: {show: true}, points: {show: true}, shadowSize: 3},
+        xaxis: {ticks: [], labelHeight: 40},
+        yaxis: {color: '#eeeeee', labelWidth: 50},
+        grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
+    };
+    
+    var target = $('#o_'+req.datahash+' div.'+divclass);
+
+    var cpanel = target.prev('div');
+    cpanel.parent().removeClass('ii');
+    
+    $.plot(target, plot, options);
+    $(target).bind("plotclick", function(event, pos, item){
+        if (item) document.getElementById('f_'+req.datahash).contentWindow.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.datahash + '/' + item.dataIndex;
+    });
+    
+    target.append('<div style="position:absolute;z-index:4;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">Step</div>&nbsp;');
+    target.append('<div style="position:absolute;z-index:4;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
+}
 function dos_plotter(req, plot, divclass, axes){
     var plot = $.evalJSON(plot);
     var options = {
-        legend:{show:false},
-        series:{lines:{show:true}, points:{show:false}, shadowSize:0},
-        xaxis:{color:'#eeeeee', labelHeight:40},
-        yaxis:{ticks:[], labelWidth:30},
-        grid:{borderWidth:1, borderColor:'#000'}
+        legend: {show: false},
+        series: {lines: {show: true}, points: {show: false}, shadowSize: 0},
+        xaxis: {color: '#eeeeee', labelHeight: 40},
+        yaxis: {ticks: [], labelWidth: 30},
+        grid: {borderWidth: 1, borderColor: '#000'}
     };
 
     var cpanel = $('#o_'+req.datahash+' div.'+divclass).prev('div');
@@ -209,7 +232,7 @@ function dos_plotter(req, plot, divclass, axes){
         var target = $('#o_'+req.datahash+' div.'+divclass);
         $.plot(target, data_to_plot, options);
 
-        target.append('<div style="position:absolute;z-index:14;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">'+axes.x+'</div>&nbsp;')
+        target.append('<div style="position:absolute;z-index:14;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">'+axes.x+'</div>&nbsp;');
         target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.5em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+axes.y+'</div>');
     }
     cpanel.find("input").click(plot_user_choice);
@@ -219,10 +242,11 @@ function dos_plotter(req, plot, divclass, axes){
 function bands_plotter(req, plot, divclass, ordinate){
     var plot = $.evalJSON(plot);
     var options = {
-        legend:{show:false},
-        series:{lines:{show:true}, points:{show:false}, shadowSize:0},
-        xaxis:{color:'#eeeeee', labelHeight:40, font:{size:9.5, color:'#000'}, labelAngle:270},
-        yaxis:{color:'#eeeeee', labelWidth:50}, grid:{borderWidth:1, borderColor:'#000'}
+        legend: {show: false},
+        series: {lines: {show: true}, points: {show: false}, shadowSize: 0},
+        xaxis: {color: '#eeeeee', labelHeight: 40, font:{size: 9.5, color: '#000'}, labelAngle: 270},
+        yaxis: {color: '#eeeeee', labelWidth: 50},
+        grid: {borderWidth: 1, borderColor: '#000'}
     };
 
     var target = $('#o_'+req.datahash+' div.'+divclass);
@@ -622,7 +646,7 @@ function resp__summary(req, data){
         $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cw/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
     }
     
-    if ($.inArray('optimization', info.calctypes) != -1){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
+    if ($.inArray('optimization', info.calctypes) != -1 && !_tilde.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
     
     if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
@@ -646,14 +670,11 @@ function resp__summary(req, data){
     open_ipane('3dview', req.datahash);    
     if (!_tilde.degradation){
         _tilde.rendered[req.datahash] = true;
-        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash+'"></iframe>');
+        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
         //$('#phonons_animate').text('animate');
     } else {
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('ii').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
     }
-}
-function resp__optstory(req, data){
-    console.log(data);
 }
 function resp__settings(req, data){
     if (req.area == 'path'){
@@ -723,19 +744,24 @@ function resp__check_export(req, data){
     iframe_download( 'export', req.db, req.id );
 }
 function resp__ph_dos(req, data){
-    dos_plotter(req, data, 'ph_dos-holder', {x: 'Frequency, cm<sup>-1</sup>', y: 'DOS, states/cm<sup>-1</sup>'});
+    dos_plotter(req, data, 'ph_dos_holder', {x: 'Frequency, cm<sup>-1</sup>', y: 'DOS, states/cm<sup>-1</sup>'});
 }
 function resp__e_dos(req, data){
-    dos_plotter(req, data, 'e_dos-holder', {x: 'E - E<sub>f</sub>, eV', y: 'DOS, states/eV'});
+    dos_plotter(req, data, 'e_dos_holder', {x: 'E - E<sub>f</sub>, eV', y: 'DOS, states/eV'});
 }
 function resp__ph_bands(req, data){
-    bands_plotter(req, data, 'ph_bands-holder', 'Frequency, cm<sup>-1</sup>');
+    bands_plotter(req, data, 'ph_bands_holder', 'Frequency, cm<sup>-1</sup>');
 }
 function resp__e_bands(req, data){
-    bands_plotter(req, data, 'e_bands-holder', 'E - E<sub>f</sub>, eV');
+    bands_plotter(req, data, 'e_bands_holder', 'E - E<sub>f</sub>, eV');
+}
+function resp__optstory(req, data){
+    var data = $.evalJSON(data);
+    e_plotter(req, data.optstory, 'optstory_holder', '&Delta;E<sub>tot</sub>, eV');
+    open_ipane('3dview', req.datahash);
 }
 function resp__try_pgconn(req, data){
-    // continue our work
+    // continue gracefully
     __send('settings',  {area: 'general', settings: _tilde.settings} );
 }
 /**
@@ -756,7 +782,7 @@ $(document).ready(function(){
     centerize();
     if (navigator.appName == 'Microsoft Internet Explorer'){
         _tilde.degradation = true;
-        //notify('Microsoft Internet Explorer doesn\'t work properly with this page.<br />Please, use Chrome, Firefox, Safari or Opera browser.<br />Thank you in advance and sorry for inconvenience.');
+        notify('Microsoft Internet Explorer doesn\'t support display of some content. You may try other browser.<br />Thank you in advance and sorry for inconvenience.');
     }
     $('#notifybox').hide();
 
@@ -986,7 +1012,7 @@ $(document).ready(function(){
 
         var anchors = document.location.hash.substr(1).split('/');
         if (anchors.length != 2){
-            notify('Unexpected behaviour #1! Please, report this to the developers!');
+            notify('Unexpected behaviour (ref #1), please, report this to the developers!');
             return;
         }
         var hashes = anchors[1].split('+');
@@ -1018,7 +1044,7 @@ $(document).ready(function(){
 
             var anchors = document.location.hash.substr(1).split('/');
             if (anchors.length != 2){
-                notify('Unexpected behaviour #2! Please, report this to the developers!');
+                notify('Unexpected behaviour (ref #2), please, report this to the developers!');
                 return;
             }
             var hashes = anchors[1].split('+');
@@ -1036,7 +1062,7 @@ $(document).ready(function(){
                 // remove the first tab
                 var anchors = document.location.hash.substr(1).split('/');
                 if (anchors.length != 2){
-                    notify('Unexpected behaviour #3! Please, report this to the developers!');
+                    notify('Unexpected behaviour (ref #3), please, report this to the developers!');
                     return;
                 }
                 var hashes = anchors[1].split('+');
@@ -1120,7 +1146,7 @@ $(document).ready(function(){
 
                     var anchors = document.location.hash.substr(1).split('/');
                     if (anchors.length != 2){
-                        notify('Unexpected behaviour #5! Please, report this to the developers!');
+                        notify('Unexpected behaviour (ref #5), please, report this to the developers!');
                         return;
                     }
                     var hashes = anchors[1].split('+');
@@ -1155,7 +1181,7 @@ $(document).ready(function(){
         $(this).hide();
         var anchors = document.location.hash.substr(1).split('/');
         if (anchors.length != 2){
-            notify('Unexpected behaviour #4! Please, report this to the developers!');
+            notify('Unexpected behaviour (ref #4), please, report this to the developers!');
             return;
         }
         var hashes = anchors[1].split('+');

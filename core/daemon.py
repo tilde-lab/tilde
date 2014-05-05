@@ -45,7 +45,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 from settings import connect_database, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula, str2html
-from plotter import plotter
+from plotter import bdplotter, eplotter
 
 
 DELIM = '~#~#~'
@@ -368,7 +368,31 @@ class Request_Handler:
         
         row = cursor.fetchone()
         if row is None: return (data, 'No objects found!')
-        data = json.dumps({ 'optstory': row[0]})
+        
+        info = json.loads(row[1])
+        
+        if not 'tresholds' in info: return (data, 'No convergence data found!')
+        
+        data = json.dumps({ 'structures': row[0], 'optstory': eplotter( task='optstory', data=info['tresholds'] ) })
+        
+        return (data, error)
+        
+    @staticmethod
+    def estory(userobj, session_id):
+        data, error = None, None
+        cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
+        sql = 'SELECT info FROM results WHERE checksum = %s' % settings['ph']
+        try: cursor.execute( sql, (userobj['datahash'], ) )
+        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])        
+        
+        row = cursor.fetchone()
+        if row is None: return (data, 'No objects found!')
+        
+        info = json.loads(row[0])
+        
+        if not 'convergence' in info: return (data, 'No convergence data found!')
+        
+        data = json.dumps(eplotter( task='convergence', data=info['convergence'] ))
         
         return (data, error)
 
@@ -578,7 +602,7 @@ class Request_Handler:
         val_max = eigenvalues[-1] + 25
         pitch = 3
 
-        return (json.dumps(plotter(task = 'dos', eigenvalues=eigenvalues, impacts=impacts, atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
+        return (json.dumps(bdplotter(task = 'dos', eigenvalues=eigenvalues, impacts=impacts, atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
         
     @staticmethod
     def ph_bands(userobj, session_id): # currently supported for: CRYSTAL, "VASP"
@@ -599,7 +623,7 @@ class Request_Handler:
         values = {}
         for set in p: values[ set['bzpoint'] ] = set['freqs']
 
-        return (json.dumps(plotter( task = 'bands', values = values, xyz_matrix = s[-1]['cell'] )), error)
+        return (json.dumps(bdplotter( task = 'bands', values = values, xyz_matrix = s[-1]['cell'] )), error)
 
     @staticmethod
     def e_dos(userobj, session_id): # currently supported for: EXCITING, VASP
@@ -623,12 +647,12 @@ class Request_Handler:
         pitch=(val_max - val_min) / 200
         
         '''if 'e_proj_eigvals' in e and 'impacts' in e:
-            data = json.dumps(plotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))'''
+            data = json.dumps(bdplotter(task = 'dos', eigenvalues=e['e_proj_eigvals'], impacts=e['impacts'], atomtypes=s[-1]['symbols'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch))'''
         
         # EXCITING EIGVAL.OUT
         if len(e['projected']):
             sigma=0.1 # tested on comparison with EXCITING XMLs
-            return (json.dumps(plotter(task = 'dos', eigenvalues = e['projected'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
+            return (json.dumps(bdplotter(task = 'dos', eigenvalues = e['projected'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
             
         # VASP vasprun.xml
         # EXCITING dos.xml        
@@ -641,7 +665,7 @@ class Request_Handler:
             for k in e['dos'].keys():
                 e['dos'][k] = e['dos'][k][keep[0] : keep[-1]+1]        
             
-            return (json.dumps(plotter(task = 'dos', precomputed = e['dos'])), error)
+            return (json.dumps(bdplotter(task = 'dos', precomputed = e['dos'])), error)
 
     @staticmethod
     def e_bands(userobj, session_id): # currently supported for: EXCITING
@@ -664,7 +688,7 @@ class Request_Handler:
             
         e['bands']['stripes'] = ifilter(lambda value: val_min < sum(value)/len(value) < val_max, e['bands']['stripes'])
         
-        return (json.dumps(plotter( task = 'bands', precomputed = e['bands'] )), error)
+        return (json.dumps(bdplotter( task = 'bands', precomputed = e['bands'] )), error)
         
     @staticmethod
     def delete(userobj, session_id):
@@ -824,7 +848,7 @@ class IndexHandler(tornado.web.RequestHandler):
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
-            raise tornado.web.HTTPError(500)
+            raise tornado.web.HTTPError(404)
         else:
             struc = json.loads(row['structures'])
             filename = Tilde.formula( [i[0] for i in struc[-1]['atoms']] )
@@ -837,9 +861,14 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
         if not '/' in req_str: raise tornado.web.HTTPError(404)
         items = req_str.split('/')
-        if len(items) != 2: raise tornado.web.HTTPError(404)
-        db, hash = items
-        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)        
+        if len(items) < 2 or len(items) > 3: raise tornado.web.HTTPError(404)
+        
+        db, hash, pos = items[0], items[1], -1
+        if len(items) > 2:
+            try: pos = int(items[2])
+            except ValueError: raise tornado.web.HTTPError(404)
+        
+        if len(hash) != 56 or not db in Repo_pool: raise tornado.web.HTTPError(404)
         
         try:
             cursor = Repo_pool[ db ].cursor()
@@ -848,22 +877,25 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
-            raise tornado.web.HTTPError(500)
+            raise tornado.web.HTTPError(404)
         else:
-            overlay_data = json.loads(row[2])
-            overlayed_apps = {}
-            for appkey in Tilde.Apps.keys():
-                if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
-                    overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
+            try: ase_obj = dict2ase(json.loads(row[0])[pos])
+            except IndexError: raise tornado.web.HTTPError(404)
 
-            symmetry = json.loads(row[1])
-            symmetry = symmetry['ng']
-            
-            ase_obj = dict2ase(json.loads(row[0])[-1])                        
-                        
+            info = json.loads(row[1])
+            #symmetry = info['ng']
+            nstruc = len(info['tresholds']) - 1 # from zero-th
+
+            overlayed_apps = {}
+            if pos in [-1, nstruc]:
+                overlay_data = json.loads(row[2])
+                for appkey in Tilde.Apps.keys():
+                    if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
+                        overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
+                   
             #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
             
-            if len(ase_obj) > 1250: raise tornado.web.HTTPError(500) # Sorry, this structure is too large for me to display!
+            if len(ase_obj) > 1250: raise tornado.web.HTTPError(404) # Sorry, this structure is too large for me to display!
             
             #ase_obj.center() # NB: check for slabs!            
             #mass_center = ase_obj.get_center_of_mass()
@@ -917,7 +949,7 @@ class DataExportHandler(tornado.web.RequestHandler):
             row = cursor.fetchone()
             if not row: raise tornado.web.HTTPError(404)
         except:
-            raise tornado.web.HTTPError(500)
+            raise tornado.web.HTTPError(404)
         else:
             info = json.loads(row[0])
             if os.path.exists(info['location']):

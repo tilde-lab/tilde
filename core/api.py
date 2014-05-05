@@ -1,6 +1,6 @@
 
 # Tilde project: core
-# v290414
+# v050514
 
 __version__ = "0.2.7"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
@@ -378,7 +378,7 @@ class API:
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
         if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
-        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
+        if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
         if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
         if calc.energy: calc.info['calctypes'].append('total energy')
 

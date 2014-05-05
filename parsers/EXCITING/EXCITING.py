@@ -1,6 +1,6 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v180314
+# v050514
 
 import os
 import sys
@@ -46,6 +46,7 @@ class INFOOUT(Output):
         
         first_cycle_lithium, opt_flag = True, False
         
+        # TODO: relate with schema file?
         H_mapping = {
         1: 'pure HF',
         3: 'LSDAPerdew-Wang',
@@ -135,15 +136,15 @@ class INFOOUT(Output):
             elif 'Structure-optimization module started' in line:
                 opt_flag = True
                 # First cycle convergence statuses
-                self.convergence = self.compare_vals(energies)
-                self.ncycles.append(len(self.convergence))              
+                self.info['convergence'] = self.compare_vals(energies)
+                self.info['ncycles'].append(len(self.info['convergence']))              
                 
             elif '| Updated atomic positions ' in line: # Lithium
                 atoms_holder.append([])
                 
                 if first_cycle_lithium:
                     # First cycle convergence statuses
-                    self.convergence = self.compare_vals(energies)
+                    self.info['convergence'] = self.compare_vals(energies)
                     first_cycle_lithium = False             
             
             elif '| Optimization step ' in line: # Beryllium
@@ -160,7 +161,7 @@ class INFOOUT(Output):
                         break
                     
                     if ' scf iterations ' in self.data[n]:
-                        self.ncycles.append(  int(self.data[n].split(":")[-1].split()[0])  )
+                        self.info['ncycles'].append(  int(self.data[n].split(":")[-1].split()[0])  )
                     elif 'Maximum force magnitude' in self.data[n]:
                         f = self.data[n].split(":")[-1].split("(")
                         forces.append( float(f[0]) - float(f[-1][:-2]) )
@@ -204,14 +205,14 @@ class INFOOUT(Output):
             try: self.energy = energies[-1]
             except IndexError: pass
         
-        if not self.convergence:
+        if not self.info['convergence']:
             # First cycle convergence statuses
-            self.convergence = self.compare_vals(energies)
+            self.info['convergence'] = self.compare_vals(energies)
         
-        if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.ncycles): self.warning("Warning! Unexpected convergence data format!")
+        if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.info['ncycles']): self.warning("Warning! Unexpected convergence data format!")
         else:
             for n in range(len(energies_opt)):
-                self.tresholds.append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
+                self.info['tresholds'].append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
             
         # lattice is always the same
         for structure in atoms_holder:
@@ -226,7 +227,7 @@ class INFOOUT(Output):
         # Check if convergence achieved right away from the first cycle and account that
         if opt_flag and len(self.structures) == 1:
             self.structures.append(self.structures[-1])
-            self.tresholds.append([0.0, 0.0, 0.0, 0.0, energies[-1]])
+            self.info['tresholds'].append([0.0, 0.0, 0.0, 0.0, energies[-1]])
         
         # Warnings
         #try: w = map(lambda x: x.strip(), open(cur_folder + '/WARNINGS.OUT').readlines())

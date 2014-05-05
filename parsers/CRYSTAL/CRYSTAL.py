@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v120414
+# v050514
 
 import os
 import sys
@@ -133,7 +133,7 @@ class CRYSTOUT(Output):
             self.phonons['dfp_disps'], self.phonons['dfp_magnitude'] = self.get_ph_sym_disps()
             self.phonons['dielectric_tensor'] = self.get_static_dielectric_tensor()
 
-            self.convergence, self.ncycles, self.tresholds = self.get_convergence()
+            self.info['convergence'], self.info['ncycles'], self.info['tresholds'] = self.get_convergence()
 
             self.set_method()
             
@@ -924,8 +924,8 @@ class CRYSTOUT(Output):
             if '\n ALPHA-BETA ELECTRONS LOCKED TO ' in self.data:
                 spin_info = self.data.split('\n ALPHA-BETA ELECTRONS LOCKED TO ', 1)[-1].split("\n", 1)[0].replace('FOR', '').split()
                 cyc = int(spin_info[1])
-                if self.ncycles:
-                    if self.ncycles[0] < cyc:
+                if self.info['ncycles']:
+                    if self.info['ncycles'][0] < cyc:
                         self.method['lockstate'] = int( spin_info[0] )
 
         # K-points part

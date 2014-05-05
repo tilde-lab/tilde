@@ -3,13 +3,13 @@
 <head>
 <title></title>
 <meta charset="utf-8" />
-<link type="text/css" href="/static/~.css?6" rel="stylesheet" media="screen" />
+<link type="text/css" href="/static/~.css?7" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="/static/jquery.json.min.js"></script>
 <script type="text/javascript" src="/static/socket.io.min.js"></script>
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
 <script type="text/javascript" src="/static/jstorage.min.js"></script>
-<script type="text/javascript" src="/static/core.js"></script>
+<script type="text/javascript" src="/static/core.js?7"></script>
 </head>
 <body>
 
@@ -185,7 +185,7 @@
         </div>
         
         <div class="ipane ii" rel="vib">
-            <div class="ipane-local-menu">
+            <div class="ipane_local_menu">
                 <div class="btn btn2 left ph_degenerated_trigger">show degenerated</div>
                 <div class="btn btn2 left ph_animate_trigger">animate</div>
             </div>
@@ -209,8 +209,9 @@
         <div class="ipane" rel="inp">
         </div>
         
-        <div class="ipane" rel="optstory">
-            <div class="optstory_renderer"></div>
+        <div class="ipane ii" rel="optstory">
+            <div class="ipane_local_menu center"></div>
+            <div class="optstory_holder flot_holder"></div>
         </div>
     </div>
 
@@ -222,6 +223,7 @@
             <li rel="e_bands" style="display:none;">el.bands</li>
             <li rel="ph_dos" style="display:none;">vib.DOS</li>
             <li rel="ph_bands" style="display:none;">vib.bands</li>
+            <li rel="conv_e" style="display:none;">energy conv.</li>
         </ul>
 
         <div class="cross _destroy"></div>
@@ -229,29 +231,37 @@
         <div class="ipane ii" rel="3dview">
             <div class="renderer"></div>
         </div>
+        
         <div class="ipane ii" rel="ph_dos">
-            <div class="ipane-local-menu center">
+            <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
-            <div class="ph_dos-holder flot_holder"></div>
+            <div class="ph_dos_holder flot_holder"></div>
         </div>
+        
         <div class="ipane ii" rel="e_dos">
-            <div class="ipane-local-menu center">
+            <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
-            <div class="e_dos-holder flot_holder"></div>
+            <div class="e_dos_holder flot_holder"></div>
         </div>
+        
         <div class="ipane ii" rel="ph_bands">
-            <div class="ipane-local-menu center">
+            <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
-            <div class="ph_bands-holder flot_holder"></div>
+            <div class="ph_bands_holder flot_holder"></div>
         </div>
+        
         <div class="ipane ii" rel="e_bands">
-            <div class="ipane-local-menu center">
+            <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
-            <div class="e_bands-holder flot_holder"></div>
+            <div class="e_bands_holder flot_holder"></div>
+        </div>
+        
+        <div class="ipane ii" rel="conv_e">
+            <div class="conv_e_holder flot_holder"></div>
         </div>
     </div>
     </div>

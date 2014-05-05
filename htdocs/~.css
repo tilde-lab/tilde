@@ -52,7 +52,7 @@ div.tiny{font-size:0.7em;line-height:1.1;overflow-x:hidden;}
 /* IPANES */
 div.ipane{display:none;border:1px solid #06c;width:100%;min-height:100px;margin-top:23px;z-index:1;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;word-wrap:break-word;}
 div.ipane > div{clear:both;}
-div.ipane div.ipane-local-menu{height:34px;padding:10px 15px 0 30px;clear:none;}
+div.ipane div.ipane_local_menu{height:34px;padding:10px 15px 0 30px;clear:none;}
 #settings_holder div.ipane_db_field{width:85%;height:30px;border:1px solid #ccc;margin-bottom:6px !important;padding:10px !important;cursor:pointer;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;}
 #settings_holder div.ipane_db_field:hover{border:1px solid #000;background:#ffc;}
 #settings_holder div.ipane_db_field span{font-size:1.5em;float:left;}
@@ -166,7 +166,7 @@ div.ii{background:#fff url(images/spinner.gif) no-repeat center center;}
 /* CONSOLE */
 #console_holder{z-index:20;}
 #debug{font-size:1.05em;width:100%;height:100%;overflow-y:scroll;overflow-x:auto;word-wrap:break-word;}
-#console_trigger{position:fixed;bottom:0.5em;right:0.5em;background:#fff;color:#000;text-align:center;font-size:3em;line-height:0.6em;cursor:pointer;z-index:19;}
+#console_trigger{position:fixed;bottom:0.5em;right:0.5em;color:#000;text-align:center;font-size:3em;line-height:0.6em;cursor:pointer;z-index:19;}
 
 /* TAGS */
 #tagcloud_holder{background:#fff url(images/spinner.gif) no-repeat center center;z-index:18;}

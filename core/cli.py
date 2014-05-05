@@ -2,7 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v260414
+# v050514
 
 import sys
 import os
@@ -251,11 +251,11 @@ for target in args.path:
             output_lines += out[:-1] + "\n"
 
         if args.convergence:
-            if calc.convergence:
-                output_lines += str(calc.convergence) + "\n"
-            if calc.tresholds:
-                for i in range(len(calc.tresholds)):
-                    output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
+            if calc.info['convergence']:
+                output_lines += str(calc.info['convergence']) + "\n"
+            if calc.info['tresholds']:
+                for i in range(len(calc.info['tresholds'])):
+                    output_lines += "%1.2e" % calc.info['tresholds'][i][0] + " "*2 + "%1.5f" % calc.info['tresholds'][i][1] + " "*2 + "%1.4f" % calc.info['tresholds'][i][2] + " "*2 + "%1.4f" % calc.info['tresholds'][i][3] + " "*2 + "E=" + "%1.4f" % calc.info['tresholds'][i][4] + " eV" + " "*2 + "(%s)" % calc.info['ncycles'][i] + "\n"
             
         if args.structures:
             out = ''
