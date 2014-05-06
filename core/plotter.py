@@ -167,14 +167,14 @@ def eplotter(task, data): # CRYSTAL, EXCITING
         color = '#CC0000'
         for n, i in enumerate(data):
             fdata.append([n, i[4]])
+        fdata = array(fdata)
+        fdata[:,1] -= min(fdata[:,1]) # this normalizes values to minimum (by 2nd col)
+        fdata = fdata.tolist()
     
     elif task == 'convergence':
-        color = '#000099'
+        color = '#0066CC'
         for n, i in enumerate(data):
-            fdata.append([n, i])
-            
-    fdata = array(fdata)
-    fdata -= min(fdata[:,1]) # this normalizes values to minimum (by 2nd col)
-    fdata = fdata.tolist()
+            fdata.append([n, i])            
+
     results.append({'color': color, 'clickable:': True, 'data': fdata})
     return results

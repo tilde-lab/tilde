@@ -146,13 +146,12 @@ function open_ipane(cmd, target){
         case 'e_dos':
         case 'ph_bands':
         case 'e_bands':
+        case 'optstory':
+        case 'estory':
             __send(cmd,  {datahash: target} );
             break;
         case 'vib':
             __send('phonons',  {datahash: target} );
-            break;
-        case 'optstory':
-            __send(cmd,  {datahash: target} );
             break;
     }
     _tilde.tab_buffer.push(target+'_'+cmd);
@@ -185,11 +184,11 @@ function iframe_download( request, scope, hash ){
     $('#data-download-form').submit().remove();
 }
 function e_plotter(req, plot, divclass, ordinate){
-    // no eval JSON here!
+    var plot = $.evalJSON(plot);
     var options = {
         legend: {show: false},
         series: {lines: {show: true}, points: {show: true}, shadowSize: 3},
-        xaxis: {ticks: [], labelHeight: 40},
+        xaxis: {labelHeight: 40},
         yaxis: {color: '#eeeeee', labelWidth: 50},
         grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
     };
@@ -648,6 +647,8 @@ function resp__summary(req, data){
     
     if ($.inArray('optimization', info.calctypes) != -1 && !_tilde.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
     
+    if (info.convergence.length && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=estory]').show();
+    
     if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
     
@@ -667,8 +668,9 @@ function resp__summary(req, data){
     html += '</ul></div>';
     
     $('#o_'+req.datahash + ' div[rel=summary]').append('<div class=summary>'+html+'</div>');
-    open_ipane('3dview', req.datahash);    
-    if (!_tilde.degradation){
+    open_ipane('3dview', req.datahash);
+    
+    if (!_tilde.degradation){       
         _tilde.rendered[req.datahash] = true;
         $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
         //$('#phonons_animate').text('animate');
@@ -756,9 +758,11 @@ function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands_holder', 'E - E<sub>f</sub>, eV');
 }
 function resp__optstory(req, data){
-    var data = $.evalJSON(data);
-    e_plotter(req, data.optstory, 'optstory_holder', '&Delta;E<sub>tot</sub>, eV');
+    e_plotter(req, data, 'optstory_holder', '&Delta;E<sub>tot</sub>, eV');
     open_ipane('3dview', req.datahash);
+}
+function resp__estory(req, data){
+    e_plotter(req, data, 'estory_holder', 'log(E<sub>i</sub>-E<sub>i+1</sub>), eV');
 }
 function resp__try_pgconn(req, data){
     // continue gracefully

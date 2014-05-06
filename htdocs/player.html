@@ -519,7 +519,8 @@ window.onload = function(){
     window.addEventListener('DOMMouseScroll', rescale, false);
     window.addEventListener('mousewheel', rescale, false);
     window.addEventListener('hashchange', redraw, false);
-
+    window.onhashchange = redraw;
+    
     if (document.location.hash.length){
         var uri = document.location.hash.substr(1).split('/');
         if (uri.length == 2 || uri.length == 3) json_download( 'json3d/' + uri.join('/') );

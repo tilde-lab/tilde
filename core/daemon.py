@@ -362,18 +362,18 @@ class Request_Handler:
     def optstory(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        sql = 'SELECT structures, info FROM results WHERE checksum = %s' % settings['ph']
+        sql = 'SELECT info FROM results WHERE checksum = %s' % settings['ph']
         try: cursor.execute( sql, (userobj['datahash'], ) )
         except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])        
         
         row = cursor.fetchone()
         if row is None: return (data, 'No objects found!')
         
-        info = json.loads(row[1])
+        info = json.loads(row[0])
         
-        if not 'tresholds' in info: return (data, 'No convergence data found!')
+        if not 'tresholds' in info or not info['tresholds']: return (data, 'No convergence data found!')
         
-        data = json.dumps({ 'structures': row[0], 'optstory': eplotter( task='optstory', data=info['tresholds'] ) })
+        data = json.dumps(eplotter( task='optstory', data=info['tresholds'] ))
         
         return (data, error)
         
@@ -390,7 +390,7 @@ class Request_Handler:
         
         info = json.loads(row[0])
         
-        if not 'convergence' in info: return (data, 'No convergence data found!')
+        if not 'convergence' in info or not info['convergence']: return (data, 'No convergence data found!')
         
         data = json.dumps(eplotter( task='convergence', data=info['convergence'] ))
         

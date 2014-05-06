@@ -73,7 +73,7 @@ div.caption{width:90%;background:#dddddd;text-align:center;line-height:20px;colo
 
 /* OBJECT CONTEXT PANE */
 #object_factory{display:none;}
-div.object_factory_holder{z-index:50;width:99%;height:545px;margin:9px auto 6px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
+div.object_factory_holder{z-index:50;width:99%;height:545px;margin:9px auto 18px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
 div.object_holder{z-index:51;background:url(images/top-corner-black.gif) center top no-repeat;margin:-20px 0 10px;padding-top:28px;}
 div.object_ctx_left{float:left;width:49%;background:#fff;}
 div.object_ctx_left div.ipane{border-left-width:0;}
@@ -114,7 +114,7 @@ thead tr th.headerSortDown, thead tr th.headerSortUp{background-color:#dddddd;}
 thead tr th.disabled{background:#fff;}
 tbody tr.shared td{background:#ffc;}
 tr.obj_holder{cursor:default;}
-tr.obj_holder th{font-weight:normal;}
+tr.obj_holder th{font-weight:normal;border-color:#eeeeee;}
 
 /* PHONONS PANE */
 div.freqs_table_holder{width:98%;height:430px;margin:15px auto 20px;border-bottom:1px solid #000;overflow-x:hidden;overflow-y:scroll;}
@@ -122,12 +122,12 @@ table.freqs_holder tbody tr td{font-style:italic;line-height:18px;}
 table.freqs_holder th{border-bottom:1px solid #000;}
 table.freqs_holder td.white{border:0;}
 div.tagcol{display:none;width:100%;clear:both;}
-div.tagcapt{float:left;width:250px;color:#06c;padding:2px 10px 2px 10px;margin:2px;font-size:1.2em;height:60px;word-wrap:break-word;font-weight:bold;vertical-align:top;}
-div.tagarea{float:left;width:72%;}
+div.tagcapt{float:left;width:250px;color:#06c;padding:2px 10px 2px 10px;margin:2px;font-size:1.2em;word-wrap:break-word;font-weight:bold;vertical-align:top;}
+div.tagarea{float:left;width:72%;margin-bottom:36px;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
 a.tagmore, a.tagless{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
 a.tagless{height:24px}
-a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;border:1px solid #333;color:#333;background:#fff;text-decoration:none;padding:2px;margin:2px;text-align:center;}
+a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;border:1px solid #fff;color:#333;background:#fff;text-decoration:underline;padding:2px;margin:2px;text-align:center;}
 a.taglink:hover{color:#fff;background:#333;}
 a.activetag{color:#fff;background:#333;}
 a.activetag:hover{color:#fff;background:#333;}
