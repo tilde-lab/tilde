@@ -75,8 +75,7 @@ class DataMap:
         try: cursor.execute( 'SELECT checksum, tid FROM tags' )
         except: self.error = 'DataMap error: ' + "%s" % sys.exc_info()[1]
         else:
-            result = cursor.fetchall()
-            for row in result:
+            for row in cursor.fetchall():
                 i = int(row[1])
 
                 try: self.c2t[ row[0] ]
@@ -104,10 +103,10 @@ class DataMap:
 class Request_Handler:
     @staticmethod
     def login(userobj, session_id):
-        data, error = { 'title': CURRENT_TITLE, 'demo_regime': settings['demo_regime'], 'debug_regime': settings['debug_regime'], 'version': API.version }, None
+        data, error = { 'title': CURRENT_TITLE, 'demo_regime': settings['demo_regime'], 'debug_regime': settings['debug_regime'], 'version': API.version  }, None
         
         # *client-side* settings
-        if userobj['settings']['colnum'] not in [50, 75, 100]: userobj['settings']['colnum'] = 75
+        if userobj['settings']['colnum'] not in [50, 100, 500]: userobj['settings']['colnum'] = 100
         if type(userobj['settings']['cols']) is not list or not 1 <= len(userobj['settings']['cols']) <= 25: return (None, 'Invalid settings!')
 
         global Users
@@ -203,7 +202,6 @@ class Request_Handler:
             elif settings['db']['type'] == 'postgres':     cursor.execute('SELECT checksum, structures, energy, info, apps FROM results WHERE checksum IN %s' % (tuple(data_clause),))
         except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
-            result = cursor.fetchall()
             rescount = 0
             
             # building data table header: compulsory part
@@ -226,7 +224,7 @@ class Request_Handler:
             data += '</thead>'
             data += '<tbody>'
             
-            for row in result:
+            for row in cursor.fetchall():
                 
                 # building data table rows
                 rescount += 1
@@ -265,7 +263,6 @@ class Request_Handler:
         if not Users[session_id].cur_db in Tilde_tags: Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
         if Tilde_tags[ Users[session_id].cur_db ].error: return (data, 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error)
 
-        if not 'render' in userobj: return (data, 'Tags rendering area must be defined!')
         if not 'tids' in userobj: tids = None # json may contain nulls, standardize them
         else: tids = userobj['tids']
                 
@@ -275,8 +272,7 @@ class Request_Handler:
             except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
             else:
                 tags = []
-                result = cursor.fetchall()
-                for item in result:
+                for item in cursor.fetchall():
                     if not item[0] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
                     
                     try: match = [x for x in Tilde.hierarchy if x['cid'] == item[1]][0]
@@ -293,9 +289,11 @@ class Request_Handler:
                         if tag['category'] == match['category']:
                             tags[n]['content'].append( {'tid': item[0], 'topic': i} )
                             break
-                    else: tags.append({'category': match['category'], 'sort': sort, 'content': [ {'tid': item[0], 'topic': i} ]})
+                    else: tags.append({'cid': match['cid'], 'category': match['category'], 'sort': sort, 'content': [ {'tid': item[0], 'topic': i} ]})
 
                 tags.sort(key=lambda x: x['sort'])
+                
+                tags = {'blocks': tags, 'cats': Tilde.supercategories}                
         else:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
             tags = Tilde_tags[ Users[session_id].cur_db ].t_by_c( *data_clause )
@@ -329,9 +327,8 @@ class Request_Handler:
                 try: cursor.execute( sql, (userobj['datahash'], ) )
                 except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
                 else:
-                    tagrow = cursor.fetchall()
                     tags = []
-                    for t in tagrow:
+                    for t in cursor.fetchall():
                         o = [x for x in Tilde.hierarchy if x['cid'] == t[1]][0]
 
                         cat = o['category']
@@ -540,12 +537,10 @@ class Request_Handler:
         try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % data_clause )
         except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
-            result = cursor.fetchall()
-
             # TODO: THIS IS I/O DANGEROUS
             Tilde.reload( db_conn=Repo_pool[ userobj['dest'] ] )
 
-            for r in result:
+            for r in cursor.fetchall():
                 calc = Tilde.restore(r, db_transfer_mode=True)
                 checksum, error = Tilde.save(calc, db_transfer_mode=True)
                 

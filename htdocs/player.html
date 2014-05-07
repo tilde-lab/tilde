@@ -1,6 +1,8 @@
-<!-- Canvas 3d atomic structure renderer
+<!--
+Tilde project: 3d atomic structure canvas renderer
 based on three.js and tween.js
-v220913 -->
+v050514
+-->
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -13,8 +15,12 @@ body{margin:0;padding:0;overflow:hidden;}
 #optionpanel{position:absolute;bottom:2px;left:0;width:100%;height:30px;z-index:100;text-align:center;font-family:'Courier New';font-size:12px;}
 div.L{display:block;position:absolute;font-size:0.55em;z-index:200;font-family:sans-serif;}
 </style>
+
+
 <script type="text/javascript" src="three.custom.js"></script>
 <!--script type="text/javascript" src="stats.min.js"></script-->
+
+
 <script type="text/javascript">
 // tween.js r7 - http://github.com/sole/tween.js
 'use strict';var TWEEN=TWEEN||function(){var a=[];return{REVISION:"10",getAll:function(){return a},removeAll:function(){a=[]},add:function(c){a.push(c)},remove:function(c){c=a.indexOf(c);-1!==c&&a.splice(c,1)},update:function(c){if(0===a.length)return!1;for(var b=0,d=a.length,c=void 0!==c?c:void 0!==window.performance&&void 0!==window.performance.now?window.performance.now():Date.now();b<d;)a[b].update(c)?b++:(a.splice(b,1),d--);return!0}}}();

@@ -1,32 +1,41 @@
+<!--
+Tilde project: GUI
+v070514
+-->
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title></title>
 <meta charset="utf-8" />
-<link type="text/css" href="/static/~.css?7" rel="stylesheet" media="screen" />
+<link type="text/css" href="/static/~.css?8" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="/static/jquery.json.min.js"></script>
 <script type="text/javascript" src="/static/socket.io.min.js"></script>
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
 <script type="text/javascript" src="/static/jstorage.min.js"></script>
-<script type="text/javascript" src="/static/core.js?7"></script>
+<script type="text/javascript" src="/static/core.js?8"></script>
 </head>
 <body>
+
 
 <!-- UPLOAD/DOWNLOAD IFRAME -->
 <iframe id="file-process" name="file-process" width="1px" height="1px" src="" style="display:none;"></iframe>
 
+
 <!-- SEARCH INIT BOX -->
-<div id="initbox"><div class="btn left" id="init_trigger" style="width:110px;">Show <span style="font-size:2.1em;line-height:0.5;">&darr;</span></div></div>
+<div id="initbox"><div class="btn left" id="init_trigger">show selected</div></div>
+
 
 <!-- LOADING BOX -->
 <div id="loadbox">Thinking...</div>
+
 
 <!-- NOTIFIER BOX -->
 <div id="notifybox" class="_closable">
     <div class="cross _close" style="margin-right:4px;margin-top:4px;"></div>
     <div id="errormsg">This browser doesn't work properly with this page.<br />Please, try to use Chrome, Firefox, Safari or Opera browser.<br />Thank you in advace and sorry for inconvenience.</div>
 </div>
+
 
 <!-- SETTINGS / USER BOX: ALWAYS VISIBLE! -->
 <div id="pre_user_box">
@@ -42,6 +51,7 @@
         <span id="about_trigger" class="link white">about</span>
     </div>
 </div>
+
 
 <!-- CONNECTORS WINDOW -->
 <div id="connectors" class="window shadow _closable">
@@ -65,6 +75,7 @@
         </form>
     </div-->
 </div>
+
 
 <!-- USER PROFILE AND SETTINGS WINDOW -->
 <div id="profile_holder" class="shadow _closable">
@@ -93,8 +104,8 @@
         
         <div class="ipane" rel="table">
             <br /><br />
-            <div class="left" style="clear:none;width:60%;margin-left:25px">Max. number of items in table:</div>
-            <div id="ipane-maxitems-holder" class="right" style="clear:none;width:30%;margin-right:25px"></div>
+            <div class="left" style="clear:none;width:55%;margin-left:25px">Max.number of items in table:</div>
+            <div id="ipane-maxitems-holder" class="right" style="clear:none;width:35%;margin-right:25px"></div>
             
             <div><br /><input type="checkbox" id="settings_objects_expand" /> <label for="settings_objects_expand">click by row opens window with more info</label></div>
             
@@ -161,12 +172,21 @@
     </div>
 </div>
 
+
 <!-- CONSOLE WINDOW -->
 <div id="console_holder" class="_closable downscreen" style="display:none;">
     <div class="downscreen_close _close"></div>
     <div id="debug"></div>
 </div>
 <div id="console_trigger">&uarr;</div>
+
+
+<!-- TAGCLOUD HOLDER WINDOW -->
+<div id="tagcloud_holder" class="_closable downscreen" style="display:none;">
+    <div class="downscreen_close _close"></div>
+    <!--div id="tagcloud"></div-->
+</div>
+
 
 <!-- CLONABLE OBJECT LAYOUT -->
 <div id="object_factory" class="object_factory_holder shadow">
@@ -184,7 +204,7 @@
         <div class="ipane" rel="summary">
         </div>
         
-        <div class="ipane ii" rel="vib">
+        <div class="ipane loading" rel="vib">
             <div class="ipane_local_menu">
                 <div class="btn btn2 left ph_degenerated_trigger">show degenerated</div>
                 <div class="btn btn2 left ph_animate_trigger">animate</div>
@@ -209,7 +229,7 @@
         <div class="ipane" rel="inp">
         </div>
         
-        <div class="ipane ii" rel="optstory">
+        <div class="ipane loading" rel="optstory">
             <div class="ipane_local_menu center"></div>
             <div class="optstory_holder flot_holder"></div>
         </div>
@@ -228,39 +248,39 @@
 
         <div class="cross _destroy"></div>
 
-        <div class="ipane ii" rel="3dview">
+        <div class="ipane loading" rel="3dview">
             <div class="renderer"></div>
         </div>
         
-        <div class="ipane ii" rel="ph_dos">
+        <div class="ipane loading" rel="ph_dos">
             <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
             <div class="ph_dos_holder flot_holder"></div>
         </div>
         
-        <div class="ipane ii" rel="e_dos">
+        <div class="ipane loading" rel="e_dos">
             <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
             <div class="e_dos_holder flot_holder"></div>
         </div>
         
-        <div class="ipane ii" rel="ph_bands">
+        <div class="ipane loading" rel="ph_bands">
             <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
             <div class="ph_bands_holder flot_holder"></div>
         </div>
         
-        <div class="ipane ii" rel="e_bands">
+        <div class="ipane loading" rel="e_bands">
             <div class="ipane_local_menu center">
                 <div class="btn btn2 right export_plot">export</div>
             </div>
             <div class="e_bands_holder flot_holder"></div>
         </div>
         
-        <div class="ipane ii" rel="estory">
+        <div class="ipane loading" rel="estory">
             <div class="ipane_local_menu center"></div>
             <div class="estory_holder flot_holder"></div>
         </div>
@@ -268,7 +288,8 @@
     </div>
 </div>
 
-<!-- ABOUT LAYOUT (INITIAL LANDING) -->
+
+<!-- ABOUT LAYOUT -->
 <div id="landing_holder" class="pane">
 
     <!-- TOP LOGO SIDE -->
@@ -279,9 +300,9 @@
     <!-- MAIN CONTENT SIDE -->
     <div id="mainframe" class="shadow">
         <div id="welcome">
-            <p>Welcome to Tilde <span id="version"></span>&nbsp;graphical interface. This is an alternative to a command-line interface.</p>
-
-            <p>Here you manage your modeling data. Your actual files stay unaffected. See more info at <a href="https://github.com/jam31/wwwtilda">GitHub</a>.</p>
+            <p>Welcome to Tilde <span id="version"></span> GUI (more info at <a href="http://github.com/jam31/wwwtilda">GitHub</a>). Here you manage your modeling data. Your actual files stay always untouched. Your data aren't sent to anywhere. No Internet connection is needed.</p>
+            
+            <p>Please, send your feedback, bugreports and feature requests via <a href="mailto:eb@tilde.pro">email</a>, <a href="http://twitter.com/wwwtilda">Twitter</a> or <a href="http://github.com/jam31/wwwtilda/issues">GitHub</a>.</p>
 
             <div id="continue_trigger" class="btn btn2" style="width:147px;margin:20px auto;font-size:1.1em">Continue <span style="font-size:2.1em">&rarr;</span></div>
 
@@ -290,24 +311,26 @@
 
 </div>
 
-<!-- DATABROWSER LAYOUT -->
+
+<!-- DATA MENU, SPLASHSCREEN AND DATABROWSER LAYOUTS -->
 <div id="data_holder" class="pane">
+    
     <div class="menu">
         <div class="menu_main_cmds">
             <div class="btn left protected" id="add_trigger">add data</div>
             <div class="btn btn2 left" id="noclass_trigger">all topics</div>
             <div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">subtopics</div>
-            <div class="btn btn3 left" id="closeobj_trigger" style="display:none;">hide all details</div>
-            <div id="countbox"></div>
+            <div class="btn btn3 left" id="closeobj_trigger" style="display:none;">hide all details</div>            
         </div>
         <div class="menu_ctx_cmds" style="display:none;">
             <div class="left ctx_caption">With selected:</div>
             <div class="left protected"><select id="db_copy_select"></select></div>
-            <div class="btn left protected" id="share_trigger">share</div>
+            <!--div class="btn left protected" id="share_trigger">share</div-->
             <div class="btn left" id="export_trigger" style="display:none;">export</div>
             <div class="btn btn3 left protected" id="delete_trigger">delete</div>
             <div class="btn left" id="cancelctx_trigger">cancel</div>
         </div>
+        <div id="countbox"></div>
     </div>
 
     <div id="splashscreen_holder">
@@ -318,12 +341,9 @@
     </div>
 
     <table id="databrowser" class="tablesorter"></table>
-
-    <div id="tagcloud_holder" class="_closable downscreen ii" style="display:none;">
-        <div class="downscreen_close _close"></div>
-        <div id="tagcloud"></div>
-    </div>
+    
 </div>
+
 
 </body>
 </html>

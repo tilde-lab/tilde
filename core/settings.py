@@ -12,7 +12,7 @@ import installation # EXTENSIONS COMPILATION
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.06'
+DB_SCHEMA_VERSION = '1.07'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_SQLITE_DB = 'default.db'
@@ -147,7 +147,9 @@ def check_db_version(db_conn):
         return False
 
 def user_db_choice(options, choice=None, add_msg="", create_allowed=True):
-    ''' Auxiliary procedure to simplify UI '''
+    '''
+    Auxiliary procedure to simplify CLI
+    '''
     if choice is None:
         suggest = " (0) create new" if create_allowed else ""
         for n, i in enumerate(options):
@@ -186,17 +188,27 @@ def user_db_choice(options, choice=None, add_msg="", create_allowed=True):
         return choice
 
 def read_hierarchy():
+    '''
+    Reads main mapping source according to what a data classification is made
+    Also reads the supercategories (only for GUI)
+    '''
     try: tree = ET.parse(HIERARCHY_FILE)
     except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
-    hierarchy = []
+    
+    hierarchy, supercategories = [], {}
+    
     doc = tree.getroot()
+    
     for elem in doc.findall('entity'):
-        hierarchy.append( elem.attrib )
-        
+        hierarchy.append( elem.attrib )        
         # type corrections
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
         hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
-    return hierarchy
+        
+    for elem in doc.findall('superentity'):
+        supercategories[ elem.attrib['category'] ] = map(int, elem.attrib['includes'].split(','))
+        
+    return hierarchy, supercategories
 #
 # EOF routines, which involve Tilde API and schema
 #

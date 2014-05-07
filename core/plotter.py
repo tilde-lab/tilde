@@ -165,6 +165,7 @@ def eplotter(task, data): # CRYSTAL, EXCITING
     
     if task == 'optstory':
         color = '#CC0000'
+        clickable = True
         for n, i in enumerate(data):
             fdata.append([n, i[4]])
         fdata = array(fdata)
@@ -173,8 +174,9 @@ def eplotter(task, data): # CRYSTAL, EXCITING
     
     elif task == 'convergence':
         color = '#0066CC'
+        clickable = False
         for n, i in enumerate(data):
             fdata.append([n, i])            
 
-    results.append({'color': color, 'clickable:': True, 'data': fdata})
+    results.append({'color': color, 'clickable:': clickable, 'data': fdata})
     return results

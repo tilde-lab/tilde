@@ -36,7 +36,7 @@ class API:
         self.__dict__ = self.__shared_state
         self.db_conn = db_conn
         self.settings = settings        
-        self.hierarchy = read_hierarchy() # main mapping source according to what a data classification is made
+        self.hierarchy, self.supercategories = read_hierarchy()
         self.deferred_storage = {}
 
         # *parser API*
@@ -146,6 +146,12 @@ class API:
                 
             elif categ['source'] == 'bandgaptype':
                 out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
+                
+            elif categ['source'] == 'duration':
+                out = '&mdash;' if not obj['info']['duration'] else obj['info']['duration']
+                
+            elif categ['source'] == 'dg':
+                out = '&mdash;' if not obj['info']['dg'] else obj['info']['dg']
             
             # pseudo-source (derivative determination)    
             elif categ['source'] == 'natom':
@@ -378,7 +384,7 @@ class API:
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
         if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
-        if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
+        if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('geometry optimization')
         if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
         if calc.energy: calc.info['calctypes'].append('total energy')
 

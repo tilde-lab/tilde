@@ -82,12 +82,12 @@ div.object_ctx_right div.ipane{border-right-width:0;}
 div.flot_holder{width:97%;height:460px;margin:0 auto 5px;}
 
 /* DATABROWSER MENU */
-div.menu_main_cmds{height:100%;display:table;}
+div.menu_main_cmds{height:100%;display:table;position:relative;}
 div.ctx_caption{padding:7px 0 0 8px;}
 #db_copy_select{width:230px;margin:5px;font-size:0.9em;}
 
 /* DATABROWSER TABLE */
-#countbox{display:table-cell;vertical-align:middle;font-size:0.75em;padding-left:4px;}
+#countbox{position:absolute;top:15px;width:400px;text-align:center;display:table-cell;vertical-align:middle;font-size:1em;}
 #data_holder{display:none;width:100%;}
 #databrowser{position:absolute;width:100%;top:53px;left:0;}
 #collapser_new{width:126px;}
@@ -121,9 +121,9 @@ div.freqs_table_holder{width:98%;height:430px;margin:15px auto 20px;border-botto
 table.freqs_holder tbody tr td{font-style:italic;line-height:18px;}
 table.freqs_holder th{border-bottom:1px solid #000;}
 table.freqs_holder td.white{border:0;}
-div.tagcol{display:none;width:100%;clear:both;}
-div.tagcapt{float:left;width:250px;color:#06c;padding:2px 10px 2px 10px;margin:2px;font-size:1.2em;word-wrap:break-word;font-weight:bold;vertical-align:top;}
-div.tagarea{float:left;width:72%;margin-bottom:36px;}
+div.tagrow{display:none;width:100%;}
+div.tagcapt{float:left;width:250px;color:#333;padding:18px 0 0;font-size:1.2em;word-wrap:break-word;font-weight:bold;vertical-align:top;text-align:right;}
+div.tagarea{float:left;width:80%;margin:8px 0;min-height:30px;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
 a.tagmore, a.tagless{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
 a.tagless{height:24px}
@@ -161,7 +161,7 @@ a.activetag:hover{color:#fff;background:#333;}
 #right_half_gear{width:10px;height:20px;background:url(images/gear.gif) no-repeat -10px;margin-top:-2px;cursor:pointer;float:left;}
 /*#lock-icon{width:16px;height:16px;background:url(images/lock-icon.gif) no-repeat;float:right;}*/
 
-div.ii{background:#fff url(images/spinner.gif) no-repeat center center;}
+div.loading{background:#fff url(images/spinner.gif) no-repeat center center;}
 
 /* CONSOLE */
 #console_holder{z-index:20;}
@@ -169,19 +169,26 @@ div.ii{background:#fff url(images/spinner.gif) no-repeat center center;}
 #console_trigger{position:fixed;bottom:0.5em;right:0.5em;color:#000;text-align:center;font-size:3em;line-height:0.6em;cursor:pointer;z-index:19;}
 
 /* TAGS */
-#tagcloud_holder{background:#fff url(images/spinner.gif) no-repeat center center;z-index:18;}
 #splashscreen_holder{display:none;padding-top:53px;width:100%;background:#fff;}
-#repo_title_holder{width:100%;text-align:center;padding-bottom:15px;}
+#splashscreen_holder > #splashscreen{width:100%;}
+#tagcloud_holder{z-index:18;}
+#tagcloud_holder > #splashscreen{width:100%;height:100%;overflow-y:scroll;}
+
+/* DB TITLE */
+#repo_title_holder{width:100%;text-align:center;padding:25px 0;}
 h1{font-size:1.4em;}
-#splashscreen{width:100%;}
-#tagcloud{display:none;width:100%;height:100%;overflow:scroll;background:#fff;z-index:18;}
-#slicer{float:left;border:1px solid #ccc;width:100px;height:16px;margin:8px;color:#ccc;text-align:center;cursor:pointer;}
 
 /* OTHER DYNBLOCKS */
 #loadbox{z-index:1001;position:fixed;top:6px;left:0;width:140px;height:24px;background:#fc0;text-align:center;line-height:24px;color:#000;font-weight:bold;font-size:0.75em;border-radius:6px;-moz-border-radius:6px;-webkit-border-radius:6px;}
-#initbox{z-index:1000;display:none;position:fixed;top:0;left:0;padding-top:6px;width:128px;height:35px;background:#ccc;}
+#initbox{z-index:1000;display:none;position:fixed;top:0;left:0;padding-top:1px;width:200px;height:35px;}
+#init_trigger{font-size:1.35em;}
 #notifybox{z-index:1002;position:fixed;top:0;left:0;font-size:12px;background:#fc0;color:#000;font-weight:bold;width:600px;min-height:20px;height:auto !important;height:20px;text-align:center;line-height:18px;border-bottom-right-radius:6px;-moz-border-radius-bottomright:6px;-webkit-border-bottom-right-radius:6px;border-bottom-left-radius:6px;-moz-border-radius-bottomleft:6px;-webkit-border-bottom-left-radius:6px;}
 #errormsg{margin:20px;}
+
+/* SUPERCATS */
+div.supercat{width:100%;margin:0 auto 24px;height:36px;background:#eeeeee;clear:both;}
+div.supercat_name{width:100%;padding:3px 0 3px;height:30px;font-size:1.4em;font-weight:bold;text-align:center;}
+div.supercat_content{display:none;margin:0;}
 
 /* WINDOWS AND IFRAMES */
 div.cross{margin-right:10px;float:right;width:16px;height:16px;font-size:10px;text-align:center;cursor:pointer;background:url(images/cancel.gif) no-repeat;}
