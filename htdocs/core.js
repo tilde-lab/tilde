@@ -196,6 +196,7 @@ function e_plotter(req, plot, divclass, ordinate){
         yaxis: {color: '#eeeeee', labelWidth: 50},
         grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
     };
+    if (plot[0].data.length == 1) options.xaxis.ticks = []; // awkward EXCITING optimization
     
     var target = $('#o_'+req.datahash+' div.'+divclass);
 

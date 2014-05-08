@@ -358,7 +358,7 @@ class Request_Handler:
         
         info = json.loads(row[0])
         
-        if not 'tresholds' in info or not info['tresholds']: return (data, 'No convergence data found!')
+        if not info['tresholds']: return (data, 'No convergence data found!')
         
         data = json.dumps(eplotter( task='optstory', data=info['tresholds'] ))
         
@@ -377,7 +377,7 @@ class Request_Handler:
         
         info = json.loads(row[0])
         
-        if not 'convergence' in info or not info['convergence']: return (data, 'No convergence data found!')
+        if not info['convergence']: return (data, 'No convergence data found!')
         
         data = json.dumps(eplotter( task='convergence', data=info['convergence'] ))
         

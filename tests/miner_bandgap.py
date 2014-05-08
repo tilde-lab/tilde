@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # example to query minimal-energy band gaps
-# v290414
+# v080514
 
 import sys
 import os
@@ -14,12 +14,15 @@ starttime = time.time() # benchmarking
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 from core.settings import settings, connect_database, check_db_version
 
-'''try: workpath = sys.argv[1]
-except IndexError: sys.exit('No path defined!')
-workpath = os.path.abspath(workpath)
-if not os.path.exists(workpath): sys.exit('Invalid path!')'''
 
-db = connect_database(settings, None)
+db_choice = None
+if settings['db']['type'] == 'sqlite':
+    try: db_choice = sys.argv[1]
+    except IndexError: sys.exit('No DB name defined!')
+    
+db = connect_database(settings, db_choice)
+if not db: sys.exit('Connection to DB failed!')
+
 # check DB_SCHEMA_VERSION
 incompatible = check_db_version(db)
 if incompatible:

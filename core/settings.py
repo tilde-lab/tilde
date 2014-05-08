@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps')) # this
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.07'
+DB_SCHEMA_VERSION = '1.08'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_SQLITE_DB = 'default.db'

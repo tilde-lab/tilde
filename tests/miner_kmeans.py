@@ -2,7 +2,7 @@
 
 # example of data-mining on band gaps and periodic table element groups
 # using k-means as implemented in scikit-learn
-# v290414
+# v080514
 
 import sys
 import os
@@ -22,12 +22,15 @@ from ase.data import chemical_symbols
 
 from pymatgen.core.periodic_table import Element
 
-'''try: workpath = sys.argv[1]
-except IndexError: sys.exit('No path defined!')
-workpath = os.path.abspath(workpath)
-if not os.path.exists(workpath): sys.exit('Invalid path!')'''
 
-db = connect_database(settings, None)
+db_choice = None
+if settings['db']['type'] == 'sqlite':
+    try: db_choice = sys.argv[1]
+    except IndexError: sys.exit('No DB name defined!')
+    
+db = connect_database(settings, db_choice)
+if not db: sys.exit('Connection to DB failed!')
+
 # check DB_SCHEMA_VERSION
 incompatible = check_db_version(db)
 if incompatible:
@@ -36,7 +39,8 @@ if incompatible:
 # ^^^ the obligatory code above, the actual procedures of interest below VVV
 
 cursor = db.cursor()
-try: cursor.execute( 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=%s)', ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
+sql = 'SELECT info FROM results WHERE checksum IN (SELECT checksum FROM tags g INNER JOIN topics s ON g.tid=s.tid WHERE s.categ=6 AND s.topic=%s)' % settings['ph']
+try: cursor.execute( sql, ('electron structure',) ) # 6 is calctype# to guarantee *bandgap* presence
 except: sys.exit('Fatal error: ' + "%s" % sys.exc_info()[1])
 
 data = []
