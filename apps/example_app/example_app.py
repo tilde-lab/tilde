@@ -17,7 +17,7 @@ class Example_app():
     def cell_wrapper(obj):
         selfname = __name__.split('.')[-1]
         if not selfname in obj['apps']:
-            return "<div class=tiny>n/a</div>"
+            return "&mdash;"
         return "<i>%s</i>" % obj['apps'][selfname]
 
     # this is a main class code

@@ -2,40 +2,39 @@
 <schema>
     <entity cid="1" category="formula" source="standard" sort="1" has_column="1" has_label="1" descr=""/>     
     <entity cid="2" category="containing element" source="element#" sort="2" has_label="1" descr=""/>
-    <entity cid="3" category="host elements number" source="nelem" sort="3" has_label="1" descr=""/>
-    <entity cid="4" category="formula units" source="expanded" sort="4" has_column="1" has_label="1" descr=""/>
-    <entity cid="1001" category="number of atoms" source="natom" html="N,,atoms__" sort="5" has_column="1" descr=""/>
+    <entity cid="3" category="host elements number" source="nelem" sort="3" has_label="1" plottable="1" descr=""/>
+    <entity cid="4" category="formula units" source="expanded" sort="4" has_column="1" has_label="1" plottable="1" descr=""/>
+    <entity cid="1001" category="number of atoms" source="natom" html="N,,atoms__" sort="5" has_column="1" plottable="1" descr=""/>
     
-    <entity cid="5" category="periodicity" source="periodicity" sort="6" has_column="1" has_label="1" descr=""/> 
-    <entity cid="9" category="crystal system" source="symmetry" sort="7" has_column="1" has_label="1" descr=""/>
-    <entity cid="10" category="point group" source="pg" sort="8" has_column="1" has_label="1" descr="Result point group"/>
-    <entity cid="11" category="space group (schoen.)" source="sg" sort="9" has_column="1" has_label="1" descr="Result space group (Schoenflis notation)"/>
-    <entity cid="12" category="space group (intl.)" source="ng" sort="10" has_column="1" descr="Result space group (international notation)"/>
-    <entity cid="13" category="layer group (intl.)" source="dg" sort="11" has_column="1" descr="Result layer group (international notation)"/>
+    <entity cid="5" category="periodicity" source="periodicity" sort="11" has_column="1" has_label="1" descr=""/> 
+    <entity cid="9" category="crystal system" source="symmetry" sort="6" has_column="1" has_label="1" descr=""/>
+    <entity cid="10" category="point group" source="pg" sort="7" has_column="1" has_label="1" descr="Result point group"/>
+    <entity cid="11" category="space group (schoen.)" source="sg" sort="8" has_column="1" has_label="1" descr="Result space group (Schoenflis notation)"/>
+    <entity cid="12" category="space group (intl.)" source="ng" sort="9" has_column="1" descr="Result space group (international notation)"/>
+    <entity cid="13" category="layer group (intl.)" source="dg" sort="10" has_column="1" descr="Result layer group (international notation)"/>
 
     <entity cid="8" category="system type" source="tag#" sort="12" has_label="1" descr=""/>
     <entity cid="6" category="calculation type" source="calctype#" sort="13" has_label="1" descr=""/>
     <entity cid="7" category="XC-potential" source="H" html="XC-potential" sort="14" has_column="1" has_label="1" descr=""/>
-    <entity cid="14" category="rgkmax" source="tol" sort="15" has_column="1" has_label="1" descr=""/>
-    <entity cid="15" category="spin-polarized" source="spin" sort="16" negative_tagging="1" has_column="1" has_label="1" descr=""/>
-    
-    <entity cid="17" category="k-grid" source="k" sort="18" has_column="1" has_label="1" descr=""/>
-    
-    <entity cid="19" category="phon.magnitude" source="dfp_magnitude" sort="20" has_column="1" descr=""/>
-    <entity cid="20" category="phon.disp.number" source="dfp_disps" sort="21" has_column="1" descr=""/>
-    <entity cid="21" category="phon.k-grid" source="n_ph_k" sort="22" has_column="1" descr=""/>
+    <entity cid="14" category="rgkmax" source="tol" sort="15" has_column="1" has_label="1" plottable="1" descr=""/>
+    <entity cid="15" category="spin-polarized" source="spin" sort="16" negative_tagging="1" has_column="1" has_label="1" descr=""/>    
+    <entity cid="17" category="k-grid" source="k" sort="18" has_column="1" has_label="1" descr=""/>    
+    <entity cid="19" category="phon.magnitude" source="dfp_magnitude" sort="20" has_column="1" plottable="1" descr=""/>
+    <entity cid="20" category="phon.disp.number" source="dfp_disps" sort="21" has_column="1" plottable="1" descr=""/>
+    <entity cid="21" category="phon.k-grid" source="n_ph_k" sort="22" has_column="1" plottable="1" descr=""/>
     <entity cid="22" category="code family" source='framework' sort="23" has_label="1" descr=""/>
     <entity cid="23" category="code" source='prog' sort="24" has_column="1" has_label="1" descr=""/>
      
-    <entity cid="24" category="modeling time, hr" source='duration' sort="1003" has_column="1" descr=""/>
-    <entity cid="25" category="parsing time, sc" source='perf' sort="1004" has_column="1" descr=""/>
+    <entity cid="24" category="modeling time, hr" source='duration' sort="1003" has_column="1" plottable="1" descr=""/>
+    <entity cid="25" category="parsing time, sc" source='perf' sort="1004" has_column="1" plottable="1" descr=""/>
      
     <entity cid="26" category="conduct./insulat." source='etype' sort="25" has_column="1" has_label="1" descr=""/>
-    <entity cid="27" category="min.band gap" html="Min. band gap, {{units-energy}}" source='bandgap' sort="26" has_column="1" descr=""/>
-    <entity cid="28" category="band gap type" source='bandgaptype' sort="27" has_column="1" has_label="1" descr=""/>     
-    <entity cid="510" category="vacancy content" source="vac" sort="28" negative_tagging="1" has_column="1" has_label="1" descr=""/>
-    <entity cid="511" category="impurity" source="impurity#" sort="29" negative_tagging="1" has_label="1" descr=""/>     
-    <entity cid="520" category="planes number" source="layers" sort="30" has_column="1" has_label="1" descr=""/>
+    <entity cid="27" category="min.band gap" html="Min. band gap, {{units-energy}}" source='bandgap' sort="26" has_column="1" plottable="1" descr=""/>
+    <entity cid="28" category="band gap type" source='bandgaptype' sort="27" has_column="1" has_label="1" descr=""/>
+    
+    <entity cid="510" category="vacancy content" source="vac" sort="28" negative_tagging="1" has_label="1" has_column="1" plottable="1" descr=""/>
+    <entity cid="511" category="impurity" source="impurity#" sort="29" negative_tagging="1" has_label="1" descr=""/>    
+    <entity cid="520" category="planes number" source="layers" sort="30" has_column="1" has_label="1" plottable="1" descr=""/>
     <entity cid="521" category="adsorbent" source="adsorbent" sort="31" has_column="1" has_label="1" descr=""/>
     <entity cid="522" category="surface termination" source="termination" sort="32" has_column="1" has_label="1" descr=""/>
     
@@ -43,10 +42,16 @@
 
     <entity cid="501" category="basis set" source="bs#" sort="10000" has_label="1" descr=""/>    
     
-    <entity cid="1002" category="total energy" source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="1000" has_column="1" descr=""/>
-    <entity cid="1003" category="cell vol.or area" source='dims' html="Cell, A^^2** or A^^3**" sort="4" has_column="1" descr=""/>
+    <entity cid="1002" category="total energy" source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="1000" has_column="1" plottable="1" descr=""/>
+    <entity cid="1003" category="cell vol.or area" source='dims' html="Cell, A^^2** or A^^3**" sort="4" has_column="1" plottable="1" descr=""/>
     <entity cid="1005" category="source file" source='location' sort="999" has_column="1" descr=""/>
     <entity cid="1006" category="finished" source='finished' html="Finished?" sort="1001" has_column="1" descr=""/>
     
     <!-- cid no more than 1999 -->
+    
+    <superentity category="structure" includes="1, 2, 3, 4, 1001, 8, 510, 511, 520, 521, 522" sort="1" />
+    <superentity category="symmetry" includes="5, 9, 10, 11, 12, 13" sort="2" />
+    <superentity category="method" includes="7, 14, 15, 17, 501" sort="3" />
+    <superentity category="properties" includes="6, 26, 28" sort="4" />
+    <superentity category="auxiliary" includes="22, 23" sort="5" />    
 </schema>

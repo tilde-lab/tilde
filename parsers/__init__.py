@@ -1,6 +1,6 @@
 
-# Tilde project: abstract class of a generic parser
-# v180314
+# Tilde project: abstract schema of a generic parser
+# v050514
 
 import os
 import sys
@@ -37,7 +37,8 @@ class Output:
         self.energy = None # in eV
         
         self.structures = [] # list of ASE objects with additional "hanged on" properties (e.g. periodicity: determination is a responsibility of a parser)
-
+        self.charges = None # passed to ASE as well
+        
         self.symops = ['+x,+y,+z'] # legacy value
 
         self.electrons = {
@@ -86,7 +87,11 @@ class Output:
             'properties': {},
             'tags':       [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             'calctypes':  [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-            'techs':      []  # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+            'techs':      [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+            
+            'convergence':[], # zero-point energy convergence (I)
+            'tresholds':  [], # optimization convergence, list of 5 lists (II)
+            'ncycles':    [], # number of cycles at each optimisation pass step
             }
 
         # Tilde modules output object
@@ -96,10 +101,6 @@ class Output:
         # Tilde objects not (yet)
         # or not fully mapped onto database
         self.forces = array([])
-        self.charges = None
-        self.convergence = []
-        self.ncycles = []
-        self.tresholds = []
         self.comment = None
 
         # (IV)

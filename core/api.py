@@ -1,9 +1,9 @@
 
 # Tilde project: core
-# v260414
+# v050514
 
 __version__ = "0.2.7"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
-                        # SYNCHRONIZE WITH root/VERSION
+
 import os
 import sys
 import math, random
@@ -36,7 +36,7 @@ class API:
         self.__dict__ = self.__shared_state
         self.db_conn = db_conn
         self.settings = settings        
-        self.hierarchy = read_hierarchy() # main mapping source according to what a data classification is made
+        self.hierarchy, self.supercategories = read_hierarchy()
         self.deferred_storage = {}
 
         # *parser API*
@@ -146,6 +146,12 @@ class API:
                 
             elif categ['source'] == 'bandgaptype':
                 out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
+                
+            elif categ['source'] == 'duration':
+                out = '&mdash;' if not obj['info']['duration'] else obj['info']['duration']
+                
+            elif categ['source'] == 'dg':
+                out = '&mdash;' if not obj['info']['dg'] else obj['info']['dg']
             
             # pseudo-source (derivative determination)    
             elif categ['source'] == 'natom':
@@ -299,18 +305,17 @@ class API:
         NB: this may be run from outside
         @returns (Tilde_obj, error)
         '''
-        calc, error = None, None
+        calc, error = None, None        
         try: f = open(file, 'r')
-        except IOError: return (None, 'read error!')
+        except IOError: return (None, 'read error!')        
+        if is_binary_string(f.read(2048)): return (None, 'nothing found (binary data)...')
+        f.seek(0)
         i = 0
-        stop_read, binary_check = False, True
+        stop_read = False
         while 1:
             if i>700 or stop_read: break # criterion: parser must detect its working format in first N lines of output
             str = f.readline()
             if not str: break
-            if binary_check:
-                if is_binary_string(str): break
-                else: binary_check = False
             str = str.replace('\r\n', '\n').replace('\r', '\n')
             for name, Parser in self.Parsers.iteritems():
                 if Parser.fingerprints(str):
@@ -379,7 +384,7 @@ class API:
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
         if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
-        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('optimization')
+        if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('geometry optimization')
         if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
         if calc.energy: calc.info['calctypes'].append('total energy')
 

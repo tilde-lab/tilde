@@ -1,9 +1,7 @@
 
-# Tilde project: plotting interface
-# based on the fact that phonon DOS/bands and electron DOS/bands are objects of the same kind
-# DOS is formatted precomputed / smeared according to a normal distribution
-# bands are formatted precomputed / interpolated through natural cubic spline function
-# v281113
+# Tilde project: plotting interfaces
+# for flot.js browser-side plotting library
+# v050514
 
 import os
 import sys
@@ -13,6 +11,7 @@ from numpy import dot
 from numpy import array
 from numpy import linalg
 from numpy import arange
+from numpy import append
 
 from cubicspline import NaturalCubicSpline
 from dos import TotalDos, PartialDos
@@ -34,8 +33,13 @@ def jmol_to_hex(ase_jmol):
     r, g, b = map(lambda x: x*255, ase_jmol)
     return '#%02x%02x%02x' % ( r, g, b )
 
-def plotter(task, **kwargs):
-
+def bdplotter(task, **kwargs):
+    '''
+    bdplotter is based on the fact that phonon DOS/bands and
+    electron DOS/bands are the objects of the same kind.
+    1) DOS is formatted precomputed / smeared according to a normal distribution
+    2) bands are formatted precomputed / interpolated through natural cubic spline function
+    '''
     if task == 'bands': # CRYSTAL, "VASP", EXCITING
     
         results = []
@@ -151,4 +155,28 @@ def plotter(task, **kwargs):
             results.extend(partial_doses)
             
         return results
-        
+
+
+def eplotter(task, data): # CRYSTAL, EXCITING
+    '''
+    eplotter is like bdplotter but less complicated
+    '''
+    results, color, fdata = [], None, []
+    
+    if task == 'optstory':
+        color = '#CC0000'
+        clickable = True
+        for n, i in enumerate(data):
+            fdata.append([n, i[4]])
+        fdata = array(fdata)
+        fdata[:,1] -= min(fdata[:,1]) # this normalizes values to minimum (by 2nd col)
+        fdata = fdata.tolist()
+    
+    elif task == 'convergence':
+        color = '#0066CC'
+        clickable = False
+        for n, i in enumerate(data):
+            fdata.append([n, i])            
+
+    results.append({'color': color, 'clickable:': clickable, 'data': fdata})
+    return results

@@ -312,9 +312,7 @@ class XML_Output(Output):
         except:
             #exc_type, exc_value, exc_tb = sys.exc_info()
             raise RuntimeError('VASP output corrupted or not correctly finalized!') # + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
-        
-        self.info['finished'] = 1 # if we are here, we are always correct
-        
+                
         # TODO: reorganize
         for k in ["vasp_version", "incar",
                 "parameters", "potcar_symbols",
@@ -447,7 +445,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         
         # variables to be filled
         self.vasp_version = None
-        self.finished = 0
+        self.finished = 1 # if we are here, we are always correct
         self.incar = Incar()
         self.parameters = Incar()
         self.potcar_symbols = []

@@ -2,7 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v260414
+# v080514
 
 import sys
 import os
@@ -26,15 +26,7 @@ except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical py
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
-from settings import settings
-
-if settings['db']['type'] == 'sqlite':
-    try: import sqlite3
-    except ImportError: from pysqlite2 import dbapi2 as sqlite3
-elif settings['db']['type'] == 'postgres':
-    import psycopg2
-
-from settings import connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
+from settings import settings, connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
 from common import write_cif
 from symmetry import SymmetryFinder
 from api import API
@@ -190,6 +182,7 @@ if args.datamining:
             out += "\n"
             i+=1
     print out + postmessage
+    db.close()
     sys.exit()
 
 # PROCESSING THE CALCULATIONS AT THE TARGET PATHS IN FILE SYSTEM
@@ -250,11 +243,11 @@ for target in args.path:
             output_lines += out[:-1] + "\n"
 
         if args.convergence:
-            if calc.convergence:
-                output_lines += str(calc.convergence) + "\n"
-            if calc.tresholds:
-                for i in range(len(calc.tresholds)):
-                    output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
+            if calc.info['convergence']:
+                output_lines += str(calc.info['convergence']) + "\n"
+            if calc.info['tresholds']:
+                for i in range(len(calc.info['tresholds'])):
+                    output_lines += "%1.2e" % calc.info['tresholds'][i][0] + " "*2 + "%1.5f" % calc.info['tresholds'][i][1] + " "*2 + "%1.4f" % calc.info['tresholds'][i][2] + " "*2 + "%1.4f" % calc.info['tresholds'][i][3] + " "*2 + "E=" + "%1.4f" % calc.info['tresholds'][i][4] + " eV" + " "*2 + "(%s)" % calc.info['ncycles'][i] + "\n"
             
         if args.structures:
             out = ''
@@ -310,4 +303,5 @@ for target in args.path:
         print header_line + add_msg + output_lines
         # NB: from here the calc instance is not functional anymore!
 
+if db: db.close()
 print "Done in %1.2f sc" % (time.time() - starttime)
