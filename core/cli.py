@@ -2,7 +2,7 @@
 #
 # Tilde project: cross-platform entry point
 # this is a junction; all the end user actions are done from here
-# v050514
+# v080514
 
 import sys
 import os
@@ -26,15 +26,7 @@ except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical py
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
 
-from settings import settings
-
-if settings['db']['type'] == 'sqlite':
-    try: import sqlite3
-    except ImportError: from pysqlite2 import dbapi2 as sqlite3
-elif settings['db']['type'] == 'postgres':
-    import pg8000
-
-from settings import connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
+from settings import settings, connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
 from common import write_cif
 from symmetry import SymmetryFinder
 from api import API

@@ -9,6 +9,8 @@ import json
 
 import installation # EXTENSIONS COMPILATION
 
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps')) # this is done to have all 3rd party code in core/deps
+
 from xml.etree import ElementTree as ET
 
 
@@ -66,8 +68,10 @@ def connect_database(settings, uc):
     '''
     if settings['db']['type'] == 'sqlite':
         if uc is None: sys.exit('Sqlite DB name was not given!')
+        
         try: import sqlite3
         except ImportError: from pysqlite2 import dbapi2 as sqlite3
+        
         try: db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + uc))
         except: return False
         else:
@@ -76,11 +80,12 @@ def connect_database(settings, uc):
             return db
         
     elif settings['db']['type'] == 'postgres':
-        import pg8000
-        try: db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
+        try: import psycopg2 as postgres_driver
+        except ImportError: import pg8000 as postgres_driver
+            
+        try: db = postgres_driver.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
         except: return False
-        else:
-            return db
+        else: return db
         
     return False
 
@@ -251,11 +256,14 @@ if settings['db']['type'] == 'sqlite':
         sys.exit('Due to memory limits cannot manage more than %s databases!' % MAX_CONCURRENT_DBS)
 
 elif settings['db']['type'] == 'postgres':
-    try: import pg8000
-    except ImportError: sys.exit('\n\nI cannot proceed. Please, install python pg8000 module!\n\n')
+    try: import psycopg2
+    except ImportError:
+        print '\nNative Postgres driver not available, falling back to a slower Python version!\n'
+        try: import pg8000
+        except ImportError: sys.exit('\nI cannot proceed: your Python needs Postgres support!\n')
     
     if not connect_database(settings, None):
-        sys.exit('Cannot connect to %s DB!' % settings['db']['dbname'])
+        sys.exit('Cannot connect to %s DB with the current settings!' % settings['db']['dbname'])
 
 else: sys.exit('DB type misconfigured!')
     

@@ -19,19 +19,7 @@ from numpy import dot
 from numpy import array
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-
-from settings import settings
-
-if settings['db']['type'] == 'sqlite':
-    try: import sqlite3
-    except ImportError: from pysqlite2 import dbapi2 as sqlite3
-    DEFAULT_DBTITLE = settings['default_sqlite_db']
-elif settings['db']['type'] == 'postgres':
-    import pg8000
-    DEFAULT_DBTITLE = 'master.db'
-    
-# this is done to have all third-party code in deps folder
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps')) # this is done to have all 3rd party code in core/deps
 
 import tornado.web
 import tornadio2.conn
@@ -42,7 +30,7 @@ from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from settings import connect_database, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
+from settings import settings, connect_database, write_settings, write_db, check_db_version, repositories, DATA_DIR, MAX_CONCURRENT_DBS
 from api import API
 from common import dict2ase, html_formula, str2html
 from plotter import bdplotter, eplotter
@@ -52,6 +40,8 @@ DELIM = '~#~#~'
 CURRENT_TITLE = settings['title'] if settings['title'] else 'Tilde ' + API.version
 E_LOWER_DEFAULT = -7.0
 E_UPPER_DEFAULT = 7.0
+if settings['db']['type'] == 'sqlite': DEFAULT_DBTITLE = settings['default_sqlite_db']
+elif settings['db']['type'] == 'postgres': DEFAULT_DBTITLE = 'master.db'
 
 Tilde = API()
 
@@ -471,8 +461,10 @@ class Request_Handler:
         data, error = None, None
         if settings['demo_regime']: return (data, 'Action not allowed!')
         
-        try: import pg8000
-        except ImportError: return (data, 'Current python environment does not support Postgres!')
+        try: import psycopg2
+        except ImportError:
+            try: import pg8000
+            except ImportError: return (data, 'Current python environment does not support Postgres!')
         
         creds = {'db': userobj['creds']}
 
@@ -517,6 +509,9 @@ class Request_Handler:
         userobj['newname'] += '.db'
         
         if not error:
+            try: import sqlite3
+            except ImportError: from pysqlite2 import dbapi2 as sqlite3
+            
             Repo_pool[userobj['newname']] = sqlite3.connect( os.path.abspath(  DATA_DIR + os.sep + userobj['newname']  ) )
             Repo_pool[userobj['newname']].row_factory = sqlite3.Row
             Repo_pool[userobj['newname']].text_factory = str
