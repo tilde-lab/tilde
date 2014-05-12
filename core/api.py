@@ -122,7 +122,7 @@ class API:
                     'class': classifier})
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])   
 
-    def wrap_cell(self, categ, obj):
+    def wrap_cell(self, categ, obj, table_view=None):
         '''
         Cell wrappers
         for customizing the GUI data table
@@ -143,15 +143,6 @@ class API:
             elif categ['source'] == 'bandgap':
                 html_class = ' class=_g'
                 out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
-                
-            elif categ['source'] == 'bandgaptype':
-                out = '&mdash;' if not 'bandgaptype' in obj['info'] else obj['info']['bandgaptype']
-                
-            elif categ['source'] == 'duration':
-                out = '&mdash;' if not obj['info']['duration'] else obj['info']['duration']
-                
-            elif categ['source'] == 'dg':
-                out = '&mdash;' if not obj['info']['dg'] else obj['info']['dg']
             
             # pseudo-source (derivative determination)    
             elif categ['source'] == 'natom':
@@ -171,8 +162,15 @@ class API:
                 elif f < 0: out = 'no'
             
             else:
-                out = obj['info'][ categ['source'] ] if categ['source'] in obj['info'] else '&mdash;'
-        return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
+                out = '&mdash;' if not categ['source'] in obj['info'] or not obj['info'][ categ['source'] ] else obj['info'][ categ['source'] ]
+        
+        if table_view:
+            return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
+        else:
+            if html_class:
+                return '<span' + html_class + '>' + str(out) + '</span>'
+            else:
+                return str(out)
 
     def reload(self, db_conn=None, settings=None):
         '''

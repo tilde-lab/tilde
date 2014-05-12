@@ -234,7 +234,7 @@ class Request_Handler:
                     if not item['cid'] in Users[session_id].usettings['cols']: continue
                     if 'source' in item and '#' in item['source']: continue # todo
                     
-                    data += Tilde.wrap_cell(item, data_obj)
+                    data += Tilde.wrap_cell(item, data_obj, table_view=True)
 
                 # --compulsory part--
                 if Users[session_id].usettings['objects_expand']: data += "<td class=objects_expand><strong>click by row</strong></td>"
@@ -306,43 +306,60 @@ class Request_Handler:
     def summary(userobj, session_id):
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
-        sql = 'SELECT phonons, electrons, info FROM results WHERE checksum = %s' % settings['ph']
+        sql = 'SELECT structures, energy, phonons, electrons, info, apps FROM results WHERE checksum = %s' % settings['ph']
         try: cursor.execute( sql, (userobj['datahash'], ) )
         except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             row = cursor.fetchone()
             if row is None: error = 'No objects found!'
             else:
-                sql = 'SELECT topics.topic, topics.categ FROM topics INNER JOIN tags ON topics.tid = tags.tid WHERE tags.checksum = %s' % settings['ph']
-                try: cursor.execute( sql, (userobj['datahash'], ) )
-                except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
-                else:
-                    tags = []
-                    for t in cursor.fetchall():
-                        o = [x for x in Tilde.hierarchy if x['cid'] == t[1]][0]
-
-                        cat = o['category']
-
-                        if o['cid'] in [1, 511, 521, 522]: i = html_formula(t[0]) # TODO!!!
-                        else: i = t[0]
-
-                        if not 'sort' in o: sort = 1000
-                        else: sort = o['sort']
-                        for n, tag in enumerate(tags):
-                            if tag['category'] == cat:
-                                tags[n]['content'].append( i )
-                                break
-                        else: tags.append({'category': cat, 'sort': sort, 'content': [ i ]})
-                    tags.sort(key=lambda x: x['sort'])
-
-                    phon_flag = False
-                    if len(row[0])>10: phon_flag = True # avoids json.loads
-
-                    e_flag = {'dos': True, 'bands': True}                    
-                    if '"dos": {}' in row[1] and '"projected": []' in row[1]: e_flag['dos'] = False # avoids json.loads
-                    if '"bands": {}' in row[1]: e_flag['bands'] = False
+                # TODO
+                summary = []
+                data_obj = {}
+                data_obj['structures'] = json.loads(row[0])
+                data_obj['energy'] = row[1]
+                data_obj['info'] = json.loads(row[4])
+                data_obj['apps'] = json.loads(row[5])
+                
+                for i in Tilde.hierarchy:
+                    if 'source' in i and i['source'] in ['element#', 'nelem', 'natom', 'expanded', 'location']:
+                        # skip
+                        continue
                         
-                    data = json.dumps({ 'phonons': phon_flag, 'electrons': e_flag, 'info': row[2], 'tags': tags  })
+                    if i['cid'] > 2000:
+                        # apps
+                        summary.append( {  'category': i['category'], 'sort': i['sort'], 'content': [ Tilde.wrap_cell(i, data_obj) ]  } )
+                        
+                    else:
+                        # classification
+                        content = []
+                        if '#' in i['source']:
+                            n=0
+                            while 1:
+                                try: content.append(data_obj['info'][ i['source'].replace('#', str(n)) ])
+                                except KeyError: break
+                                n+=1
+                        else:
+                            content.append( Tilde.wrap_cell(i, data_obj) )
+                        if len(content):
+                            catname = str2html(i['html']) if 'html' in i else i['category'][0].upper() + i['category'][1:]
+                            summary.append( {'category': catname, 'sort': i['sort'], 'content': content} )
+                            
+                summary.sort(key=lambda x: x['sort'])
+                
+                phon_flag = False
+                if len(row[2]) > 10: phon_flag = True # avoids json.loads
+
+                e_flag = {'dos': True, 'bands': True}                    
+                if '"dos": {}' in row[3] and '"projected": []' in row[3]: e_flag['dos'] = False # avoids json.loads
+                if '"bands": {}' in row[3]: e_flag['bands'] = False
+                    
+                data = json.dumps({
+                'phonons': phon_flag,
+                'electrons': e_flag,
+                'info': row[4], # raw info object
+                'summary': summary # refined object
+                })
         return (data, error)
         
     @staticmethod

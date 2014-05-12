@@ -46,7 +46,7 @@ span.white{text-decoration:underline;cursor:pointer;color:#fff;}
 .warn{background:#f99;}
 
 /* CELL FONT SIZES */
-div.sml{font-size:0.8em;line-height:1.2;}
+.sml{font-size:0.8em;line-height:1.2;}
 div.tiny{font-size:0.7em;line-height:1.1;overflow-x:hidden;}
 
 /* IPANES */
@@ -61,7 +61,7 @@ div.ipane div.ipane_local_menu{height:34px;padding:10px 15px 0 30px;clear:none;}
 ul.ipane_ctrl{padding:0 30px;}
 ul.ipane_ctrl li{list-style:none;float:left;color:#06c;font-size:13px;line-height:22px;border:1px solid #06c;height:22px;background:#fff;width:106px;text-align:center;cursor:pointer;margin:0 1px 4px;z-index:10;overflow:hidden;border-top-right-radius:4px;-moz-border-radius-topright:4px;-webkit-border-top-right-radius:4px;border-top-left-radius:4px;-moz-border-radius-topleft:4px;-webkit-border-top-left-radius:4px;}
 ul.ipane_ctrl li:hover {background:#06c;color:#fff;}
-ul.tags li{list-style:inside square;margin:0 0 0 10px;}
+ul.tags li{list-style:inside square;margin:0 0 4px 8px;}
 div.summary div{margin:22px 20px 2px;}
 div.preformatter{overflow-x:auto;overflow-y:scroll;}
 div.summary div.em{font-size:1.4em;}

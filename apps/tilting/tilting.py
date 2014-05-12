@@ -44,7 +44,7 @@ class Tilting():
             repr = repr[:-2]
             #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
             repr += '<br />'
-        return "<div class=sml>%s</div>" % repr
+        return "<span class=sml>%s</span>" % repr
 
     def __init__(self, tilde_calc):
         self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles

@@ -53,8 +53,9 @@ Other known similar projects are collected below (in an alphabetic order):
 - ESTEST (Python, XQuery), http://estest.ucdavis.edu
 - J-ICE (based on Jmol, Java), http://j-ice.sourceforge.net
 - Materials Project (Python), http://www.materialsproject.org
+- MatNavi Materials Database, Materials Information Station, Tsukuba, http://caldb.nims.go.jp/CALDB/
 - OQMD and qmpy (Python), http://oqmd.org
-- PAULING FILE world largest database for inorganic compounds, http://paulingfile.com
+- PAULING FILE, world largest database for inorganic compounds, http://paulingfile.com
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
 - QMForge (Python), http://qmforge.sourceforge.net
 - Quixote, http://quixote.wikispot.org

@@ -331,7 +331,7 @@ function render_3D(){
     optionpanel.setAttribute('id', 'optionpanel');
     optionpanel.innerHTML = '<input type=radio name=optionpanel id=optionpanel_ checked=true /><label for=optionpanel_>none</label>';
     optionpanel.innerHTML += ' <input type=radio name=optionpanel id=optionpanel_t /><label for=optionpanel_t>elements</label>';
-    optionpanel.innerHTML += ' <input type=radio name=optionpanel id=optionpanel_N /><label for=optionpanel_N>ids</label>';
+    optionpanel.innerHTML += ' <input type=radio name=optionpanel id=optionpanel_N /><label for=optionpanel_N>id\'s</label>';
     if (obj_3D.overlayed){
         for (var prop in obj_3D.overlayed){
             optionpanel.innerHTML += ' <input type=radio name=optionpanel id=optionpanel_'+prop+' /><label for=optionpanel_'+prop+'>'+obj_3D.overlayed[prop]+'</label>';

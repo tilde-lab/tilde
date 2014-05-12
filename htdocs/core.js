@@ -641,6 +641,7 @@ function resp__summary(req, data){
     data = $.evalJSON(data);
     var info = $.evalJSON(data.info);
     
+    // PHONONS IPANES
     if (data.phonons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
@@ -651,37 +652,54 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').hide();
     }
     
+    // INPUT IPANE
     if (info.input){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=inp]').show();
         if (info.prog.indexOf('Exciting') !== -1) info.input = info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');     
         $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cw/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
     }
     
+    // OPTGEOM IPANE
     if ($.inArray('geometry optimization', info.calctypes) != -1 && !_tilde.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
     
+    // ESTORY IPANE
     if (info.convergence.length && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=estory]').show();
     
+    // EDOS IPANE
     if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
     
+    // EBANDS IPANE
     if (data.electrons.bands && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').hide();
-
+    
+    // SUMMARY (MAIN) IPANE
     var html = '<div><strong>'+info.location+'</strong></div>';
     html += '<div class=preformatter style="height:445px;"><ul class=tags>';
-    $.each(data.tags, function(num, value){
-        html += '<li><strong>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + '</strong>: <span>' + value.content.join('</span>, <span>') + '</span></li>';
-    });
     if (info.warns){
         for (var i=0; i<info.warns.length; i++){
             html += '<li class=warn>'+info.warns[i]+'</li>';
         }
     }
+    $.each(data.summary, function(num, value){
+        if ($.inArray(value.content[0], ['&mdash;', '?']) == -1) {
+            html += '<li><strong>' + value.category + '</strong>: <span>' + value.content.join('</span>, <span>') + '</span></li>';
+        }
+    });
     html += '</ul></div>';
-    
     $('#o_'+req.datahash + ' div[rel=summary]').append('<div class=summary>'+html+'</div>');
-    open_ipane('3dview', req.datahash);
+    $('span._e').each(function(){
+        var val = parseFloat( $(this).text() );
+        if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
+    });
+    $('span._g').each(function(){
+        var val = parseFloat( $(this).text() );
+        if (val) $(this).text( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
+    });
+    $('span.units-energy').text(_tilde.settings.units.energy);
     
+    // 3D IPANE
+    open_ipane('3dview', req.datahash);    
     if (!_tilde.degradation){     
         _tilde.rendered[req.datahash] = true;
         $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');

@@ -1,7 +1,10 @@
 0.2.7
-support of two backend types: sqlite and postgres
+support of two backend types: sqlite (local) and postgres (remote)
 extended settings control (including backend switching) in GUI
 updated manual
+modified ASE EXCITING calculator
+geometry optimisation and E_tot convergence visualization
+new super-categories in GUI
 
 0.2.6
 bugfixes and minor enhancements in code structure and UI
