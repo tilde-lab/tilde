@@ -24,7 +24,6 @@ _tilde.freeze = false;
 _tilde.wsock_delim = '~#~#~';
 _tilde.cur_anchor = false;
 _tilde.multireceive = 0;
-_tilde.scrollmemo = 0;
 _tilde.filetree = {};
 _tilde.filetree.transports = [];
 _tilde.filetree.root = '';
@@ -225,7 +224,7 @@ function dos_plotter(req, plot, divclass, axes){
     cpanel.parent().removeClass('loading');
 
     for (var i=0; i < plot.length; i++){
-        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked="checked" id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + $.toJSON(plot[i].data) + '" rel="'+plot[i].color+'" />&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
+        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked=checked id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + $.toJSON(plot[i].data) + '" rel="'+plot[i].color+'" />&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
     }
     function plot_user_choice(){
         var data_to_plot = [];
@@ -330,7 +329,7 @@ function resp__login(req, data){
     
     if (data.debug_regime){
         _tilde.debug_regime = true;
-        $('#settings_debug').attr('checked', true);
+        $('#settings_debug').prop('checked', true);
     }
     
     if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
@@ -359,8 +358,8 @@ function resp__login(req, data){
     });
     
     // display DB type
-    if (_tilde.settings.db.type == 'sqlite') $('#settings_db_type_sqlite').attr('checked', true);
-    else if (_tilde.settings.db.type == 'postgres') { $('#settings_db_type_postgres').attr('checked', true); $('#settings_postgres').show(); }
+    if (_tilde.settings.db.type == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
+    else if (_tilde.settings.db.type == 'postgres') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
     
     for (var attrname in data.settings.db){
         if (attrname == 'type') continue;
@@ -379,17 +378,17 @@ function resp__login(req, data){
         else return 0;
     });
     $.each(_tilde.settings.avcols, function(n, item){
-        var checked_state = item.enabled ? ' checked=true' : '';
+        var checked_state = item.enabled ? ' checked=checked' : '';
         $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
     });
     var colnum_str = '';
     $.each([50, 100, 500], function(n, item){
         var checked_state = '';
-        if (_tilde.settings.colnum == item) checked_state = ' checked=true';
+        if (_tilde.settings.colnum == item) checked_state = ' checked=checked';
         colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'" /><label for="s_rdclnm_'+n+'"> '+item+'</label>';
     });
     $('#ipane-maxitems-holder').empty().append(colnum_str);
-    _tilde.settings.objects_expand ? $('#settings_objects_expand').attr('checked', true) : $('#settings_objects_expand').attr('checked', false);
+    _tilde.settings.objects_expand ? $('#settings_objects_expand').prop('checked', true) : $('#settings_objects_expand').prop('checked', false);
 
     // display units settings (depend on client state only)
     var units_str = '';
@@ -398,7 +397,7 @@ function resp__login(req, data){
         units_str += _tilde.unit_capts[k]+':';
         $.each(v, function(kk, vv){
             var checked_state = '';
-            if (_tilde.settings.units[k] == kk) checked_state = ' checked=true';
+            if (_tilde.settings.units[k] == kk) checked_state = ' checked=checked';
             units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'" /><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
         });
         units_str += '<br /><br /><br />';
@@ -406,12 +405,12 @@ function resp__login(req, data){
     $('#ipane-units-holder').empty().append( units_str );
 
     // display scan settings (depend on server state only)
-    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').attr('checked', true) : $('#settings_skip_unfinished').attr('checked', false);
+    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').prop('checked', true) : $('#settings_skip_unfinished').prop('checked', false);
 
     if (!!_tilde.settings.skip_if_path) {
-        $('#settings_skip_if_path').attr('checked', true);
+        $('#settings_skip_if_path').prop('checked', true);
         $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
-    } else $('#settings_skip_if_path').attr('checked', false);
+    } else $('#settings_skip_if_path').prop('checked', false);
     
     $('#settings_local_path').val(_tilde.settings.local_dir);
     
@@ -752,14 +751,14 @@ function resp__db_create(req, data){
     logger('DATABASE ' + req.newname + ' CREATED.');
 }
 function resp__db_copy(req, data){
-    $('#d_cb_all').attr('checked', false);
-    $('input.SHFT_cb').attr('checked', false);
+    $('#d_cb_all').prop('checked', false);
+    $('input.SHFT_cb').prop('checked', false);
     $('#db_copy_select').val('0');
     $('#databrowser tr').removeClass('shared');
     switch_menus(true);
 }
 function resp__delete(req, data){
-    $('#d_cb_all').attr('checked', false);
+    $('#d_cb_all').prop('checked', false);
     $.each(req.hashes, function(n, i){
         $('#i_' + i).remove();
     });
@@ -972,8 +971,7 @@ $(document).ready(function(){
                                 __send('summary',  {datahash: i} )
                                 open_ipane('summary', i);
                                 _tilde.rendered[i] = true;
-                                _tilde.scrollmemo = target_cell.offset().top;
-                                $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
+                                window.scrollBy(0, 60);
                             }
                         });
                     }
@@ -1056,7 +1054,6 @@ $(document).ready(function(){
         hashes.splice(i, 1);
         if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
         else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
-        $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
 
     // DEBUG CONSOLE
@@ -1114,7 +1111,6 @@ $(document).ready(function(){
             $('#closeobj_trigger').show();
         }
         $('div.downscreen').hide();
-        $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
 
     // DATABROWSER CHECKBOXES
@@ -1132,11 +1128,11 @@ $(document).ready(function(){
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
-            $('input.SHFT_cb').attr('checked', true);
+            $('input.SHFT_cb').prop('checked', true);
             $('#databrowser tr').addClass('shared');
             switch_menus();
         } else {
-            $('input.SHFT_cb').attr('checked', false);
+            $('input.SHFT_cb').prop('checked', false);
             $('#databrowser tr').removeClass('shared');
             switch_menus(true);
         }
@@ -1156,7 +1152,7 @@ $(document).ready(function(){
     
     // CANCEL CONTEXT MENU
     $('#cancelctx_trigger').click(function(){
-        $('input.SHFT_cb, #d_cb_all').attr('checked', false);
+        $('input.SHFT_cb, #d_cb_all').prop('checked', false);
         $('#databrowser tr').removeClass('shared');
         switch_menus(true);
     });
@@ -1225,7 +1221,6 @@ $(document).ready(function(){
             close_obj_tab(i);
         });
         document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
-        $('html, body').animate({scrollTop: _tilde.scrollmemo - 54});
     });
     $('#tagcloud_trigger').click(function(){
         set_console(false);

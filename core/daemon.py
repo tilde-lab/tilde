@@ -63,7 +63,9 @@ class DataMap:
         self.error = None
         cursor = Repo_pool[db_name].cursor()
         try: cursor.execute( 'SELECT checksum, tid FROM tags' )
-        except: self.error = 'DataMap error: ' + "%s" % sys.exc_info()[1]
+        except:
+            Repo_pool[db_name].commit() # Postgres: prevent transaction aborting...
+            self.error = 'DataMap error: ' + "%s" % sys.exc_info()[1]
         else:
             for row in cursor.fetchall():
                 i = int(row[1])
@@ -147,13 +149,14 @@ class Request_Handler:
         if not error:
             if userobj['transport'] in Tilde.Conns.keys():
                 data, error = Tilde.Conns[ userobj['transport'] ]['report']( userobj['path'], settings['local_dir'], Tilde )
-
-        global Tilde_tags
-        if Users[session_id].cur_db in Tilde_tags:
-            # force update tags in memory
-            Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
-            if Tilde_tags[ Users[session_id].cur_db ].error:
-                error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
+        
+        if not error:
+            global Tilde_tags
+            if Users[session_id].cur_db in Tilde_tags:
+                # force update tags in memory
+                Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )
+                if Tilde_tags[ Users[session_id].cur_db ].error:
+                    error = 'DataMap creation error: ' + Tilde_tags[ Users[session_id].cur_db ].error
 
         if callback: callback( (data, error) )
         else: return (data, error)
@@ -259,31 +262,31 @@ class Request_Handler:
         if not tids:
             cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
             try: cursor.execute( 'SELECT tid, categ, topic FROM topics' )
-            except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
-            else:
-                tags = []
-                for item in cursor.fetchall():
-                    if not item[0] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
-                    
-                    try: match = [x for x in Tilde.hierarchy if x['cid'] == item[1]][0]
-                    except IndexError: return (data, 'Schema and data do not match: different versions of code and database?')
-                    
-                    if not 'has_label' in match or not match['has_label']: continue
-                    
-                    if match['cid'] in [1, 511, 521, 522]: i = html_formula(item[2]) # TODO!!!
-                    else: i = item[2]
-
-                    if not 'sort' in match: sort = 1000
-                    else: sort = match['sort']
-                    for n, tag in enumerate(tags):
-                        if tag['category'] == match['category']:
-                            tags[n]['content'].append( {'tid': item[0], 'topic': i} )
-                            break
-                    else: tags.append({'cid': match['cid'], 'category': match['category'], 'sort': sort, 'content': [ {'tid': item[0], 'topic': i} ]})
-
-                tags.sort(key=lambda x: x['sort'])
+            except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
+            
+            tags = []
+            for item in cursor.fetchall():
+                if not item[0] in Tilde_tags[ Users[session_id].cur_db ].t2c: continue # this is to assure there are checksums on such tid
                 
-                tags = {'blocks': tags, 'cats': Tilde.supercategories}                
+                try: match = [x for x in Tilde.hierarchy if x['cid'] == item[1]][0]
+                except IndexError: return (data, 'Schema and data do not match: different versions of code and database?')
+                
+                if not 'has_label' in match or not match['has_label']: continue
+                
+                if match['cid'] in [1, 511, 521, 522]: i = html_formula(item[2]) # TODO!!!
+                else: i = item[2]
+
+                if not 'sort' in match: sort = 1000
+                else: sort = match['sort']
+                for n, tag in enumerate(tags):
+                    if tag['category'] == match['category']:
+                        tags[n]['content'].append( {'tid': item[0], 'topic': i} )
+                        break
+                else: tags.append({'cid': match['cid'], 'category': match['category'], 'sort': sort, 'content': [ {'tid': item[0], 'topic': i} ]})
+
+            tags.sort(key=lambda x: x['sort'])
+            
+            tags = {'blocks': tags, 'cats': Tilde.supercategories}
         else:
             data_clause = Tilde_tags[ Users[session_id].cur_db ].c_by_t( *tids )
             tags = Tilde_tags[ Users[session_id].cur_db ].t_by_c( *data_clause )
@@ -719,7 +722,9 @@ class Request_Handler:
                 cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
                 cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
             Repo_pool[ Users[session_id].cur_db ].commit()
-        except: return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
+        except:
+            Repo_pool[ Users[session_id].cur_db ].commit() # Postgres: prevent transaction aborting...
+            return (data, 'DB error: ' + "%s" % sys.exc_info()[1])
         else:
             # force update tags in memory
             Tilde_tags[ Users[session_id].cur_db ] = DataMap( Users[session_id].cur_db )

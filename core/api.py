@@ -607,7 +607,9 @@ class API:
                     elif self.settings['db']['type'] == 'postgres': sql = 'INSERT INTO topics (categ, topic) VALUES (%s, %s) RETURNING tid'
                     
                     try: cursor.execute( sql, (i['cid'], topic) )
-                    except: return 'DB error: %s' % sys.exc_info()[1]
+                    except:
+                        self.db_conn.commit() # Postgres: prevent transaction aborting...
+                        return 'DB error: %s' % sys.exc_info()[1]
                     
                     if self.settings['db']['type'] == 'sqlite': tid = cursor.lastrowid
                     elif self.settings['db']['type'] == 'postgres': tid = cursor.fetchone()[0]
@@ -615,7 +617,9 @@ class API:
         
         sql = 'INSERT INTO tags (checksum, tid) VALUES (%(ph)s, %(ph)s)' % { 'ph': self.settings['ph'] }
         try: cursor.executemany( sql, tags )
-        except: return 'DB error: %s' % sys.exc_info()[1]
+        except:
+            self.db_conn.commit() # Postgres: prevent transaction aborting...
+            return 'DB error: %s' % sys.exc_info()[1]
 
         return False
 
@@ -717,6 +721,7 @@ class API:
             sql = 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s )' % { 'ph': self.settings['ph'] }
             cursor.execute( sql, (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
         except:
+            self.db_conn.commit() # Postgres: prevent transaction aborting...
             error = 'DB error: %s' % sys.exc_info()[1]
             return (None, error)
         self.db_conn.commit()

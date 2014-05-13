@@ -18,7 +18,7 @@ DB_SCHEMA_VERSION = '1.08'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
 DEFAULT_SQLITE_DB = 'default.db'
-DEFAULT_POSTGRES_DB = 'tilde_master'
+DEFAULT_POSTGRES_DB = 'tilde'
 DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 10
@@ -143,7 +143,7 @@ def check_db_version(db_conn):
     @returns True on failure
     '''  
     cursor = db_conn.cursor()
-    try: cursor.execute( "SELECT content FROM pragma" )
+    try: cursor.execute( "SELECT content FROM pragma;" )
     except: return True
     row = cursor.fetchone()
     if row[0] != DB_SCHEMA_VERSION:
