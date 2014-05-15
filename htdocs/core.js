@@ -344,6 +344,10 @@ function resp__login(req, data){
     if (data.demo_regime){
         _tilde.demo_regime = true;
         $('.protected').hide();
+        if (data.custom_about_link){
+            $('#custom_about_link_trigger').show();
+            _tilde.custom_about_link = data.custom_about_link;
+        }
     }
     $('#settings_webport').val(data.settings.webport);
     
@@ -731,7 +735,7 @@ function resp__settings(req, data){
         notify('Saving new settings and restarting...');
         __send('restart');
         logger('RESTART SIGNAL SENT');
-        setInterval(function(){document.location.reload()}, 1000); // setTimeout doesn't work here        
+        setInterval(function(){document.location.reload()}, 2000); // setTimeout doesn't work here, 2 sec are optimal
     }
     $.jStorage.set('tilde_settings', _tilde.settings);
     logger('SETTINGS SAVED!');
@@ -1491,7 +1495,7 @@ $(document).ready(function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
         __send('restart');
         logger('RESTART SIGNAL SENT');
-        setInterval(function(){document.location.reload()}, 1000); // setTimeout doesn't work here
+        setInterval(function(){document.location.reload()}, 2000); // setTimeout doesn't work here, 2 sec are optimal
     });
     $('#core-terminate').click(function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
@@ -1503,7 +1507,11 @@ $(document).ready(function(){
 
     // ABOUT
     $('#about_trigger').click(function(){
-        document.location.hash = '#about';
+        if (_tilde.custom_about_link) document.location = _tilde.custom_about_link;
+        else document.location.hash = '#about';
+    });
+    $('#custom_about_link_trigger').click(function(){
+        document.location = _tilde.custom_about_link;
     });
 
     // RESIZE

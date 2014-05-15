@@ -33,6 +33,7 @@ DEFAULT_SETUP = {
                 'skip_if_path': "-_~",
                 'title': None,
                 'update_server': "http://tilde.pro/VERSION",
+                'custom_about_link': False, # only in demo mode: if set to URL, the URL is used
                 'db':{
                     'type': 'sqlite',   # may be postgres
                                         # if sqlite is chosen: further info is not used
@@ -288,3 +289,6 @@ if settings['skip_if_path'] and len(settings['skip_if_path']) > 3:
         
 if not 'http://' in settings['update_server']:
     sys.exit('Directive update_server must be a valid url!')
+    
+if settings['custom_about_link'] and not 'http://' in settings['custom_about_link']:
+    sys.exit('Directive custom_about_link must be a valid url!')
