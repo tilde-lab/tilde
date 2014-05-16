@@ -87,7 +87,7 @@ div.ctx_caption{padding:7px 0 0 8px;}
 #db_copy_select{width:230px;margin:5px;font-size:0.9em;}
 
 /* DATABROWSER TABLE */
-#countbox{position:absolute;top:15px;width:400px;text-align:center;display:table-cell;vertical-align:middle;font-size:1em;}
+#countbox{position:absolute;top:15px;width:400px;text-align:center;display:table-cell;vertical-align:middle;font-size:1em;z-index:-1;}
 #data_holder{display:none;width:100%;}
 #databrowser{position:absolute;width:100%;top:53px;left:0;}
 #collapser_new{width:126px;}

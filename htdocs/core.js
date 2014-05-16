@@ -191,7 +191,7 @@ function e_plotter(req, plot, divclass, ordinate){
     var options = {
         legend: {show: false},
         series: {lines: {show: true}, points: {show: show_points}, shadowSize: 3},
-        xaxis: {labelHeight: 40},
+        xaxis: {labelHeight: 40, minTickSize: 1, tickDecimals: 0},
         yaxis: {color: '#eeeeee', labelWidth: 50},
         grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
     };
