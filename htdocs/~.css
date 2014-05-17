@@ -32,7 +32,7 @@ div.menu{padding:6px 0 11px;height:28px;width:100%;background:#ccc;position:fixe
 #welcome p{font-size:1.4em;line-height:1.6em;margin-bottom:1em;text-align:center;}
 
 /* COMMON STYLES */
-div.btn{font-size:13px;font-weight:normal;margin:3px;padding:3px 5px;border:1px solid #000;text-align:center;cursor:pointer;background:#fff;color:#000;line-height:1.4em;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;box-shadow:inset 0 2px 2px rgba(255,255,255,.22), inset 0 -2px 2px rgba(0,0,0,.17), inset 0 20px 10px rgba(255,255,255,.12), 0 0 2px 1px rgba(0,0,0,.1), 0 2px 2px rgba(0,0,0,.2);}
+div.btn{font-size:13px;font-weight:normal;margin:3px;padding:3px 5px;border:1px solid #000;text-align:center;cursor:pointer;background:#fff;color:#000;line-height:1.4em;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;box-shadow:inset 0 2px 2px rgba(255,255,255,0.3), inset 0 -2px 2px rgba(0,0,0,0.3), inset 0 20px 10px rgba(255,255,255,0.3), 0 0 2px 1px rgba(0,0,0,0.2), 0 2px 2px rgba(0,0,0,0.3);}
 div.btn:hover{background:#000;color:#fff;}
 div.btn2{border:1px solid #06c;color:#06c;}
 div.btn2:hover{background:#06c;color:#fff;}

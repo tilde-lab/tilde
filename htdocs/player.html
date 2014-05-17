@@ -1,7 +1,7 @@
 <!--
 Tilde project: 3d atomic structure canvas renderer
 based on three.js and tween.js
-v050514
+v170514
 -->
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -10,7 +10,7 @@ v050514
 <meta charset="utf-8">
 <style>
 body{margin:0;padding:0;overflow:hidden;}
-#infopanel{position:absolute;top:20px;left:20px;width:150px;height:150px;text-align:left;z-index:100;font-family:'Courier New';font-size:12px;}
+#infopanel{position:absolute;top:20px;left:20px;width:150px;height:150px;text-align:left;z-index:100;line-height:22px;font-family:'Courier New';font-size:12px;}
 #zoompanel{position:absolute;top:8px;right:8px;width:50px;height:150px;z-index:100;background:url('/static/images/zoom.gif') no-repeat;}
 #optionpanel{position:absolute;bottom:2px;left:0;width:100%;height:30px;z-index:100;text-align:center;font-family:'Courier New';font-size:12px;}
 div.L{display:block;position:absolute;font-size:0.55em;z-index:200;font-family:sans-serif;}
@@ -22,19 +22,13 @@ div.L{display:block;position:absolute;font-size:0.55em;z-index:200;font-family:s
 
 
 <script type="text/javascript">
-// tween.js r7 - http://github.com/sole/tween.js
-'use strict';var TWEEN=TWEEN||function(){var a=[];return{REVISION:"10",getAll:function(){return a},removeAll:function(){a=[]},add:function(c){a.push(c)},remove:function(c){c=a.indexOf(c);-1!==c&&a.splice(c,1)},update:function(c){if(0===a.length)return!1;for(var b=0,d=a.length,c=void 0!==c?c:void 0!==window.performance&&void 0!==window.performance.now?window.performance.now():Date.now();b<d;)a[b].update(c)?b++:(a.splice(b,1),d--);return!0}}}();
-TWEEN.Tween=function(a){var c={},b={},d={},e=1E3,g=0,i=0,k=null,u=TWEEN.Easing.Linear.None,v=TWEEN.Interpolation.Linear,p=[],q=null,r=!1,s=null,t=null,j;for(j in a)c[j]=parseFloat(a[j],10);this.to=function(a,c){void 0!==c&&(e=c);b=a;return this};this.start=function(e){TWEEN.add(this);r=!1;k=void 0!==e?e:void 0!==window.performance&&void 0!==window.performance.now?window.performance.now():Date.now();k+=i;for(var f in b){if(b[f]instanceof Array){if(0===b[f].length)continue;b[f]=[a[f]].concat(b[f])}c[f]=
-a[f];!1===c[f]instanceof Array&&(c[f]*=1);d[f]=c[f]||0}return this};this.stop=function(){TWEEN.remove(this);return this};this.delay=function(a){i=a;return this};this.repeat=function(a){g=a;return this};this.easing=function(a){u=a;return this};this.interpolation=function(a){v=a;return this};this.chain=function(){p=arguments;return this};this.onStart=function(a){q=a;return this};this.onUpdate=function(a){s=a;return this};this.onComplete=function(a){t=a;return this};this.update=function(n){if(n<k)return!0;
-!1===r&&(null!==q&&q.call(a),r=!0);var f=(n-k)/e,f=1<f?1:f,m=u(f),h;for(h in b){var j=c[h]||0,l=b[h];l instanceof Array?a[h]=v(l,m):("string"===typeof l&&(l=j+parseFloat(l,10)),a[h]=j+(l-j)*m)}null!==s&&s.call(a,m);if(1==f)if(0<g){isFinite(g)&&g--;for(h in d)"string"===typeof b[h]&&(d[h]+=parseFloat(b[h],10)),c[h]=d[h];k=n+i}else{null!==t&&t.call(a);f=0;for(m=p.length;f<m;f++)p[f].start(n);return!1}return!0}};
-TWEEN.Easing={Linear:{None:function(a){return a}},Quadratic:{In:function(a){return a*a},Out:function(a){return a*(2-a)},InOut:function(a){return 1>(a*=2)?0.5*a*a:-0.5*(--a*(a-2)-1)}},Cubic:{In:function(a){return a*a*a},Out:function(a){return--a*a*a+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*a:0.5*((a-=2)*a*a+2)}},Quartic:{In:function(a){return a*a*a*a},Out:function(a){return 1- --a*a*a*a},InOut:function(a){return 1>(a*=2)?0.5*a*a*a*a:-0.5*((a-=2)*a*a*a-2)}},Quintic:{In:function(a){return a*a*a*
-a*a},Out:function(a){return--a*a*a*a*a+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*a*a*a:0.5*((a-=2)*a*a*a*a+2)}},Sinusoidal:{In:function(a){return 1-Math.cos(a*Math.PI/2)},Out:function(a){return Math.sin(a*Math.PI/2)},InOut:function(a){return 0.5*(1-Math.cos(Math.PI*a))}},Exponential:{In:function(a){return 0===a?0:Math.pow(1024,a-1)},Out:function(a){return 1===a?1:1-Math.pow(2,-10*a)},InOut:function(a){return 0===a?0:1===a?1:1>(a*=2)?0.5*Math.pow(1024,a-1):0.5*(-Math.pow(2,-10*(a-1))+2)}},Circular:{In:function(a){return 1-
-Math.sqrt(1-a*a)},Out:function(a){return Math.sqrt(1- --a*a)},InOut:function(a){return 1>(a*=2)?-0.5*(Math.sqrt(1-a*a)-1):0.5*(Math.sqrt(1-(a-=2)*a)+1)}},Elastic:{In:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return-(b*Math.pow(2,10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4))},Out:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return b*Math.pow(2,-10*a)*Math.sin((a-c)*
-2*Math.PI/0.4)+1},InOut:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return 1>(a*=2)?-0.5*b*Math.pow(2,10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4):0.5*b*Math.pow(2,-10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4)+1}},Back:{In:function(a){return a*a*(2.70158*a-1.70158)},Out:function(a){return--a*a*(2.70158*a+1.70158)+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*(3.5949095*a-2.5949095):0.5*((a-=2)*a*(3.5949095*a+2.5949095)+2)}},Bounce:{In:function(a){return 1-
-TWEEN.Easing.Bounce.Out(1-a)},Out:function(a){return a<1/2.75?7.5625*a*a:a<2/2.75?7.5625*(a-=1.5/2.75)*a+0.75:a<2.5/2.75?7.5625*(a-=2.25/2.75)*a+0.9375:7.5625*(a-=2.625/2.75)*a+0.984375},InOut:function(a){return 0.5>a?0.5*TWEEN.Easing.Bounce.In(2*a):0.5*TWEEN.Easing.Bounce.Out(2*a-1)+0.5}}};
-TWEEN.Interpolation={Linear:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.Linear;return 0>c?g(a[0],a[1],d):1<c?g(a[b],a[b-1],b-d):g(a[e],a[e+1>b?b:e+1],d-e)},Bezier:function(a,c){var b=0,d=a.length-1,e=Math.pow,g=TWEEN.Interpolation.Utils.Bernstein,i;for(i=0;i<=d;i++)b+=e(1-c,d-i)*e(c,i)*a[i]*g(d,i);return b},CatmullRom:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.CatmullRom;return a[0]===a[b]?(0>c&&(e=Math.floor(d=b*(1+c))),g(a[(e-
-1+b)%b],a[e],a[(e+1)%b],a[(e+2)%b],d-e)):0>c?a[0]-(g(a[0],a[0],a[1],a[1],-d)-a[0]):1<c?a[b]-(g(a[b],a[b],a[b-1],a[b-1],d-b)-a[b]):g(a[e?e-1:0],a[e],a[b<e+1?b:e+1],a[b<e+2?b:e+2],d-e)},Utils:{Linear:function(a,c,b){return(c-a)*b+a},Bernstein:function(a,c){var b=TWEEN.Interpolation.Utils.Factorial;return b(a)/b(c)/b(a-c)},Factorial:function(){var a=[1];return function(c){var b=1,d;if(a[c])return a[c];for(d=c;1<d;d--)b*=d;return a[c]=b}}(),CatmullRom:function(a,c,b,d,e){var a=0.5*(b-a),d=0.5*(d-c),g=
-e*e;return(2*c-2*b+a+d)*e*g+(-3*c+3*b-2*a-d)*g+a*e+c}}};
+// tween.js r13 - http://github.com/sole/tween.js
+'use strict';void 0===Date.now&&(Date.now=function(){return(new Date).valueOf()});
+var TWEEN=TWEEN||function(){var a=[];return{REVISION:"13",getAll:function(){return a},removeAll:function(){a=[]},add:function(c){a.push(c)},remove:function(c){c=a.indexOf(c);-1!==c&&a.splice(c,1)},update:function(c){if(0===a.length)return!1;for(var b=0,c=void 0!==c?c:"undefined"!==typeof window&&void 0!==window.performance&&void 0!==window.performance.now?window.performance.now():Date.now();b<a.length;)a[b].update(c)?b++:a.splice(b,1);return!0}}}();
+TWEEN.Tween=function(a){var c={},b={},d={},e=1E3,g=0,h=!1,j=!1,q=0,m=null,w=TWEEN.Easing.Linear.None,x=TWEEN.Interpolation.Linear,n=[],r=null,s=!1,t=null,u=null,k=null,v;for(v in a)c[v]=parseFloat(a[v],10);this.to=function(a,c){void 0!==c&&(e=c);b=a;return this};this.start=function(e){TWEEN.add(this);j=!0;s=!1;m=void 0!==e?e:"undefined"!==typeof window&&void 0!==window.performance&&void 0!==window.performance.now?window.performance.now():Date.now();m+=q;for(var f in b){if(b[f]instanceof Array){if(0===b[f].length)continue;b[f]=[a[f]].concat(b[f])}c[f]=a[f];!1===c[f]instanceof Array&&(c[f]*=1);d[f]=c[f]||0}return this};this.stop=function(){if(!j)return this;TWEEN.remove(this);j=!1;null!==k&&k.call(a);this.stopChainedTweens();return this};this.stopChainedTweens=function(){for(var a=0,b=n.length;a<b;a++)n[a].stop()};this.delay=function(a){q=a;return this};this.repeat=function(a){g=a;return this};this.yoyo=function(a){h=a;return this};this.easing=function(a){w=a;return this};this.interpolation=function(a){x=a;return this};this.chain=function(){n=arguments;return this};this.onStart=function(a){r=a;return this};this.onUpdate=function(a){t=a;return this};this.onComplete=function(a){u=a;return this};this.onStop=function(a){k=a;return this};this.update=function(p){var f;if(p<m)return!0;!1===s&&(null!==r&&r.call(a),s=!0);var i=(p-m)/e,i=1<i?1:i,j=w(i);for(f in b){var k=c[f]||0,l=b[f];l instanceof Array?a[f]=x(l,j):("string"===typeof l&&(l=k+parseFloat(l,10)),"number"===typeof l&&(a[f]=k+(l-k)*j))}null!==t&&t.call(a,j);if(1==i)if(0<g){isFinite(g)&&g--;for(f in d)"string"===typeof b[f]&&(d[f]+=parseFloat(b[f],10)),h&&(i=d[f],d[f]=b[f],b[f]=i),c[f]=d[f];m=p+q}else{null!==u&&u.call(a);f=0;for(i=n.length;f<i;f++)n[f].start(p);return!1}return!0}};
+TWEEN.Easing={Linear:{None:function(a){return a}},Quadratic:{In:function(a){return a*a},Out:function(a){return a*(2-a)},InOut:function(a){return 1>(a*=2)?0.5*a*a:-0.5*(--a*(a-2)-1)}},Cubic:{In:function(a){return a*a*a},Out:function(a){return--a*a*a+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*a:0.5*((a-=2)*a*a+2)}},Quartic:{In:function(a){return a*a*a*a},Out:function(a){return 1- --a*a*a*a},InOut:function(a){return 1>(a*=2)?0.5*a*a*a*a:-0.5*((a-=2)*a*a*a-2)}},Quintic:{In:function(a){return a*a*a*a*a},Out:function(a){return--a*a*a*a*a+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*a*a*a:0.5*((a-=2)*a*a*a*a+2)}},Sinusoidal:{In:function(a){return 1-Math.cos(a*Math.PI/2)},Out:function(a){return Math.sin(a*Math.PI/2)},InOut:function(a){return 0.5*(1-Math.cos(Math.PI*a))}},Exponential:{In:function(a){return 0===a?0:Math.pow(1024,a-1)},Out:function(a){return 1===a?1:1-Math.pow(2,-10*a)},InOut:function(a){return 0===a?0:1===a?1:1>(a*=2)?0.5*Math.pow(1024,a-1):0.5*(-Math.pow(2,-10*(a-1))+2)}},Circular:{In:function(a){return 1-Math.sqrt(1-a*a)},Out:function(a){return Math.sqrt(1- --a*a)},InOut:function(a){return 1>(a*=2)?-0.5*(Math.sqrt(1-a*a)-1):0.5*(Math.sqrt(1-(a-=2)*a)+1)}},Elastic:{In:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return-(b*Math.pow(2,10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4))},Out:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return b*Math.pow(2,-10*a)*Math.sin((a-c)*2*Math.PI/0.4)+1},InOut:function(a){var c,b=0.1;if(0===a)return 0;if(1===a)return 1;!b||1>b?(b=1,c=0.1):c=0.4*Math.asin(1/b)/(2*Math.PI);return 1>(a*=2)?-0.5*b*Math.pow(2,10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4):0.5*b*Math.pow(2,-10*(a-=1))*Math.sin((a-c)*2*Math.PI/0.4)+1}},Back:{In:function(a){return a*a*(2.70158*a-1.70158)},Out:function(a){return--a*a*(2.70158*a+1.70158)+1},InOut:function(a){return 1>(a*=2)?0.5*a*a*(3.5949095*a-2.5949095):0.5*((a-=2)*a*(3.5949095*a+2.5949095)+2)}},Bounce:{In:function(a){return 1-TWEEN.Easing.Bounce.Out(1-a)},Out:function(a){return a<1/2.75?7.5625*a*a:a<2/2.75?7.5625*(a-=1.5/2.75)*a+0.75:a<2.5/2.75?7.5625*(a-=2.25/2.75)*a+0.9375:7.5625*(a-=2.625/2.75)*a+0.984375},InOut:function(a){return 0.5>a?0.5*TWEEN.Easing.Bounce.In(2*a):0.5*TWEEN.Easing.Bounce.Out(2*a-1)+0.5}}};
+TWEEN.Interpolation={Linear:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.Linear;return 0>c?g(a[0],a[1],d):1<c?g(a[b],a[b-1],b-d):g(a[e],a[e+1>b?b:e+1],d-e)},Bezier:function(a,c){var b=0,d=a.length-1,e=Math.pow,g=TWEEN.Interpolation.Utils.Bernstein,h;for(h=0;h<=d;h++)b+=e(1-c,d-h)*e(c,h)*a[h]*g(d,h);return b},CatmullRom:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.CatmullRom;return a[0]===a[b]?(0>c&&(e=Math.floor(d=b*(1+c))),g(a[(e-1+b)%b],a[e],a[(e+1)%b],a[(e+2)%b],d-e)):0>c?a[0]-(g(a[0],a[0],a[1],a[1],-d)-a[0]):1<c?a[b]-(g(a[b],a[b],a[b-1],a[b-1],d-b)-a[b]):g(a[e?e-1:0],a[e],a[b<e+1?b:e+1],a[b<e+2?b:e+2],d-e)},Utils:{Linear:function(a,c,b){return(c-a)*b+a},Bernstein:function(a,c){var b=TWEEN.Interpolation.Utils.Factorial;return b(a)/b(c)/b(a-c)},Factorial:function(){var a=[1];return function(c){var b=1,d;if(a[c])return a[c];for(d=c;1<d;d--)b*=d;return a[c]=b}}(),CatmullRom:function(a,c,b,d,e){var a=0.5*(b-a),d=0.5*(d-c),g=e*e;return(2*c-2*b+a+d)*e*g+(-3*c+3*b-2*a-d)*g+a*e+c}}};
+
 // author Eberhard Graether / http://egraether.com/ taken from examples rev58
 THREE.TrackballControls = function ( object, domElement ) {
     var _this = this;
@@ -207,6 +201,9 @@ THREE.TrackballControls = function ( object, domElement ) {
         if ( _this.enabled === false ) return;
         event.preventDefault();
         event.stopPropagation();
+        
+        if (!window.active_renderer) window.active_renderer = requestAnimationFrame( animate );
+        
         if ( _state === STATE.NONE ) {
             _state = event.button;
         }
@@ -238,19 +235,18 @@ THREE.TrackballControls = function ( object, domElement ) {
         event.preventDefault();
         event.stopPropagation();
         _state = STATE.NONE;
+        
+        if (!window.active_tween) { cancelAnimationFrame(window.active_renderer); window.active_renderer = false; }
+        
         document.removeEventListener( 'mousemove', mousemove );
         document.removeEventListener( 'mouseup', mouseup );
         add_2D_labels();
     }
-    this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
     this.domElement.addEventListener( 'mousedown', mousedown, false );
     this.handleResize();
 };
 THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-</script>
 
-
-<script type="text/javascript">
 var container, stats, camera, scene, renderer, controls, atoms;
 var forced_labels=false, active_overlay="", overlay_backup="";
 var loaded_3D=false, obj_3D=false, sample = '{"atoms": [{"x": "0", "y": "0", "z": "0", "c": "0x000000", "r": "1.25", "o": {"m": 42, "mm": -0.000022, "t": "Uuo"}}, {"x": "1.25", "y": "1.25", "z": "1.25", "c": "0xFF0000", "r": "1", "o": {"m": 8, "t": "O"}}], "cell": [[3, 0, 0], [0, 3, 0], [0, 0, 3]], "descr": {"a": 3.00, "b": 3.00, "c": 3.00, "alpha": 90, "beta": 90, "gamma": 90}, "overlayed": {"m": "atomic ambivalence", "mm": "my test property"}}';
@@ -308,6 +304,31 @@ function add_2D_labels(){ // added to Controls!
         }
     }
 }
+function rescale(event){
+    var fov = -((event.wheelDelta) ? event.wheelDelta/120 : event.detail/-3) * 100, c = window.innerHeight/window.innerWidth;
+    camera.left += fov;
+    camera.right -= fov;
+    camera.top += fov*c;
+    camera.bottom -= fov*c;
+    camera.updateProjectionMatrix();
+    remove_2D_labels();
+    add_2D_labels();
+    animate();
+    event.preventDefault();
+    event.stopPropagation();    
+}
+function redraw(){
+    var uri = document.location.hash.substr(1).split('/');
+    if (uri.length == 2 || uri.length == 3) json_download( 'json3d/' + uri.join('/') );
+}
+function draw_3d_line(start_arr, finish_arr, color){
+    if (!color) var color = 0x999999;
+    var vector = new THREE.Geometry();
+    vector.vertices.push(new THREE.Vector3( start_arr[0], start_arr[1], start_arr[2] ));
+    vector.vertices.push(new THREE.Vector3( finish_arr[0], finish_arr[1], finish_arr[2] ));
+    var material = new THREE.LineBasicMaterial({color: color});
+    atoms.add(new THREE.Line(vector, material));
+}
 function render_3D(){
     var old = scene.getObjectByName("atoms3d");
     if (!!old) scene.remove( old );
@@ -345,12 +366,12 @@ function render_3D(){
         if (window.active_overlay.length) add_2D_labels();
     }
 
-    var actd, sphd = {lodim:{w:5, h:4}, hidim:{w:10, h:8}};
-    obj_3D.atoms.length > 40 ? actd = sphd.lodim : actd = sphd.hidim;
+    var actd, sphd = {lodim:{w:6, h:6}, hidim:{w:10, h:8}};
+    obj_3D.atoms.length > 50 ? actd = sphd.lodim : actd = sphd.hidim;
 
     var i, len = obj_3D.atoms.length;
     for (i=0; i<len; i++){
-        var atom = new THREE.Mesh( new THREE.SphereGeometry( obj_3D.atoms[i].r*40, actd.w, actd.h ), new THREE.MeshBasicMaterial( {color: parseInt(obj_3D.atoms[i].c, 16)} ) );
+        var atom = new THREE.Mesh( new THREE.SphereGeometry( obj_3D.atoms[i].r*40, actd.w, actd.h ), new THREE.MeshLambertMaterial( { color: parseInt(obj_3D.atoms[i].c, 16), shading: THREE.FlatShading, overdraw: 0.5 } ) );
         atom.position.x = parseInt( obj_3D.atoms[i].x*100 );
         atom.position.y = parseInt( obj_3D.atoms[i].y*100 );
         atom.position.z = parseInt( obj_3D.atoms[i].z*100 );
@@ -358,7 +379,7 @@ function render_3D(){
         atoms.add(atom);
     }
     if (obj_3D.cell.length){
-        var ortes = [];
+        var tempcolor, ortes = [];
         for (var i=0; i<3; i++){
             var a = Math.round(parseFloat(obj_3D.cell[i][0])*1000)/10;
             var b = Math.round(parseFloat(obj_3D.cell[i][1])*1000)/10;
@@ -367,9 +388,9 @@ function render_3D(){
             var trans_vector = new THREE.Geometry();
             trans_vector.vertices.push(new THREE.Vector3(0, 0, 0));
             trans_vector.vertices.push(new THREE.Vector3( a, b, c ));
-            if (i==0) var tempcolor = 0x990000;
-            if (i==1) var tempcolor = 0x009900;
-            if (i==2) var tempcolor = 0x000099;
+            if (i==0) tempcolor = 0x990000;
+            if (i==1) tempcolor = 0x009900;
+            if (i==2) tempcolor = 0x000099;
             atoms.add(new THREE.Line(trans_vector, new THREE.LineBasicMaterial({color: tempcolor })));
         }
 
@@ -398,36 +419,35 @@ function render_3D(){
     atoms.name = "atoms3d";
     scene.add( atoms );
     TWEEN.removeAll();
-    /* var fake_phonon = ''; for (var i=0; i<obj_3D.atoms.length; i++){ fake_phonon += '0,0,0, ' }
-    vibrate_3D( '[' + fake_phonon.substr(0, fake_phonon.length-2) + ']' ) */
-}
-function draw_3d_line(start_arr, finish_arr, color){
-    if (!color) var color = 0x999999;
-    var vector = new THREE.Geometry();
-    vector.vertices.push(new THREE.Vector3( start_arr[0], start_arr[1], start_arr[2] ));
-    vector.vertices.push(new THREE.Vector3( finish_arr[0], finish_arr[1], finish_arr[2] ));
-    var material = new THREE.LineBasicMaterial({color: color});
-    atoms.add(new THREE.Line(vector, material));
-}
-function rescale(event){
-    var fov = -((event.wheelDelta) ? event.wheelDelta/120 : event.detail/-3) * 100, c = window.innerHeight/window.innerWidth;
-    camera.left += fov;
-    camera.right -= fov;
-    camera.top += fov*c;
-    camera.bottom -= fov*c;
-    camera.updateProjectionMatrix();
-    remove_2D_labels();
-    add_2D_labels();
-    event.preventDefault();
-    event.stopPropagation();
-}
-function redraw(){
-    var uri = document.location.hash.substr(1).split('/');
-    if (uri.length == 2 || uri.length == 3) json_download( 'json3d/' + uri.join('/') );
+    
+    //var fake_phonon = ''; for (var i=0; i<obj_3D.atoms.length; i++){ fake_phonon += '1,1,1, ' } // debug phonon animation
+    //vibrate_3D( '[' + fake_phonon.substr(0, fake_phonon.length-2) + ']' );
 }
 function vibrate_3D(objPH){
+    
     TWEEN.removeAll();
-    if (!objPH) {
+        
+    if (objPH) {
+        // displace atoms
+        objPH = JSON.parse(objPH);
+        //if (objPH.length/3 !== obj_3D.atoms.length) console.log('Internal atomic inconsistency error!');
+        var i, len = objPH.length/3;        
+        
+        remove_2D_labels();
+        for (i=0; i < len; i++){
+            var x = parseInt( obj_3D.atoms[i].x*100 );
+            var y = parseInt( obj_3D.atoms[i].y*100 );
+            var z = parseInt( obj_3D.atoms[i].z*100 );
+            var distb_pos = { x: x + objPH[i*3]*200, y: y + objPH[i*3+1]*200, z: z + objPH[i*3+2]*200 };
+            var tweenHead = new TWEEN.Tween( atoms.children[i].position ).to(distb_pos, 750).repeat(Infinity).delay(500).yoyo(true).start();
+        }
+        
+        window.active_tween = true;
+        if (!window.active_renderer) window.active_renderer = requestAnimationFrame( animate );
+        
+        window.overlay_backup = window.active_overlay;
+        window.active_overlay = "";             
+    } else {
         // return atoms back
         var i, len = obj_3D.atoms.length;
         for (i=0; i < len; i++){
@@ -435,30 +455,11 @@ function vibrate_3D(objPH){
             var y = parseInt( obj_3D.atoms[i].y*100 );
             var z = parseInt( obj_3D.atoms[i].z*100 );
             var equil_pos = { x: x, y: y, z: z };
-            var tweenBack = new TWEEN.Tween( atoms.children[i].position ).to(equil_pos, 750);
-            tweenBack.start();
-        }
+            var tweenBack = new TWEEN.Tween( atoms.children[i].position ).to(equil_pos, 750).start();
+            if (i==len-1) tweenBack.onComplete(function(){ cancelAnimationFrame(window.active_renderer); window.active_tween = false; }); // we need to cancel rendering in order to save CPU
+        }        
         window.active_overlay = window.overlay_backup;
         add_2D_labels();
-    } else {
-        objPH = JSON.parse(objPH);
-        //if (objPH.length/3 !== obj_3D.atoms.length) console.log('Internal atomic inconsistency error!');
-        var i, len = objPH.length/3;
-        for (i=0; i < len; i++){
-            var x = parseInt( obj_3D.atoms[i].x*100 );
-            var y = parseInt( obj_3D.atoms[i].y*100 );
-            var z = parseInt( obj_3D.atoms[i].z*100 );
-            var equil_pos = { x: x, y: y, z: z };
-            var distb_pos = { x: x + objPH[i*3]*200, y: y + objPH[i*3+1]*200, z: z + objPH[i*3+2]*200 };
-            var tweenHead = new TWEEN.Tween( atoms.children[i].position ).to(distb_pos, 750).easing(TWEEN.Easing.Quadratic.InOut);
-            var tweenBack = new TWEEN.Tween( atoms.children[i].position ).to(equil_pos, 750).easing(TWEEN.Easing.Quadratic.InOut);
-            tweenBack.chain(tweenHead);
-            tweenHead.chain(tweenBack);
-            tweenHead.start();
-        }
-        window.overlay_backup = window.active_overlay;
-        window.active_overlay = "";
-        remove_2D_labels();
     }
 }
 function init_3D(){ 
@@ -472,8 +473,16 @@ function init_3D(){
     camera = new THREE.OrthographicCamera( -window.innerWidth*1.5, window.innerWidth*1.5, -window.innerHeight*1.5, window.innerHeight*1.5, -2000, 2000 );
     camera.position.set(0, 0, 1);
     scene.add( camera );
+    
+    var AmbientLight = new THREE.AmbientLight( 0x999999 );
+    scene.add( AmbientLight );
+    
+    var PointLight = new THREE.PointLight( 0x666666, 1 );
+    PointLight.position = camera.position;
+    scene.add( PointLight );
 
     renderer = new THREE.CanvasRenderer();
+    renderer.setClearColor( 0xffffff );
     renderer.setSize( window.innerWidth, window.innerHeight );
     container.appendChild( renderer.domElement );
 
@@ -513,13 +522,12 @@ function init_3D(){
     animate();
 }
 function animate(){
-    requestAnimationFrame( animate );
+    if (!!window.active_renderer) requestAnimationFrame( animate );
     renderer.render( scene, camera );
     controls.update();
     TWEEN.update();
     //stats.update();
 }
-
 
 window.onload = function(){
     window.addEventListener('DOMMouseScroll', rescale, false);

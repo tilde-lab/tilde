@@ -705,7 +705,7 @@ function resp__summary(req, data){
     open_ipane('3dview', req.datahash);    
     if (!_tilde.degradation){     
         _tilde.rendered[req.datahash] = true;
-        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
+        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html?2#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
         //$('#phonons_animate').text('animate');
     } else {
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('loading').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
