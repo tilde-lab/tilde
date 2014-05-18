@@ -18,8 +18,8 @@ import logging
 from numpy import dot
 from numpy import array
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps')) # this is done to have all 3rd party code in core/deps
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 
 import tornado.web
 import tornadio2.conn
@@ -844,7 +844,7 @@ class DuplexConnection(tornadio2.conn.SocketConnection):
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render(os.path.realpath(os.path.dirname(__file__)) + "/../htdocs/frontend.html")
+        self.render(os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + "/../htdocs/frontend.html")
 
 '''class CIFDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -1045,7 +1045,7 @@ if __name__ == "__main__":
                 (r"/export/(.*)", DataExportHandler),
                 #(r"/VERSION", UpdateServiceHandler)
             ]),
-            static_path = os.path.realpath(os.path.dirname(__file__)) + '/../htdocs',
+            static_path = os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../htdocs',
             socket_io_port = settings['webport'],
             socket_io_address = '0.0.0.0', # otherwise not working everywhere
             **config)

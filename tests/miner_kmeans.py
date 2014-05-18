@@ -14,10 +14,10 @@ starttime = time.time() # benchmarking
 
 from sklearn.cluster import KMeans
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.settings import settings, connect_database, check_db_version
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../core/deps'))
 from ase.data import chemical_symbols
 
 from pymatgen.core.periodic_table import Element

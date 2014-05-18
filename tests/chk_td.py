@@ -15,12 +15,12 @@ numpy.seterr(all='ignore') # Caution!
 
 starttime = time.time() # benchmarking
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.settings import check_db_version
 from core.constants import Constants
 from apps.vibtd.thermal_properties import ThermalProperties
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps/'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../core/deps/'))
 from ase.units import Hartree
 
 

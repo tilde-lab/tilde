@@ -4,7 +4,7 @@
 
 import os, sys
 
-if not 'win' in sys.platform and not os.path.exists( os.path.join( os.path.dirname(__file__), "_spglib.so" ) ):
+if not 'win' in sys.platform and not os.path.exists( os.path.dirname(os.path.abspath(__file__)) + "/_spglib.so" ):
     
     # this currently compiles spglib at Unix
     

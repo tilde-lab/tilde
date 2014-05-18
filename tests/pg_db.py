@@ -7,7 +7,7 @@
 
 import os, sys
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.settings import settings, write_settings, connect_database, DEFAULT_POSTGRES_DB, POSTGRES_DB_SCHEMA, DATA_DIR
 
 try: sys.argv[1]

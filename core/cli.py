@@ -24,7 +24,7 @@ try:
     from numpy.linalg import det
 except ImportError: sys.exit('\n\nI cannot proceed. Please, install numerical python (numpy)!\n\n')
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 
 from settings import settings, connect_database, user_db_choice, check_db_version, repositories, DATA_DIR
 from common import write_cif
@@ -35,8 +35,8 @@ from deps.ase.lattice.spacegroup.cell import cell_to_cellpar
 
 
 registered_modules = []
-for appname in os.listdir( os.path.realpath(os.path.dirname(__file__) + '/../apps') ):
-    if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
+for appname in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../apps') ):
+    if os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../apps/' + appname + '/manifest.json') ):
         registered_modules.append(appname)
 
 parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version+" (" + settings['db']['type'] + " backend)", argument_default=argparse.SUPPRESS)
@@ -70,13 +70,13 @@ if args.daemon:
 
     # invoke windows GUI frame
     if args.daemon == 'shell' and 'win' in sys.platform and not settings['debug_regime'] and not settings['demo_regime']:
-       subprocess.Popen(sys.executable + ' ' + os.path.realpath(os.path.dirname(__file__)) + '/winui.py')
+       subprocess.Popen(sys.executable + ' ' + os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/winui.py')
 
     # replace current process with Tilde daemon process
     try:
-        os.execv(sys.executable, [sys.executable, os.path.realpath(os.path.dirname(__file__)) + '/daemon.py'])
+        os.execv(sys.executable, [sys.executable, os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/daemon.py'])
     except OSError: # taken from Tornado
-        os.spawnv(os.P_NOWAIT, sys.executable, [sys.executable, os.path.realpath(os.path.dirname(__file__)) + '/daemon.py'])
+        os.spawnv(os.P_NOWAIT, sys.executable, [sys.executable, os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/daemon.py'])
 
     sys.exit()
 

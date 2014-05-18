@@ -9,7 +9,7 @@ import json
 
 import installation # EXTENSIONS COMPILATION
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps')) # this is done to have all 3rd party code in core/deps
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 
 from xml.etree import ElementTree as ET
 

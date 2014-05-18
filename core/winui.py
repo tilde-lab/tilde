@@ -11,7 +11,7 @@ import time
 import platform
 import traceback
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../windows/cef/'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../windows/cef/'))
 
 if platform.architecture()[0] != "32bit": raise Exception("Only 32bit architecture is supported")
 

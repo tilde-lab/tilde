@@ -8,12 +8,11 @@ import json
 
 from numpy import dot, array, matrix
 
-# this is done to have all third-party code in deps folder
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 
 from deps.ase.atoms import Atoms
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
 
 from spacegroup.cell import cell_to_cellpar
 

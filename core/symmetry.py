@@ -10,14 +10,15 @@ from numpy import zeros
 from numpy.linalg import det
 
 # this is done to have all third-party code in deps folder
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/deps/ase/lattice'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
 
 from ase.atoms import Atoms
 from spacegroup.cell import cell_to_cellpar
 
 # Dirty hack to provide cross-platform compatibility
 try:
-    if 'win' in sys.platform: sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../windows/spglib/'))
+    if 'win' in sys.platform:
+        sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../windows/spglib/'))
     import _spglib as spg
 except ImportError: raise RuntimeError('Cannot start symmetry finder!')
 

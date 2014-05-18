@@ -9,7 +9,7 @@ import time
 
 starttime = time.time() # benchmarking
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.settings import check_db_version
 from core.common import dict2ase
 

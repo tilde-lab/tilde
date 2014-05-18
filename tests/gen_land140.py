@@ -9,13 +9,13 @@ import os
 import math
 import json
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../core/deps'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../core/deps'))
 from ase.units import Bohr
 from ase.lattice.spacegroup import crystal
 from ase.calculators.exciting import Exciting
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 import psycopg2
 
 from core.common import dict2ase

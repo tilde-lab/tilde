@@ -20,8 +20,7 @@ from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, html_f
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
 
-# this is done to simplify adding modules to Tilde according its API
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 
 from parsers import Output
 from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
@@ -46,13 +45,13 @@ class API:
         # (2) it is enabled in its manifest file
         # (3) its file name repeats the name of parser folder
         All_parsers, self.Parsers = {}, {}
-        for parsername in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../parsers' ):
+        for parsername in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../parsers' ):
             if self.settings['demo_regime']: continue
             
-            if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ): continue
-            if not os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
+            if not os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/manifest.json') ): continue
+            if not os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
                 raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
-            try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../parsers/' + parsername + '/manifest.json') ).read() )
+            try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/manifest.json') ).read() )
             except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
             
             if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']: continue
@@ -77,9 +76,9 @@ class API:
         # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
         self.Apps = {}
         n = 1
-        for appname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../apps' ):
-            if os.path.isfile( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ):
-                try: appmanifest = json.loads( open( os.path.realpath(os.path.dirname(__file__) + '/../apps/' + appname + '/manifest.json') ).read() )
+        for appname in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../apps' ):
+            if os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../apps/' + appname + '/manifest.json') ):
+                try: appmanifest = json.loads( open( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../apps/' + appname + '/manifest.json') ).read() )
                 except: raise RuntimeError('Module API Error: Module manifest for ' + appname + ' has corrupted format!')
 
                 # tags processing
@@ -100,7 +99,7 @@ class API:
         # Every connector implements reading methods:
         # *list* (if applicable) and *report* (obligatory)
         self.Conns = {}
-        for connectname in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../connectors' ):
+        for connectname in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../connectors' ):
             if connectname.endswith('.py') and connectname != '__init__.py':
                 connectname = connectname[0:-3]
                 conn = __import__('connectors.' + connectname) # this means: from foo import Foo
@@ -110,7 +109,7 @@ class API:
         # This is used for classification
         # (also displayed in GUI at the splashscreen and tagcloud)
         self.Classifiers = []
-        for classifier in os.listdir( os.path.realpath(os.path.dirname(__file__)) + '/../classifiers' ):
+        for classifier in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../classifiers' ):
             if classifier.endswith('.py') and classifier != '__init__.py':
                 classifier = classifier[0:-3]
                 obj = __import__('classifiers.' + classifier) # this means: from foo import Foo

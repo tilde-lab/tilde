@@ -7,7 +7,7 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.api import API
 from core.settings import settings, EXAMPLE_DIR, DATA_DIR
 

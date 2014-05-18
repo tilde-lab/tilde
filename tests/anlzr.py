@@ -8,7 +8,7 @@ import os
 import time
 import pprint
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../'))  # path to Tilde root folder
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.api import API
 from core.deps.ase.units import Hartree
 
