@@ -4,7 +4,7 @@
 # (acting as a GUI service)
 # Provides a user interface for database management
 # NB: non-english users of python on Windows beware mimetypes in registry HKEY_CLASSES_ROOT/MIME/Database/ContentType (see http://bugs.python.org/review/9291/patch/191/354)
-# v260414
+# v190514
 
 import os
 import sys
@@ -21,10 +21,8 @@ from numpy import array
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 
-import tornado.web
-import tornadio2.conn
-import tornadio2.router
-import tornadio2.server
+import tornado
+from sockjs.tornado import SockJSRouter, SockJSConnection
 
 from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
@@ -795,7 +793,7 @@ class Request_Handler:
         sys.exit(0)
 
 
-class DuplexConnection(tornadio2.conn.SocketConnection):
+class DuplexConnection(SockJSConnection):
     def on_open(self, info):
         global Users
         Users[ self.session.session_id ] = User()
@@ -972,11 +970,6 @@ class DataExportHandler(tornado.web.RequestHandler):
             else:
                 raise tornado.web.HTTPError(404)
 
-class UpdateServiceHandler(tornado.web.RequestHandler):
-    def get(self):
-        logging.critical("Client " + self.request.remote_ip + " has requested an update.")
-        self.write(API.version)
-
 if __name__ == "__main__":
     
     # check new version
@@ -995,10 +988,8 @@ if __name__ == "__main__":
                 else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
         print updatemsg
 
-    debug = True if settings['debug_regime'] else False
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
-    #logging.basicConfig( level=loglevel, filename=os.path.realpath(os.path.abspath(  DATA_DIR + '/../debug.log'  )) )
-    logging.basicConfig( level=loglevel, stream=sys.stdout )
+    logging.getLogger().setLevel(loglevel)
     
     if settings['db']['type'] == 'sqlite':
         for r in repositories:
@@ -1031,25 +1022,20 @@ if __name__ == "__main__":
     
     Tilde.reload( db_conn = default_conn, settings = settings )
 
-    io_loop = tornado.ioloop.IOLoop.instance()
-    Router = tornadio2.router.TornadioRouter(DuplexConnection, user_settings = {'session_expiry': 86400, 'enabled_protocols': ['websocket', 'xhr-polling'], 'client_timeout': 90}) # NB. three minutes of waiting is tough
-    config = {"debug": debug}
-
+    DuplexRouter = SockJSRouter(DuplexConnection, '/duplex')
+    config = {"debug": settings['debug_regime']}
     try:
         application = tornado.web.Application(
-            Router.apply_routes([
-                (r"/", IndexHandler),
-                (r"/static/(.*)", tornado.web.StaticFileHandler),
-                #(r"/cif/(.*)", CIFDownloadHandler),
-                (r"/json3d/(.*)", JSON3DDownloadHandler),
-                (r"/export/(.*)", DataExportHandler),
-                #(r"/VERSION", UpdateServiceHandler)
-            ]),
+            [(r"/", IndexHandler),
+            (r"/static/(.*)", tornado.web.StaticFileHandler),
+            #(r"/cif/(.*)", CIFDownloadHandler),
+            (r"/json3d/(.*)", JSON3DDownloadHandler),
+            (r"/export/(.*)", DataExportHandler),
+            #(r"/VERSION", UpdateServiceHandler)
+            ] + DuplexRouter.urls,
             static_path = os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../htdocs',
-            socket_io_port = settings['webport'],
-            socket_io_address = '0.0.0.0', # otherwise not working everywhere
             **config)
-        tornadio2.server.SocketServer(application, io_loop=io_loop, auto_start=False)
+        application.listen(settings['webport'], address='0.0.0.0', no_keep_alive=True)
     except:
         errmsg = "Error while starting new Tilde daemon: " + "%s" % sys.exc_info()[1]
         logging.critical( errmsg )
@@ -1063,5 +1049,5 @@ if __name__ == "__main__":
 
         print "Welcome to " + CURRENT_TITLE + " GUI (" + settings['db']['type'] + " backend)\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
-        try: io_loop.start()
+        try: tornado.ioloop.IOLoop.instance().start()
         except KeyboardInterrupt: sys.exit("\nBye-bye.")

@@ -1,22 +1,7 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright: (c) 2011 by the Serge S. Koval, see AUTHORS for more details.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
 """
-    tornadio2.sessioncontainer
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    sockjs.tornado.sessioncontainer
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Simple heapq-based session implementation with sliding expiration window
     support.
@@ -35,7 +20,7 @@ def _random_key():
     return i.hexdigest()
 
 
-class SessionBase(object):
+class SessionMixin(object):
     """Represents one session object stored in the session container.
     Derive from this object to store additional data.
     """
@@ -71,8 +56,10 @@ class SessionBase(object):
         """Triggered when object was expired or deleted."""
         pass
 
-    def __cmp__(self, other):
-        return cmp(self.expiry_date, other.expiry_date)
+    def __lt__(self, other):
+        return self.expiry_date < other.expiry_date
+    
+    __cmp__ =  __lt__
 
     def __repr__(self):
         return '%f %s %d' % (getattr(self, 'expiry_date', -1),
@@ -81,6 +68,13 @@ class SessionBase(object):
 
 
 class SessionContainer(object):
+    """Session container object.
+
+    If we will implement sessions with Tornado timeouts, for polling transports
+    it will be nightmare - if load will be high, number of discarded timeouts
+    will be huge and will be huge performance hit, as Tornado will have to
+    clean them up all the time.
+    """
     def __init__(self):
         self._items = dict()
         self._queue = []
@@ -133,7 +127,7 @@ class SessionContainer(object):
             current_time = time()
 
         while self._queue:
-            # Top most item is not expired yet
+            # Get top most item
             top = self._queue[0]
 
             # Early exit if item was not promoted and its expiration time

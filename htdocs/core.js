@@ -1,7 +1,7 @@
 /**
 *
 * Tilde project: GUI
-* v060514
+* v190514
 *
 */
 /**
@@ -20,6 +20,7 @@ _tilde.rendered = {}; // datahash : bool, ...
 _tilde.tab_buffer = []; // tab_name, ...
 _tilde.last_request = false; // todo: request history dispatcher
 _tilde.last_browse_request = false; // todo: request history dispatcher
+_tilde.socket = null;
 _tilde.freeze = false;
 _tilde.wsock_delim = '~#~#~';
 _tilde.cur_anchor = false;
@@ -29,7 +30,10 @@ _tilde.filetree.transports = [];
 _tilde.filetree.root = '';
 _tilde.filetree.load_msg = 'Requesting directory listing...';
 _tilde.busy_msg = 'Program core is now busy serving your request. Please, wait a bit and try again.';
-_tilde.cw = 0;
+_tilde.cwidth = 0;
+_tilde.cinterval = null;
+_tilde.connattempts = 0;
+_tilde.maxconnattempts = 5;
 
 // units
 _tilde.units = {
@@ -330,7 +334,7 @@ function resp__login(req, data){
     if (data.debug_regime){
         _tilde.debug_regime = true;
         $('#settings_debug').prop('checked', true);
-    }
+    } else $('#settings_debug').prop('checked', false);
     
     if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
     for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
@@ -536,7 +540,7 @@ function resp__tags(req, data){
     if (req.switchto) document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.switchto;
 }
 function resp__list(obj, data){
-    $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();
+    $('#connectors').css('left', (_tilde.cwidth - $('#connectors').width() )/2 + 'px').show();
     open_ipane('conn-local');
     if (data.length)
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
@@ -659,7 +663,7 @@ function resp__summary(req, data){
     if (info.input){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=inp]').show();
         if (info.prog.indexOf('Exciting') !== -1) info.input = info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');     
-        $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cw/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
+        $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cwidth/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
     }
     
     // OPTGEOM IPANE
@@ -809,11 +813,11 @@ function resp__try_pgconn(req, data){
 */
 // DOM loading and default actions
 $(document).ready(function(){
-    _tilde.cw = document.body.clientWidth;
+    _tilde.cwidth = document.body.clientWidth;
     var centerables = ['notifybox', 'loadbox', 'initbox', 'countbox'];
     var centerize = function(){
         $.each(centerables, function(n, i){
-        document.getElementById(i).style.left = _tilde.cw/2 - $('#'+i).width()/2 + 'px';
+        document.getElementById(i).style.left = _tilde.cwidth/2 - $('#'+i).width()/2 + 'px';
         });
     };
     centerize();
@@ -825,7 +829,7 @@ $(document).ready(function(){
 
     // initialize client-side settings
     _tilde.settings = $.jStorage.get('tilde_settings', _tilde.default_settings);
-    _tilde.maxcols = Math.round(_tilde.cw/160) || 2;
+    _tilde.maxcols = Math.round(_tilde.cwidth/160) || 2;
     if (_tilde.settings.cols.length > _tilde.maxcols) _tilde.settings.cols.splice(_tilde.maxcols-1, _tilde.settings.cols.length-_tilde.maxcols+1);
 /**
 *
@@ -833,49 +837,51 @@ $(document).ready(function(){
 * ============================================================================================================================================================================================================
 *
 */
-    _tilde.socket = new io.connect( location.hostname, { transports: ['websocket', 'xhr-polling'], reconnect: true } );
+    (_tilde.conn = function(){
+        _tilde.socket = new SockJS('http://' + window.location.host  + '/duplex', null, ['websocket', 'xhr-polling']);
 
-    _tilde.socket.on('connect', function(){
-        //_tilde.socket.socket.connected
-        logger('CONNECTED.');
-        $('#notifybox').hide();
-        _tilde.freeze = false;
-        __send('login',  {settings: _tilde.settings} );
-    });
-
-    _tilde.socket.on('message', function(data){
-        var split = data.split( _tilde.wsock_delim );
-        var response = {};
-        response.act = split[0];
-        response.req = split[1].length ? $.evalJSON(split[1]) : {};
-        response.error = split[2];
-        response.data = split[3];
-        if (_tilde.debug_regime) logger('RECEIVED: '+response.act);
-        if (response.act != 'report' || response.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
-        if (response.error && response.error.length>1){
-            notify('Diagnostic message:<br />'+response.error);
-            return;
+        _tilde.socket.onopen = function(){
+            logger('CONNECTED.');
+            $('#notifybox').hide();
+            _tilde.freeze = false;
+            _tilde.connattempts = 0;
+            clearInterval(_tilde.cinterval);
+            _tilde.cinterval = null;
+            __send('login',  {settings: _tilde.settings} );
         }
-        if (window['resp__' + response.act]) window['resp__' + response.act](response.req, response.data);
-        else notify('Unhandled action received: ' + response.act);
-    });
 
-    _tilde.socket.on('error', function(data){
-        if (_tilde.debug_regime) logger('AN ERROR IN SOCKET HAS OCCURED!');
-    });
-
-    _tilde.socket.on('disconnect', function(data){
-        logger('CONNECTION WITH PROGRAM CORE WAS LOST!');
-        if (_tilde.debug_regime){
-            notify('Program core does not respond. Please, try to <a href=javascript:document.location.reload()>restart</a>.');
-        } else {
-            _tilde.socket.socket.reconnect();
+        _tilde.socket.onmessage = function(a){
+            var split = a.data.split( _tilde.wsock_delim );
+            var response = {};
+            response.act = split[0];
+            response.req = split[1].length ? $.evalJSON(split[1]) : {};
+            response.error = split[2];
+            response.data = split[3];
+            if (_tilde.debug_regime) logger('RECEIVED: '+response.act);
+            if (response.act != 'report' || response.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
+            if (response.error && response.error.length>1){
+                notify('Diagnostic message:<br />'+response.error);
+                return;
+            }
+            if (window['resp__' + response.act]) window['resp__' + response.act](response.req, response.data);
+            else notify('Unhandled action received: ' + response.act);
         }
-    });
 
-    _tilde.socket.on('reconnect_failed', function(){
-        notify('Connection to program core cannot be established due to the network restrictions. Sometimes <a href=javascript:window.location.reload()>refresh</a> may help.');
-    });
+        _tilde.socket.onclose = function(data){
+            _tilde.connattempts += 1;            
+            if (_tilde.connattempts > _tilde.maxconnattempts){
+                clearInterval(_tilde.cinterval);
+                notify('Connection to program core cannot be established due to the failed server or network restrictions. Sometimes <a href=javascript:window.location.reload()>refresh</a> may help.');
+                return;
+            }            
+            logger('CONNECTION WITH PROGRAM CORE HAS FAILED!');        
+            if (_tilde.debug_regime){
+                notify('Program core does not respond. Please, try to <a href=javascript:document.location.reload()>restart</a>.');
+            } else {
+                if (!_tilde.cinterval) _tilde.cinterval = setInterval(function(){ _tilde.conn() }, 2000);
+            }
+        }       
+    })();
 /**
 *
 *
@@ -1200,7 +1206,7 @@ $(document).ready(function(){
     $(document.body).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
         $('html, body').animate({scrollTop: 0});
-        $('#connectors').css('left', (_tilde.cw - $('#connectors').width() )/2 + 'px').show();        
+        $('#connectors').css('left', (_tilde.cwidth - $('#connectors').width() )/2 + 'px').show();        
         open_ipane('conn-local');
         if (!_tilde.filetree.transports['local']){
             $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
@@ -1443,7 +1449,7 @@ $(document).ready(function(){
             
             // TODO
             // here is some mess, whether the piece of settings is stored inside _tilde or inside _tilde.settings
-            // we save all inside _tilde.settings as it is easier to process by a server
+            // we save here all inside _tilde.settings as it would be easier to process by a server
             _tilde.settings.title = $('#settings_title').val();
             _tilde.settings.debug_regime = $('#settings_debug').is(':checked');
             _tilde.settings.demo_regime = $('#settings_demo').is(':checked');
@@ -1516,11 +1522,11 @@ $(document).ready(function(){
 
     // RESIZE
     $(window).resize(function(){
-        if (Math.abs(_tilde.cw - document.body.clientWidth) < 30) return; // width of scrollbar
-        _tilde.cw = document.body.clientWidth;
+        if (Math.abs(_tilde.cwidth - document.body.clientWidth) < 30) return; // width of scrollbar
+        _tilde.cwidth = document.body.clientWidth;
         centerize();
         ///add_tag_expanders();
-        _tilde.maxcols = Math.round(_tilde.cw/160) || 2;
+        _tilde.maxcols = Math.round(_tilde.cwidth/160) || 2;
         $('#maxcols').html(_tilde.maxcols);
     });
 

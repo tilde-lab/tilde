@@ -16,11 +16,11 @@ from xml.etree import ElementTree as ET
 
 DB_SCHEMA_VERSION = '1.08'
 SETTINGS_FILE = 'settings.json'
-HIERARCHY_FILE = os.path.realpath(os.path.dirname(__file__) + '/hierarchy.xml')
+HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/hierarchy.xml')
 DEFAULT_SQLITE_DB = 'default.db'
 DEFAULT_POSTGRES_DB = 'tilde'
-DATA_DIR = os.path.realpath(os.path.dirname(__file__) + '/../data')
-EXAMPLE_DIR = os.path.realpath(os.path.dirname(__file__) + '/../tests/examples')
+DATA_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../data')
+EXAMPLE_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 10
 DEFAULT_SETUP = {
                 'webport': 7777, # is it robust to use?
@@ -274,7 +274,7 @@ if not settings['local_dir'].endswith(os.sep):
     settings['local_dir'] += os.sep
 
 if settings['demo_regime'] and settings['debug_regime']:
-    settings['debug_regime'] = 0
+    settings['debug_regime'] = False
     
 if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
     settings['local_dir'] = EXAMPLE_DIR
