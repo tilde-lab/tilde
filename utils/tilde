@@ -19,7 +19,7 @@
 # otherwise the server filesystem can be seen in the filetree by any visitor!
 
 DAEMON_NAME=tilde
-DIR=/var/wwwtilda
+DIR=/var/tilde
 DAEMON=$DIR/core/daemon.py
 DAEMON_USER=www-data
 PIDFILE=/var/run/$DAEMON_NAME.pid

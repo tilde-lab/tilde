@@ -1,7 +1,7 @@
 Tilde
 ==========
 
-Tilde (alias wwwtilda) is a data organizer for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [EXCITING](http://exciting-code.org), [VASP](http://www.vasp.at) and [CRYSTAL](http://www.crystal.unito.it) packages (support is also coming for [WIEN2K](http://www.wien2k.at), [GAUSSIAN](http://gaussian.com) and [FHI-aims](http://aims.fhi-berlin.mpg.de)). The folders with logs can be scanned and the results added into a repository, systemized and visualized. Command-line interface (**CLI**) and graphical user interface (**GUI**) are implemented.
+Tilde is a data organizer for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [EXCITING](http://exciting-code.org), [VASP](http://www.vasp.at) and [CRYSTAL](http://www.crystal.unito.it) packages (support is also coming for [WIEN2K](http://www.wien2k.at), [GAUSSIAN](http://gaussian.com) and [FHI-aims](http://aims.fhi-berlin.mpg.de)). The folders with logs can be scanned and the results added into a repository, systemized and visualized. Command-line interface (**CLI**) and graphical user interface (**GUI**) are implemented.
 
 ## Requirements
 
@@ -24,8 +24,8 @@ Unpack, avoiding spaces and non-latin characters in the path. Run with "tilde.ba
 
 To scan folder(s) recursively (-r), with terse print (-t), showing information on calculation convergence (-v) and adding results to a database (-a):
 
-    $ D:\wwwtilda\tilde.bat C:\work1 C:\work2 -r -t -v -a
-    $ /home/user/wwwtilda/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
+    $ D:\tilde\tilde.bat C:\work1 C:\work2 -r -t -v -a
+    $ /home/user/tilde/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
 
 ## GUI hints
 
@@ -70,9 +70,9 @@ Tilde adopts the principle of open data, open source code and open standards dec
 
 ## Contact
 
-Please, send your feedback, bugreports and feature requests via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/wwwtilda) or [GitHub](http://github.com/jam31/wwwtilda/issues).
+Please, send your feedback, bugreports and feature requests via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/wwwtilda) or [GitHub](http://github.com/jam31/tilde/issues).
 
 ## Links
 
-- http://github.com/jam31/wwwtilda
+- http://github.com/jam31/tilde
 - http://twitter.com/wwwtilda
