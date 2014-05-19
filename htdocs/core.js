@@ -223,7 +223,7 @@ function e_plotter(req, plot, divclass, ordinate){
     });
     
     target.append('<div style="position:absolute;z-index:4;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">Step</div>&nbsp;');
-    target.append('<div style="position:absolute;z-index:4;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
+    target.append('<div style="position:absolute;z-index:4;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
 }
 
 function dos_plotter(req, plot, divclass, axes){
@@ -252,7 +252,7 @@ function dos_plotter(req, plot, divclass, axes){
         $.plot(target, data_to_plot, options);
 
         target.append('<div style="position:absolute;z-index:14;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">'+axes.x+'</div>&nbsp;');
-        target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.5em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+axes.y+'</div>');
+        target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.5em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+axes.y+'</div>');
     }
     cpanel.find("input").click(plot_user_choice);
     plot_user_choice();
@@ -278,7 +278,7 @@ function bands_plotter(req, plot, divclass, ordinate){
     //options.xaxis.ticks[options.xaxis.ticks.length-1][1] = '' // avoid cropping in canvas
     $.plot(target, plot, options);
 
-    target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
+    target.append('<div style="position:absolute;z-index:14;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
 
     target.prev('div').children('div.export_plot').click(function(){ export_data(plot) });
 }
@@ -334,6 +334,46 @@ function gather_tags(area, myself){
     });
 
     return found_tags;
+}
+
+function remdublicates(arr){
+    var i, len=arr.length, out=[], obj={};
+    for (i=0;i<len;i++){
+        obj[arr[i]]=0;
+    }
+    for (i in obj){
+        out.push(i);
+    }
+    return out;
+}
+
+function gather_plots_data(){
+    var data = [], ids = [];    
+    for (var j=0; j < _tilde.plots.length; j++){
+        data.push([]);
+        $('#databrowser td[rel='+_tilde.plots[j]+']').each(function(index){
+            data[data.length-1].push($(this).text());
+            if (j==0) ids.push($(this).parent().attr('id').substr(2)); // i_
+        });
+    }
+    data.push(ids);
+    // additional checkups if the data we collected makes sense (note length-1)
+    for (var j=0; j < data.length-1; j++){
+        var c = remdublicates(data[j]);
+        if (c.length == 1){
+            notify('All values in a column are equal!');
+            return false;
+        }
+    }
+    return data;
+}
+
+function clean_plots(){
+    $.each(_tilde.plots, function(n, i){
+        $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
+        $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
+    });
+    _tilde.plots = [];  
 }
 /**
 *
@@ -480,7 +520,8 @@ function resp__browse(req, data){
     $('#initbox').hide();
     if ($('#databrowser td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
     
-    // GRAPH CHECKBOXES (UNFORTUNATELY HERE : TODO)
+    // GRAPH CHECKBOXES
+    // (UNFORTUNATELY HERE : TODO)
     $('input.sc').click(function(ev){
         ev.stopImmediatePropagation();
         var cat = $(this).parent().attr('rel');        
@@ -591,19 +632,19 @@ function resp__tags(req, data){
 }
 
 function resp__list(obj, data){
-    $('#connectors').css('left', (_tilde.cwidth - $('#connectors').width() )/2 + 'px').show();
+    $('#connectors').show();
     open_ipane('conn-local');
     if (data.length)
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
 
     if (obj.path == _tilde.filetree.root){
-        $('#tilda-'+obj.transport+'-filetree').find('.start').remove();
-        $('#tilda-'+obj.transport+'-filetree').append(data).find('ul:hidden').show();
-        bindTree($('#tilda-'+obj.transport+'-filetree'), obj.transport);
+        $('#tilde_'+obj.transport+'_filetree').find('.start').remove();
+        $('#tilde_'+obj.transport+'_filetree').append(data).find('ul:hidden').show();
+        bindTree($('#tilde_'+obj.transport+'_filetree'), obj.transport);
         $('#settings_local_path').val(_tilde.settings.local_dir + obj.path);
     } else {
-        var $el = $('#tilda-'+obj.transport+'-filetree a[rel="'+obj.path+'"]').parent();
+        var $el = $('#tilde_'+obj.transport+'_filetree a[rel="'+obj.path+'"]').parent();
         $el.removeClass('collapsed wait').addClass('expanded').append(data).find('ul:hidden').show();
         bindTree($el, obj.transport);
         $('#settings_local_path').val(_tilde.settings.local_dir + obj.path + _tilde.settings.local_dir.substr(_tilde.settings.local_dir.length-1));
@@ -640,7 +681,7 @@ function resp__report(obj, data){
             _tilde.freeze = false; $('#loadbox').hide();
             _tilde.multireceive = 0;
 
-            var $el = $('#tilda-'+obj.transport+'-filetree span[rel="__read__'+obj.path+'"]');
+            var $el = $('#tilde_'+obj.transport+'_filetree span[rel="__read__'+obj.path+'"]');
             if (_tilde.hashes.length){
                 $el.parent().children().show();
                 $el.after('<span class="scan_done_trigger link">done</span>, <span class="scan_details_trigger link">details in console</span>').remove();
@@ -658,7 +699,7 @@ function resp__report(obj, data){
     } else {
         _tilde.freeze = false; $('#loadbox').hide();
         __send('browse', {hashes: [ data ]});
-        var $el = $('#tilda-'+obj.transport+'-filetree a[rel="'+obj.path+'"]');
+        var $el = $('#tilde_'+obj.transport+'_filetree a[rel="'+obj.path+'"]');
         $el.addClass('_done').after('&nbsp; &mdash; <span class="scan_done_trigger link">done</span>');
     }
 }
@@ -773,8 +814,8 @@ function resp__summary(req, data){
 function resp__settings(req, data){
     if (req.area == 'path'){
         _tilde.settings.local_dir = data;
-        $('#tilda-local-filepath input').val(_tilde.settings.local_dir);
-        $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
+        $('#tilde_local_filepath input').val(_tilde.settings.local_dir);
+        $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
         __send('list', {path:_tilde.filetree.root, transport:'local'} );
         $('#profile_holder').hide();
     } else if (req.area == 'cols'){
@@ -884,10 +925,10 @@ $(document).ready(function(){
     if (!window.JSON) return; // sorry, we live in 2014
     
     _tilde.cwidth = document.body.clientWidth;
-    var centerables = ['notifybox', 'loadbox', 'initbox', 'countbox'];
+    var centerables = ['notifybox', 'loadbox', 'initbox', 'countbox', 'connectors', 'column_plot_holder'];
     var centerize = function(){
         $.each(centerables, function(n, i){
-        document.getElementById(i).style.left = _tilde.cwidth/2 - $('#'+i).width()/2 + 'px';
+            document.getElementById(i).style.left = _tilde.cwidth/2 - $('#'+i).width()/2 + 'px';
         });
     };
     centerize();
@@ -1042,6 +1083,7 @@ $(document).ready(function(){
                             }
                         }, 500);
                     } else {
+                        clean_plots();
                         $.each(hashes, function(n, i){
                             if (!_tilde.rendered[i] && i.length == 56) {
                                 var target_cell = $('#i_'+i);
@@ -1193,14 +1235,9 @@ $(document).ready(function(){
 
     // DATABROWSER CHECKBOXES
     $('#databrowser').on('click', 'input.SHFT_cb', function(event){
-        event.stopPropagation();        
-        if (_tilde.plots.length){
-            $.each(_tilde.plots, function(n, i){
-                $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
-                $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
-            });
-            _tilde.plots = [];
-        }        
+        event.stopPropagation();
+        if (_tilde.plots.length) clean_plots();
+        
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
         else $(this).parent().parent().removeClass('shared');
 
@@ -1211,13 +1248,8 @@ $(document).ready(function(){
         switch_menus(flag);
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
-        if (_tilde.plots.length){
-            $.each(_tilde.plots, function(n, i){
-                $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
-                $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
-            });
-            _tilde.plots = [];
-        }
+        if (_tilde.plots.length) clean_plots();
+        
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
             $('input.SHFT_cb').prop('checked', true);
             $('#databrowser tr').addClass('shared');
@@ -1280,10 +1312,10 @@ $(document).ready(function(){
     $(document.body).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
         $('html, body').animate({scrollTop: 0});
-        $('#connectors').css('left', (_tilde.cwidth - $('#connectors').width() )/2 + 'px').show();        
+        $('#connectors').show();        
         open_ipane('conn-local');
         if (!_tilde.filetree.transports['local']){
-            $("#tilda-local-filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
+            $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
             __send('list',   {path:_tilde.filetree.root, transport:'local'} );
         }
     });
@@ -1324,11 +1356,7 @@ $(document).ready(function(){
         switch_menus();
     });
     $('#cancel_cols_trigger').click(function(){     
-        $.each(_tilde.plots, function(n, i){
-            $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
-            $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
-        });
-        _tilde.plots = [];
+        clean_plots();
         switch_menus();
     });
     
@@ -1353,7 +1381,59 @@ $(document).ready(function(){
     });
     $('#export_cols_trigger').click(function(){
         if (!_tilde.plots.length) return;
-
+        var data = gather_plots_data(), dump = '';
+        if (!data) return;
+        
+        var ref = window.open('', 'export' + Math.floor(Math.random()*100));        
+        for (var j=0; j < data[0].length; j++){
+            for (var i=0; i < data.length-1; i++){ // skip ids!
+                dump += data[i][j] + '\t';
+            }
+            dump += '\n';
+        }
+        ref.document.body.innerHTML = '<pre>' + dump + '</pre>';
+    });
+    
+    // PLOT COLUMNS (ONLY TWO AT THE TIME)
+    $('#plot_trigger').click(function(){
+        if (_tilde.plots.length == 1){ notify('Please, select yet another column to plot!'); return; }
+        
+        var plot = [{'color': '#0066CC', 'data': [], 'ids': []}], data = gather_plots_data(true); // note ids!
+        if (!data) return;
+        
+        for (var j=0; j < data[0].length; j++){
+            var row = [];
+            for (var i=0; i < data.length-1; i++){
+                row.push(data[i][j]);
+            }
+            plot[0].data.push(row);
+        }
+        
+        // this is to handle data clicks
+        plot[0].ids = data[data.length-1];
+        
+        var options = {
+            legend: {show: false},
+            series: {lines: {show: false}, points: {show: true, fill: true, fillColor: '#0066CC'}, shadowSize: 3},
+            xaxis: {labelHeight: 40},
+            yaxis: {color: '#eeeeee', labelWidth: 50},
+            grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
+        }        
+        var target = $('#column_plot');
+        target.css('height', window.innerHeight*0.75 + 'px');
+        
+        $.plot(target, plot, options);
+        $(target).bind("plotclick", function(event, pos, item){
+            if (item){
+                $('#d_cb_' + plot[0].ids[item.dataIndex]).trigger('click'); // TODO!!!!!
+            }
+        });
+        
+        var x_label = $('#databrowser th[rel='+_tilde.plots[0]+']').text(), y_label = $('#databrowser th[rel='+_tilde.plots[1]+']').text(), h = target.height()/2+75; // rotate!
+        target.append('<div style="position:absolute;z-index:499;width:300px;left:40%;bottom:0;text-align:center;font-size:1.25em;background:#fff;">'+x_label+'</div>&nbsp;');
+        target.append('<div style="position:absolute;z-index:499;width:300px;left:0;top:'+h+'px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+y_label+'</div>');
+        
+        $('#column_plot_holder').show();
     });
     
     // DELETE ITEM
@@ -1624,7 +1704,7 @@ $(document).ready(function(){
         if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
         __send('terminate');
         logger('TERMINATE SIGNAL SENT');
-        notify('This window is not functional now.');
+        notify('This window may be closed now.');
     });
     $('#ui-restart').click(function(){ document.location.reload() });
 

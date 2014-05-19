@@ -142,6 +142,9 @@ a.activetag:hover{color:#fff;background:#333;}
 #settings_holder{padding-top:1px !important;}
 #settings_holder div.ipane div{width:90%;margin:0 auto;padding-top:30px;line-height:1.4;}
 
+#column_plot_holder{display:none;z-index:499;position:fixed;width:85%;top:75px;padding:10px 0;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
+#column_plot{margin-top:7px;}
+
 /* CONNECTORS DYNPANE */
 #connectors{display:none;z-index:15;position:absolute;width:700px;top:46px;padding-top:10px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
 #connectors div.ipane{border-width:0;border-top:1px solid #06c;}
@@ -194,7 +197,7 @@ div.cross{margin-right:10px;float:right;width:16px;height:16px;font-size:10px;te
 div.formlabel{width:120px;}
 
 /* CORE FM STYLES */
-#tilda-local-filepath{margin:25px 25px 10px 33px;position:relative;}
+#tilde_local_filepath{margin:25px 25px 10px 33px;position:relative;}
 #settings_local_path{border:1px solid #999;height:26px;width:100%;}
 #filepath_apply_trigger{position:absolute;right:4px;top:4px;width:20px;height:20px;cursor:pointer;background:url(images/refresh.gif) no-repeat;}
 div.filetree{padding:10px 5px 7px 15px;}

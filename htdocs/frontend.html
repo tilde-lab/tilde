@@ -13,7 +13,7 @@ v070514
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
 <script type="text/javascript" src="/static/jstorage.min.js"></script>
-<script type="text/javascript" src="/static/core.js?14"></script>
+<script type="text/javascript" src="/static/core.js?15"></script>
 </head>
 <body>
 
@@ -54,7 +54,7 @@ v070514
 
 
 <!-- CONNECTORS WINDOW -->
-<div id="connectors" class="window shadow _closable">
+<div id="connectors" class="shadow _closable">
     <div class="cross _close"></div>
     <ul id="conn-menu" class="ipane_ctrl">
         <li rel="conn-local">local</li>
@@ -62,11 +62,11 @@ v070514
         <!--<li rel="conn-dropbox">dropbox</li>-->
     </ul>
     <div class="ipane" rel="conn-local">
-        <div id="tilda-local-filepath">
+        <div id="tilde_local_filepath">
             <form method="post" action="/" class="_hotkeyable"><input type="text" value="" id="settings_local_path" /><input type="submit" style="display:none" /></form>
             <div id="filepath_apply_trigger" class="_hotkey"></div>
         </div>
-        <div id="tilda-local-filetree" class="filetree"></div>
+        <div id="tilde_local_filetree" class="filetree"></div>
     </div>
     <!--div class="ipane" rel="conn-upload">
         <form id="upload_form" action="/upload" target="file-process" method="post" enctype="multipart/form-data" style="margin:50px 30px;">
@@ -311,6 +311,13 @@ v070514
 
 </div>
 
+
+<!-- COLUMN PLOT -->
+<div id="column_plot_holder" class="shadow _closable">
+    <div class="cross _close"></div>
+    <div class="center" style="margin-top:10px;letter-spacing:1px;">FYI: click by a point selects its row</div>
+    <div id="column_plot" class="flot_holder"></div>
+</div>
 
 <!-- DATA MENUS, SPLASHSCREEN AND DATABROWSER LAYOUTS -->
 <div id="data_holder" class="pane">
