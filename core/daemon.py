@@ -207,7 +207,9 @@ class Request_Handler:
                     
                     catname = str2html(item['html']) if 'html' in item else item['category'][0].upper() + item['category'][1:]
                     
-                    data += '<th rel=' + str(item['cid']) + '>' + catname + '</th>'
+                    plottable = '<input class=sc type=checkbox />' if 'plottable' in item else ''
+                    
+                    data += '<th rel=' + str(item['cid']) + '>' + catname + plottable + '</th>'
             
             # compulsory part
             if Users[session_id].usettings['objects_expand']: data += '<th class="not-sortable">More...</th>'

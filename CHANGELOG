@@ -1,8 +1,11 @@
+0.2.8
+columns plot-export functionality (plottable directive)
+
 0.2.7
 support of two backend types: sqlite (local) and postgres (remote)
 extended settings control (including backend switching) in GUI
 updated manual
-modified ASE EXCITING calculator
+updated ASE EXCITING calculator
 geometry optimisation and E_tot convergence visualization
 new super-categories in GUI
 updated player.html

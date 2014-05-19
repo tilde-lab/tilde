@@ -49,7 +49,7 @@ parser.add_argument("-t", dest="terse", action="store", help="terse print", type
 parser.add_argument("-v", dest="convergence", action="store", help="calculation convergence print", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f", dest="freqs", action="store", help="if PATH(S): extract and print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i", dest="info", action="store", help="if PATH(S): analyze all", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module", nargs='?', const=False, default=False, choices=registered_modules)
+parser.add_argument("-m", dest="module", action="store", help="if PATH(S): invoke a module from [{mentioned}]", nargs='?', const=False, default=False, choices=registered_modules)
 parser.add_argument("-s", dest="structures", action="store", help="if PATH(S): show lattice", type=int, metavar="i", nargs='?', const=True, default=False)
 parser.add_argument("-c", dest="cif", action="store", help="if FILE: save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-y", dest="symprec", action="store", help="symmetry detecting tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="N", nargs='?', const=None, default=None)

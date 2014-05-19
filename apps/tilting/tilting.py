@@ -35,7 +35,7 @@ class Tilting():
         for k in obj['apps'][selfname]:
             nonzero = filter(None, obj['apps'][selfname][k])
             if len(nonzero) == 0:
-                repr += "&mdash;  "
+                repr += "0.0  "
             elif len(nonzero) == 1:
                 repr += str(nonzero[0]) + ', '
             else:

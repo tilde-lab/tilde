@@ -34,6 +34,7 @@ _tilde.cwidth = 0;
 _tilde.cinterval = null;
 _tilde.connattempts = 0;
 _tilde.maxconnattempts = 5;
+_tilde.plots = [];
 
 // units
 _tilde.units = {
@@ -69,6 +70,7 @@ function notify(message, not_urgent) {
     $('#errormsg').empty();
     setTimeout(function(){ $('#errormsg').empty().append(message).parent().show(); }, 250);
 }
+
 // FILETREE FUNCTIONS
 function showTree(elem, path, resourse_type){
     $(elem).addClass('wait');
@@ -96,11 +98,12 @@ function bindTree(elem, resourse_type){
         return false;
     });
 }
+
 // UTILITIES
 function __send(act, req, nojson){
     if (_tilde.debug_regime) logger('REQUESTED: '+act);
     if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
-    if (!nojson) req ? req = $.toJSON(req) : req = '';
+    if (!nojson) req ? req = JSON.stringify(req) : req = '';
     $('#loadbox').show();
     _tilde.freeze = true;
 
@@ -113,15 +116,18 @@ function __send(act, req, nojson){
     try{ _tilde.socket.send( act + _tilde.wsock_delim + req ) }
     catch(ex){ logger('AN ERROR WHILE SENDING DATA HAS OCCURED: '+ex) }
 }
+
 function logger(message, no_wrap, clean){
     if (!!clean) $("#debug").empty();
     if (!no_wrap) message = "<div>" + message.replace(/ /g, "&nbsp;") + "</div>";
     $("#debug").prepend(message);
 }
+
 function set_console(show){
     if (show) $('#console_holder').animate({ height: 'show' }, { duration: 250, queue: false });
     else $('#console_holder').animate({ height: 'hide' }, { duration: 250, queue: false });
 }
+
 function set_dbs(){
     $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
 
@@ -136,6 +142,7 @@ function set_dbs(){
     });
     $('#db_copy_select').empty().append(options);
 }
+
 function open_ipane(cmd, target){
     if (!!target) var current = $('#o_'+target+' ul.ipane_ctrl li[rel='+cmd+']');
     else var current = $('ul.ipane_ctrl li[rel='+cmd+']');
@@ -162,6 +169,7 @@ function open_ipane(cmd, target){
     }
     _tilde.tab_buffer.push(target+'_'+cmd);
 }
+
 function redraw_vib_links( text2link, target ){
     $('#o_'+target+' td.ph_ctrl').each(function(){
         var $this = $(this);
@@ -179,19 +187,22 @@ function redraw_vib_links( text2link, target ){
         });
     }
 }
+
 function close_obj_tab(tab_id){
     if (delete _tilde.rendered[tab_id] && $('#i_'+tab_id).next('tr').hasClass('obj_holder')) $('#i_'+tab_id).next('tr').remove();
     _tilde.tab_buffer = $.grep(_tilde.tab_buffer, function(val, index){
         if (val.indexOf(tab_id) == -1) return true;
     });
 }
+
 function iframe_download( request, scope, hash ){
     $('body').append('<form style="display:none;" id="data-download-form" action="/' + request + '/' + scope + '/' + hash + '" target="file-process" method="get"></form>');
     $('#data-download-form').submit().remove();
 }
+
 function e_plotter(req, plot, divclass, ordinate){
     var show_points = (divclass.indexOf('estory') !== -1) ? false : true;
-    var plot = $.evalJSON(plot);
+    var plot = JSON.parse(plot);
     var options = {
         legend: {show: false},
         series: {lines: {show: true}, points: {show: show_points}, shadowSize: 3},
@@ -214,8 +225,9 @@ function e_plotter(req, plot, divclass, ordinate){
     target.append('<div style="position:absolute;z-index:4;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">Step</div>&nbsp;');
     target.append('<div style="position:absolute;z-index:4;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
 }
+
 function dos_plotter(req, plot, divclass, axes){
-    var plot = $.evalJSON(plot);
+    var plot = JSON.parse(plot);
     var options = {
         legend: {show: false},
         series: {lines: {show: true}, points: {show: false}, shadowSize: 0},
@@ -228,13 +240,13 @@ function dos_plotter(req, plot, divclass, axes){
     cpanel.parent().removeClass('loading');
 
     for (var i=0; i < plot.length; i++){
-        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked=checked id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + $.toJSON(plot[i].data) + '" rel="'+plot[i].color+'" />&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
+        cpanel.prepend('<input type="checkbox" name="' + plot[i].label + '" checked=checked id="cb_' + req.datahash + '_' + plot[i].label + '" rev="' + JSON.stringify(plot[i].data) + '" rel="'+plot[i].color+'" />&nbsp;<label for="cb_'+ req.datahash + '_' + plot[i].label +'" style="color:' + plot[i].color + '">' + plot[i].label + '</label>&nbsp;');
     }
     function plot_user_choice(){
         var data_to_plot = [];
         cpanel.find("input:checked").each(function(){
             var d = $(this).attr('rev');
-            data_to_plot.push({color: $(this).attr('rel'), data: $.evalJSON( $(this).attr('rev') )});
+            data_to_plot.push({color: $(this).attr('rel'), data: JSON.parse( $(this).attr('rev') )});
         });
         var target = $('#o_'+req.datahash+' div.'+divclass);
         $.plot(target, data_to_plot, options);
@@ -246,8 +258,9 @@ function dos_plotter(req, plot, divclass, axes){
     plot_user_choice();
     cpanel.children('div.export_plot').click(function(){ export_data(plot) });
 }
+
 function bands_plotter(req, plot, divclass, ordinate){
-    var plot = $.evalJSON(plot);
+    var plot = JSON.parse(plot);
     var options = {
         legend: {show: false},
         series: {lines: {show: true}, points: {show: false}, shadowSize: 0},
@@ -269,6 +282,7 @@ function bands_plotter(req, plot, divclass, ordinate){
 
     target.prev('div').children('div.export_plot').click(function(){ export_data(plot) });
 }
+
 function export_data(data){
     var ref = window.open('', 'export' + Math.floor(Math.random()*100));
     var dump = '';
@@ -281,6 +295,7 @@ function export_data(data){
     }
     ref.document.body.innerHTML = '<pre>' + dump + '</pre>';
 }
+
 function add_tag_expanders(){
     if (!$('#splashscreen_holder').is(':visible')) return;
     $('a.tagmore, a.tagless').remove();
@@ -296,10 +311,14 @@ function add_tag_expanders(){
         });
     });
 }
-function switch_menus(reverse){
-    if (reverse) { $('div.menu_main_cmds').show(); $('div.menu_ctx_cmds').hide(); }
-    else { $('div.menu_main_cmds').hide(); $('div.menu_ctx_cmds').show(); }
+
+function switch_menus(which){   
+    $('div.menu_cmds').hide();  
+    if (!which) $('#menu_main_cmds').show();
+    else if (which == 1) $('#menu_row_cmds').show();
+    else if (which == 2) $('#menu_col_cmds').show();
 }
+
 function gather_tags(area, myself){
     var found_tags = [];
 
@@ -322,23 +341,23 @@ function gather_tags(area, myself){
 * ============================================================================================================================================================================================================
 *
 */
-// RESPONCE FUNCTIONS
+// RESPONSE FUNCTIONS
 function resp__login(req, data){
     
     if (_tilde.last_request){ // something was not completed in a production mode
         var action = _tilde.last_request.split( _tilde.wsock_delim );
         __send(action[0], action[1], true);
     }    
-    data = $.evalJSON(data);
+    data = JSON.parse(data);
     
     if (data.debug_regime){
         _tilde.debug_regime = true;
         $('#settings_debug').prop('checked', true);
     } else $('#settings_debug').prop('checked', false);
     
-    if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + $.toJSON(data.settings));
+    if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + JSON.stringify(data.settings));
     for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
-    //if (_tilde.debug_regime) logger("FINAL SETTINGS: " + $.toJSON(_tilde.settings));
+    //if (_tilde.debug_regime) logger("FINAL SETTINGS: " + JSON.stringify(_tilde.settings));
 
     // general switches (and settings)
     $('#version').text(data.version);
@@ -423,16 +442,18 @@ function resp__login(req, data){
     $('#settings_local_path').val(_tilde.settings.local_dir);
     
     // display export settings
-    if (data.settings.exportability) $('#export_trigger').show();
+    if (data.settings.exportability) $('#export_rows_trigger').show();
     
     if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
 }
+
 function resp__browse(req, data){
     // reset objects
     _tilde.rendered = {};
     _tilde.tab_buffer = [];
+    _tilde.plots = [];
     
-    switch_menus(true);
+    switch_menus();
     
     // we send table data in raw html (not json due to performance issues) and therefore some silly workarounds are needed
     data = data.split('||||');
@@ -458,13 +479,42 @@ function resp__browse(req, data){
     $('#databrowser').show();
     $('#initbox').hide();
     if ($('#databrowser td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
+    
+    // GRAPH CHECKBOXES (UNFORTUNATELY HERE : TODO)
+    $('input.sc').click(function(ev){
+        ev.stopImmediatePropagation();
+        var cat = $(this).parent().attr('rel');        
+        $('.shared').removeClass('shared');
+
+        $('input.SHFT_cb').prop('checked', false);
+        
+        if ($(this).is(':checked')){            
+            _tilde.plots.push(cat);            
+            if (_tilde.plots.length > 2){
+                var old = _tilde.plots.shift();
+                $('#databrowser th[rel='+old+']').children('input').prop('checked', false);
+            }
+        } else {
+            $(this).parent().removeClass('shared');
+            var iold = _tilde.plots.indexOf(cat);
+            _tilde.plots.splice(iold, 1);
+        }
+        
+        $.each(_tilde.plots, function(n, i){
+            $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').addClass('shared');
+        });
+        
+        if (_tilde.plots.length) switch_menus(2);
+        else switch_menus();
+    });
 
     // this is to account any data request by hash
     if (req.hashes) __send('tags', {tids: req.tids, switchto: 'browse'});
     else document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
 }
+
 function resp__tags(req, data){
-    data = $.evalJSON(data);
+    data = JSON.parse(data);
     var tags_html = '';
 
     if (req.tids && req.tids.length){
@@ -539,6 +589,7 @@ function resp__tags(req, data){
     // junction
     if (req.switchto) document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.switchto;
 }
+
 function resp__list(obj, data){
     $('#connectors').css('left', (_tilde.cwidth - $('#connectors').width() )/2 + 'px').show();
     open_ipane('conn-local');
@@ -559,6 +610,7 @@ function resp__list(obj, data){
     }
     _tilde.filetree.transports[obj.transport] = true;
 }
+
 function resp__report(obj, data){
     if (obj.directory){
         if (!data.length){
@@ -576,7 +628,7 @@ function resp__report(obj, data){
             return;
         }
         _tilde.multireceive++;
-        data = $.evalJSON(data);
+        data = JSON.parse(data);
         if (!_tilde.multireceive) logger( '===========BEGIN OF SCAN '+obj.path+'===========', false, true );
 
         if (data.checksum) _tilde.hashes.push( data.checksum );
@@ -610,8 +662,9 @@ function resp__report(obj, data){
         $el.addClass('_done').after('&nbsp; &mdash; <span class="scan_done_trigger link">done</span>');
     }
 }
+
 function resp__phonons(req, data){
-    data = $.evalJSON(data);
+    data = JSON.parse(data);
     if (!data) { notify('No phonon information found!'); return; }
     var result = '';
     $.each(data, function(i, v){
@@ -644,9 +697,10 @@ function resp__phonons(req, data){
     });
     $('span.units-phonons').html(_tilde.settings.units.phonons);
 }
+
 function resp__summary(req, data){
-    data = $.evalJSON(data);
-    var info = $.evalJSON(data.info);
+    data = JSON.parse(data);
+    var info = JSON.parse(data.info);
     
     // PHONONS IPANES
     if (data.phonons && !_tilde.degradation){
@@ -715,6 +769,7 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('loading').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
     }
 }
+
 function resp__settings(req, data){
     if (req.area == 'path'){
         _tilde.settings.local_dir = data;
@@ -744,12 +799,14 @@ function resp__settings(req, data){
     $.jStorage.set('tilde_settings', _tilde.settings);
     logger('SETTINGS SAVED!');
 }
+
 function resp__clean(req, data){
     $('div[rel="' + req.db + '"]').remove();
     _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.db), 1);
     set_dbs();
     logger('DATABASE ' + req.db + ' REMOVED.');
 }
+
 function resp__db_create(req, data){
     req.newname += '.db'
     //$('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn right db-make-active-trigger">make active</div><div class="btn btn3 right db-delete-trigger">delete</div></div>');
@@ -758,20 +815,22 @@ function resp__db_create(req, data){
     set_dbs();
     logger('DATABASE ' + req.newname + ' CREATED.');
 }
+
 function resp__db_copy(req, data){
     $('#d_cb_all').prop('checked', false);
     $('input.SHFT_cb').prop('checked', false);
     $('#db_copy_select').val('0');
     $('#databrowser tr').removeClass('shared');
-    switch_menus(true);
+    switch_menus();
 }
+
 function resp__delete(req, data){
     $('#d_cb_all').prop('checked', false);
     $.each(req.hashes, function(n, i){
         $('#i_' + i).remove();
     });
     
-    switch_menus(true);
+    switch_menus();
     $('#splashscreen').empty();
     
     if ($('#databrowser tbody').is(':empty')){
@@ -779,28 +838,36 @@ function resp__delete(req, data){
     }
     $('#databrowser').trigger('update');
 }
+
 function resp__check_export(req, data){
     iframe_download( 'export', req.db, req.id );
 }
+
 function resp__ph_dos(req, data){
     dos_plotter(req, data, 'ph_dos_holder', {x: 'Frequency, cm<sup>-1</sup>', y: 'DOS, states/cm<sup>-1</sup>'});
 }
+
 function resp__e_dos(req, data){
     dos_plotter(req, data, 'e_dos_holder', {x: 'E - E<sub>f</sub>, eV', y: 'DOS, states/eV'});
 }
+
 function resp__ph_bands(req, data){
     bands_plotter(req, data, 'ph_bands_holder', 'Frequency, cm<sup>-1</sup>');
 }
+
 function resp__e_bands(req, data){
     bands_plotter(req, data, 'e_bands_holder', 'E - E<sub>f</sub>, eV');
 }
+
 function resp__optstory(req, data){
     e_plotter(req, data, 'optstory_holder', '&Delta;E<sub>tot</sub>, eV');
     open_ipane('3dview', req.datahash);
 }
+
 function resp__estory(req, data){
     e_plotter(req, data, 'estory_holder', 'log(E<sub>i</sub>-E<sub>i+1</sub>), eV');
 }
+
 function resp__try_pgconn(req, data){
     // continue gracefully
     __send('settings',  {area: 'general', settings: _tilde.settings} );
@@ -813,6 +880,9 @@ function resp__try_pgconn(req, data){
 */
 // DOM loading and default actions
 $(document).ready(function(){
+    
+    if (!window.JSON) return; // sorry, we live in 2014
+    
     _tilde.cwidth = document.body.clientWidth;
     var centerables = ['notifybox', 'loadbox', 'initbox', 'countbox'];
     var centerize = function(){
@@ -854,7 +924,7 @@ $(document).ready(function(){
             var split = a.data.split( _tilde.wsock_delim );
             var response = {};
             response.act = split[0];
-            response.req = split[1].length ? $.evalJSON(split[1]) : {};
+            response.req = split[1].length ? JSON.parse(split[1]) : {};
             response.error = split[2];
             response.data = split[3];
             if (_tilde.debug_regime) logger('RECEIVED: '+response.act);
@@ -899,7 +969,7 @@ $(document).ready(function(){
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
-        switch_menus(true);
+        switch_menus();
         
         if (anchors[0].substr(anchors[0].length-3) == '.db'){
             // db changed?
@@ -1021,13 +1091,6 @@ $(document).ready(function(){
         set_console(true);
     });
 
-    // ABOUT TRIGGER
-    $('#continue_trigger').click(function(){
-        var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
-        $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
-        $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
-    });
-
     // REPORT DONE TRIGGER
     $(document.body).on('click', 'span.scan_done_trigger', function(){
         $('#connectors').hide();
@@ -1035,7 +1098,12 @@ $(document).ready(function(){
     $(document.body).on('click', 'span.scan_details_trigger', function(){
         $('#console_trigger').trigger('click');
     });
-
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
     // CLOSE OR REMOVE CONTEXT WINDOW
     $('div._close').click(function(){
         //if ($('#flash-upload').is(':visible')) $('#file_uploadify').uploadifyClearQueue();
@@ -1065,12 +1133,12 @@ $(document).ready(function(){
         if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
         else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
     });
-
-    // DEBUG CONSOLE
-    $('#console_trigger').click(function(){
-        set_console(true);
-    });
-
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
     // DATABROWSER TABLE
     $('#databrowser').on('click', 'td', function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
@@ -1125,83 +1193,89 @@ $(document).ready(function(){
 
     // DATABROWSER CHECKBOXES
     $('#databrowser').on('click', 'input.SHFT_cb', function(event){
-        event.stopPropagation();
+        event.stopPropagation();        
+        if (_tilde.plots.length){
+            $.each(_tilde.plots, function(n, i){
+                $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
+                $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
+            });
+            _tilde.plots = [];
+        }        
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
         else $(this).parent().parent().removeClass('shared');
 
         var flag = false;
         $('input.SHFT_cb').each(function(){
-            if ($(this).is(':checked')) { flag = true; return false }
+            if ($(this).is(':checked')) { flag = 1; return false }
         });
-        if (flag) switch_menus();
-        else switch_menus(true);
+        switch_menus(flag);
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
+        if (_tilde.plots.length){
+            $.each(_tilde.plots, function(n, i){
+                $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
+                $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
+            });
+            _tilde.plots = [];
+        }
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
             $('input.SHFT_cb').prop('checked', true);
             $('#databrowser tr').addClass('shared');
-            switch_menus();
+            switch_menus(1);
         } else {
             $('input.SHFT_cb').prop('checked', false);
             $('#databrowser tr').removeClass('shared');
-            switch_menus(true);
+            switch_menus();
         }
     });
-
-    // COPYING BETWEEN DATABASES
-    $('#db_copy_select').change(function(){
-        var tocopy = [], val = $(this).val();
-        if (val==='0') return;
-        $('input.SHFT_cb').each(function(){
-            if ($(this).is(':checked')){
-                tocopy.push( $(this).attr('id').substr(5) ); // d_cb_
-            }
-        });
-        __send('db_copy',   {tocopy: tocopy, dest: val});
-    });
     
-    // CANCEL CONTEXT MENU
-    $('#cancelctx_trigger').click(function(){
-        $('input.SHFT_cb, #d_cb_all').prop('checked', false);
-        $('#databrowser tr').removeClass('shared');
-        switch_menus(true);
-    });
-    
-    // EXPORT DATA FUNCTIONALITY
-    $('#export_trigger').click(function(){
-        if ($('#databrowser tr.shared').length == 1){
-            var id = $('#databrowser tr.shared').attr('id').substr(2);
-            __send('check_export', {id: id, db: _tilde.settings.dbs[0]});
-        } else notify('Batch export is not implemented.');
-    });
-    
-    // DELETE ITEM
-    $('#delete_trigger').click(function(){
-        var todel = [];
-        $('input.SHFT_cb').each(function(){
-            if ($(this).is(':checked')){
-                var i = $(this).attr('id').substr(5); // d_cb_
-                todel.push( i );
-                if (_tilde.rendered[i]){
-                    // close tab
-                    close_obj_tab(i);
-
-                    var anchors = document.location.hash.substr(1).split('/');
-                    if (anchors.length != 2){
-                        notify('Unexpected behaviour (ref #5), please, report this to the developers!');
-                        return;
-                    }
-                    var hashes = anchors[1].split('+');
-                    var id = $.inArray(i, hashes);
-                    hashes.splice(id, 1);
-                    if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
-                    else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
-                }
-            }
-        });
-        __send('delete',   {hashes: todel});
+    // IPANE COMMANDS
+    $(document.body).on('click', 'ul.ipane_ctrl li', function(){
+        var cmd = $(this).attr('rel');
+        if (_tilde.freeze && !_tilde.tab_buffer[cmd] && cmd != 'admin'){ notify(_tilde.busy_msg); return; }
+        var target = $(this).parents('.object_factory_holder');
+        target = (target.length) ? target.attr('id').substr(2) : false;
+        open_ipane(cmd, target);
     });
 
+    // PHONONS TABLE
+    //$('th.thsorter').click(function(){
+    //    $('td.white span').removeClass('hdn');
+    //});
+    $('#databrowser').on('click', 'div.ph_degenerated_trigger', function(){
+        var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
+        var capt = $(this).text();
+        if (capt.indexOf('show') != -1){
+            $('#o_'+target+' tr.phonons_dgnd').removeClass('hdn');
+            $(this).text( capt.replace('show', 'hide') );
+        } else {
+            $('#o_'+target+' tr.phonons_dgnd').addClass('hdn');
+            $(this).text( capt.replace('hide', 'show') );
+        }
+    });
+    $('#databrowser').on('click', 'div.ph_animate_trigger', function(){
+        if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
+        var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
+        var capt = $(this).text();
+        if (capt.indexOf('stop') != -1){
+            redraw_vib_links( false, target );
+            document.getElementById('f_'+target).contentWindow.vibrate_3D( false );
+            $(this).text( 'animate' );
+        } else {
+            open_ipane('3dview', target);
+            redraw_vib_links( true, target );
+            var phonons = '[' + $('#o_'+target+' td.ph_ctrl:first').attr('rev') + ']';
+            document.getElementById('f_'+target).contentWindow.vibrate_3D( phonons );
+            $('#o_'+target+' td.ph_ctrl span:first').addClass('red');
+            $(this).html( '&nbsp;stop&nbsp;' );
+        }
+    });
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
     // DATABROWSER MENU
     $(document.body).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
@@ -1243,6 +1317,86 @@ $(document).ready(function(){
         }
     });
     
+    // CANCEL CONTEXT MENU
+    $('#cancel_rows_trigger').click(function(){
+        $('input.SHFT_cb, #d_cb_all').prop('checked', false);
+        $('#databrowser tr').removeClass('shared');
+        switch_menus();
+    });
+    $('#cancel_cols_trigger').click(function(){     
+        $.each(_tilde.plots, function(n, i){
+            $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
+            $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
+        });
+        _tilde.plots = [];
+        switch_menus();
+    });
+    
+    // COPYING BETWEEN DATABASES
+    $('#db_copy_select').change(function(){
+        var tocopy = [], val = $(this).val();
+        if (val==='0') return;
+        $('input.SHFT_cb').each(function(){
+            if ($(this).is(':checked')){
+                tocopy.push( $(this).attr('id').substr(5) ); // d_cb_
+            }
+        });
+        __send('db_copy',   {tocopy: tocopy, dest: val});
+    });
+    
+    // EXPORT DATA FUNCTIONALITY
+    $('#export_rows_trigger').click(function(){
+        if ($('#databrowser tr.shared').length == 1){
+            var id = $('#databrowser tr.shared').attr('id').substr(2);
+            __send('check_export', {id: id, db: _tilde.settings.dbs[0]});
+        } else notify('Batch export is not implemented.');
+    });
+    $('#export_cols_trigger').click(function(){
+        if (!_tilde.plots.length) return;
+
+    });
+    
+    // DELETE ITEM
+    $('#delete_trigger').click(function(){
+        var todel = [];
+        $('input.SHFT_cb').each(function(){
+            if ($(this).is(':checked')){
+                var i = $(this).attr('id').substr(5); // d_cb_
+                todel.push( i );
+                if (_tilde.rendered[i]){
+                    // close tab
+                    close_obj_tab(i);
+
+                    var anchors = document.location.hash.substr(1).split('/');
+                    if (anchors.length != 2){
+                        notify('Unexpected behaviour (ref #5), please, report this to the developers!');
+                        return;
+                    }
+                    var hashes = anchors[1].split('+');
+                    var id = $.inArray(i, hashes);
+                    hashes.splice(id, 1);
+                    if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+                    else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+                }
+            }
+        });
+        __send('delete',   {hashes: todel});
+    });
+    
+    // HIDE ITEM
+    $('#hide_trigger').click(function(){
+        $('input.SHFT_cb').each(function(){
+            if ($(this).is(':checked')) $(this).parent().parent().remove();
+        });
+        if ($('#databrowser tbody').is(':empty')) $('#databrowser tbody').append('<tr><td colspan=100 class=center>No data to display!</td></tr>');
+        $('#databrowser').trigger('update');
+    });
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
     // TAGS SUPER-CATS
     $('#splashscreen').on('click', 'span.supercat_trigger', function(){
         var state = $(this).data('state') || 1;
@@ -1285,49 +1439,12 @@ $(document).ready(function(){
         __send('browse', {tids: tags});
         $('#initbox').hide();
     });
-
-    // IPANE COMMANDS
-    $(document.body).on('click', 'ul.ipane_ctrl li', function(){
-        var cmd = $(this).attr('rel');
-        if (_tilde.freeze && !_tilde.tab_buffer[cmd] && cmd != 'admin'){ notify(_tilde.busy_msg); return; }
-        var target = $(this).parents('.object_factory_holder');
-        target = (target.length) ? target.attr('id').substr(2) : false;
-        open_ipane(cmd, target);
-    });
-
-    // PHONONS TABLE
-    //$('th.thsorter').click(function(){
-    //    $('td.white span').removeClass('hdn');
-    //});
-    $('#databrowser').on('click', 'div.ph_degenerated_trigger', function(){
-        var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
-        var capt = $(this).text();
-        if (capt.indexOf('show') != -1){
-            $('#o_'+target+' tr.phonons_dgnd').removeClass('hdn');
-            $(this).text( capt.replace('show', 'hide') );
-        } else {
-            $('#o_'+target+' tr.phonons_dgnd').addClass('hdn');
-            $(this).text( capt.replace('hide', 'show') );
-        }
-    });
-    $('#databrowser').on('click', 'div.ph_animate_trigger', function(){
-        if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
-        var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
-        var capt = $(this).text();
-        if (capt.indexOf('stop') != -1){
-            redraw_vib_links( false, target );
-            document.getElementById('f_'+target).contentWindow.vibrate_3D( false );
-            $(this).text( 'animate' );
-        } else {
-            open_ipane('3dview', target);
-            redraw_vib_links( true, target );
-            var phonons = '[' + $('#o_'+target+' td.ph_ctrl:first').attr('rev') + ']';
-            document.getElementById('f_'+target).contentWindow.vibrate_3D( phonons );
-            $('#o_'+target+' td.ph_ctrl span:first').addClass('red');
-            $(this).html( '&nbsp;stop&nbsp;' );
-        }
-    });
-
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
     // SETTINGS: GENERAL TRIGGERS
     $('#left_half_gear, #right_half_gear, #settings_trigger').click(function(){
         if ($('#profile_holder').is(':visible')){
@@ -1519,7 +1636,24 @@ $(document).ready(function(){
     $('#custom_about_link_trigger').click(function(){
         document.location = _tilde.custom_about_link;
     });
-
+/**
+*
+*
+* ============================================================================================================================================================================================================
+*
+*/
+    // DEBUG CONSOLE
+    $('#console_trigger').click(function(){
+        set_console(true);
+    });
+    
+    // ABOUT WINDOW
+    $('#continue_trigger').click(function(){
+        var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
+        $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
+        $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
+    });
+    
     // RESIZE
     $(window).resize(function(){
         if (Math.abs(_tilde.cwidth - document.body.clientWidth) < 30) return; // width of scrollbar

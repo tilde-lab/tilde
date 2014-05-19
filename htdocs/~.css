@@ -16,7 +16,7 @@ sub{vertical-align:bottom;}
 
 /* PANES */
 div.pane{display:none;}
-div.menu{padding:6px 0 11px;height:28px;width:100%;background:#ccc;position:fixed;left:0;top:0;z-index:5;}
+#menu{padding:6px 0 11px;height:28px;width:100%;background:#ccc;position:fixed;left:0;top:0;z-index:5;}
 
 /* LANDING PANE */
 #landing_holder{margin:0 auto;width:700px;}
@@ -82,8 +82,8 @@ div.object_ctx_right div.ipane{border-right-width:0;}
 div.flot_holder{width:97%;height:460px;margin:0 auto 5px;}
 
 /* DATABROWSER MENU */
-div.menu_main_cmds{height:100%;display:table;position:relative;}
-div.ctx_caption{padding:7px 0 0 8px;}
+div.menu_cmds{height:100%;display:table;position:relative;}
+div.ctx_caption{padding:7px 0 0 8px;letter-spacing:1px;}
 #db_copy_select{width:230px;margin:5px;font-size:0.9em;}
 
 /* DATABROWSER TABLE */
@@ -112,7 +112,8 @@ thead tr th.headerSortUp{background:url(images/asc.gif) center bottom no-repeat;
 thead tr th.headerSortDown{background:url(images/desc.gif) center top no-repeat;}
 thead tr th.headerSortDown, thead tr th.headerSortUp{background-color:#dddddd;}
 thead tr th.disabled{background:#fff;}
-tbody tr.shared td{background:#ffc;}
+tr.shared td, td.shared, th.shared{background:#ffc;}
+input.sc{margin-left:3px;}
 tr.obj_holder{cursor:default;}
 tr.obj_holder th{font-weight:normal;border-color:#eeeeee;}
 
@@ -147,8 +148,6 @@ a.activetag:hover{color:#fff;background:#333;}
 
 /* LOGOBOX */
 #logobox{position:absolute;left:0;top:0;width:60px;padding-top:13px;height:32px;background:#333;border-bottom-right-radius:10px;-moz-border-radius-bottomright:10px;-webkit-border-bottom-right-radius:10px;color:#fff;font-size:11px;}
-#menu{float:right;width:150px;height:100%;}
-#menu span{padding-left:25px;}
 
 /* USERBOX */
 #pre_user_box{position:fixed;right:250px;top:0;width:85px;padding-top:6px;height:35px;z-index:10;text-align:center;}

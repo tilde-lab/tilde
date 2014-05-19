@@ -7,9 +7,8 @@ v070514
 <head>
 <title></title>
 <meta charset="utf-8" />
-<link type="text/css" href="/static/~.css?8" rel="stylesheet" media="screen" />
-<script type="text/javascript" src="/static/jquery.json.min.js"></script>
-<!--script type="text/javascript" src="/static/socket.io.min.js?4"></script-->
+<link type="text/css" href="/static/~.css?9" rel="stylesheet" media="screen" />
+<script type="text/javascript" src="/static/jquery.min.js"></script>
 <script type="text/javascript" src="/static/sockjs.min.js"></script>
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
@@ -34,7 +33,7 @@ v070514
 <!-- NOTIFIER BOX -->
 <div id="notifybox" class="_closable">
     <div class="cross _close" style="margin-right:4px;margin-top:4px;"></div>
-    <div id="errormsg">This browser doesn't work properly with this page.<br />Please, try to use Chrome, Firefox, Safari or Opera browser.<br />Thank you in advace and sorry for inconvenience.</div>
+    <div id="errormsg">Your browser doesn't work properly with this page.<br />Please, try to use newer version.<br />Thank you in advace and sorry for inconvenience.</div>
 </div>
 
 
@@ -313,25 +312,36 @@ v070514
 </div>
 
 
-<!-- DATA MENU, SPLASHSCREEN AND DATABROWSER LAYOUTS -->
+<!-- DATA MENUS, SPLASHSCREEN AND DATABROWSER LAYOUTS -->
 <div id="data_holder" class="pane">
     
-    <div class="menu">
-        <div class="menu_main_cmds">
+    <div id="menu">
+        
+        <div id="menu_main_cmds" class="menu_cmds">
             <div class="btn left" id="custom_about_link_trigger" style="display:none;"><span style="font-size:2.3em;">&larr;</span> Back</div>
             <div class="btn left protected" id="add_trigger">add data</div>
             <div class="btn btn2 left" id="noclass_trigger">all topics</div>
             <div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">subtopics</div>
             <div class="btn btn3 left" id="closeobj_trigger" style="display:none;">hide all details</div>            
         </div>
-        <div class="menu_ctx_cmds" style="display:none;">
-            <div class="left ctx_caption">With selected:</div>
+        
+        <div id="menu_row_cmds" class="menu_cmds" style="display:none;">
+            <div class="left ctx_caption">The row(s):</div>
             <div class="left protected"><select id="db_copy_select"></select></div>
             <!--div class="btn left protected" id="share_trigger">share</div-->
-            <div class="btn left" id="export_trigger" style="display:none;">export</div>
+            <div class="btn btn2 left" id="export_rows_trigger" style="display:none;">export</div>
+            <div class="btn left" id="hide_trigger">hide</div>
             <div class="btn btn3 left protected" id="delete_trigger">delete</div>
-            <div class="btn left" id="cancelctx_trigger">cancel</div>
+            <div class="btn left" id="cancel_rows_trigger">cancel</div>
         </div>
+        
+        <div id="menu_col_cmds" class="menu_cmds" style="display:none;">
+            <div class="left ctx_caption">The column(s):</div>
+            <div class="btn btn2 left" id="plot_trigger">plot</div>
+            <div class="btn btn2 left" id="export_cols_trigger">export</div>
+            <div class="btn left" id="cancel_cols_trigger">cancel</div>
+        </div>
+        
         <div id="countbox"></div>
     </div>
 

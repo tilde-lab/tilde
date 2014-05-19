@@ -66,14 +66,16 @@ class API:
                         self.Parsers[cls.__name__] = cls
 
         # *module API*
-        # Tilde module (app) is simply a subfolder (%appfolder%) of apps folder
+        # Tilde module (app) is a subfolder (%appfolder%) of apps folder
         # contains manifest.json and %appfolder%.py files
-        # the following tags in manifest matter:
-        # *onprocess* - invoking during processing (therefore %appfolder%.py must provide the class %Appfolder%)
-        # *appcaption* - module caption (used as column caption in data table & as atomic structure rendering pane overlay caption)
+        # the following tags in manifest.json matter:
+        # (*onprocess* - invoking during processing: therefore %appfolder%.py must provide the class %Appfolder%)
+        # *appcaption* - module caption (used as column caption in GUI data table & as atomic structure rendering pane overlay caption)
         # *appdata* - a new property defined by app
-        # *apptarget* - whether an app should be executed (based on hierarchy)
-        # *on3d* - app provides the data which may be shown on atomic structure rendering pane (used only by make3d of daemon.py)
+        # *apptarget* - conditions on whether an app should be executed, based on hierarchy values
+        # *on3d* - app provides the data which may be shown in GUI on atomic structure rendering pane (used only by make3d of daemon.py)
+        # *plottable* - column provided may be plotted in GUI
+        # NB. GUI is supported only if the class %Appfolder% defines cell_wrapper
         self.Apps = {}
         n = 1
         for appname in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../apps' ):
@@ -91,6 +93,7 @@ class API:
                     # compiling table columns:
                     if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
                         self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
+                        if appmanifest.get('plottable', False): self.hierarchy[-1].update({'plottable': 1})
                         n += 1
         
         #self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
