@@ -35,6 +35,7 @@ _tilde.cinterval = null;
 _tilde.connattempts = 0;
 _tilde.maxconnattempts = 5;
 _tilde.plots = [];
+_tilde.last_chkbox = null;
 
 // units
 _tilde.units = {
@@ -509,6 +510,7 @@ function resp__browse(req, data){
     _tilde.rendered = {};
     _tilde.tab_buffer = [];
     _tilde.plots = [];
+    _tilde.last_chkbox = null;
     
     switch_menus();
     
@@ -1253,11 +1255,20 @@ $(document).ready(function(){
     // DATABROWSER CHECKBOXES
     $('#databrowser').on('click', 'input.SHFT_cb', function(event){
         event.stopPropagation();
-        if (_tilde.plots.length) clean_plots();
+        if (_tilde.plots.length) clean_plots();               
         
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
-        else $(this).parent().parent().removeClass('shared');
-
+        else $(this).parent().parent().removeClass('shared');        
+        
+        if (event.shiftKey && _tilde.last_chkbox){
+            var $chkboxes = $('input.SHFT_cb');
+            var start = $chkboxes.index(this);
+            var end = $chkboxes.index(_tilde.last_chkbox);
+            $chkboxes.slice(Math.min(start,end) + 1, Math.max(start,end)).trigger('click');
+        }
+        
+        _tilde.last_chkbox = this;
+        
         var flag = ($('input.SHFT_cb').is(':checked')) ? 1 : false;
         switch_menus(flag);
     });

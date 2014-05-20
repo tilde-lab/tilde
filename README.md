@@ -29,7 +29,7 @@ To scan folder(s) recursively (-r), with terse print (-t), showing information o
 
 ## GUI hints
 
-Hit key "q" to close all the active windows. Use CTRL+mouse wheel to increase font size to your taste. Avoid using **GUI** on large folders with data (more than several gigabytes), as **CLI** is much faster in this case.
+Hit ESC (or "q") key to close all the active windows. Press SHIFT to (un)check multiple checkboxes in a table. Use CTRL+mouse wheel to increase font size to your taste. Avoid using **GUI** on large folders with data (more than several gigabytes), as **CLI** is much faster in this case.
 
 ## Licensing
 
