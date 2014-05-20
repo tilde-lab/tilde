@@ -352,10 +352,27 @@ function gather_plots_data(){
     for (var j=0; j < _tilde.plots.length; j++){
         data.push([]);
         $('#databrowser td[rel='+_tilde.plots[j]+']').each(function(index){
-            data[data.length-1].push($(this).text());
+            var t = $(this).text();            
+            if (t.indexOf('x') != -1){
+                // special case of k-points
+                var s = t.split('x'), t = 1;
+                for (var i=0; i<s.length; i++){ t *= parseInt(s[i]) }
+            } else if (t.indexOf(',') != -1) {
+                // special case of tilting
+                if (t.indexOf('biel') == -1){ // TODO!
+                    var s = t.split(',');
+                    for (var i=0; i<s.length; i++){ s[i] = parseFloat(s[i]) }
+                    t = Math.max.apply(null, s);
+                }
+            }else {             
+                // non-numerics
+                t = t.replace(/[^0-9\.\-]+/g, '');
+                if (!t.length) t=0;
+            }
+            data[data.length-1].push(t);
             if (j==0) ids.push($(this).parent().attr('id').substr(2)); // i_
         });
-    }
+    }    
     data.push(ids);
     // additional checkups if the data we collected makes sense (note length-1)
     for (var j=0; j < data.length-1; j++){
@@ -614,7 +631,7 @@ function resp__tags(req, data){
         });
         var result_html = '';    
         $.each(result, function(k, v){
-            result_html += '<div class=supercat> <div class=supercat_name>'+k.charAt(0).toUpperCase() + k.slice(1)+' (<span class="link supercat_trigger">show</span>)</div> <div class=supercat_content>' + v + '</div> </div>';
+            result_html += '<div class=supercat> <div class=supercat_name>'+k.charAt(0).toUpperCase() + k.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + v + '</div> </div>';
         });
         if (!result_html.length) result_html = '<center>DB is empty!</center>';
         $('#splashscreen').empty().append(result_html);
@@ -1241,10 +1258,7 @@ $(document).ready(function(){
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
         else $(this).parent().parent().removeClass('shared');
 
-        var flag = false;
-        $('input.SHFT_cb').each(function(){
-            if ($(this).is(':checked')) { flag = 1; return false }
-        });
+        var flag = ($('input.SHFT_cb').is(':checked')) ? 1 : false;
         switch_menus(flag);
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
@@ -1398,7 +1412,7 @@ $(document).ready(function(){
     $('#plot_trigger').click(function(){
         if (_tilde.plots.length == 1){ notify('Please, select yet another column to plot!'); return; }
         
-        var plot = [{'color': '#0066CC', 'data': [], 'ids': []}], data = gather_plots_data(true); // note ids!
+        var plot = [{'color': '#0066CC', 'data': [], 'ids': []}], data = gather_plots_data(); // note ids!
         if (!data) return;
         
         for (var j=0; j < data[0].length; j++){
@@ -1423,13 +1437,15 @@ $(document).ready(function(){
         target.css('height', window.innerHeight*0.75 + 'px');
         
         $.plot(target, plot, options);
-        $(target).bind("plotclick", function(event, pos, item){
+        $(target).unbind("plotclick").bind("plotclick", function(event, pos, item){
             if (item){
-                $('#d_cb_' + plot[0].ids[item.dataIndex]).trigger('click'); // TODO!!!!!
+                var t = $('#d_cb_' + plot[0].ids[item.dataIndex]);
+                $('html, body').animate({scrollTop: t.offset().top-100}, 1000);
+                t.trigger('click');
             }
         });
         
-        var x_label = $('#databrowser th[rel='+_tilde.plots[0]+']').text(), y_label = $('#databrowser th[rel='+_tilde.plots[1]+']').text(), h = target.height()/2+75; // rotate!
+        var x_label = $('#databrowser th[rel='+_tilde.plots[0]+']').children('span').html(), y_label = $('#databrowser th[rel='+_tilde.plots[1]+']').children('span').html(), h = target.height()/2+53; // rotate!
         target.append('<div style="position:absolute;z-index:499;width:300px;left:40%;bottom:0;text-align:center;font-size:1.25em;background:#fff;">'+x_label+'</div>&nbsp;');
         target.append('<div style="position:absolute;z-index:499;width:300px;left:0;top:'+h+'px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+y_label+'</div>');
         
@@ -1468,6 +1484,7 @@ $(document).ready(function(){
         $('input.SHFT_cb').each(function(){
             if ($(this).is(':checked')) $(this).parent().parent().remove();
         });
+        switch_menus();
         if ($('#databrowser tbody').is(':empty')) $('#databrowser tbody').append('<tr><td colspan=100 class=center>No data to display!</td></tr>');
         $('#databrowser').trigger('update');
     });
@@ -1478,10 +1495,10 @@ $(document).ready(function(){
 *
 */
     // TAGS SUPER-CATS
-    $('#splashscreen').on('click', 'span.supercat_trigger', function(){
+    $('#splashscreen').on('click', 'div.supercat', function(){
         var state = $(this).data('state') || 1;
-        if (state == 1) $(this).html('hide').parent().next().show();
-        else $(this).html('show').parent().next().hide();
+        if (state == 1) $(this).children().children('span').html('hide').parent().next().show();
+        else $(this).children().children('span').html('show').parent().next().hide();
         state++;
         if (state>2) state=1
         $(this).data('state', state);

@@ -35,15 +35,16 @@ class Tilting():
         for k in obj['apps'][selfname]:
             nonzero = filter(None, obj['apps'][selfname][k])
             if len(nonzero) == 0:
-                repr += "0.0  "
+                repr += '0.0'
             elif len(nonzero) == 1:
-                repr += str(nonzero[0]) + ', '
+                repr += str(nonzero[0])
             else:
                 for i in obj['apps'][selfname][k]:
                     repr += str(i) + ', '
-            repr = repr[:-2]
+                repr = repr[:-2]
             #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
-            repr += '<br />'
+            repr += ',<br />'
+        repr = repr[:-7]
         return "<span class=sml>%s</span>" % repr
 
     def __init__(self, tilde_calc):

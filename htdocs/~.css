@@ -142,7 +142,7 @@ a.activetag:hover{color:#fff;background:#333;}
 #settings_holder{padding-top:1px !important;}
 #settings_holder div.ipane div{width:90%;margin:0 auto;padding-top:30px;line-height:1.4;}
 
-#column_plot_holder{display:none;z-index:499;position:fixed;width:85%;top:75px;padding:10px 0;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
+#column_plot_holder{display:none;z-index:499;position:fixed;width:85%;top:53px;padding:10px 0;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
 #column_plot{margin-top:7px;}
 
 /* CONNECTORS DYNPANE */
@@ -188,7 +188,7 @@ h1{font-size:1.4em;}
 #errormsg{margin:20px;}
 
 /* SUPERCATS */
-div.supercat{width:100%;margin:0 auto 24px;height:36px;background:#eeeeee;clear:both;}
+div.supercat{width:100%;margin:0 auto 24px;height:36px;background:#eeeeee;clear:both;cursor:pointer;}
 div.supercat_name{width:100%;padding:3px 0 3px;height:30px;font-size:1.4em;font-weight:bold;text-align:center;}
 div.supercat_content{display:none;margin:0;}
 

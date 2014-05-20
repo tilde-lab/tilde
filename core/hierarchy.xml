@@ -18,7 +18,7 @@
     <entity cid="7" category="XC-potential" source="H" sort="14" has_column="1" has_label="1" descr=""/>
     <entity cid="14" category="rgkmax" source="tol" sort="15" has_column="1" has_label="1" plottable="1" descr=""/>
     <entity cid="15" category="spin-polarized" source="spin" sort="16" negative_tagging="1" has_column="1" has_label="1" descr=""/>    
-    <entity cid="17" category="k-grid" source="k" sort="18" has_column="1" has_label="1" descr=""/>    
+    <entity cid="17" category="k-grid" source="k" sort="18" has_column="1" has_label="1" plottable="1" descr=""/>    
     <entity cid="19" category="phon.magnitude" source="dfp_magnitude" sort="20" has_column="1" plottable="1" descr=""/>
     <entity cid="20" category="phon.disp.number" source="dfp_disps" sort="21" has_column="1" plottable="1" descr=""/>
     <entity cid="21" category="phon.k-grid" source="n_ph_k" sort="22" has_column="1" plottable="1" descr=""/>

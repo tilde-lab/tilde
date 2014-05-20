@@ -209,7 +209,7 @@ class Request_Handler:
                     
                     plottable = '<input class=sc type=checkbox />' if 'plottable' in item else ''
                     
-                    data += '<th rel=' + str(item['cid']) + '>' + catname + plottable + '</th>'
+                    data += '<th rel=' + str(item['cid']) + '><span>' + catname + '</span>' + plottable + '</th>'
             
             # compulsory part
             if Users[session_id].usettings['objects_expand']: data += '<th class="not-sortable">More...</th>'
