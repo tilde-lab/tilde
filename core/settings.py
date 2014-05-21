@@ -201,7 +201,7 @@ def read_hierarchy():
     try: tree = ET.parse(HIERARCHY_FILE)
     except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
     
-    hierarchy, supercategories = [], {}
+    hierarchy, supercategories = [], []
     
     doc = tree.getroot()
     
@@ -212,7 +212,7 @@ def read_hierarchy():
         hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
         
     for elem in doc.findall('superentity'):
-        supercategories[ elem.attrib['category'] ] = map(int, elem.attrib['includes'].split(','))
+        supercategories.append(  {  'category': elem.attrib['category'], 'includes': map(int, elem.attrib['includes'].split(',')), 'contains': []  }  )
         
     return hierarchy, supercategories
 #

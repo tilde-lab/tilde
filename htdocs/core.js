@@ -455,17 +455,28 @@ function resp__login(req, data){
     $('div[rel=dbs] div').html( dbs_str );
 
     // display columns settings (depend on server + client state)
-    $('#maxcols').html(_tilde.maxcols);
-    $('#ipane_cols_holder > ul').empty();
+    $('#maxcols').html(_tilde.maxcols);    
+    
     _tilde.settings.avcols.sort(function(a, b){
         if (a.sort < b.sort) return -1;
         else if (a.sort > b.sort) return 1;
         else return 0;
     });
+    
     $.each(_tilde.settings.avcols, function(n, item){
         var checked_state = item.enabled ? ' checked=checked' : '';
-        $('#ipane_cols_holder > ul').append( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
+        $.each(data.cats, function(i, n){
+            if ($.inArray(item.cid, n.includes) != -1){
+                n.contains.push( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
+            }
+        });     
     });
+    var result_html = '';
+    $.each(data.cats, function(i, n){
+        result_html += '<div class="ipane_cols_holder"><span>' + n.category.charAt(0).toUpperCase() + n.category.slice(1) + '</span><ul>' + n.contains.join('') + '</ul></div>';
+    });
+    $('#settings_cols').empty().append( result_html );
+    
     var colnum_str = '';
     $.each([50, 100, 500], function(n, item){
         var checked_state = '';
@@ -614,28 +625,28 @@ function resp__tags(req, data){
             });
             tags_html += '</div></div>'
         });
-        if (!tags_html.length) tags_html = '<center>DB is empty!</center>';
+        
+        var empty_flag = false;
+        if (!tags_html.length) empty_flag = true;
+        
         $('#splashscreen').empty().append(tags_html);
         
         // TODO
-        var result = {};
         $('#splashscreen > div').each(function(){
             var content = $(this);
-            $.each(data.cats, function(k, v){
-                if ($.inArray(parseInt(content.attr('rel')), v) != -1){
-                    if (result[k]){
-                        result[k] += '<div class=tagrow>' + content.html() + '</div>';
-                    } else {
-                        result[k] = '<div class=tagrow>' + content.html() + '</div>';
-                    }
+            $.each(data.cats, function(i, n){
+                if ($.inArray(parseInt(content.attr('rel')), n.includes) != -1){
+                    n.contains.push('<div class=tagrow>' + content.html() + '</div>');
                 }
             });     
         });
         var result_html = '';    
-        $.each(result, function(k, v){
-            result_html += '<div class=supercat> <div class=supercat_name>'+k.charAt(0).toUpperCase() + k.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + v + '</div> </div>';
+        $.each(data.cats, function(i, n){
+            result_html += '<div class=supercat> <div class=supercat_name>'+n.category.charAt(0).toUpperCase() + n.category.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + n.contains.join('') + '</div> </div>';
         });
-        if (!result_html.length) result_html = '<center>DB is empty!</center>';
+        
+        if (empty_flag) result_html = '<center>DB is empty!</center>';
+        
         $('#splashscreen').empty().append(result_html);
         
         if (!$('#splashscreen_holder > #splashscreen').length) $('#splashscreen_holder').append($('#splashscreen'));
@@ -1126,7 +1137,7 @@ $(document).ready(function(){
             
             $('div.pane').hide();
             $('#landing_holder').show();
-            $("#tilde_logo").animate({ marginTop: '20px' }, { duration: 250, queue: false });
+            $("#tilde_logo").animate({ marginTop: '40px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
         } else {
             notify('This supposed to be error 404.');
@@ -1492,9 +1503,15 @@ $(document).ready(function(){
     
     // HIDE ITEM
     $('#hide_trigger').click(function(){
+        $('div._closable').hide();
+        if (!$.isEmptyObject(_tilde.rendered)){
+            $('#closeobj_trigger').trigger('click');
+        }
+        
         $('input.SHFT_cb').each(function(){
             if ($(this).is(':checked')) $(this).parent().parent().remove();
         });
+
         switch_menus();
         if ($('#databrowser tbody').is(':empty')) $('#databrowser tbody').append('<tr><td colspan=100 class=center>No data to display!</td></tr>');
         $('#databrowser').trigger('update');
@@ -1609,8 +1626,8 @@ $(document).ready(function(){
     });
 
     // SETTINGS: MAXCOLS
-    $('#ipane_cols_holder').on('click', 'ul > li > input', function(){
-        if ($('#ipane_cols_holder > ul > li > input:checked').length > _tilde.maxcols){
+    $('#settings_cols').on('click', 'input', function(){
+        if ($('#settings_cols input:checked').length > _tilde.maxcols){
             $('#maxcols').parent().css('background-color', '#f99');
             return false;
         }
@@ -1631,11 +1648,11 @@ $(document).ready(function(){
             _tilde.settings.skip_if_path = $('#settings_skip_if_path').is(':checked') ? $('#settings_skip_if_path_mask').val() : false;
 
             __send('settings',  {area: 'scan', settings: _tilde.settings} );
-        } else if ($('#ipane_cols_holder').is(':visible')){
+        } else if ($('#settings_cols').is(':visible')){
 
             // SETTINGS: COLS
             var sets = [];
-            $('#ipane_cols_holder > ul > li > input').each(function(){
+            $('#settings_cols input').each(function(){
                 if ($(this).is(':checked')) sets.push( parseInt( $(this).attr('value') ) );
             });
             if (!sets.length){
@@ -1777,7 +1794,7 @@ $(document).ready(function(){
         if (ev.keyCode == 27 || ev.keyCode == 81 || ev.keyCode == 113){
             $('div._closable').hide();
             if (!$.isEmptyObject(_tilde.rendered)){
-                $('#closeobj_trigger').trigger('click'); // bad design TODO
+                $('#closeobj_trigger').trigger('click'); // TODO : FIXME
             }
         }
         return false;

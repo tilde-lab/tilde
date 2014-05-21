@@ -93,7 +93,7 @@ class DataMap:
 class Request_Handler:
     @staticmethod
     def login(userobj, session_id):
-        data, error = { 'title': CURRENT_TITLE, 'demo_regime': settings['demo_regime'], 'debug_regime': settings['debug_regime'], 'version': API.version, 'custom_about_link': settings['custom_about_link']  }, None
+        data, error = { 'title': CURRENT_TITLE, 'demo_regime': settings['demo_regime'], 'debug_regime': settings['debug_regime'], 'version': API.version, 'custom_about_link': settings['custom_about_link'], 'cats': Tilde.supercategories  }, None
         
         # *client-side* settings
         if userobj['settings']['colnum'] not in [50, 100, 500]: userobj['settings']['colnum'] = 100

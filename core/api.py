@@ -96,7 +96,7 @@ class API:
                         if appmanifest.get('plottable', False): self.hierarchy[-1].update({'plottable': 1})
                         n += 1
         
-        #self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
+        self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
 
         # *connector API*
         # Every connector implements reading methods:
@@ -168,11 +168,10 @@ class API:
         
         if table_view:
             return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
+        elif html_class:
+            return '<span' + html_class + '>' + str(out) + '</span>'
         else:
-            if html_class:
-                return '<span' + html_class + '>' + str(out) + '</span>'
-            else:
-                return str(out)
+            return str(out)
 
     def reload(self, db_conn=None, settings=None):
         '''

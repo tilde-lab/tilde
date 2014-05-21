@@ -953,7 +953,8 @@ class CRYSTOUT(Output):
                     self.warning( 'Tolerance T%s > 0, assuming default.' % n )
                     if n==4: t[n] = -12
                     else: t[n] = -6
-            self.method['tol'] = "biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>"
+            #self.method['tol'] = "biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>"
+            self.info['techs'].append("biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>") # TODO!!!
 
         # Speed-up tricks part
         if '\n WEIGHT OF F(I) IN F(I+1)' in self.data:
