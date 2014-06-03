@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) +
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '1.08'
+DB_SCHEMA_VERSION = '1.09'
 SETTINGS_FILE = 'settings.json'
-HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/hierarchy.xml')
+HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/gui_entities.xml')
 DEFAULT_SQLITE_DB = 'default.db'
 DEFAULT_POSTGRES_DB = 'tilde'
 DATA_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../data')

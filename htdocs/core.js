@@ -212,17 +212,17 @@ function e_plotter(req, plot, divclass, ordinate){
         grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
     };
     if (plot[0].data.length == 1) options.xaxis.ticks = []; // awkward EXCITING optimization
-    
+
     var target = $('#o_'+req.datahash+' div.'+divclass);
 
     var cpanel = target.prev('div');
     cpanel.parent().removeClass('loading');
-    
+
     $.plot(target, plot, options);
     $(target).bind("plotclick", function(event, pos, item){
         if (item) document.getElementById('f_'+req.datahash).contentWindow.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.datahash + '/' + item.dataIndex;
     });
-    
+
     target.append('<div style="position:absolute;z-index:4;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">Step</div>&nbsp;');
     target.append('<div style="position:absolute;z-index:4;width:200px;left:0;top:300px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+ordinate+'</div>');
 }
@@ -300,21 +300,18 @@ function export_data(data){
 function add_tag_expanders(){
     if (!$('#splashscreen_holder').is(':visible')) return;
     $('a.tagmore, a.tagless').remove();
-    var max_width = $('div.tagarea:first').width()-40+1;
-    $('#splashscreen div.tagarea_reduced').each(function(){
-        var w = 0;
-        $(this).find('a.taglink').filter(':visible').each(function(){
-            w += $(this).width()+10; // margin + border + padding are hard-coded TODO
-            if (w >= max_width) {
-                $(this).before('<a class=tagmore href=#>&rarr;</a>');
-                return false;
-            }
-        });
+    $('div.tagarea').each(function(){
+        if ($(this).find('a.visibletag').length > 20){
+            $(this).prepend('<a class=tagmore href=#>&rarr;</a>');
+            $(this).addClass('tagarea_reduced');
+        } else {
+            $(this).removeClass('tagarea_reduced');
+        }
     });
 }
 
-function switch_menus(which){   
-    $('div.menu_cmds').hide();  
+function switch_menus(which){
+    $('div.menu_cmds').hide();
     if (!which) $('#menu_main_cmds').show();
     else if (which == 1) $('#menu_row_cmds').show();
     else if (which == 2) $('#menu_col_cmds').show();
@@ -349,11 +346,11 @@ function remdublicates(arr){
 }
 
 function gather_plots_data(){
-    var data = [], ids = [];    
+    var data = [], ids = [];
     for (var j=0; j < _tilde.plots.length; j++){
         data.push([]);
         $('#databrowser td[rel='+_tilde.plots[j]+']').each(function(index){
-            var t = $(this).text();            
+            var t = $(this).text();
             if (t.indexOf('x') != -1){
                 // special case of k-points
                 var s = t.split('x'), t = 1;
@@ -365,7 +362,7 @@ function gather_plots_data(){
                     for (var i=0; i<s.length; i++){ s[i] = parseFloat(s[i]) }
                     t = Math.max.apply(null, s);
                 }
-            }else {             
+            }else {
                 // non-numerics
                 t = t.replace(/[^0-9\.\-]+/g, '');
                 if (!t.length) t=0;
@@ -373,7 +370,7 @@ function gather_plots_data(){
             data[data.length-1].push(t);
             if (j==0) ids.push($(this).parent().attr('id').substr(2)); // i_
         });
-    }    
+    }
     data.push(ids);
     // additional checkups if the data we collected makes sense (note length-1)
     for (var j=0; j < data.length-1; j++){
@@ -391,7 +388,7 @@ function clean_plots(){
         $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
         $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
     });
-    _tilde.plots = [];  
+    _tilde.plots = [];
 }
 /**
 *
@@ -401,18 +398,18 @@ function clean_plots(){
 */
 // RESPONSE FUNCTIONS
 function resp__login(req, data){
-    
+
     if (_tilde.last_request){ // something was not completed in a production mode
         var action = _tilde.last_request.split( _tilde.wsock_delim );
         __send(action[0], action[1], true);
-    }    
+    }
     data = JSON.parse(data);
-    
+
     if (data.debug_regime){
         _tilde.debug_regime = true;
         $('#settings_debug').prop('checked', true);
     } else $('#settings_debug').prop('checked', false);
-    
+
     if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + JSON.stringify(data.settings));
     for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
     //if (_tilde.debug_regime) logger("FINAL SETTINGS: " + JSON.stringify(_tilde.settings));
@@ -431,7 +428,7 @@ function resp__login(req, data){
         }
     }
     $('#settings_webport').val(data.settings.webport);
-    
+
     // display DBs
     set_dbs();
     var dbs_str = '', btns = '';
@@ -441,11 +438,11 @@ function resp__login(req, data){
         if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
         else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
     });
-    
+
     // display DB type
     if (_tilde.settings.db.type == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
     else if (_tilde.settings.db.type == 'postgres') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
-    
+
     for (var attrname in data.settings.db){
         if (attrname == 'type') continue;
         $('#settings_postgres_'+attrname).val(data.settings.db[attrname]);
@@ -455,28 +452,28 @@ function resp__login(req, data){
     $('div[rel=dbs] div').html( dbs_str );
 
     // display columns settings (depend on server + client state)
-    $('#maxcols').html(_tilde.maxcols);    
-    
+    $('#maxcols').html(_tilde.maxcols);
+
     _tilde.settings.avcols.sort(function(a, b){
         if (a.sort < b.sort) return -1;
         else if (a.sort > b.sort) return 1;
         else return 0;
     });
-    
+
     $.each(_tilde.settings.avcols, function(n, item){
         var checked_state = item.enabled ? ' checked=checked' : '';
         $.each(data.cats, function(i, n){
             if ($.inArray(item.cid, n.includes) != -1){
                 n.contains.push( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
             }
-        });     
+        });
     });
     var result_html = '';
     $.each(data.cats, function(i, n){
         result_html += '<div class="ipane_cols_holder"><span>' + n.category.charAt(0).toUpperCase() + n.category.slice(1) + '</span><ul>' + n.contains.join('') + '</ul></div>';
     });
     $('#settings_cols').empty().append( result_html );
-    
+
     var colnum_str = '';
     $.each([50, 100, 500], function(n, item){
         var checked_state = '';
@@ -507,12 +504,12 @@ function resp__login(req, data){
         $('#settings_skip_if_path').prop('checked', true);
         $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
     } else $('#settings_skip_if_path').prop('checked', false);
-    
+
     $('#settings_local_path').val(_tilde.settings.local_dir);
-    
+
     // display export settings
     if (data.settings.exportability) $('#export_rows_trigger').show();
-    
+
     if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
 }
 
@@ -522,9 +519,9 @@ function resp__browse(req, data){
     _tilde.tab_buffer = [];
     _tilde.plots = [];
     _tilde.last_chkbox = null;
-    
+
     switch_menus();
-    
+
     // we send table data in raw html (not json due to performance issues) and therefore some silly workarounds are needed
     data = data.split('||||');
     if (data.length>1) $('#countbox').empty().append(data[1]).show();
@@ -549,18 +546,18 @@ function resp__browse(req, data){
     $('#databrowser').show();
     $('#initbox').hide();
     if ($('#databrowser td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
-    
+
     // GRAPH CHECKBOXES
     // (UNFORTUNATELY HERE : TODO)
     $('input.sc').click(function(ev){
         ev.stopImmediatePropagation();
-        var cat = $(this).parent().attr('rel');        
+        var cat = $(this).parent().attr('rel');
         $('.shared').removeClass('shared');
 
         $('input.SHFT_cb').prop('checked', false);
-        
-        if ($(this).is(':checked')){            
-            _tilde.plots.push(cat);            
+
+        if ($(this).is(':checked')){
+            _tilde.plots.push(cat);
             if (_tilde.plots.length > 2){
                 var old = _tilde.plots.shift();
                 $('#databrowser th[rel='+old+']').children('input').prop('checked', false);
@@ -570,11 +567,11 @@ function resp__browse(req, data){
             var iold = _tilde.plots.indexOf(cat);
             _tilde.plots.splice(iold, 1);
         }
-        
+
         $.each(_tilde.plots, function(n, i){
             $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').addClass('shared');
         });
-        
+
         if (_tilde.plots.length) switch_menus(2);
         else switch_menus();
     });
@@ -590,10 +587,10 @@ function resp__tags(req, data){
 
     if (req.tids && req.tids.length){
         // UPDATE AVAILABLE TAGS
-        
+
         $('#countbox').hide();
         $('#initbox').show();
-        
+
         $('a.taglink').removeClass('visibletag').hide(); // reset shown tags
         $('div.tagrow').hide();
 
@@ -611,9 +608,9 @@ function resp__tags(req, data){
         });
     } else {
         // BUILD TAGS FROM SCRATCH
-        
+
         $.each(data.blocks, function(num, value){
-            tags_html += '<div class="tagrow" rel="' + value.cid + '"><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea tagarea_reduced111">';
+            tags_html += '<div class="tagrow" rel="' + value.cid + '"><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea">';
 
             value.content.sort(function(a, b){
                 if (a.topic < b.topic) return -1;
@@ -625,12 +622,12 @@ function resp__tags(req, data){
             });
             tags_html += '</div></div>'
         });
-        
+
         var empty_flag = false;
         if (!tags_html.length) empty_flag = true;
-        
+
         $('#splashscreen').empty().append(tags_html);
-        
+
         // TODO
         $('#splashscreen > div').each(function(){
             var content = $(this);
@@ -638,25 +635,25 @@ function resp__tags(req, data){
                 if ($.inArray(parseInt(content.attr('rel')), n.includes) != -1){
                     n.contains.push('<div class=tagrow>' + content.html() + '</div>');
                 }
-            });     
+            });
         });
-        var result_html = '';    
+        var result_html = '';
         $.each(data.cats, function(i, n){
             result_html += '<div class=supercat> <div class=supercat_name>'+n.category.charAt(0).toUpperCase() + n.category.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + n.contains.join('') + '</div> </div>';
         });
-        
+
         if (empty_flag) result_html = '<center>DB is empty!</center>';
-        
+
         $('#splashscreen').empty().append(result_html);
-        
+
         if (!$('#splashscreen_holder > #splashscreen').length) $('#splashscreen_holder').append($('#splashscreen'));
-        
+
         $('div.tagrow').show();
     }
 
-    if (!$.isEmptyObject(data)) $('#splashscreen').show();    
+    if (!$.isEmptyObject(data)) $('#splashscreen').show();
     $('#splashscreen_holder').show();
-    ///add_tag_expanders();
+    add_tag_expanders();
     // junction
     if (req.switchto) document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.switchto;
 }
@@ -772,7 +769,7 @@ function resp__phonons(req, data){
 function resp__summary(req, data){
     data = JSON.parse(data);
     var info = JSON.parse(data.info);
-    
+
     // PHONONS IPANES
     if (data.phonons && !_tilde.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
@@ -783,28 +780,28 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').hide();
     }
-    
+
     // INPUT IPANE
     if (info.input){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=inp]').show();
-        if (info.prog.indexOf('Exciting') !== -1) info.input = info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');     
+        if (info.prog.indexOf('Exciting') !== -1) info.input = info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');
         $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cwidth/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
     }
-    
+
     // OPTGEOM IPANE
     if ($.inArray('geometry optimization', info.calctypes) != -1 && !_tilde.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
-    
+
     // ESTORY IPANE
     if (info.convergence.length && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=estory]').show();
-    
+
     // EDOS IPANE
     if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
-    
+
     // EBANDS IPANE
     if (data.electrons.bands && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').hide();
-    
+
     // SUMMARY (MAIN) IPANE
     var html = '<div><strong>'+info.location+'</strong></div>';
     html += '<div class=preformatter style="height:445px;"><ul class=tags>';
@@ -829,10 +826,10 @@ function resp__summary(req, data){
         if (val) $(this).text( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
     });
     $('span.units-energy').text(_tilde.settings.units.energy);
-    
+
     // 3D IPANE
-    open_ipane('3dview', req.datahash);    
-    if (!_tilde.degradation){     
+    open_ipane('3dview', req.datahash);
+    if (!_tilde.degradation){
         _tilde.rendered[req.datahash] = true;
         $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html?2#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
         //$('#phonons_animate').text('animate');
@@ -900,10 +897,10 @@ function resp__delete(req, data){
     $.each(req.hashes, function(n, i){
         $('#i_' + i).remove();
     });
-    
+
     switch_menus();
     $('#splashscreen').empty();
-    
+
     if ($('#databrowser tbody').is(':empty')){
         document.location.hash = '#' + _tilde.settings.dbs[0];
     }
@@ -951,11 +948,11 @@ function resp__try_pgconn(req, data){
 */
 // DOM loading and default actions
 $(document).ready(function(){
-    
+
     if (!window.JSON) return; // sorry, we live in 2014
-    
+
     _tilde.cwidth = document.body.clientWidth;
-    var centerables = ['notifybox', 'loadbox', 'initbox', 'countbox', 'connectors', 'column_plot_holder'];
+    var centerables = ['notifybox', 'loadbox', 'countbox', 'connectors', 'column_plot_holder'];
     var centerize = function(){
         $.each(centerables, function(n, i){
             document.getElementById(i).style.left = _tilde.cwidth/2 - $('#'+i).width()/2 + 'px';
@@ -1009,19 +1006,19 @@ $(document).ready(function(){
         }
 
         _tilde.socket.onclose = function(data){
-            _tilde.connattempts += 1;            
+            _tilde.connattempts += 1;
             if (_tilde.connattempts > _tilde.maxconnattempts){
                 clearInterval(_tilde.cinterval);
                 notify('Connection to program core cannot be established due to the failed server or network restrictions. Sometimes <a href=javascript:window.location.reload()>refresh</a> may help.');
                 return;
-            }            
-            logger('CONNECTION WITH PROGRAM CORE HAS FAILED!');        
+            }
+            logger('CONNECTION WITH PROGRAM CORE HAS FAILED!');
             if (_tilde.debug_regime){
                 notify('Program core does not respond. Please, try to <a href=javascript:document.location.reload()>restart</a>.');
             } else {
                 if (!_tilde.cinterval) _tilde.cinterval = setInterval(function(){ _tilde.conn() }, 2000);
             }
-        }       
+        }
     })();
 /**
 *
@@ -1035,25 +1032,25 @@ $(document).ready(function(){
         _tilde.cur_anchor = document.location.hash;
 
         var anchors = _tilde.cur_anchor.substr(1).split('/');
-        
+
         if (!anchors.length || !_tilde.settings.dbs) return;
 
         if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
         switch_menus();
-        
+
         if (anchors[0].substr(anchors[0].length-3) == '.db'){
             // db changed?
             if (anchors[0] != _tilde.settings.dbs[0]){
                 $('#splashscreen').empty();
-                __send('settings',  {area: 'switching', switching: anchors[0]} );   
+                __send('settings',  {area: 'switching', switching: anchors[0]} );
             }
             $('div.pane').hide();
-            
+
             if (!anchors[1]){
-                
-                // MAIN TAGS SCREEN                
-                
+
+                // MAIN TAGS SCREEN
+
                 $('#databrowser').hide();
                 $('div.downscreen').hide();
                 $('#initbox').hide();
@@ -1061,7 +1058,7 @@ $(document).ready(function(){
                 $('#tagcloud_trigger').hide();
                 $('#closeobj_trigger').hide();
                 $('#noclass_trigger').hide();
-                
+
                 if (!$('#splashscreen_holder > #splashscreen').length || $('#splashscreen_holder > #splashscreen').is(':empty')){
                     _tilde.timeout2 = setInterval(function(){
                     if (!_tilde.freeze){
@@ -1073,16 +1070,16 @@ $(document).ready(function(){
                     $('#data_holder').show();
                     $('#splashscreen_holder').show();
                     if ($('a.activetag').length) $('#initbox').show();
-                    //add_tag_expanders();
+                    add_tag_expanders();
                 }
 
                 _tilde.rendered = {}; // reset objects
                 _tilde.tab_buffer = [];
                 $('tr.obj_holder').remove();
                 $('#data_holder').show();
-                
+
             } else {
-                              
+
                 $('#connectors').hide();
                 $('#splashscreen_holder').hide();
                 $('#initbox').hide();
@@ -1091,20 +1088,20 @@ $(document).ready(function(){
                 $('#databrowser').show();
                 $('#tagcloud_trigger').show();
                 $('#noclass_trigger').show();
-                
+
                 if (anchors[1] == 'browse'){
-                    
+
                     // TABLE SCREEN
-                    
+
                     $('#closeobj_trigger').hide();
                     if ($('#splashscreen').is(':empty')) document.location.hash = '#' + anchors[0];
-                    _tilde.sortdisable = false; // sorting switch                   
+                    _tilde.sortdisable = false; // sorting switch
                 } else {
-                                        
+
                     // HASH (+WINDOW) SCREEN
-                                    
+
                     var hashes = anchors[1].split('+');
-                    
+
                     if ($('#databrowser').is(':empty')){
                         _tilde.timeout3 = setInterval(function(){
                             if (!_tilde.freeze){
@@ -1130,17 +1127,17 @@ $(document).ready(function(){
                     _tilde.sortdisable = true; // sorting switch
                 }
             }
-            
+
         } else if (anchors[0] == 'about'){
-            
+
             // ABOUT SCREEN
-            
+
             $('div.pane').hide();
             $('#landing_holder').show();
             $("#tilde_logo").animate({ marginTop: '40px' }, { duration: 250, queue: false });
             $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
         } else {
-            notify('This supposed to be error 404.');
+            logger('ERROR 404');
             document.location.hash = '#' + _tilde.settings.dbs[0];
         }
     }
@@ -1215,12 +1212,12 @@ $(document).ready(function(){
     $('#databrowser').on('click', 'td', function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
         else return;
-        
+
         if (!_tilde.settings.objects_expand){
             $('#d_cb_' + id).trigger('click');
             return;
         }
-        
+
         if (_tilde.rendered[id]) {
             // close tab
             close_obj_tab(id);
@@ -1266,26 +1263,26 @@ $(document).ready(function(){
     // DATABROWSER CHECKBOXES
     $('#databrowser').on('click', 'input.SHFT_cb', function(event){
         event.stopPropagation();
-        if (_tilde.plots.length) clean_plots();               
-        
+        if (_tilde.plots.length) clean_plots();
+
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
-        else $(this).parent().parent().removeClass('shared');        
-        
+        else $(this).parent().parent().removeClass('shared');
+
         if (event.shiftKey && _tilde.last_chkbox){
             var $chkboxes = $('input.SHFT_cb');
             var start = $chkboxes.index(this);
             var end = $chkboxes.index(_tilde.last_chkbox);
             $chkboxes.slice(Math.min(start,end) + 1, Math.max(start,end)).trigger('click');
         }
-        
+
         _tilde.last_chkbox = this;
-        
+
         var flag = ($('input.SHFT_cb').is(':checked')) ? 1 : false;
         switch_menus(flag);
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
         if (_tilde.plots.length) clean_plots();
-        
+
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
             $('input.SHFT_cb').prop('checked', true);
             $('#databrowser tr').addClass('shared');
@@ -1296,7 +1293,7 @@ $(document).ready(function(){
             switch_menus();
         }
     });
-    
+
     // IPANE COMMANDS
     $(document.body).on('click', 'ul.ipane_ctrl li', function(){
         var cmd = $(this).attr('rel');
@@ -1348,7 +1345,7 @@ $(document).ready(function(){
     $(document.body).on('click', '#add_trigger, span.add_trigger', function(){
         $('div.downscreen').hide();
         $('html, body').animate({scrollTop: 0});
-        $('#connectors').show();        
+        $('#connectors').show();
         open_ipane('conn-local');
         if (!_tilde.filetree.transports['local']){
             $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
@@ -1376,7 +1373,7 @@ $(document).ready(function(){
     });
     $('#tagcloud_trigger').click(function(){
         set_console(false);
-        if ($('#tagcloud_holder').is(':visible')){            
+        if ($('#tagcloud_holder').is(':visible')){
             $('#tagcloud_holder').animate({ height: 'hide' }, { duration: 250, queue: false });
             $('#splashscreen_holder').append($('#splashscreen'));
         } else {
@@ -1384,18 +1381,18 @@ $(document).ready(function(){
             $('#tagcloud_holder').append($('#splashscreen'));
         }
     });
-    
+
     // CANCEL CONTEXT MENU
     $('#cancel_rows_trigger').click(function(){
         $('input.SHFT_cb, #d_cb_all').prop('checked', false);
         $('#databrowser tr').removeClass('shared');
         switch_menus();
     });
-    $('#cancel_cols_trigger').click(function(){     
+    $('#cancel_cols_trigger').click(function(){
         clean_plots();
         switch_menus();
     });
-    
+
     // COPYING BETWEEN DATABASES
     $('#db_copy_select').change(function(){
         var tocopy = [], val = $(this).val();
@@ -1407,7 +1404,7 @@ $(document).ready(function(){
         });
         __send('db_copy',   {tocopy: tocopy, dest: val});
     });
-    
+
     // EXPORT DATA FUNCTIONALITY
     $('#export_rows_trigger').click(function(){
         if ($('#databrowser tr.shared').length == 1){
@@ -1419,8 +1416,8 @@ $(document).ready(function(){
         if (!_tilde.plots.length) return;
         var data = gather_plots_data(), dump = '';
         if (!data) return;
-        
-        var ref = window.open('', 'export' + Math.floor(Math.random()*100));        
+
+        var ref = window.open('', 'export' + Math.floor(Math.random()*100));
         for (var j=0; j < data[0].length; j++){
             for (var i=0; i < data.length-1; i++){ // skip ids!
                 dump += data[i][j] + '\t';
@@ -1429,14 +1426,14 @@ $(document).ready(function(){
         }
         ref.document.body.innerHTML = '<pre>' + dump + '</pre>';
     });
-    
+
     // PLOT COLUMNS (ONLY TWO AT THE TIME)
     $('#plot_trigger').click(function(){
         if (_tilde.plots.length == 1){ notify('Please, select yet another column to plot!'); return; }
-        
+
         var plot = [{'color': '#0066CC', 'data': [], 'ids': []}], data = gather_plots_data(); // note ids!
         if (!data) return;
-        
+
         for (var j=0; j < data[0].length; j++){
             var row = [];
             for (var i=0; i < data.length-1; i++){
@@ -1444,20 +1441,20 @@ $(document).ready(function(){
             }
             plot[0].data.push(row);
         }
-        
+
         // this is to handle data clicks
         plot[0].ids = data[data.length-1];
-        
+
         var options = {
             legend: {show: false},
             series: {lines: {show: false}, points: {show: true, fill: true, fillColor: '#0066CC'}, shadowSize: 3},
             xaxis: {labelHeight: 40},
             yaxis: {color: '#eeeeee', labelWidth: 50},
             grid: {borderWidth: 1, borderColor: '#000', hoverable: true, clickable: true}
-        }        
+        }
         var target = $('#column_plot');
         target.css('height', window.innerHeight*0.75 + 'px');
-        
+
         $.plot(target, plot, options);
         $(target).unbind("plotclick").bind("plotclick", function(event, pos, item){
             if (item){
@@ -1466,14 +1463,14 @@ $(document).ready(function(){
                 t.trigger('click');
             }
         });
-        
+
         var x_label = $('#databrowser th[rel='+_tilde.plots[0]+']').children('span').html(), y_label = $('#databrowser th[rel='+_tilde.plots[1]+']').children('span').html(), h = target.height()/2+53; // rotate!
         target.append('<div style="position:absolute;z-index:499;width:300px;left:40%;bottom:0;text-align:center;font-size:1.25em;background:#fff;">'+x_label+'</div>&nbsp;');
         target.append('<div style="position:absolute;z-index:499;width:300px;left:0;top:'+h+'px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+y_label+'</div>');
-        
+
         $('#column_plot_holder').show();
     });
-    
+
     // DELETE ITEM
     $('#delete_trigger').click(function(){
         var todel = [];
@@ -1500,14 +1497,14 @@ $(document).ready(function(){
         });
         __send('delete',   {hashes: todel});
     });
-    
+
     // HIDE ITEM
     $('#hide_trigger').click(function(){
         $('div._closable').hide();
         if (!$.isEmptyObject(_tilde.rendered)){
             $('#closeobj_trigger').trigger('click');
         }
-        
+
         $('input.SHFT_cb').each(function(){
             if ($(this).is(':checked')) $(this).parent().parent().remove();
         });
@@ -1534,15 +1531,17 @@ $(document).ready(function(){
 
     // SPLASHSCREEN TAGCLOUD EXPANDERS
     $('#splashscreen').on('click', 'a.tagmore', function(){
-        $(this).parent().removeClass('tagarea_reduced').append('<a class=tagless href=#>&larr;</a>');
+        $(this).parent().removeClass('tagarea_reduced').prepend('<a class=tagless href=#>&larr;</a>');
         $(this).remove();
         return false;
     });
     $('#splashscreen').on('click', 'a.tagless', function(){
-        $(this).parent().addClass('tagarea_reduced');
-        ///add_tag_expanders();
+        $(this).parent().addClass('tagarea_reduced').prepend('<a class=tagmore href=#>&rarr;</a>');
         $(this).remove();
         return false;
+    });
+    $('#splashscreen').on('click', 'div.tagarea, div.tagcapt', function(e){
+        e.stopPropagation();
     });
 
     // SPLASHSCREEN TAG COMMANDS SINGLE CLICK
@@ -1552,8 +1551,8 @@ $(document).ready(function(){
             __send('tags', {tids: tags});
         } else {
             $('#splashscreen a.taglink').removeClass('activetag').addClass('visibletag').show();
-            //$('#splashscreen div.tagrow').show();
             $('#initbox').hide();
+            add_tag_expanders();
         }
         return false;
     });
@@ -1563,6 +1562,11 @@ $(document).ready(function(){
         var tags = gather_tags($('#splashscreen'));
         __send('browse', {tids: tags});
         $('#initbox').hide();
+    });
+    $('#cnl_trigger').click(function(){
+        $('#splashscreen a.taglink').removeClass('activetag').addClass('visibletag').show();
+        $('#initbox').hide();
+        add_tag_expanders();
     });
 /**
 *
@@ -1592,13 +1596,13 @@ $(document).ready(function(){
 
     // SETTINGS: SWITCH DATABASES
     $(document.body).on('click', 'div.ipane_db_field', function(){
-        if ($(this).attr('rel')) document.location.hash = '#' + $(this).attr('rel');        
+        if ($(this).attr('rel')) document.location.hash = '#' + $(this).attr('rel');
     });
     /*$(document).on('click', 'div.db-make-active-trigger', function(){
         var active_db = $(this).parent().attr('rel');
         __send('settings',  {area: 'switching', switching: active_db} );
     });*/
-    
+
     // SETTINGS: DELETE DATABASE
     $(document.body).on('click', 'div.db-delete-trigger', function(ev){
         var $e = $(this);
@@ -1611,7 +1615,7 @@ $(document).ready(function(){
         __send('clean',  {db: db} );
         ev.stopPropagation();
     });
-    
+
     // SETTINGS: CREATE DATABASE
     $(document.body).on('click', '#create-db-trigger', function(){
         $(this).before('<div class="ipane_db_field"><form action="/" class="_hotkeyable"><input type="text" value="" id="create-db-name" maxlength="18" /><input type="submit" style="display:none" /></form><span>.db</span><div class="btn right _hotkey" id="create-db-confirm-trigger">create</div><div class="btn btn3 right" id="create-db-cancel-trigger">cancel</div></div>').hide();
@@ -1633,9 +1637,9 @@ $(document).ready(function(){
         }
         $('#maxcols').parent().css('background-color', '#fff');
     });
-    
+
     // SETTINGS: FILETREE PATH
-    $('#filepath_apply_trigger').click(function(){        
+    $('#filepath_apply_trigger').click(function(){
         __send('settings', { area: 'path', path: $('#settings_local_path').val() });
     });
 
@@ -1659,36 +1663,36 @@ $(document).ready(function(){
                 notify('Please, choose at least anything to display.');
                 return;
             }
-            _tilde.settings.cols = sets;            
+            _tilde.settings.cols = sets;
 
             __send('settings', {area: 'cols', settings: _tilde.settings} );
-            
+
             $('#profile_holder').hide();
-            
+
         } else if ($('#ipane-maxitems-holder').is(':visible')){
-        
+
             // SETTINGS: TABLE
             $('#ipane-maxitems-holder > input').each(function(){
                 if ($(this).is(':checked')){
                     _tilde.settings.colnum = parseInt( $(this).attr('value') );
                 }
-            });            
+            });
 
             // SETTINGS: EXPAND OBJECTS
             _tilde.settings.objects_expand = $('#settings_objects_expand').is(':checked');
-            
+
             __send('settings', {area: 'cols', settings: _tilde.settings} );
-            
+
             $('#profile_holder').hide();
         } else if ($('#ipane-units-holder').is(':visible')){
             $('#profile_holder').hide();
-            
+
             // re-draw data table without modifying tags
             if (!_tilde.last_browse_request) return;
             if (!$('#databrowser').is(':visible')) return;
             __send('browse', _tilde.last_browse_request, true);
         } else if ($('#settings_title').is(':visible')){
-            
+
             // TODO
             // here is some mess, whether the piece of settings is stored inside _tilde or inside _tilde.settings
             // we save here all inside _tilde.settings as it would be easier to process by a server
@@ -1696,10 +1700,10 @@ $(document).ready(function(){
             _tilde.settings.debug_regime = $('#settings_debug').is(':checked');
             _tilde.settings.demo_regime = $('#settings_demo').is(':checked');
             _tilde.settings.webport = $('#settings_webport').val();
-            
+
             if ($('#settings_db_type_sqlite').is(':checked')) _tilde.settings.db.type = 'sqlite';
             else if ($('#settings_db_type_postgres').is(':checked')){
-                _tilde.settings.db.type = 'postgres';            
+                _tilde.settings.db.type = 'postgres';
                 _tilde.settings.db.host = $('#settings_postgres_host').val();
                 _tilde.settings.db.user = $('#settings_postgres_user').val();
                 _tilde.settings.db.port = $('#settings_postgres_port').val();
@@ -1708,7 +1712,7 @@ $(document).ready(function(){
                 __send('try_pgconn', {creds: _tilde.settings.db});
                 return;
             }
-            
+
             // SETTINGS: GENERAL
             __send('settings',  {area: 'general', settings: _tilde.settings} );
         }
@@ -1771,20 +1775,20 @@ $(document).ready(function(){
     $('#console_trigger').click(function(){
         set_console(true);
     });
-    
+
     // ABOUT WINDOW
     $('#continue_trigger').click(function(){
         var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
-    
+
     // RESIZE
     $(window).resize(function(){
         if (Math.abs(_tilde.cwidth - document.body.clientWidth) < 30) return; // width of scrollbar
         _tilde.cwidth = document.body.clientWidth;
         centerize();
-        ///add_tag_expanders();
+        add_tag_expanders();
         _tilde.maxcols = Math.round(_tilde.cwidth/160) || 2;
         $('#maxcols').html(_tilde.maxcols);
     });

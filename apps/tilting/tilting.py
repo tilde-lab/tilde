@@ -25,7 +25,7 @@ class Tilting():
     OCTAHEDRON_ATOMS_Z_DIFFERENCE = 1.6 # Angstrom
     MAX_TILTING_DEGREE = 22.4           # degrees, this is for adjusting, may produce unphysical results
 
-    @staticmethod
+    '''@staticmethod
     def cell_wrapper(obj):
         repr = ''
         selfname = __name__.split('.')[-1]
@@ -45,7 +45,7 @@ class Tilting():
             #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
             repr += ',<br />'
         repr = repr[:-7]
-        return "<span class=sml>%s</span>" % repr
+        return "<span class=sml>%s</span>" % repr'''
 
     def __init__(self, tilde_calc):
         self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles

@@ -1,6 +1,6 @@
 
-# Tilde project: abstract schema of a generic parser
-# v050514
+# Abstract JSON schema of a generic parser
+# v030614
 
 import os
 import sys
@@ -14,7 +14,7 @@ from numpy import array
 class Output:
     def __init__(self, filename=None):
         # (I)
-        # inner Tilde objects
+        # inner objects
         self.starttime = time.time()
         self._coupler_ = False  # special attribute for an output which should be merged with another one by coinciding E_tot
         self.data = ''          # file contents holder; may be empty for some parsers!
@@ -32,7 +32,7 @@ class Output:
             }
 
         # (II)
-        # Tilde ORM objects
+        # ORM objects
         # mapped onto database
         self.energy = None # in eV
         
@@ -65,7 +65,7 @@ class Output:
             'td':               None
             }
 
-        # Tilde classification and technical info object
+        # classification and technical info object
         # API call *classify* extends it with the new items
         self.info = {
             'warns':      [],
@@ -94,11 +94,11 @@ class Output:
             'ncycles':    [], # number of cycles at each optimisation pass step
             }
 
-        # Tilde modules output object
+        # modules output object
         self.apps = {}
 
         # (III)
-        # Tilde objects not (yet)
+        # objects not (yet)
         # or not fully mapped onto database
         self.forces = array([])
         self.comment = None

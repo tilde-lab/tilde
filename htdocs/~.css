@@ -32,12 +32,12 @@ div.pane{display:none;}
 #welcome p{font-size:1.4em;line-height:1.6em;margin-bottom:1em;text-align:center;}
 
 /* COMMON STYLES */
-div.btn{font-size:13px;font-weight:normal;margin:3px;padding:3px 5px;border:1px solid #000;text-align:center;cursor:pointer;background:#fff;color:#000;line-height:1.4em;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;box-shadow:inset 0 2px 2px rgba(255,255,255,0.3), inset 0 -2px 2px rgba(0,0,0,0.3), inset 0 20px 10px rgba(255,255,255,0.3), 0 0 2px 1px rgba(0,0,0,0.2), 0 2px 2px rgba(0,0,0,0.3);}
-div.btn:hover{background:#000;color:#fff;}
-div.btn2{border:1px solid #06c;color:#06c;}
-div.btn2:hover{background:#06c;color:#fff;}
-div.btn3{border:1px solid #900;color:#900;}
-div.btn3:hover{background:#900;color:#fff;}
+div.btn{font-size:13px;font-weight:normal;margin:3px;padding:3px 5px;border:1px solid #666;text-align:center;cursor:pointer;background:#666;color:#fff;line-height:1.4em;-webkit-border-radius:2px;-moz-border-radius:2px;border-radius:2px;box-shadow:inset 0 2px 2px rgba(255,255,255,0.3), inset 0 -2px 2px rgba(0,0,0,0.3), inset 0 20px 10px rgba(255,255,255,0.3), 0 0 2px 1px rgba(0,0,0,0.2), 0 2px 2px rgba(0,0,0,0.3);}
+div.btn:hover{background:#fff;color:#666;}
+div.btn2{border:1px solid #06c;background:#06c;}
+div.btn2:hover{background:#fff;color:#06c;}
+div.btn3{border:1px solid #900;background:#900;}
+div.btn3:hover{background:#fff;color:#900;}
 #settings_holder > div.ipane div.btn{width:auto;padding:3px 5px;margin:3px;line-height:1.4em;}
 div.shadow{-webkit-box-shadow:-1.5px 1.5px 1.5px 1.5px #999;-moz-box-shadow:-1.5px 1.5px 1.5px 1.5px #999;box-shadow:-1.5px 1.5px 1.5px 1.5px #999;}
 span.link, span.red, span.white{text-decoration:underline;cursor:pointer;color:#06c;}
@@ -126,12 +126,11 @@ div.tagrow{display:none;width:100%;}
 div.tagcapt{float:left;width:250px;color:#333;padding:18px 15px 0 0;font-size:1.2em;word-wrap:break-word;font-weight:bold;vertical-align:top;text-align:right;}
 div.tagarea{float:left;width:80%;margin:8px 0;min-height:30px;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
-a.tagmore, a.tagless{display:inline-block;font-size:2.5em;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;text-align:center;}
-a.tagless{height:24px}
 a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;border:1px solid #fff;color:#333;background:#fff;text-decoration:underline;padding:2px;margin:2px;text-align:center;}
 a.taglink:hover{color:#fff;background:#333;}
 a.activetag{color:#fff;background:#333;}
 a.activetag:hover{color:#fff;background:#333;}
+a.tagmore, a.tagless{display:block;float:right;font-size:2.5em;height:24px;width:40px;line-height:0.25;color:#000;background:#fff;text-decoration:none;padding:2px;margin:2px;text-align:center;}
 
 /* PROFILE DYNPANE */
 #profile_holder{display:none;z-index:500;position:fixed;right:3px;top:52px;width:630px;background:#fff;border:1px solid #000;-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;}
@@ -187,8 +186,8 @@ h1{font-size:1.4em;}
 
 /* OTHER DYNBLOCKS */
 #loadbox{z-index:1001;position:fixed;top:6px;left:0;width:140px;height:24px;background:#fc0;text-align:center;line-height:24px;color:#000;font-weight:bold;font-size:0.75em;border-radius:6px;-moz-border-radius:6px;-webkit-border-radius:6px;}
-#initbox{z-index:1000;display:none;position:fixed;top:0;left:0;padding-top:1px;width:200px;height:35px;}
-#init_trigger{font-size:1.35em;}
+#initbox{z-index:1000;display:none;position:fixed;top:0;left:0;padding:2px 0 0 4px;width:600px;height:40px;background:#ccc;}
+#initbox div{font-size:1.15em;}
 #notifybox{z-index:1002;position:fixed;top:0;left:0;font-size:12px;background:#fc0;color:#000;font-weight:bold;width:600px;min-height:20px;height:auto !important;height:20px;text-align:center;line-height:18px;border-bottom-right-radius:6px;-moz-border-radius-bottomright:6px;-webkit-border-bottom-right-radius:6px;border-bottom-left-radius:6px;-moz-border-radius-bottomleft:6px;-webkit-border-bottom-left-radius:6px;}
 #errormsg{margin:20px;}
 

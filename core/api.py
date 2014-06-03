@@ -69,13 +69,13 @@ class API:
         # Tilde module (app) is a subfolder (%appfolder%) of apps folder
         # contains manifest.json and %appfolder%.py files
         # the following tags in manifest.json matter:
-        # (*onprocess* - invoking during processing: therefore %appfolder%.py must provide the class %Appfolder%)
+        # ((*onprocess* - invoking during processing: therefore %appfolder%.py must provide the class %Appfolder%))
         # *appcaption* - module caption (used as column caption in GUI data table & as atomic structure rendering pane overlay caption)
         # *appdata* - a new property defined by app
         # *apptarget* - conditions on whether an app should be executed, based on hierarchy values
         # *on3d* - app provides the data which may be shown in GUI on atomic structure rendering pane (used only by make3d of daemon.py)
         # *plottable* - column provided may be plotted in GUI
-        # NB. GUI is supported only if the class %Appfolder% defines cell_wrapper
+        # NB. GUI (has_column) is supported only if the class %Appfolder% defines cell_wrapper
         self.Apps = {}
         n = 1
         for appname in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../apps' ):
@@ -496,10 +496,10 @@ class API:
                 try: gap, is_direct = calc.electrons['bands'].get_bandgap()
                 except ElectronStructureError as e:
                     return (None, e.value)
+                    
+                calc.info['etype'] = 'insulator' # semiconductor?
                 calc.info['bandgap'] = round(gap, 2)
                 calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
-                if gap<=1.0: calc.info['etype'] = 'semiconductor'
-                else: calc.info['etype'] = 'insulator'
         
         # by DOS  
         if calc.electrons['dos']:

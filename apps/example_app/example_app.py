@@ -12,13 +12,13 @@ from core.common import ModuleError
 
 
 class Example_app():
-    # this determines how the data should be represented in a table cell
+    '''# this determines how the data should be represented in a table cell
     @staticmethod
     def cell_wrapper(obj):
         selfname = __name__.split('.')[-1]
         if not selfname in obj['apps']:
             return "&mdash;"
-        return "<i>%s</i>" % obj['apps'][selfname]
+        return "<i>%s</i>" % obj['apps'][selfname]'''
 
     # this is a main class code
     def __init__(self, tilde_calc):

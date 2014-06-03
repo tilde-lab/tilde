@@ -325,9 +325,7 @@ class Request_Handler:
                 data_obj['apps'] = json.loads(row[5])
                 
                 for i in Tilde.hierarchy:
-                    if 'source' in i and i['source'] in ['element#', 'nelem', 'natom', 'expanded', 'location']:
-                        # skip
-                        continue
+                    if not 'has_summary_contrb' in i: continue # additional control on skipping to avoid redundancy
                         
                     if i['cid'] > 2000:
                         # apps

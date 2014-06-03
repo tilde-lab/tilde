@@ -70,9 +70,9 @@ Tilde adopts the principle of open data, open source code and open standards dec
 
 ## Contact
 
-Please, send your feedback, bugreports and feature requests via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/wwwtilda) or [GitHub](http://github.com/jam31/tilde/issues).
+Please, send your feedback, bugreports and feature requests via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/tildepro) or [GitHub](http://github.com/jam31/tilde/issues).
 
 ## Links
 
 - http://github.com/jam31/tilde
-- http://twitter.com/wwwtilda
+- http://twitter.com/tildepro
