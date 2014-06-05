@@ -1531,7 +1531,7 @@ $(document).ready(function(){
 
     // SPLASHSCREEN TAGCLOUD EXPANDERS
     $('#splashscreen').on('click', 'a.tagmore', function(){
-        $(this).parent().removeClass('tagarea_reduced').prepend('<a class=tagless href=#>&larr;</a>');
+        $(this).parent().removeClass('tagarea_reduced').prepend('<a class=tagless href=#>&uarr;</a>');
         $(this).remove();
         return false;
     });

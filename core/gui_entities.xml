@@ -29,7 +29,7 @@
     <entity cid="25" category="parsing time, sc" source='perf' sort="35" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
 
     <entity cid="26" category="conduct./insulat." source='etype' sort="28" has_summary_contrb="1" has_column="1" has_label="1" descr=""/>
-    <entity cid="27" category="min.band gap" html="Min. band gap, {{units-energy}}" source='bandgap' sort="29" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
+    <entity cid="27" category="min.band gap" html="Min. band gap, {{units-energy}}" source='bandgap' sort="29" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
     <entity cid="28" category="band gap type" source='bandgaptype' sort="30" has_summary_contrb="1" has_column="1" has_label="1" descr=""/>
 
     <entity cid="510" category="vacancy content" source="vac" sort="7" negative_tagging="1" plottable="1" descr=""/>
@@ -42,8 +42,8 @@
 
     <entity cid="501" category="basis set" source="bs#" sort="26" descr=""/>
 
-    <entity cid="1002" category="total energy" source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="31" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
-    <entity cid="1003" category="cell vol.or area" source='dims' html="Cell, A^^2** or A^^3**" sort="12" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
+    <entity cid="1002" category="total energy" source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="31" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
+    <entity cid="1003" category="cell vol.or area" source='dims' html="Cell, A^^2** or A^^3**" sort="12" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1" descr=""/>
     <entity cid="1005" category="source file" source='location' sort="36" has_column="1" descr=""/>
     <entity cid="1006" category="finished" source='finished' html="Finished?" sort="37" has_summary_contrb="1" has_column="1" descr=""/>
 
