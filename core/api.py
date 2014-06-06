@@ -2,7 +2,7 @@
 # Tilde project: core
 # v050514
 
-__version__ = "0.2.7"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+__version__ = "0.3.0"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
 import os
 import sys
