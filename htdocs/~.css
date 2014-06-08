@@ -1,5 +1,5 @@
 /* GENERAL SWITCHES */
-*{font-family:"Courier New";margin:0;padding:0;}
+*{font-family:Arial;margin:0;padding:0;}
 .left{float:left;}
 .right{float:right;}
 .clear{clear:both;}
@@ -157,7 +157,7 @@ a.tagmore, a.tagless{display:block;float:right;font-size:2.5em;height:24px;width
 #logobox{position:absolute;left:0;top:0;width:60px;padding-top:13px;height:32px;background:#333;border-bottom-right-radius:10px;-moz-border-radius-bottomright:10px;-webkit-border-bottom-right-radius:10px;color:#fff;font-size:11px;}
 
 /* USERBOX */
-#pre_user_box{position:fixed;right:250px;top:0;width:85px;padding-top:6px;height:35px;z-index:10;text-align:center;}
+#pre_user_box{position:fixed;right:235px;top:0;width:85px;padding-top:6px;height:35px;z-index:10;text-align:center;}
 #userbox{position:fixed;right:0;top:0;width:250px;z-index:10;padding-top:13px;height:30px;background:#333;border-bottom-left-radius:10px;-moz-border-radius-bottomleft:10px;-webkit-border-bottom-left-radius:10px;color:#fff;font-size:0.9em;text-align:center;}
 #userinfo{float:left;width:180px;height:100%;}
 #metablock{float:left;width:164px;overflow:hidden;margin-left:4px;text-align:center;font-size:1.3em;overflow-x:hidden;}

@@ -59,6 +59,7 @@ Other known similar projects are collected below (in an alphabetic order):
 - pyCMW (Python), a framework of Max Planck Institute for Iron Research GmbH
 - QMForge (Python), http://qmforge.sourceforge.net
 - Quixote, http://quixote.wikispot.org
+- RDKit (C++, Python), http://www.rdkit.org
 - Scipio (Java), https://scipio.iciq.es
 - WebMO: Web-based interface to computational chemistry packages (Java, Perl), http://webmo.net
 
