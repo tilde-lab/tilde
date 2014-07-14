@@ -1,7 +1,7 @@
 
 # Tilde project: VASP XML parser
 # contains code from pymatgen iovasp module (author: Shyue Ping Ong)
-# v180314
+# v140714
 
 import os
 import sys
@@ -388,13 +388,13 @@ class XML_Output(Output):
     def set_method(self):
         # Hamiltonians: Hubbard U method
         if self.incar.get("LDAU", False):
-            self.method['H'] = 'LSDA+U'
+            self.info['H'] = 'LSDA+U'
 
             ldautype = self.incar.get("LDAUTYPE", self.parameters.get("LDAUTYPE"))[0]
-            if ldautype == 2: self.method['H'] += '(std.)'
-            elif ldautype == 1: self.method['H'] += '(Liecht.)'
-            elif ldautype == 4: self.method['H'] = 'LDA+U(Liecht.)'
-            else: self.method['H'] += '(type %s)' % ldautype
+            if ldautype == 2: self.info['H'] += '(std.)'
+            elif ldautype == 1: self.info['H'] += '(Liecht.)'
+            elif ldautype == 4: self.info['H'] = 'LDA+U(Liecht.)'
+            else: self.info['H'] += '(type %s)' % ldautype
 
             us = self.incar.get("LDAUU", self.parameters.get("LDAUU")) # the effective on-site Coulomb interaction parameters
             js = self.incar.get("LDAUJ", self.parameters.get("LDAUJ")) # the effective on-site Exchange interaction parameters
@@ -416,28 +416,28 @@ class XML_Output(Output):
                 else: atom_hubbard[ self.potcar_sequence[i] ] = repr
 
             for atom in sorted(atom_hubbard.keys()):
-                self.method['H'] += ' %s:%s' % (atom, atom_hubbard[atom])
+                self.info['H'] += ' %s:%s' % (atom, atom_hubbard[atom])
 
         # Hamiltonians: HF admixing
         elif self.parameters.get("LHFCALC", False):
             screening = self.incar.get("HFSCREEN", self.parameters.get("HFSCREEN"))
-            if screening == 0.0: self.method['H'] = "PBE-GGA(+25%HF)/PBE-GGA" # like in CRYSTAL, todo
-            elif screening == 0.2: self.method['H'] = "HSE06"
-            else: self.method['H'] = "HSE %d%%screen" % round(screening*100)
+            if screening == 0.0: self.info['H'] = "PBE-GGA(+25%HF)/PBE-GGA" # like in CRYSTAL, todo
+            elif screening == 0.2: self.info['H'] = "HSE06"
+            else: self.info['H'] = "HSE %d%%screen" % round(screening*100)
 
         # Regular GGA
-        else: self.method['H'] = "GGA"
+        else: self.info['H'] = "GGA"
 
         # tolerances
-        self.method['tol'] = 'cutoff %seV' % int(self.parameters['ENMAX'])
+        self.info['tol'] = 'cutoff %seV' % int(self.parameters['ENMAX'])
 
         # Spin
-        self.method['spin'] = True if self.incar.get("ISPIN", 1) == 2 else False
+        if self.incar.get("ISPIN", 1) == 2: self.info['spin'] = True
 
         # K-points
         if not self.kpoints.kpts: kpoints = 'x' + str(len(self.actual_kpoints))
         else: kpoints = 'x'.join(map(str, self.kpoints.kpts[0]))
-        self.method['k'] = kpoints
+        self.info['k'] = kpoints
 
 class VasprunHandler(xml.sax.handler.ContentHandler):
     """ Sax handler for vasprun.xml. Attributes are mirrored into Vasprun object. """

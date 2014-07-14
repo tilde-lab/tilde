@@ -1,8 +1,8 @@
 
 # Tilde project: core
-# v050514
+# v140714
 
-__version__ = "0.3.0"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+__version__ = "0.2.90"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
 import os
 import sys
@@ -176,7 +176,7 @@ class API:
     def reload(self, db_conn=None, settings=None):
         '''
         Switch Tilde API object to another context, if provided
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @procedure
         '''
         if db_conn: self.db_conn = db_conn
@@ -186,7 +186,7 @@ class API:
         '''
         Restricts parsing
         **name** is a name of the parser class
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @procedure
         '''
         for n, p in self.Parsers.items():
@@ -197,7 +197,7 @@ class API:
     def formula(self, atom_sequence):
         '''
         Constructs standardized chemical formula
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns formula_str
         '''
         formula_sequence = ['Li','Na','K','Rb','Cs',  'Be','Mg','Ca','Sr','Ba','Ra',  'Sc','Y','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb',  'Ac','Th','Pa','U','Np','Pu',  'Ti','Zr','Hf',  'V','Nb','Ta',  'Cr','Mo','W',  'Fe','Ru','Os',  'Co','Rh','Ir',  'Mn','Tc','Re',  'Ni','Pd','Pt',  'Cu','Ag','Au',  'Zn','Cd','Hg',  'B','Al','Ga','In','Tl',  'Pb','Sn','Ge','Si','C',   'N','P','As','Sb','Bi',   'H',   'Po','Te','Se','S','O',  'At','I','Br','Cl','F',  'He','Ne','Ar','Kr','Xe','Rn']
@@ -225,7 +225,7 @@ class API:
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
         Determines which files should be processed
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns filenames_list
         '''
         input_string = os.path.abspath(input_string)
@@ -301,7 +301,7 @@ class API:
         ''' High-level parsing:
         determines the data format
         and combines parent-children outputs
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns (Tilde_obj, error)
         '''
         calc, error = None, None        
@@ -338,8 +338,8 @@ class API:
 
     def classify(self, calc, symprec=None):
         '''
-        Invokes hierarchy API
-        NB: this may be run from outside
+        Reasons on normalization, invokes hierarchy API and prepares to saving
+        NB: this is the PUBLIC method
         @returns (Tilde_obj, error)
         '''
         error = None
@@ -368,108 +368,35 @@ class API:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 error = "Fatal error during classification:\n %s" % "".join(traceback.format_exception( exc_type, exc_value, exc_tb ))
                 return (None, error)
-
-        # post-processing tags
+        
+        # chemical ratios
         if not len(calc.info['standard']):
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
             if not calc.info['expanded']: calc.info['expanded'] = reduce(fractions.gcd, calc.info['contents'])
             for n, i in enumerate(map(lambda x: x/calc.info['expanded'], calc.info['contents'])):
                 if i==1: calc.info['standard'] += calc.info['elements'][n]
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
-
+        if not calc.info['expanded']: del calc.info['expanded']
+        calc.info['nelem'] = len(calc.info['elements'])
+        
         # general calculation type reasoning
         if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append('charges') # numpy count_nonzero implementation
         if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
-        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only - TODO: extend
-        if calc.method['perturbation']: calc.info['calctypes'].append('electric field response') # CRYSTAL-only - TODO: extend
+        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only!
         if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('geometry optimization')
         if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
         if calc.energy: calc.info['calctypes'].append('total energy')
 
-        for n, i in enumerate(calc.info['calctypes']):
-            calc.info['calctype' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-
-        # standardizing materials science methods
-        # TODO add modularity
-        if calc.method:
-            if calc.method['H']: calc.info['H'] = calc.method['H']
-            if calc.method['tol']: calc.info['tol'] = calc.method['tol']
-            if calc.method['k']: calc.info['k'] = calc.method['k']
-            if calc.method['spin']: calc.info['spin'] = 'yes'
-            if calc.method['lockstate']: calc.info['lockstate'] = calc.method['lockstate']
-            if calc.method['technique'].keys():
-                for i in calc.method['technique'].keys():
-                    
-                    # CRYSTAL
-                    if i=='anderson': calc.info['techs'].append(i)
-                    elif i=='fmixing': # note CRYSTAL14 default fmixing
-                        if 0<calc.method['technique'][i]<=25:    calc.info['techs'].append(i + '<25%')
-                        elif 25<calc.method['technique'][i]<=50: calc.info['techs'].append(i + ' 25-50%')
-                        elif 50<calc.method['technique'][i]<=75: calc.info['techs'].append(i + ' 50-75%')
-                        elif 75<calc.method['technique'][i]<=90: calc.info['techs'].append(i + ' 75-90%')
-                        elif 90<calc.method['technique'][i]:     calc.info['techs'].append(i + '>90%')
-                    elif i=='shifter':
-                        if 0<calc.method['technique'][i]<=0.5:   calc.info['techs'].append(i + '<0.5au')
-                        elif 0.5<calc.method['technique'][i]<=1: calc.info['techs'].append(i + ' 0.5-1au')
-                        elif 1<calc.method['technique'][i]<=2.5: calc.info['techs'].append(i + ' 1-2.5au')
-                        elif 2.5<calc.method['technique'][i]:    calc.info['techs'].append(i + '>2.5au')
-                    elif i=='smear':
-                        if 0<calc.method['technique'][i]<=0.005:      calc.info['techs'].append(i + '<0.005au')
-                        elif 0.005<calc.method['technique'][i]<=0.01: calc.info['techs'].append(i + ' 0.005-0.01au')
-                        elif 0.01<calc.method['technique'][i]:        calc.info['techs'].append(i + '>0.01au')
-                    elif i=='broyden':
-                        if 0<calc.method['technique'][i][0]<=25:    type='<25%'
-                        elif 25<calc.method['technique'][i][0]<=50: type=' 25-50%'
-                        elif 50<calc.method['technique'][i][0]<=75: type=' 50-75%'
-                        elif 75<calc.method['technique'][i][0]<=90: type=' 75-90%'
-                        elif 90<calc.method['technique'][i][0]:     type='>90%'
-                        if round(calc.method['technique'][i][1], 4) == 0.0001: type += ' (std.)' # broyden parameter
-                        else: type += ' ('+str(round(calc.method['technique'][i][1], 5))+')'
-                        if calc.method['technique'][i][2] < 5: type += ' start'
-                        else: type += ' defer.'
-                        calc.info['techs'].append(i + type)
-                    
-                    # ALL
-                    elif i=='vacuum2d':
-                        calc.info['techs'].append('vacuum %sA' % calc.method['technique'][i])
-                    
-                    # EXCITING
-                    elif i=='spin-orbit':
-                        calc.info['techs'].append('spin-orbit coupling')
-                    elif i=='empty_states':
-                        calc.info['techs'].append('%s empty states' % calc.method['technique'][i])
-            
-            # ALL
-            if 'vac' in calc.info['properties']:
-                if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
-                else: calc.info['techs'].append('vacancy defect: void space')
-            
-            # CRYSTAL
-            if calc.method['perturbation']:
-                calc.info['techs'].append('perturbation: ' + calc.method['perturbation'])
-            
-            # ALL
-            for n, i in enumerate(calc.info['techs']):
-                calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-
-        for n, i in enumerate(calc.info['elements']):
-            calc.info['element' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-        for n, i in enumerate(calc.info['tags']):
-            calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-        calc.info['nelem'] = len(calc.info['elements'])
-
-        if not calc.info['expanded']: del calc.info['expanded']
-
+        # TODO: standardize computational materials science methods
+        if 'vac' in calc.info['properties']:
+            if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
+            else: calc.info['techs'].append('vacancy defect: void space')
+       
         if calc.structures[-1].periodicity == 3: calc.info['periodicity'] = '3-periodic'
         elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
         elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
-        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
-        
-        # properties determined by classifiers
-        for k, v in calc.info['properties'].iteritems():
-            calc.info[k] = v
-        del calc.info['properties']
+        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'                
 
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
@@ -480,7 +407,8 @@ class API:
         calc.info['symmetry'] = found.symmetry
         calc.info['pg'] = found.pg
         calc.info['dg'] = found.dg
-
+        
+        # phonons
         if calc.phonons['dfp_magnitude']: calc.info['dfp_magnitude'] = round(calc.phonons['dfp_magnitude'], 3)
         if calc.phonons['dfp_disps']: calc.info['dfp_disps'] = len(calc.phonons['dfp_disps'])
         if calc.phonons['modes']:
@@ -517,6 +445,20 @@ class API:
                     else: calc.info['etype'] = 'insulator'
                 else: calc.info['etype'] = 'conductor'
         
+        for n, i in enumerate(calc.info['techs']):
+            calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+        for n, i in enumerate(calc.info['calctypes']):
+            calc.info['calctype' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+        for n, i in enumerate(calc.info['elements']):
+            calc.info['element' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+        for n, i in enumerate(calc.info['tags']):
+            calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+        
+        # properties determined by classifiers
+        for k, v in calc.info['properties'].iteritems():
+            calc.info[k] = v
+        del calc.info['properties']
+        
         calc.benchmark() # this call must be at the very end of parsing
 
         return (calc, error)
@@ -524,7 +466,7 @@ class API:
     def postprocess(self, calc, with_module=None):
         '''
         Invokes module(s) API
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns apps_dict
         '''
         apps = {}
@@ -692,7 +634,7 @@ class API:
     def save(self, calc, db_transfer_mode=False):
         '''
         Saves Tilde_obj into the database
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns (id, error)
         '''
         if not self.db_conn: return (None, 'Database is not connected!')
@@ -734,7 +676,7 @@ class API:
     def restore(self, db_row, db_transfer_mode=False):
         '''
         Restores Tilde_obj from the database
-        NB: this may be run from outside
+        NB: this is the PUBLIC method
         @returns Tilde_obj
         '''
         calc = Output()

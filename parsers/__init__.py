@@ -1,6 +1,6 @@
 
 # Abstract JSON schema of a generic parser
-# v030614
+# v140714
 
 import os
 import sys
@@ -19,17 +19,6 @@ class Output:
         self._coupler_ = False  # special attribute for an output which should be merged with another one by coinciding E_tot
         self.data = ''          # file contents holder; may be empty for some parsers!
         self._checksum = None   # 56-symbol hash NB: do not call directly
-        
-        # dict with calculation conditions, goes to *info*
-        self.method = {
-            'H':            None,
-            'tol':          None,
-            'k':            None,
-            'spin':         None,
-            'lockstate':    None,
-            'technique':    {},
-            'perturbation': None
-            }
 
         # (II)
         # ORM objects
@@ -86,9 +75,16 @@ class Output:
             'expanded':   False,
             'properties': {},
             'tags':       [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-            'calctypes':  [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-            'techs':      [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             
+            'calctypes':  [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+            'H':            None,
+            'tol':          None,
+            'k':            None,
+            'spin':         False,
+            'lockstate':    None,
+            
+            'techs':      [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
+                     
             'convergence':[], # zero-point energy convergence (I)
             'tresholds':  [], # optimization convergence, list of 5 lists (II)
             'ncycles':    [], # number of cycles at each optimisation pass step

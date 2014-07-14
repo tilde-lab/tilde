@@ -1,6 +1,6 @@
 
 # Tilde project: CRYSTAL outputs parser
-# v050514
+# v140714
 
 import os
 import sys
@@ -888,7 +888,7 @@ class CRYSTOUT(Output):
             }
 
         # Hamiltonian part
-        if ' HARTREE-FOCK HAMILTONIAN\n' in self.data: self.method['H'] = 'pure HF'
+        if ' HARTREE-FOCK HAMILTONIAN\n' in self.data: self.info['H'] = 'pure HF'
         elif ' (EXCHANGE)[CORRELATION] FUNCTIONAL:' in self.data:
             ex, corr = self.data.split(' (EXCHANGE)[CORRELATION] FUNCTIONAL:', 1)[-1].split("\n", 1)[0].split(')[')
             ex = ex.replace("(", "")
@@ -897,48 +897,48 @@ class CRYSTOUT(Output):
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
             try: corr = hamiltonians[corr]
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
-            self.method['H'] = "%s/%s" % (ex, corr)
+            self.info['H'] = "%s/%s" % (ex, corr)
         elif '\n THE CORRELATION FUNCTIONAL ' in self.data:
             corr = self.data.split('\n THE CORRELATION FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
             try: corr = hamiltonians[corr]
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
-            self.method['H'] = "HF/%s" % corr
+            self.info['H'] = "HF/%s" % corr
         elif '\n THE EXCHANGE FUNCTIONAL ' in self.data:
             ex = self.data.split('\n THE EXCHANGE FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
             try: ex = hamiltonians[ex]
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
-            self.method['H'] = "pure %s" % ex
-        if not self.method['H']:
+            self.info['H'] = "pure %s" % ex
+        if not self.info['H']:
             self.warning( 'Hamiltonian not found!' )
-            self.method['H'] = "none"
+            self.info['H'] = "none"
         if '\n HYBRID EXCHANGE ' in self.data:
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))
-            h = self.method['H'].split('/')
+            h = self.info['H'].split('/')
             h[0] += "(+" + str(hyb) + "%HF)"
-            self.method['H'] = '/'.join( h )
+            self.info['H'] = '/'.join( h )
 
         # Spin part
         if ' TYPE OF CALCULATION :  UNRESTRICTED OPEN SHELL' in self.data:
-            self.method['spin'] = True
+            self.info['spin'] = True
             if '\n ALPHA-BETA ELECTRONS LOCKED TO ' in self.data:
                 spin_info = self.data.split('\n ALPHA-BETA ELECTRONS LOCKED TO ', 1)[-1].split("\n", 1)[0].replace('FOR', '').split()
                 cyc = int(spin_info[1])
                 if self.info['ncycles']:
                     if self.info['ncycles'][0] < cyc:
-                        self.method['lockstate'] = int( spin_info[0] )
+                        self.info['lockstate'] = int( spin_info[0] )
 
         # K-points part
         if '\n SHRINK. FACT.(MONKH.) ' in self.data:
             kset = self.data.split('\n SHRINK. FACT.(MONKH.) ', 1)[-1].split()
             if len(kset) < 4: self.warning( 'Unknown k-points format!' )
-            self.method['k'] = "x".join( kset[:3] )
+            self.info['k'] = "x".join( kset[:3] )
             
         # Perturbation part
         if "* *        COUPLED-PERTURBED KOHN-SHAM CALCULATION (CPKS)         * *" in self.data:
-            self.method['perturbation'] = 'analytical'
+            calc.info['techs'].append('perturbation: analytical')
         elif "\n F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F\n" in self.data:
-            self.method['perturbation'] = 'numerical'
+            calc.info['techs'].append('perturbation: numerical')
 
         # Tolerances part
         if 'COULOMB OVERLAP TOL         (T1)' in self.data:
@@ -953,28 +953,50 @@ class CRYSTOUT(Output):
                     self.warning( 'Tolerance T%s > 0, assuming default.' % n )
                     if n==4: t[n] = -12
                     else: t[n] = -6
-            #self.method['tol'] = "biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>"
+            #self.info['tol'] = "biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>"
             self.info['techs'].append("biel.intgs 10<sup>" + ",".join(map(str, t)) + "</sup>") # TODO!!!
 
-        # Speed-up tricks part
+        # Speed-up techniques part
         if '\n WEIGHT OF F(I) IN F(I+1)' in self.data:
             f = int( self.data.split('\n WEIGHT OF F(I) IN F(I+1)', 1)[-1].split('%', 1)[0] )
-            self.method['technique']['fmixing'] = f
+             # TODO CRYSTAL14 default fmixing!
+            if   0<f<=25: calc.info['techs'].append('mixing<25%')
+            elif 25<f<=50:calc.info['techs'].append('mixing 25-50%')
+            elif 50<f<=75:calc.info['techs'].append('mixing 50-75%')
+            elif 75<f<=90:calc.info['techs'].append('mixing 75-90%')
+            elif 90<f:    calc.info['techs'].append('mixing>90%')
+            
         if ' ANDERSON MIX: BETA= ' in self.data:
-            self.method['technique']['anderson'] = 1
+            calc.info['techs'].append('mixing by anderson')
+            
         if '\n % OF FOCK/KS MATRICES MIXING WHEN BROYDEN METHOD IS ON' in self.data:
+            # mixing percentage, parameter and number of activation cycle
             f = int( self.data.split('\n % OF FOCK/KS MATRICES MIXING WHEN BROYDEN METHOD IS ON', 1)[-1].split("\n", 1)[0] )
             f2 = float( self.data.split('\n WO PARAMETER(D.D. Johnson, PRB38, 12807,(1988)', 1)[-1].split("\n", 1)[0] )
             f3 = int( self.data.split('\n NUMBER OF SCF ITERATIONS AFTER WHICH BROYDEN METHOD IS ACTIVE', 1)[-1].split("\n", 1)[0] )
-            self.method['technique']['broyden'] = [f, f2, f3] # main speed-up, parameter and cycle
+            if    0<f<=25: type='broyden<25%'
+            elif 25<f<=50: type='broyden 25-50%'
+            elif 50<f<=75: type='broyden 50-75%'
+            elif 75<f<=90: type='broyden 75-90%'
+            elif 90<f:     type='broyden>90%'
+            if round(f2, 4) == 0.0001: type += ' (std.)' # broyden parameter
+            else: type += ' ('+str(round(f2, 5))+')'
+            if f3 < 5: type += ' start'
+            else: type += ' defer.'
+            calc.info['techs'].append(type)
 
         if '\n EIGENVALUE LEVEL SHIFTING OF ' in self.data:
             f = float( self.data.split('\n EIGENVALUE LEVEL SHIFTING OF ', 1)[-1].split("\n", 1)[0].replace('HARTREE', '') )
-            self.method['technique']['shifter'] = f
+            if     0<f<=0.5:calc.info['techs'].append('shifter<0.5au')
+            elif 0.5<f<=1:  calc.info['techs'].append('shifter 0.5-1au')
+            elif   1<f<=2.5:calc.info['techs'].append('shifter 1-2.5au')
+            elif 2.5<f:     calc.info['techs'].append('shifter>2.5au')
 
         if '\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ' in self.data:
             f = float( self.data.split('\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ', 1)[-1].split("\n", 1)[0] )
-            self.method['technique']['smear'] = f
+            if       0<f<=0.005:calc.info['techs'].append('smearing<0.005au')
+            elif 0.005<f<=0.01: calc.info['techs'].append('smearing 0.005-0.01au')
+            elif  0.01<f:       calc.info['techs'].append('smearing>0.01au')
     
     def get_duration(self):
         starting = patterns['starting'].search(self.data)

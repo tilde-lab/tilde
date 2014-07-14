@@ -82,7 +82,9 @@ def dict2ase(ase_dict):
         cell=ase_dict['cell'], 
         positions=ase_dict['atoms'],
         pbc=ase_dict['periodicity'], 
-        info=ase_dict['info'], magmoms=ase_dict['magmoms'], charges=ase_dict['charges']
+        info=ase_dict['info'],
+        magmoms=ase_dict['magmoms'],
+        charges=ase_dict['charges']
     )
     ase_obj.dims = ase_dict['dims']
     ase_obj.periodicity = ase_dict['periodicity']

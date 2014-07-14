@@ -1,6 +1,6 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v050514
+# v140714
 
 import os
 import sys
@@ -42,7 +42,7 @@ class INFOOUT(Output):
         
         atoms_holder = [[]]
         cell = []
-        forces, energies, energies_opt, optmethods = [], [], [], []
+        forces, energies, energies_opt = [], [], []
         
         first_cycle_lithium, opt_flag = True, False
         
@@ -101,22 +101,22 @@ class INFOOUT(Output):
                 mark = line.split(":")[-1].strip()
                 if len(mark): # Beryllium
                     if 'spin-polarised' in mark:
-                        self.method['spin'] = True
-                        if 'orbit coupling' in self.data[n+1]: self.method['technique'].update({'spin-orbit':True})
+                        self.info['spin'] = True
+                        if 'orbit coupling' in self.data[n+1]: calc.info['techs'].append('spin-orbit coupling')
                         
                 else: # Lithium
                     if 'spin-polarised' in self.data[n+1]:
-                        self.method['spin'] = True
-                        if 'orbit coupling' in self.data[n+2]: self.method['technique'].update({'spin-orbit':True})
+                        self.info['spin'] = True
+                        if 'orbit coupling' in self.data[n+2]: calc.info['techs'].append('spin-orbit coupling')
                 
             elif 'k-point grid ' in line:
-                self.method['k'] = "x".join(line.split(":")[-1].split())
+                self.info['k'] = "x".join(line.split(":")[-1].split())
                 
             elif 'Smallest muffin-tin radius times maximum |G+k|' in line: # Lithium
-                self.method['tol'] = float(line.split(":")[-1].strip())
+                self.info['tol'] = float(line.split(":")[-1].strip())
                 
             elif 'R^MT_min * |G+k|_max (rgkmax)' in line: # Beryllium
-                self.method['tol'] = float(line.split(":")[-1].strip())
+                self.info['tol'] = float(line.split(":")[-1].strip())
                 
             elif 'orrelation type ' in line:
                 
@@ -126,8 +126,8 @@ class INFOOUT(Output):
                 
                 try: h = int(line.split(":")[-1])
                 except ValueError: pass # then this is not what we want
-                try: self.method['H'] = H_mapping[h]
-                except KeyError: self.method['H'] = h
+                try: self.info['H'] = H_mapping[h]
+                except KeyError: self.info['H'] = h
                 
             elif 'otal energy               ' in line:
                 try: energies.append(  float(line.split(":")[-1]) * Hartree  )
@@ -150,14 +150,12 @@ class INFOOUT(Output):
             elif '| Optimization step ' in line: # Beryllium
                 self.info['finished'] = -1
                 atoms_holder.append([])
-                optmethods.append(line.split('method =')[-1][:-2])
                 while 1:
                     n += 1
                     
                     try: self.data[n]
                     except IndexError:
                         atoms_holder.pop()
-                        optmethods.pop()
                         break
                     
                     if ' scf iterations ' in self.data[n]:
@@ -195,7 +193,7 @@ class INFOOUT(Output):
                 except ValueError: raise RuntimeError("Fermi energy is out of physical bounds! Terminating.")
                 
             elif 'Number of empty states' in line:
-                self.method['technique'].update({ 'empty_states': int(self.data[n].split(":")[-1]) })
+                self.info['techs'].append( '%s empty states' % int(self.data[n].split(":")[-1]) )
         # EOF Main loop
         
         if not cell or not atoms_holder[-1]: raise RuntimeError("Structure not found!")
@@ -209,7 +207,7 @@ class INFOOUT(Output):
             # First cycle convergence statuses
             self.info['convergence'] = self.compare_vals(energies)
         
-        if len(forces) != len(energies_opt) or len(forces) != len(optmethods) or len(forces) != len(self.info['ncycles']): self.warning("Warning! Unexpected convergence data format!")
+        if len(forces) != len(energies_opt) or len(forces) != len(self.info['ncycles']): self.warning("Warning! Unexpected convergence data format!")
         else:
             for n in range(len(energies_opt)):
                 self.info['tresholds'].append([forces[n], 0.0, 0.0, 0.0, energies_opt[n]])
