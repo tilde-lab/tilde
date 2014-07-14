@@ -71,7 +71,13 @@ class CRYSTOUT(Output):
     def __init__(self, file, **kwargs):
         Output.__init__(self, file)
         self.properties_calc, self.crystal_calc = False, False
-
+        
+        # this is the limiting distance, after which the direction is considered non-periodic
+        # be careful, as this has no physical meaning and may vary
+        # e.g.: non-periodic component(s) are assigned 500 in CRYSTAL
+        # hovewer, in PW codes this is ambiguous
+        self.PERIODIC_LIMIT = 50
+        
         '''if kwargs:
             if not 'basis_set' in kwargs or not 'atomtypes' in kwargs:
                 raise RuntimeError( 'Invalid missing properties defined!' )
