@@ -102,12 +102,12 @@ class INFOOUT(Output):
                 if len(mark): # Beryllium
                     if 'spin-polarised' in mark:
                         self.info['spin'] = True
-                        if 'orbit coupling' in self.data[n+1]: calc.info['techs'].append('spin-orbit coupling')
+                        if 'orbit coupling' in self.data[n+1]: self.info['techs'].append('spin-orbit coupling')
                         
                 else: # Lithium
                     if 'spin-polarised' in self.data[n+1]:
                         self.info['spin'] = True
-                        if 'orbit coupling' in self.data[n+2]: calc.info['techs'].append('spin-orbit coupling')
+                        if 'orbit coupling' in self.data[n+2]: self.info['techs'].append('spin-orbit coupling')
                 
             elif 'k-point grid ' in line:
                 self.info['k'] = "x".join(line.split(":")[-1].split())

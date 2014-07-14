@@ -34,7 +34,7 @@ def classify(tilde_obj):
         if av > ADDED_VACUUM3D_TOL:
             if tilde_obj.info['cellpar'][cmpveci] * L < tilde_obj.info['cellpar'][zi]:
             
-                calc.info['techs'].append( 'vacuum %sA' % int(round(tilde_obj.info['cellpar'][zi])) )
+                tilde_obj.info['techs'].append( 'vacuum %sA' % int(round(tilde_obj.info['cellpar'][zi])) )
 
                 # FOR surfaces:
                 for i in range(len(tilde_obj.structures)):

@@ -135,7 +135,7 @@ if args.path:
     print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
 
 # PROCESSING THE CALCULATIONS IN THE DATABASE
-# (ONLY EXPERIMENTAL SUPPORT HERE, REFER TO MINERS IN TESTS FOLDER FOR FURTHER INFO)
+# (ONLY EXPERIMENTAL SUPPORT HERE)
 
 if args.datamining:
     N = 10

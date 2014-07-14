@@ -985,7 +985,7 @@ if __name__ == "__main__":
             except: updatemsg = 'Could not check new version: communication with update server failed.'
             else:
                 if updatemsg.strip() == API.version: updatemsg = "Current version is up-to-date.\n"
-                else: updatemsg = '\n\tAttention!\n\tYour program version (%s) is outdated!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
+                else: updatemsg = '\n\tAttention!\n\tWarning!\n\tYour program version (%s) is not actual!\n\tActual version is %s.\n\tUpdating is highly recommended!\n' % (API.version, updatemsg.strip())
         print updatemsg
 
     loglevel = logging.DEBUG if settings['debug_regime'] else logging.ERROR
