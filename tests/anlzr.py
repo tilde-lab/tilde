@@ -19,6 +19,9 @@ from numpy import dot
 from numpy import array
 from numpy import cross
 
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
+from spacegroup.cell import cell_to_cellpar
+
 starttime = time.time()
 
 try:
@@ -51,6 +54,7 @@ for task in tasks:
 
     subprograms = work.postprocess(calc)
     
-    print calc
-
+    #for i in calc.structures[-1]:
+    #    print i.symbol
+    print calc['info']['formula']
 
