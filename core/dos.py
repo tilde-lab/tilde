@@ -9,6 +9,7 @@ import os
 import sys
 import numpy as np
 
+
 class NormalDistribution:
     def __init__(self, sigma):
         self.sigma = sigma

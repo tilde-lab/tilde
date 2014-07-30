@@ -12,16 +12,6 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) +
 from core.api import API
 from core.deps.ase.units import Hartree
 
-#from core.deps.pymatgen.core.structure import Structure
-#from core.deps.pymatgen.symmetry.bandstructure import HighSymmKpath
-
-from numpy import dot
-from numpy import array
-from numpy import cross
-
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
-from spacegroup.cell import cell_to_cellpar
-
 starttime = time.time()
 
 try:
@@ -51,10 +41,20 @@ for task in tasks:
     if error:
         print filename, error
         continue
-
-    subprograms = work.postprocess(calc)
     
     #for i in calc.structures[-1]:
     #    print i.symbol
-    print calc['info']['formula']
-
+    
+    print calc.info['warns']
+    print "-"*50
+    '''if calc.electrons['basis_set']:
+        for i in calc.electrons['basis_set']:
+            print "->", i
+    print "-"*50'''
+    n=0
+    while 1:
+        try: print calc.info[ 'bs' + str(n) ]
+        except KeyError: break
+        n += 1
+    
+    #print calc.structures[-1].get_array('mtrp')

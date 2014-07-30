@@ -52,9 +52,9 @@ virtual_calc.structures = [ perovskite ]
 virtual_calc, error = work.classify(virtual_calc)
 if error:
     raise RuntimeError(error)
-modules = work.postprocess(virtual_calc)
+virtual_calc = work.postprocess(virtual_calc)
 
 print "Test object:", virtual_calc.info['standard']
 print "Is perovskite?", ('perovskite' in virtual_calc.info['tags'])
 print "Octahedra tilted on:", phi, theta, psi
-print "Extracted tilting is:", modules['tilting']['data']
+print "Extracted tilting is:", virtual_calc.apps['tilting']['data']

@@ -1,29 +1,29 @@
 
-# yields compacted basis set labels
+# presents compacted basis set labels
 
-import os
-import sys
+import os, sys
 
 
 # hierarchy API: __order__ to apply classifier
 __order__ = 5
 
 def classify(tilde_obj):
-    if tilde_obj.electrons['basis_set'] is None:
-        return tilde_obj
-    ps = {}
-    i=0
-    for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
-        if type(v) != str: # CRYSTAL
+    if tilde_obj.electrons['basis_set'] is None or tilde_obj.electrons['type'] is None:
+        return tilde_obj    
+        
+    if tilde_obj.electrons['type'] == 'PW':
+        i=0
+        for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
+            tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
+            i+=1
+    
+    elif tilde_obj.electrons['type'] == 'LCAO':        
+        ps = {}
+        for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
             ps[k] = ''
             for channel in v:
                 ps[k] += channel[0].lower() + '<sup>' + str(len(channel)-1) + '</sup>'
 
-        else: # VASP
-            tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
-            i+=1
-
-    if type(tilde_obj.electrons['basis_set']['bs']) == dict:
         i=0
         for k, v in tilde_obj.electrons['basis_set']['bs'].iteritems():
             if k == 'Xx': continue
@@ -52,5 +52,32 @@ def classify(tilde_obj):
                 tilde_obj.info['properties']['bs' + str(i)] = k + ':' + pseudopotential + bs_str
 
             i+=1
+            
+    elif tilde_obj.electrons['type'] == 'FPLAPW':
+        if not 'bs' in tilde_obj.structures[-1].arrays: return tilde_obj           
+        seq = tilde_obj.structures[-1].get_array('bs').tolist()
+        symbols = tilde_obj.structures[-1].get_chemical_symbols()
+        
+        for n, i in enumerate(tilde_obj.electrons['basis_set']):            
+            elem = symbols[ seq.index(n) ]
+            bs_repr, repeats = [], []
+            pseudopotential = ''
+            
+            for st in i['states']:
+                if st['is_core']: pseudopotential += "%s%s<sup>%se</sup>" % (st['n'], st['l'], st['occ'])
+            if pseudopotential: pseudopotential = '[' + pseudopotential + ']'
+            
+            for lo in i.get('lo', []):
+                e = lo[0] + '<sup>%s</sup>' % (len(lo)-1)
+                if len(bs_repr) and bs_repr[-1] == e: repeats[-1] += 1
+                else:
+                    bs_repr.append(e)
+                    repeats.append(1)
+            
+            bs_str = ''
+            for j in range(len(bs_repr)):
+                bs_str += '(%s)<sup>%s</sup>' % (bs_repr[j], repeats[j]) if repeats[j]>1 else bs_repr[j]
+                
+            tilde_obj.info['properties']['bs' + str(n)] = elem + ':' + pseudopotential + bs_str
 
     return tilde_obj

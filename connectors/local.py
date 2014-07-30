@@ -29,9 +29,10 @@ def report(path, root, analyzer_obj):
     try: calc, error = analyzer_obj.parse(root + path)
     except (OSError, IOError):
         error = 'Requested file is not readable!'
-    if not error:
+    else:
         calc, error = analyzer_obj.classify(calc)
         if not error:
+            calc = analyzer_obj.postprocess(calc)
             checksum, error = analyzer_obj.save(calc)
         del calc
     return (checksum, error)

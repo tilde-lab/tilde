@@ -64,12 +64,12 @@ for k, v in test_data.iteritems():
     calc, error = work.classify(calc)
     if error:
         raise RuntimeError(k + ': ' + error)
-    modules = work.postprocess(calc)
-    if not 'tilting' in modules:
+    calc = work.postprocess(calc)
+    if not 'tilting' in calc.apps:
         raise RuntimeError(k + ': invalid result!')
     for corner in v['data'].keys():
-        if not corner in modules['tilting']['data']:
+        if not corner in calc.apps['tilting']['data']:
             raise RuntimeError(k + ': invalid result!')
         print 'Octahedron N', corner
         print 'expected:', v['data'][corner]
-        print 'got     :', modules['tilting']['data'][corner]
+        print 'got     :', calc.apps['tilting']['data'][corner]

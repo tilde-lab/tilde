@@ -39,7 +39,8 @@ for task in tasks:
     if error:
         print filename, error
         continue
-
+        
+    calc = work.postprocess(calc)
     checksum, error = work.save(calc)
     if error:
         print filename, error

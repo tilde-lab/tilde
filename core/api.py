@@ -2,7 +2,7 @@
 # Tilde project: core
 # v140714
 
-__version__ = "0.2.90"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
+__version__ = "0.3.0"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
 import os
 import sys
@@ -16,24 +16,28 @@ import json
 from numpy import dot, array
 from numpy.linalg import det
 
-from common import u, is_binary_string, ase2dict, dict2ase, generate_cif, html_formula
+from common import u, is_binary_string, dict2ase, generate_cif, html_formula
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
+from electron_structure import ElectronStructureError
+import model
+
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps'))
+from ase.data import chemical_symbols
+from ase.lattice.spacegroup.cell import cell_to_cellpar
+from sqlalchemy import exists, func
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
-
 from parsers import Output
-from core.deps.ase.lattice.spacegroup.cell import cell_to_cellpar
-from core.electron_structure import ElectronStructureError
 
 
 class API:
     version = __version__
     __shared_state = {} # singleton
         
-    def __init__(self, db_conn=None, settings=DEFAULT_SETUP):
+    def __init__(self, session=None, settings=DEFAULT_SETUP):
         self.__dict__ = self.__shared_state
-        self.db_conn = db_conn
+        self.session = session
         self.settings = settings        
         self.hierarchy, self.supercategories = read_hierarchy()
         self.deferred_storage = {}
@@ -173,13 +177,13 @@ class API:
         else:
             return str(out)
 
-    def reload(self, db_conn=None, settings=None):
+    def reload(self, session=None, settings=None):
         '''
         Switch Tilde API object to another context, if provided
         NB: this is the PUBLIC method
         @procedure
         '''
-        if db_conn: self.db_conn = db_conn
+        if session: self.session = session
         if settings: self.settings = settings
 
     def assign_parser(self, name):
@@ -221,6 +225,10 @@ class API:
             else: n = str(n)
             formula += atom + n
         return formula
+        
+    def count(self):
+        if not self.session: return None
+        return self.session.query(func.count(model.Simulation.id)).one()[0]
         
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
@@ -385,8 +393,8 @@ class API:
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only!
         if calc.info['tresholds'] or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('geometry optimization')
-        if calc.electrons['dos'] or calc.electrons['projected'] or calc.electrons['bands'] or calc.electrons['eigvals']: calc.info['calctypes'].append('electron structure')
-        if calc.energy: calc.info['calctypes'].append('total energy')
+        if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append('electron structure')
+        if calc.info['energy']: calc.info['calctypes'].append('total energy')
 
         # TODO: standardize computational materials science methods
         if 'vac' in calc.info['properties']:
@@ -423,27 +431,26 @@ class API:
             else:
                 try: gap, is_direct = calc.electrons['bands'].get_bandgap()
                 except ElectronStructureError as e:
-                    return (None, e.value)
-                    
-                calc.info['etype'] = 'insulator' # semiconductor?
-                calc.info['bandgap'] = round(gap, 2)
-                calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
+                    calc.electrons['bands'] = None
+                    calc.warning(e.value)
+                else:    
+                    calc.info['etype'] = 'insulator' # semiconductor?
+                    calc.info['bandgap'] = round(gap, 2)
+                    calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
         
         # by DOS  
-        if calc.electrons['dos']:
-            
+        if calc.electrons['dos']:            
             try: gap = round(calc.electrons['dos'].get_bandgap(), 2)
             except ElectronStructureError as e:
-                return (None, e.value)
-            
-            if calc.electrons['bands']: # check coincidence
-                if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is considered.')
+                calc.electrons['dos'] = None
+                calc.warning(e.value)
             else:
-                calc.info['bandgap'] = gap
-                if gap:
-                    if gap<=1.0: calc.info['etype'] = 'semiconductor'
-                    else: calc.info['etype'] = 'insulator'
-                else: calc.info['etype'] = 'conductor'
+                if calc.electrons['bands']: # check coincidence
+                    if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Gaps in DOS and bands differ considerably! The latter is considered.')
+                else:
+                    calc.info['bandgap'] = gap
+                    if gap: calc.info['etype'] = 'insulator' # semiconductor?
+                    else: calc.info['etype'] = 'conductor'
         
         for n, i in enumerate(calc.info['techs']):
             calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
@@ -463,13 +470,12 @@ class API:
 
         return (calc, error)
 
-    def postprocess(self, calc, with_module=None):
+    def postprocess(self, calc, with_module=None, dry_run=None):
         '''
         Invokes module(s) API
         NB: this is the PUBLIC method
         @returns apps_dict
         '''
-        apps = {}
         for appname, appclass in self.Apps.iteritems():
             if with_module and with_module != appname: continue
 
@@ -497,138 +503,20 @@ class API:
 
             # module code running
             if run_permitted:
-                apps[appname] = {'error': None, 'data': None}
+                calc.apps[appname] = {'error': None, 'data': None}
+                if dry_run: continue
                 try: AppInstance = appclass['appmodule'](calc)
-                #except ModuleError as e:
-                #    apps[appname]['error'] = e.value
                 except:
                     exc_type, exc_value, exc_tb = sys.exc_info()
-                    apps[appname]['error'] = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+                    errmsg = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+                    calc.apps[appname]['error'] = errmsg
+                    calc.warning( errmsg )
                 else:
-                    try: apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
-                    except AttributeError: apps[appname]['error'] = 'No appdata-defined property found!'
-        return apps
-
-    def _save_tags(self, for_checksum, tags_obj, update=False):
-        '''
-        Saves tags with checking
-        only those marked with *has_label* and having *source* values are considered
-        @returns error
-        '''
-        tags = []
-        cursor = self.db_conn.cursor()
-        for n, i in enumerate(self.hierarchy):
-            found_topics = []
-            
-            if not 'has_label' in i: continue
-            
-            if '#' in i['source']:
-                n=0
-                while 1:
-                    try: topic = tags_obj[ i['source'].replace('#', str(n)) ]
-                    except KeyError:
-                        if 'negative_tagging' in i and n==0 and not update: found_topics.append('none') # beware to add something new to an existing item!
-                        break
-                    else:
-                        found_topics.append(topic)
-                        n+=1
-            else:
-                try: found_topics.append( tags_obj[ i['source'] ] )
-                except KeyError:
-                    if 'negative_tagging' in i and not update: found_topics.append('none') # beware to add something new to an existing item!
-
-            for topic in found_topics:
-                if not topic: topic = 'none' # Warning! None-values spoil database with duplicate empty entries!
-                
-                sql = 'SELECT tid FROM topics WHERE categ = %(ph)s AND topic = CAST(%(ph)s AS TEXT)' % { 'ph': self.settings['ph'] }
-                try: cursor.execute( sql, (i['cid'], topic) )
-                except: return 'DB error: %s' % sys.exc_info()[1]
-                tid = cursor.fetchone()
-                if tid: tid = tid[0]
-                else:
-                    if self.settings['db']['type'] == 'sqlite': sql = 'INSERT INTO topics (categ, topic) VALUES (?, ?)'
-                    elif self.settings['db']['type'] == 'postgres': sql = 'INSERT INTO topics (categ, topic) VALUES (%s, %s) RETURNING tid'
-                    
-                    try: cursor.execute( sql, (i['cid'], topic) )
-                    except:
-                        self.db_conn.commit() # Postgres: prevent transaction aborting...
-                        return 'DB error: %s' % sys.exc_info()[1]
-                    
-                    if self.settings['db']['type'] == 'sqlite': tid = cursor.lastrowid
-                    elif self.settings['db']['type'] == 'postgres': tid = cursor.fetchone()[0]
-                tags.append( (for_checksum, tid) )
-        
-        sql = 'INSERT INTO tags (checksum, tid) VALUES (%(ph)s, %(ph)s)' % { 'ph': self.settings['ph'] }
-        try: cursor.executemany( sql, tags )
-        except:
-            self.db_conn.commit() # Postgres: prevent transaction aborting...
-            return 'DB error: %s' % sys.exc_info()[1]
-
-        return False
-
-    def _save_preacts(self, calc):
-        '''
-        Prepares all for saving: converts Output instance *calc* into json strings
-        @returns Tilde_obj
-        '''
-        # run apps and prepare their output
-        for appname, output in self.postprocess(calc).iteritems():
-            if output['error']:
-                calc.warning( output['error'] )
-            else:
-                calc.apps[appname] = output['data']
-
-        # prepare phonon data
-        # this is actually
-        # a dict to list conversion: TODO
-        if calc.phonons['modes']:
-            phonons_json = []
-
-            for bzpoint, frqset in calc.phonons['modes'].iteritems():
-                # re-orientate eigenvectors
-                for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
-                    for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])/3):
-                        eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
-                        R = dot( eigv, calc.structures[-1].cell ).tolist()
-                        calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
-
-                try: irreps = calc.phonons['irreps'][bzpoint]
-                except KeyError:
-                    empty = []
-                    for i in range(len(frqset)): empty.append('')
-                    irreps = empty
-                phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]  })
-                if bzpoint == '0 0 0':
-                    phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
-                    phonons_json[-1]['raman_active'] = calc.phonons['raman_active']
-                if calc.phonons['ph_k_degeneracy']:
-                    phonons_json[-1]['ph_k_degeneracy'] = calc.phonons['ph_k_degeneracy'][bzpoint]
-
-            calc.phonons = phonons_json
-        else: calc.phonons = False
-
-        # prepare structural data
-        #calc.structures[-1].orig_cif = generate_cif( calc.structures[-1], symops=calc['symops'] )
-        calc.structures = [ase2dict(ase_obj) for ase_obj in calc.structures]
-        
-        # TODO : BAD DESIGN
-        calc.info['refinedcell'] = json.dumps(ase2dict(calc.info['refinedcell']))
-        
-        # prepare electron data
-        for i in ['dos', 'bands']: # projected?
-            if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
-        
-        # packing of the
-        # Tilde ORM objects
-        # NB: here they are except *info*
-        # Why this is so?
-        # We store the redundant copy
-        # of tags marked with *has_column*
-        # in results table (info field)
-        # to speed up DB queries
-        for i in ['structures', 'phonons', 'electrons', 'apps']:
-            calc[i] = json.dumps(calc[i])
-
+                    try: calc.apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
+                    except AttributeError:
+                        errmsg = 'No appdata-defined property found for %s module!' % appname
+                        calc.apps[appname]['error'] = errmsg
+                        calc.warning( errmsg )
         return calc
 
     def save(self, calc, db_transfer_mode=False):
@@ -637,40 +525,135 @@ class API:
         NB: this is the PUBLIC method
         @returns (id, error)
         '''
-        if not self.db_conn: return (None, 'Database is not connected!')
+        if not self.session: return (None, 'Database is not connected!')
         
         checksum = calc.get_checksum()
 
         # check unique
-        try:
-            cursor = self.db_conn.cursor()
-            sql = 'SELECT id FROM results WHERE checksum = %s' % self.settings['ph']
-            cursor.execute( sql, (checksum,) )
-            row = cursor.fetchone()
-            if row: return (checksum, None)
-        except:
-            error = 'DB error: %s' % sys.exc_info()[1]
-            return (None, error)
-
-        # save tags
-        res = self._save_tags(checksum, calc.info)
-        if res: return (None, 'Tags saving failed: '+res)
+        (already, ) = self.session.query(exists().where(model.Simulation.checksum==checksum)).one()
+        if already:
+            del calc
+            return (checksum, None)       
         
-        if not db_transfer_mode: calc = self._save_preacts(calc)
-        calc.info = json.dumps(calc.info)
+        if not db_transfer_mode:
 
-        # save extracted data
-        try:
-            sql = 'INSERT INTO results (checksum, structures, energy, phonons, electrons, info, apps) VALUES ( %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s, %(ph)s )' % { 'ph': self.settings['ph'] }
-            cursor.execute( sql, (checksum, calc.structures, calc.energy, calc.phonons, calc.electrons, calc.info, calc.apps) )
-        except:
-            self.db_conn.commit() # Postgres: prevent transaction aborting...
-            error = 'DB error: %s' % sys.exc_info()[1]
-            return (None, error)
-        self.db_conn.commit()
+            # prepare phonon data
+            # this is actually a dict to list conversion: TODO
+            if calc.phonons['modes']:
+                phonons_json = []
 
-        del calc
+                for bzpoint, frqset in calc.phonons['modes'].iteritems():
+                    # re-orientate eigenvectors
+                    for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
+                        for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])/3):
+                            eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
+                            R = dot( eigv, calc.structures[-1].cell ).tolist()
+                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
 
+                    try: irreps = calc.phonons['irreps'][bzpoint]
+                    except KeyError:
+                        empty = []
+                        for i in range(len(frqset)): empty.append('')
+                        irreps = empty
+                    phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]  })
+                    if bzpoint == '0 0 0':
+                        phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
+                        phonons_json[-1]['raman_active'] = calc.phonons['raman_active']
+                    if calc.phonons['ph_k_degeneracy']:
+                        phonons_json[-1]['ph_k_degeneracy'] = calc.phonons['ph_k_degeneracy'][bzpoint]
+
+                calc.phonons = phonons_json
+            else: calc.phonons = False
+                        
+            # prepare electron data
+            for i in ['dos', 'bands']: # projected?
+                if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
+            
+            calc.info['rgkmax'] = calc.electrons['rgkmax']
+        
+        sim = model.Simulation(checksum=checksum)
+        
+        pot = model.Pottype.as_unique(self.session, name = calc.info['H'])
+        pot.instances.append(sim)
+        
+        sim.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
+        sim.basis = model.Basis(type = calc.electrons['type'], rgkmax = calc.electrons['rgkmax'],
+            repr = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
+        sim.energy = model.Energy(convergence = json.dumps(calc.info['convergence']), total = calc.info['energy'])
+        sim.auxiliary = model.Auxiliary(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'])
+        
+        codefamily = model.Codefamily.as_unique(self.session, content = calc.info['framework'])
+        codeversion = model.Codeversion.as_unique(self.session, content = calc.info['prog'])
+        codeversion.instances.append( sim.auxiliary )
+        codefamily.versions.append( codeversion )
+        
+        # electrons
+        if calc.electrons['dos'] or calc.electrons['bands']:
+            sim.electrons = model.Electrons(gap = calc.info['bandgap'])
+            if 'bandgaptype' in calc.info: sim.electrons.is_direct = 1 if calc.info['bandgaptype'] == 'direct' else -1
+            sim.electrons.eigenvalues = model.Eigenvalues(
+                dos = json.dumps(calc.electrons['dos']),
+                bands = json.dumps(calc.electrons['bands']),
+                projected = json.dumps(calc.electrons['projected']),
+                eigenvalues = json.dumps(calc.electrons['eigvals']))
+        
+        # phonons
+        if calc.phonons:
+            sim.phonons = model.Phonons()
+            sim.phonons.eigenvalues = model.Eigenvalues(eigenvalues = json.dumps(calc.phonons))
+        
+        for n, ase_repr in enumerate(calc.structures):
+            
+            struct = model.Structure()
+            
+            if n == len(calc.structures)-1:
+                struct.spacegroup = model.Spacegroup(n=calc.info['ng'])
+
+            s = cell_to_cellpar(ase_repr.cell)
+            struct.lattice_basis = model.Lattice_basis(a=s[0], b=s[1], 
+            c=s[2], alpha=s[3], beta=s[4], gamma=s[5], 
+            a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1], 
+            a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0], 
+            a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2], 
+            a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1], 
+            a33=ase_repr.cell[2][2])
+            struct.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'])
+
+            for i in ase_repr:
+                struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z ) )
+            
+            sim.structures.append(struct)
+        
+        # save tags: only those marked with *has_label* and having *source* values are considered        
+        sim.uigrid = model.uiGrid(info=json.dumps(calc.info))
+        
+        for entity in self.hierarchy:
+            
+            if not 'has_label' in entity: continue
+            
+            if 'multiple' in entity:
+                n=0
+                while 1:
+                    try:
+                        sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=calc.info[ entity['source'].replace('#', str(n)) ]) )
+                    except KeyError:
+                        if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
+                        break
+                    else: n+=1
+            else:
+                try:
+                    sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=calc.info[ entity['source'] ]) )
+                except KeyError:
+                    if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
+
+        # save apps        
+        for appname, appcontent in calc.apps.iteritems():
+            sim.apps.append(model.Apps(name = appname, data = json.dumps(appcontent)))
+        
+        self.session.add(sim)
+        self.session.commit()
+
+        del calc, sim
         return (checksum, None)
 
     def restore(self, db_row, db_transfer_mode=False):

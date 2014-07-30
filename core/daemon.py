@@ -564,7 +564,7 @@ class Request_Handler:
     # TODO: delegate content of these four methods to plotter!
     
     @staticmethod
-    def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP
+    def ph_dos(userobj, session_id): # currently supported for: CRYSTAL, VASP, EXCITING
         data, error = None, None
         cursor = Repo_pool[ Users[session_id].cur_db ].cursor()
         sql = 'SELECT structures, phonons FROM results WHERE checksum = %s' % settings['ph']
@@ -659,7 +659,7 @@ class Request_Handler:
         
         # EXCITING EIGVAL.OUT
         if len(e['projected']):
-            sigma=0.1 # tested on comparison with EXCITING XMLs
+            sigma=0.1 # tested on comparison with EXCITING dos.xml
             return (json.dumps(bdplotter(task = 'dos', eigenvalues = e['projected'], sigma=sigma, omega_min=val_min, omega_max=val_max, omega_pitch=pitch)), error)
             
         # VASP vasprun.xml

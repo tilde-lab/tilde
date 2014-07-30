@@ -126,11 +126,12 @@ class CRYSTOUT(Output):
             self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
             self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
 
-            self.energy = self.get_etot()
+            self.info['energy'] = self.get_etot()
             self.structures = self.get_structures()
             
             self.set_charges()
             
+            self.electrons['type'] = 'LCAO'
             self.electrons['basis_set'] = self.get_bs()
 
             self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
@@ -942,9 +943,9 @@ class CRYSTOUT(Output):
             
         # Perturbation part
         if "* *        COUPLED-PERTURBED KOHN-SHAM CALCULATION (CPKS)         * *" in self.data:
-            calc.info['techs'].append('perturbation: analytical')
+            self.info['techs'].append('perturbation: analytical')
         elif "\n F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F F\n" in self.data:
-            calc.info['techs'].append('perturbation: numerical')
+            self.info['techs'].append('perturbation: numerical')
 
         # Tolerances part
         if 'COULOMB OVERLAP TOL         (T1)' in self.data:
@@ -966,14 +967,14 @@ class CRYSTOUT(Output):
         if '\n WEIGHT OF F(I) IN F(I+1)' in self.data:
             f = int( self.data.split('\n WEIGHT OF F(I) IN F(I+1)', 1)[-1].split('%', 1)[0] )
              # TODO CRYSTAL14 default fmixing!
-            if   0<f<=25: calc.info['techs'].append('mixing<25%')
-            elif 25<f<=50:calc.info['techs'].append('mixing 25-50%')
-            elif 50<f<=75:calc.info['techs'].append('mixing 50-75%')
-            elif 75<f<=90:calc.info['techs'].append('mixing 75-90%')
-            elif 90<f:    calc.info['techs'].append('mixing>90%')
+            if   0<f<=25: self.info['techs'].append('mixing<25%')
+            elif 25<f<=50:self.info['techs'].append('mixing 25-50%')
+            elif 50<f<=75:self.info['techs'].append('mixing 50-75%')
+            elif 75<f<=90:self.info['techs'].append('mixing 75-90%')
+            elif 90<f:    self.info['techs'].append('mixing>90%')
             
         if ' ANDERSON MIX: BETA= ' in self.data:
-            calc.info['techs'].append('mixing by anderson')
+            self.info['techs'].append('mixing by anderson')
             
         if '\n % OF FOCK/KS MATRICES MIXING WHEN BROYDEN METHOD IS ON' in self.data:
             # mixing percentage, parameter and number of activation cycle
@@ -989,20 +990,22 @@ class CRYSTOUT(Output):
             else: type += ' ('+str(round(f2, 5))+')'
             if f3 < 5: type += ' start'
             else: type += ' defer.'
-            calc.info['techs'].append(type)
+            self.info['techs'].append(type)
 
         if '\n EIGENVALUE LEVEL SHIFTING OF ' in self.data:
             f = float( self.data.split('\n EIGENVALUE LEVEL SHIFTING OF ', 1)[-1].split("\n", 1)[0].replace('HARTREE', '') )
-            if     0<f<=0.5:calc.info['techs'].append('shifter<0.5au')
-            elif 0.5<f<=1:  calc.info['techs'].append('shifter 0.5-1au')
-            elif   1<f<=2.5:calc.info['techs'].append('shifter 1-2.5au')
-            elif 2.5<f:     calc.info['techs'].append('shifter>2.5au')
+            if     0<f<=0.5:self.info['techs'].append('shifter<0.5au')
+            elif 0.5<f<=1:  self.info['techs'].append('shifter 0.5-1au')
+            elif   1<f<=2.5:self.info['techs'].append('shifter 1-2.5au')
+            elif 2.5<f:     self.info['techs'].append('shifter>2.5au')
 
         if '\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ' in self.data:
             f = float( self.data.split('\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ', 1)[-1].split("\n", 1)[0] )
-            if       0<f<=0.005:calc.info['techs'].append('smearing<0.005au')
-            elif 0.005<f<=0.01: calc.info['techs'].append('smearing 0.005-0.01au')
-            elif  0.01<f:       calc.info['techs'].append('smearing>0.01au')
+            self.info['smear'] = f
+            self.info['smeartype'] = 'Mermin'
+            if       0<f<=0.005:self.info['techs'].append('smearing<0.005au')
+            elif 0.005<f<=0.01: self.info['techs'].append('smearing 0.005-0.01au')
+            elif  0.01<f:       self.info['techs'].append('smearing>0.01au')
     
     def get_duration(self):
         starting = patterns['starting'].search(self.data)
