@@ -34,11 +34,11 @@ from parsers import Output
 class API:
     version = __version__
     __shared_state = {} # singleton
-        
+
     def __init__(self, session=None, settings=DEFAULT_SETUP):
         self.__dict__ = self.__shared_state
         self.session = session
-        self.settings = settings        
+        self.settings = settings
         self.hierarchy, self.supercategories = read_hierarchy()
         self.deferred_storage = {}
 
@@ -51,17 +51,17 @@ class API:
         All_parsers, self.Parsers = {}, {}
         for parsername in os.listdir( os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/../parsers' ):
             if self.settings['demo_regime']: continue
-            
+
             if not os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/manifest.json') ): continue
             if not os.path.isfile( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/' + parsername + '.py') ):
                 raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
             try: parsermanifest = json.loads( open( os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../parsers/' + parsername + '/manifest.json') ).read() )
             except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
-            
+
             if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']: continue
-            
+
             All_parsers[parsername] = getattr(getattr(__import__('parsers.' + parsername + '.' + parsername), parsername), parsername) # all imported modules will be stored here
-        
+
         # replace modules by classes and check *fingerprints* method
         for parser, module in All_parsers.iteritems():
             for name, cls in inspect.getmembers(module):
@@ -93,13 +93,13 @@ class API:
                     try: app = __import__('apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
                     except ImportError: raise RuntimeError('Module API Error: module ' + appname + ' is invalid or not found!')
                     self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
-                    
+
                     # compiling table columns:
                     if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
                         self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
                         if appmanifest.get('plottable', False): self.hierarchy[-1].update({'plottable': 1})
                         n += 1
-        
+
         self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
 
         # *connector API*
@@ -111,7 +111,7 @@ class API:
                 connectname = connectname[0:-3]
                 conn = __import__('connectors.' + connectname) # this means: from foo import Foo
                 self.Conns[connectname] = {'list': getattr(getattr(conn, connectname), 'list'), 'report': getattr(getattr(conn, connectname), 'report')}
-        
+
         # *hierarchy API*
         # This is used for classification
         # (also displayed in GUI at the splashscreen and tagcloud)
@@ -126,7 +126,7 @@ class API:
                     'classify': getattr(getattr(obj, classifier), 'classify'),\
                     'order': getattr(getattr(obj, classifier), '__order__'),\
                     'class': classifier})
-                self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])   
+                self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
 
     def wrap_cell(self, categ, obj, table_view=False):
         '''
@@ -136,40 +136,40 @@ class API:
         '''
         html_class = '' # for GUI javascript
         out = ''
-        
+
         if 'cell_wrapper' in categ: # this bound type is currently defined by apps only
             out = categ['cell_wrapper'](obj)
         else:
             if categ['source'] in ['standard', 'adsorbent', 'termination']:
                 out = html_formula(obj['info'][ categ['source'] ]) if categ['source'] in obj['info'] else '&mdash;'
-                
+
             elif categ['source'] == 'etype':
                 out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
-                
+
             elif categ['source'] == 'bandgap':
                 html_class = ' class=_g'
                 out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
-            
-            # pseudo-source (derivative determination)    
+
+            # pseudo-source (derivative determination)
             elif categ['source'] == 'natom':
                 out = "%3d" % len( obj['structures'][-1]['symbols'] )
-                
+
             elif categ['source'] == 'e':
                 html_class = ' class=_e'
                 out = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
-                
+
             elif categ['source'] == 'dims':
                 out = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
-                               
+
             elif categ['source'] == 'finished':
                 f = int(obj['info']['finished'])
                 if f > 0: out = 'yes'
                 elif f == 0: out = 'n/a'
                 elif f < 0: out = 'no'
-            
+
             else:
                 out = '&mdash;' if not categ['source'] in obj['info'] or not obj['info'][ categ['source'] ] else obj['info'][ categ['source'] ]
-        
+
         if table_view:
             return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
         elif html_class:
@@ -217,7 +217,7 @@ class API:
             else:
                 types[ labels[lbl] ].append(k+1)
         atoms = labels.keys()
-        atoms = [x for x in formula_sequence if x in atoms] + [x for x in atoms if x not in formula_sequence] # O(N^2) sorting
+        atoms = [x for x in formula_sequence if x in atoms] + [x for x in atoms if x not in formula_sequence] # accordingly
         formula = ''
         for atom in atoms:
             n = len(types[labels[atom]])
@@ -225,11 +225,11 @@ class API:
             else: n = str(n)
             formula += atom + n
         return formula
-        
+
     def count(self):
         if not self.session: return None
         return self.session.query(func.count(model.Simulation.id)).one()[0]
-        
+
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
         Determines which files should be processed
@@ -238,7 +238,7 @@ class API:
         '''
         input_string = os.path.abspath(input_string)
         tasks = []
-        
+
         restricted = [ symbol for symbol in self.settings['skip_if_path'] ] if self.settings['skip_if_path'] else []
 
         # given folder
@@ -312,9 +312,9 @@ class API:
         NB: this is the PUBLIC method
         @returns (Tilde_obj, error)
         '''
-        calc, error = None, None        
+        calc, error = None, None
         try: f = open(file, 'r')
-        except IOError: return (None, 'read error!')        
+        except IOError: return (None, 'read error!')
         if is_binary_string(f.read(2048)): return (None, 'nothing found (binary data)...')
         f.seek(0)
         i = 0
@@ -332,13 +332,13 @@ class API:
             i += 1
         f.close()
 
-        # (1) unsupported data occured
+        # unsupported data occured
         if not calc and not error: return (None, 'nothing found...')
 
-        # (3) check if we parsed something reasonable <- should be merged?
+        # check if we parsed something reasonable <- should be merged?
         if not error and calc:
 
-            if not len(calc.structures) or not len(calc.structures[-1]): error = 'Valid structure is not present!'            
+            if not len(calc.structures) or not len(calc.structures[-1]): error = 'Valid structure is not present!'
 
             if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
 
@@ -351,17 +351,17 @@ class API:
         @returns (Tilde_obj, error)
         '''
         error = None
-        
+
         calc.info['formula'] = self.formula( calc.structures[-1].get_chemical_symbols() )
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
         if calc.info['input']:
             try: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
             except: pass
-        
+
         # applying filter: todo
         if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
             return (None, 'data do not satisfy the filter')
-            
+
         # TODO (?)
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for i in fragments:
@@ -376,7 +376,7 @@ class API:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 error = "Fatal error during classification:\n %s" % "".join(traceback.format_exception( exc_type, exc_value, exc_tb ))
                 return (None, error)
-        
+
         # chemical ratios
         if not len(calc.info['standard']):
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
@@ -386,7 +386,7 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
         if not calc.info['expanded']: del calc.info['expanded']
         calc.info['nelem'] = len(calc.info['elements'])
-        
+
         # general calculation type reasoning
         if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append('charges') # numpy count_nonzero implementation
         if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
@@ -400,11 +400,11 @@ class API:
         if 'vac' in calc.info:
             if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
             else: calc.info['techs'].append('vacancy defect: void space')
-       
+
         if calc.structures[-1].periodicity == 3: calc.info['periodicity'] = '3-periodic'
         elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
         elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
-        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'                
+        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
 
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
@@ -415,13 +415,13 @@ class API:
         calc.info['symmetry'] = found.symmetry
         calc.info['pg'] = found.pg
         calc.info['dg'] = found.dg
-        
+
         # phonons
         if calc.phonons['dfp_magnitude']: calc.info['dfp_magnitude'] = round(calc.phonons['dfp_magnitude'], 3)
         if calc.phonons['dfp_disps']: calc.info['dfp_disps'] = len(calc.phonons['dfp_disps'])
         if calc.phonons['modes']:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
-        
+
         # electronic properties reasoning by bands
         if calc.electrons['bands']:
             if calc.electrons['bands'].is_conductor():
@@ -432,13 +432,13 @@ class API:
                 except ElectronStructureError as e:
                     calc.electrons['bands'] = None
                     calc.warning(e.value)
-                else:    
+                else:
                     calc.info['etype'] = 'insulator' # semiconductor?
                     calc.info['bandgap'] = round(gap, 2)
                     calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
-        
-        # electronic properties reasoning by DOS  
-        if calc.electrons['dos']:            
+
+        # electronic properties reasoning by DOS
+        if calc.electrons['dos']:
             try: gap = round(calc.electrons['dos'].get_bandgap(), 2)
             except ElectronStructureError as e:
                 calc.electrons['dos'] = None
@@ -450,7 +450,7 @@ class API:
                     calc.info['bandgap'] = gap
                     if gap: calc.info['etype'] = 'insulator' # semiconductor?
                     else: calc.info['etype'] = 'conductor'
-        
+
         for n, i in enumerate(calc.info['techs']):
             calc.info['tech' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         for n, i in enumerate(calc.info['calctypes']):
@@ -459,7 +459,7 @@ class API:
             calc.info['element' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         for n, i in enumerate(calc.info['tags']):
             calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-        
+
         calc.benchmark() # this call must be at the very end of parsing
 
         return (calc, error)
@@ -520,15 +520,15 @@ class API:
         @returns (id, error)
         '''
         if not self.session: return (None, 'Database is not connected!')
-        
+
         checksum = calc.get_checksum()
 
         # check unique
         (already, ) = self.session.query(exists().where(model.Simulation.checksum==checksum)).one()
         if already:
             del calc
-            return (checksum, None)       
-        
+            return (checksum, None)
+
         if not db_transfer_mode:
 
             # prepare phonon data
@@ -558,29 +558,30 @@ class API:
 
                 calc.phonons = phonons_json
             else: calc.phonons = False
-                        
+
             # prepare electron data
             for i in ['dos', 'bands']: # projected?
                 if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
-            
+
             calc.info['rgkmax'] = calc.electrons['rgkmax']
-        
-        sim = model.Simulation(checksum=checksum)
-        
+
+        # ORM part
+        sim = model.Simulation(checksum = checksum)
+
         pot = model.Pottype.as_unique(self.session, name = calc.info['H'])
         pot.instances.append(sim)
-        
+
         sim.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
         sim.basis = model.Basis(type = calc.electrons['type'], rgkmax = calc.electrons['rgkmax'],
             repr = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
         sim.energy = model.Energy(convergence = json.dumps(calc.info['convergence']), total = calc.info['energy'])
         sim.auxiliary = model.Auxiliary(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'])
-        
+
         codefamily = model.Codefamily.as_unique(self.session, content = calc.info['framework'])
         codeversion = model.Codeversion.as_unique(self.session, content = calc.info['prog'])
         codeversion.instances.append( sim.auxiliary )
         codefamily.versions.append( codeversion )
-        
+
         # electrons
         if calc.electrons['dos'] or calc.electrons['bands']:
             sim.electrons = model.Electrons(gap = calc.info['bandgap'])
@@ -590,93 +591,64 @@ class API:
                 bands = json.dumps(calc.electrons['bands']),
                 projected = json.dumps(calc.electrons['projected']),
                 eigenvalues = json.dumps(calc.electrons['eigvals']))
-        
+
         # phonons
         if calc.phonons:
             sim.phonons = model.Phonons()
             sim.phonons.eigenvalues = model.Eigenvalues(eigenvalues = json.dumps(calc.phonons))
-        
+
         for n, ase_repr in enumerate(calc.structures):
-            
             struct = model.Structure()
-            
+
             if n == len(calc.structures)-1:
                 struct.spacegroup = model.Spacegroup(n=calc.info['ng'])
 
             s = cell_to_cellpar(ase_repr.cell)
-            struct.lattice_basis = model.Lattice_basis(a=s[0], b=s[1], 
-            c=s[2], alpha=s[3], beta=s[4], gamma=s[5], 
-            a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1], 
-            a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0], 
-            a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2], 
-            a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1], 
+            struct.lattice_basis = model.Lattice_basis(a=s[0], b=s[1], c=s[2],
+            alpha=s[3], beta=s[4], gamma=s[5],
+            a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1],
+            a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0],
+            a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2],
+            a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1],
             a33=ase_repr.cell[2][2])
             struct.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'])
 
             for i in ase_repr:
                 struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z ) )
-            
+
             sim.structures.append(struct)
-        
-        # save tags: only those marked with *has_label* and having *source* values are considered        
+
+        # save tags: only those marked with *has_label* and having *source* values are considered
         sim.uigrid = model.uiGrid(info=json.dumps(calc.info))
-        
+
         for entity in self.hierarchy:
-            
+
             if not 'has_label' in entity: continue
-            
+
             if 'multiple' in entity:
                 n=0
                 while 1:
                     try:
-                        sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=calc.info[ entity['source'].replace('#', str(n)) ]) )
+                        sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=str(
+                            calc.info[ entity['source'].replace('#', str(n)) ]
+                        )) )
                     except KeyError:
                         if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
                         break
                     else: n+=1
             else:
                 try:
-                    sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=calc.info[ entity['source'] ]) )
+                    sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=str(calc.info[ entity['source'] ])) )
                 except KeyError:
                     if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
 
-        # save apps        
+        # save apps
         for appname, appcontent in calc.apps.iteritems():
             sim.apps.append(model.Apps(name = appname, data = json.dumps(appcontent)))
-        
+
         self.session.add(sim)
         self.session.commit()
 
         del calc, sim
         return (checksum, None)
 
-    def restore(self, db_row, db_transfer_mode=False):
-        '''
-        Restores Tilde_obj from the database
-        NB: this is the PUBLIC method
-        @returns Tilde_obj
-        '''
-        calc = Output()
-
-        calc._checksum = db_row['checksum']
-        
-        try: calc.energy = float( db_row['energy'] )
-        except TypeError: pass
-        
-        calc.info = json.loads(db_row['info'])
-
-        # unpacking of the
-        # Tilde ORM objects
-        # NB: here they are except *info*
-        # Why this is so?
-        # We store the redundant copy
-        # of tags marked with *has_column*
-        # in results table (info field)
-        # to speed up DB queries
-        for i in ['structures', 'phonons', 'electrons', 'apps']:
-            if not db_transfer_mode:
-                calc[i] = json.loads(db_row[i])
-                if i=='structures': calc.structures = [dict2ase(ase_dict) for ase_dict in calc.structures]              
-            else: calc[i] = db_row[i]
-
-        return calc

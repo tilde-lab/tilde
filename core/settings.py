@@ -79,7 +79,7 @@ def connect_database(settings, uc):
             import pg8000
             postgres_driver = 'pg8000'
             
-        connstring = settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + int(settings['db']['port']) + '/' + settings['db']['dbname']
+        connstring = settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
     
     else:
         print '\nUnsupported DB type: %s!\n' % settings['db']['engine']

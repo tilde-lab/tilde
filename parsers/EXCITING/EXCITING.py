@@ -1,6 +1,6 @@
 
 # Tilde project: EXCITING text logs and XML outputs parser
-# v140714
+# v010814
 
 import os
 import sys
@@ -31,6 +31,9 @@ class SecondaryParsingError(Exception):
 # INFO.OUT parser
 class INFOOUT(Output):
     def __init__(self, file, **kwargs):
+
+        if os.path.basename(file) != 'INFO.OUT': raise RuntimeError("Skipping not a master output!")
+
         Output.__init__(self, file)
 
         cur_folder = os.path.dirname(file)
@@ -38,14 +41,7 @@ class INFOOUT(Output):
         self.info['framework'] = 'EXCITING'
         self.info['finished'] = -1
 
-        # dealing with replicas of INFO.OUT (e.g. in case of phonons) means
-        # we need to match corresponding EIGVAL.OUT, xmls etc. for them
-        # (not implemented yet)
-        if os.path.basename(file) == 'INFO.OUT': INITIAL_CALC = True
-        else: INITIAL_CALC = False
-
         cartesian = False
-
         atoms_holder = [[]]
         cell = []
         forces, energies, energies_opt = [], [], []
@@ -104,7 +100,7 @@ class INFOOUT(Output):
                             else:
                                 atoms_holder[-1].append([symb])
                                 atoms_holder[-1][-1].extend( map(float, [a[2], a[3], a[4]]) )
-                                nrepeat += 1                                
+                                nrepeat += 1
                         break
                 if not energies: # do it only for the first structure!
                     rmts.extend([rmt] * nrepeat)
@@ -249,7 +245,7 @@ class INFOOUT(Output):
         if opt_flag and len(self.structures) == 1:
             self.structures.append(self.structures[-1])
             self.info['tresholds'].append([0.0, 0.0, 0.0, 0.0, energies[-1]])
-        
+
         self.structures[-1].new_array('rmt', rmts, float)
         self.structures[-1].new_array('mtrp', mtrps, int)
         self.structures[-1].new_array('bs', bsseq, int)
@@ -263,42 +259,41 @@ class INFOOUT(Output):
         #   self.warning( " ".join(w) )
 
         # Electronic properties: the best case, too good
-        if INITIAL_CALC:
-            # look for full DOS in xml
-            if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
-                f = open(os.path.join(cur_folder, 'dos.xml'),'r')
-                try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
-                except SecondaryParsingError as e: self.warning("Error in dos.xml file: %s" % e.value)
-                except: self.warning("Problems with parsing dos.xml!")
-                finally: f.close()
+        # look for full DOS in xml
+        if os.path.exists(os.path.join(cur_folder, 'dos.xml')):
+            f = open(os.path.join(cur_folder, 'dos.xml'),'r')
+            try: self.electrons['dos'] = Edos(parse_dosxml(f, self.structures[-1].get_chemical_symbols()))
+            except SecondaryParsingError as e: self.warning("Error in dos.xml file: %s." % e.value)
+            except: self.warning("Problems with parsing dos.xml!")
+            finally: f.close()
 
-            # look for interpolated bands in xml
-            if os.path.exists(os.path.join(cur_folder, 'bandstructure.xml')):
-                f = open(os.path.join(cur_folder, 'bandstructure.xml'),'r')
-                try: self.electrons['bands'] = Ebands(parse_bandsxml(f))
-                except SecondaryParsingError as e: self.warning("Error in bandstructure.xml file: %s" % e.value)
-                except: self.warning("Problems with parsing bandstructure.xml!")
-                finally: f.close()
+        # look for interpolated bands in xml
+        if os.path.exists(os.path.join(cur_folder, 'bandstructure.xml')):
+            f = open(os.path.join(cur_folder, 'bandstructure.xml'),'r')
+            try: self.electrons['bands'] = Ebands(parse_bandsxml(f))
+            except SecondaryParsingError as e: self.warning("Error in bandstructure.xml file: %s." % e.value)
+            except: self.warning("Problems with parsing bandstructure.xml!")
+            finally: f.close()
 
         # Electronic properties: the worst case, look for total DOS and raw bands in EIGVAL.OUT
-        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] or not self.electrons['bands']) and INITIAL_CALC: # TODO: account all the dispacements
+        if os.path.exists(os.path.join(cur_folder, 'EIGVAL.OUT')) and (not self.electrons['dos'] or not self.electrons['bands']):
             f = open(os.path.join(cur_folder, 'EIGVAL.OUT'),'r')
             # why such a call? we try to spare RAM
             # so let's look whether these variables are filled
             # and fill them only if needed
             try: kpts, columns = parse_eigvals(f, e_last)
-            except SecondaryParsingError as e: self.warning("Error in EIGVAL.OUT file: %s" % e.value)
+            except SecondaryParsingError as e: self.warning("Error in EIGVAL.OUT file: %s." % e.value)
             else:
                 # obviously below should repeat XML data (but note interpolation problems on small k-sets!)
                 if not self.electrons['dos']:
-                    self.warning("dos.xml is absent, EIGVAL.OUT is taken")
+                    self.warning("dos.xml is absent, EIGVAL.OUT is taken.")
                     for c in columns:
                         for i in c:
                             self.electrons['projected'].append(i)
                     self.electrons['projected'].sort()
 
                 if not self.electrons['bands']:
-                    self.warning("bandstructure.xml is absent, EIGVAL.OUT is taken")
+                    self.warning("bandstructure.xml is absent, EIGVAL.OUT is taken.")
                     band_obj = {'ticks': [], 'abscissa': [], 'stripes': []}
                     d = 0.0
                     bz_vec_ref = [0, 0, 0]
@@ -314,37 +309,36 @@ class INFOOUT(Output):
             finally: f.close()
 
         if not self.electrons['dos'] and not self.electrons['bands']: self.warning("Electron structure not found!")
-        self.electrons['type'] = 'FPLAPW'
+        self.electrons['type'] = 'FP_LAPW'
 
         # Input
-        if INITIAL_CALC:
-            try: inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
-            except: self.warning("Problems with parsing input.xml!")
-            else:
-                speciespath = inp.getElementsByTagName("structure")[0].attributes['speciespath'].value
-                relpath_flag = False if os.path.isabs(speciespath) else True
-                species_types = set()
-                self.electrons['basis_set'] = []
-                
-                for sp in inp.getElementsByTagName("species"):
-                    species_types.add(sp.attributes['speciesfile'].value)
-                for sp in species_types:
-                    # TODO: https://docs.python.org/2/library/xml.html#xml-vulnerabilities
-                    try_path = os.path.realpath( os.path.join(cur_folder, os.path.join(speciespath, sp)) ) if relpath_flag else os.path.join(speciespath, sp) # WARNING! This may be dangerous!
-                    if not os.path.exists(try_path):
-                        self.electrons['basis_set'] = None
-                        self.warning("No BS available: %s cannot be found!" % try_path)
-                        break
-                    else:
-                        try: self.electrons['basis_set'] += [ parse_specie(try_path) ]
-                        except SecondaryParsingError as e:
-                            self.electrons['basis_set'] = None
-                            self.warning("Error in specie file: %s" % e.value)
+        try: inp = xml.dom.minidom.parse(os.path.join(cur_folder, 'input.xml'))
+        except: self.warning("Problems with parsing input.xml!")
+        else:
+            speciespath = inp.getElementsByTagName("structure")[0].attributes['speciespath'].value
+            relpath_flag = False if os.path.isabs(speciespath) else True
+            species_types, self.electrons['basis_set'] = [], []
 
-                self.info['input'] = inp.toprettyxml(newl="", indent=" ")
+            for sp in inp.getElementsByTagName("species"):
+                v = sp.attributes['speciesfile'].value
+                if not v in species_types: species_types.append(v)
+            for sp in species_types:
+                # TODO: https://docs.python.org/2/library/xml.html#xml-vulnerabilities
+                try_path = os.path.realpath( os.path.join(cur_folder, os.path.join(speciespath, sp)) ) if relpath_flag else os.path.join(speciespath, sp) # WARNING! This may be dangerous!
+                if not os.path.exists(try_path):
+                    self.electrons['basis_set'] = None
+                    self.warning("No BS available: %s cannot be found!" % try_path)
+                    break
+                else:
+                    try: self.electrons['basis_set'] += [ parse_specie(try_path) ]
+                    except SecondaryParsingError as e:
+                        self.electrons['basis_set'] = None
+                        self.warning("Error in specie file: %s" % e.value)
+
+            self.info['input'] = inp.toprettyxml(newl="", indent=" ")
 
         # Phonons
-        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')) and INITIAL_CALC: # TODO: account all the dispacements
+        if os.path.exists(os.path.join(cur_folder, 'PHONON.OUT')):
             f = open(os.path.join(cur_folder, 'PHONON.OUT'), 'r')
             linelist = f.readlines()
             filelen = len(linelist)
@@ -504,10 +498,10 @@ def parse_eigvals(fp, e_last):
     columns = array(columns)
     if columns.ndim != 2: raise SecondaryParsingError('Invalid dimensions of columns!')
     return kpts, columns
-    
+
 # species parser
 def parse_specie(path):
-    azimuthal_numbers = {0:'s', 1:'p', 2:'d', 3:'f', 4:'g', 5:'h'}
+    azimuthal_sequence = ['s', 'p', 'd', 'f', 'g', 'h']
     basis = {}
     try: specie = xml.dom.minidom.parse(path)
     except: raise SecondaryParsingError("Unable to parse %s" % path)
@@ -518,33 +512,42 @@ def parse_specie(path):
         basis['rmt'] = float(mt.attributes['radius'].value) # default rmt
         basis['rinf'] = float(mt.attributes['rinf'].value) # effective infinity
         basis['rmtp'] = int(mt.attributes['radialmeshPoints'].value) # grid points in the muffin tin (!)
+        
         basis['states'] = []
         for atst in specie.getElementsByTagName("atomicState"):
             basis['states'].append({})
             basis['states'][-1]['n'] = int(atst.attributes['n'].value)
-            basis['states'][-1]['l'] = azimuthal_numbers[ int(atst.attributes['l'].value) ]
+            basis['states'][-1]['l'] = azimuthal_sequence[ int(atst.attributes['l'].value) ]
             basis['states'][-1]['kappa'] = int(atst.attributes['kappa'].value)
             basis['states'][-1]['occ'] = int(float(atst.attributes['occ'].value))
-            basis['states'][-1]['is_core'] = True if atst.attributes['core'].value.lower() == 'true' else False        
+            basis['states'][-1]['is_core'] = True if atst.attributes['core'].value.lower() == 'true' else False
+        basis['states'].sort(cmp = lambda x, y: -1 if azimuthal_sequence.index(x['l']) < azimuthal_sequence.index(y['l']) else 1) # accordingly
+        basis['states'].sort(cmp = lambda x, y: -1 if x['n'] < y['n'] else 1) # accordingly
+        
         basis['default'] = {}
         default = specie.getElementsByTagName("default")[0]
         basis['default']['type'] = default.attributes['type'].value
         basis['default']['trialEnergy'] = float(default.attributes['trialEnergy'].value)
         basis['default']['searchE'] = True if default.attributes['searchE'].value.lower() == 'true' else False
+        
         basis['custom'] = []
         for cstm in specie.getElementsByTagName("custom"):
             basis['custom'].append({})
-            basis['custom'][-1]['l'] = azimuthal_numbers[ int(cstm.attributes['l'].value) ]
+            basis['custom'][-1]['l'] = azimuthal_sequence[ int(cstm.attributes['l'].value) ]
             basis['custom'][-1]['type'] = cstm.attributes['type'].value
-            basis['custom'][-1]['trialEnergy'] = float(cstm.attributes['trialEnergy'].value)            
+            basis['custom'][-1]['trialEnergy'] = float(cstm.attributes['trialEnergy'].value)
             basis['custom'][-1]['searchE'] = True if cstm.attributes['searchE'].value.lower() == 'true' else False
+        basis['custom'].sort(cmp = lambda x, y: -1 if azimuthal_sequence.index(x['l']) < azimuthal_sequence.index(y['l']) else 1) # accordingly
+        
         basis['lo'] = []
         for lo in specie.getElementsByTagName("lo"):
-            basis['lo'].append([ azimuthal_numbers[ int(lo.attributes['l'].value) ] ])            
+            basis['lo'].append([ azimuthal_sequence[ int(lo.attributes['l'].value) ] ])
             for wf in lo.getElementsByTagName("wf"):
                 basis['lo'][-1].append({})
                 basis['lo'][-1][-1]['deriv'] = int(wf.attributes['matchingOrder'].value)
                 basis['lo'][-1][-1]['trialEnergy'] = float(wf.attributes['trialEnergy'].value)
                 basis['lo'][-1][-1]['searchE'] = True if wf.attributes['searchE'].value.lower() == 'true' else False
+        basis['lo'].sort(cmp = lambda x, y: -1 if azimuthal_sequence.index(x[0]) < azimuthal_sequence.index(y[0]) else 1) # accordingly
+        
     return basis
-    
+

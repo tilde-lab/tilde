@@ -22,15 +22,15 @@ class Output:
 
         # public objects
                
-        self.structures = [] # list of ASE objects with additional "hanged on" properties (e.g. periodicity: determination is a responsibility of a parser)
+        self.structures = [] # list of ASE objects with additional properties
 
         self.electrons = {
             'type':            None,
             'rgkmax':          None,
             'basis_set':       None, # format depends on type:
                                      # LCAO: {'bs': {}, 'ps': {}}
-                                     # PW: {'ps': {}}
-                                     # FPLAPW: [atom1, ...]
+                                     # PP_PW: {'ps': {}}
+                                     # FP_LAPW: [atom1, ...]
             
             'eigvals':         {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
             'projected':       [], # raw eigenvalues [..., ...] for total DOS smearing
@@ -38,8 +38,7 @@ class Output:
             'dos':             {}, # in advance pre-computed DOS
             'bands':           {}  # in advance pre-computed band structure
         }
-        # NB own properties for VASP: dos
-        # NB own properties for CRYSTAL: impacts, proj_eigv_impacts, e_proj_eigvals
+        # NB own properties for CRYSTAL: impacts, proj_eigv_impacts, e_proj_eigvals (TODO)
 
         self.phonons = {
             'modes':            {},
@@ -58,7 +57,7 @@ class Output:
             
             'zpe':              None,
             'td':               None
-            }
+        }
             
         # modules output object
         
@@ -86,7 +85,6 @@ class Output:
             'contents':   [],
             'lack':       False,
             'expanded':   False,
-            'properties': {},
             'tags':       [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             
             'calctypes':  [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
@@ -104,7 +102,7 @@ class Output:
             'convergence':[], # zero-point energy convergence (I)
             'tresholds':  [], # optimization convergence, list of 5 lists (II)
             'ncycles':    [], # number of cycles at each optimisation pass step
-            }
+        }
 
     def __getitem__(self, key):
         ''' get either by dict key or by attribute '''

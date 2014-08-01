@@ -53,7 +53,7 @@ class uiTopic(UniqueMixin, Base):
     __tablename__ = 'topics'
     id = Column(Integer, primary_key=True)    
     cid = Column(Integer, nullable=False)
-    topic = Column(Text)
+    topic = Column(String)
 
     @classmethod
     def unique_filter(cls, query, cid, topic):

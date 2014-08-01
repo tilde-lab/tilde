@@ -352,7 +352,7 @@ class XML_Output(Output):
                 self.phonons['dfp_magnitude'] = 0.02 # Standard phonon displacement in VASP for DFP method
         
         # electronic properties
-        self.electrons['type'] = 'PW'
+        self.electrons['type'] = 'PP_PW'
         
         if self.e_last is None:
             self.warning('Electronic properties are not found!')

@@ -78,21 +78,21 @@ if not args.path and not args.xdebug:
     sys.exit()
 
 # CLI: if there are particular commands, run command-line text interface
-    
+
 session = None
 
 # -a OPTION
 
-if args.add or args.xdebug:    
-    user_choice = None    
+if args.add or args.xdebug:
+    user_choice = None
     if settings['db']['engine'] == 'sqlite':
         user_choice = settings['default_sqlite_db']
         #if not os.access(os.path.abspath(DATA_DIR + os.sep + user_choice), os.W_OK): sys.exit("Sorry, database file is protected!")
     elif settings['db']['engine'] == 'postgres':
         pass
-    session = connect_database(settings, user_choice)    
+    session = connect_database(settings, user_choice)
     if user_choice: print "The database selected:", user_choice
-    
+
 Tilde = API(session=session, settings=settings)
 
 # path(s) OPTION
@@ -103,7 +103,7 @@ if args.path:
     print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
 
 # -x OPTION
-    
+
 elif args.xdebug:
     print "Items in DB:", Tilde.count()
     sys.exit()
@@ -112,7 +112,7 @@ elif args.xdebug:
 # (BASIC USAGE)
 
 for target in args.path:
-    
+
     if not os.path.exists(target):
         print 'Target does not exist: ' + target
         continue
@@ -136,9 +136,9 @@ for target in args.path:
 
         header_line = task + " (E=" + str(calc.info['energy']) + " eV)"
         if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
-        
+
         # -i OPTION
-        
+
         if args.info:
             found_topics = []
             skip_topics = ['location', 'element#', 'nelem', 'natom', ]
@@ -166,18 +166,18 @@ for target in args.path:
                 out += "\t" if not j%2 else "\n"
                 j+=1
             output_lines += out[:-1] + "\n"
-        
+
         # -v OPTION
-        
+
         if args.convergence:
             if calc.info['convergence']:
                 output_lines += str(calc.info['convergence']) + "\n"
             if calc.info['tresholds']:
                 for i in range(len(calc.info['tresholds'])):
                     output_lines += "%1.2e" % calc.info['tresholds'][i][0] + " "*2 + "%1.5f" % calc.info['tresholds'][i][1] + " "*2 + "%1.4f" % calc.info['tresholds'][i][2] + " "*2 + "%1.4f" % calc.info['tresholds'][i][3] + " "*2 + "E=" + "%1.4f" % calc.info['tresholds'][i][4] + " eV" + " "*2 + "(%s)" % calc.info['ncycles'][i] + "\n"
-        
+
         # -s OPTION
-            
+
         if args.structures:
             out = ''
             if len(calc.structures) > 1:
@@ -187,9 +187,9 @@ for target in args.path:
             for i in calc.structures[-1]:
                 out += " %s %s %s %s\n" % (i.symbol, i.x, i.y, i.z)
             output_lines += out
-        
+
         # -c OPTION
-        
+
         if args.cif:
             try: calc.structures[ args.cif ]
             except IndexError: output_lines += "Warning! Structure "+args.cif+" not found!" + "\n"
@@ -200,16 +200,16 @@ for target in args.path:
                 if write_cif(cif_file, calc.structures[ args.cif ], comment):
                     output_lines += cif_file + " ready" + "\n"
                 else:
-                    output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"        
-        
+                    output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"
+
         # -m OPTION
-        
+
         if args.module:
             if args.module == True:
                 invoked_modules = []
                 calc = Tilde.postprocess(calc, dry_run=True)
                 for i in calc.apps:
-                    invoked_modules.append(i)                
+                    invoked_modules.append(i)
                 output_lines += "Modules to be invoked: " + str(invoked_modules) + "\n"
             else:
                 calc = Tilde.postprocess(calc, args.module)
@@ -218,14 +218,14 @@ for target in args.path:
                 else:
                     out = str(calc.apps[args.module]['error']) if calc.apps[args.module]['error'] else str(calc.apps[args.module]['data'])
                     output_lines += out + "\n"
-        
+
         # -x OPTION
-            
+
         if args.xdebug:
             output_lines += str(calc) + "\n"
-        
+
         # -f OPTION
-        
+
         if args.freqs:
             if not calc.phonons['modes']:
                 output_lines += 'no phonons'
@@ -237,22 +237,22 @@ for target in args.path:
                         # if compare == frqset[i]: continue
                         output_lines += "%d" % frqset[i] + " (" + calc.phonons['irreps'][bzpoint][i] + ")" + "\n"
                         compare = frqset[i]
-        
+
         # -a OPTION
-                    
+
         if args.add:
             calc = Tilde.postprocess(calc)
             checksum, error = Tilde.save(calc)
             if error:
                 print task, error
                 continue
-            header_line += ' added'        
-        
+            header_line += ' added'
+
         if len(output_lines): output_lines = "\n" + output_lines
         print header_line + add_msg + output_lines
         # NB: from here the calc instance is not functional anymore!
 
-if session:    
+if session:
     session.close()
-    
+
 print "Done in %1.2f sc" % (time.time() - starttime)

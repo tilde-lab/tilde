@@ -46,11 +46,13 @@ for task in tasks:
     #    print i.symbol
     
     print calc.info['warns']
-    print "-"*50
-    '''if calc.electrons['basis_set']:
+    '''print "-"*50
+    if calc.electrons['basis_set']:
         for i in calc.electrons['basis_set']:
-            print "->", i
-    print "-"*50'''
+            print "+"*50
+            for j in i['states']:
+                print "->", j'''
+    print "-"*50
     n=0
     while 1:
         try: print calc.info[ 'bs' + str(n) ]
