@@ -1,5 +1,5 @@
 
-# presents compacted basis set labels
+# gives compacted basis set labels as strings for GUI
 
 import os, sys
 
@@ -11,10 +11,10 @@ def classify(tilde_obj):
     if tilde_obj.electrons['basis_set'] is None or tilde_obj.electrons['type'] is None:
         return tilde_obj    
         
-    if tilde_obj.electrons['type'] == 'PW':
+    if tilde_obj.electrons['type'] == 'PP_PW':
         i=0
         for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
-            tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
+            tilde_obj.info['bs' + str(i)] = k + ':' + v
             i+=1
     
     elif tilde_obj.electrons['type'] == 'LCAO':        
@@ -32,7 +32,7 @@ def classify(tilde_obj):
             if len(chk): continue
 
             if type(v) == str: # GAUSSIAN
-                tilde_obj.info['properties']['bs' + str(i)] = k + ':' + v
+                tilde_obj.info['bs' + str(i)] = k + ':' + v
 
             else: # CRYSTAL, GAUSSIAN
                 bs_repr, repeats = [], []
@@ -49,11 +49,11 @@ def classify(tilde_obj):
                 bs_str = ''
                 for n in range(len(bs_repr)):
                     bs_str += '(%s)<sup>%s</sup>' % (bs_repr[n], repeats[n]) if repeats[n]>1 else bs_repr[n]
-                tilde_obj.info['properties']['bs' + str(i)] = k + ':' + pseudopotential + bs_str
+                tilde_obj.info['bs' + str(i)] = k + ':' + pseudopotential + bs_str
 
             i+=1
             
-    elif tilde_obj.electrons['type'] == 'FPLAPW':
+    elif tilde_obj.electrons['type'] == 'FP_LAPW':
         if not 'bs' in tilde_obj.structures[-1].arrays: return tilde_obj           
         seq = tilde_obj.structures[-1].get_array('bs').tolist()
         symbols = tilde_obj.structures[-1].get_chemical_symbols()
@@ -78,6 +78,6 @@ def classify(tilde_obj):
             for j in range(len(bs_repr)):
                 bs_str += '(%s)<sup>%s</sup>' % (bs_repr[j], repeats[j]) if repeats[j]>1 else bs_repr[j]
                 
-            tilde_obj.info['properties']['bs' + str(n)] = elem + ':' + pseudopotential + bs_str
+            tilde_obj.info['bs' + str(n)] = elem + ':' + pseudopotential + bs_str
 
     return tilde_obj

@@ -42,7 +42,7 @@ def classify(tilde_obj):
     if len(content_by_layer) <= 3:
         # TODO
         # we have a very thin slab with an undefined adsorption case
-        tilde_obj.info['properties']['layers'] = len(content_by_layer)
+        tilde_obj.info['layers'] = len(content_by_layer)
     else:
         # check adsorbants
         s = range(len(content_by_layer) - 1, int(math.floor( len(content_by_layer)/2 ) - 1), -1)
@@ -119,7 +119,7 @@ def classify(tilde_obj):
         for i in to_delete:
             del content_by_layer[ i[0] ][ i[1] ]
         content_by_layer = filter(None, content_by_layer)
-        tilde_obj.info['properties']['layers'] = len(content_by_layer)
+        tilde_obj.info['layers'] = len(content_by_layer)
         
         if len(adsorbate):
             tilde_obj.info['tags'].append('adsorption')
@@ -133,7 +133,7 @@ def classify(tilde_obj):
                 if c == 1: adsorbent_formula += elems[i]
                 else: adsorbent_formula += elems[i] + str(c)
             if r>1: adsorbent_formula = str(r) + adsorbent_formula
-            tilde_obj.info['properties']['adsorbent'] = adsorbent_formula
+            tilde_obj.info['adsorbent'] = adsorbent_formula
     
     if content_by_layer[0] == content_by_layer[-1] and len(content_by_layer) > 1:
         termination_formula = ''
@@ -144,7 +144,7 @@ def classify(tilde_obj):
         for i, c in enumerate( map(lambda x: x/d, elems_content) ):
             if c == 1: termination_formula += elems[i]
             else: termination_formula += elems[i] + str(c)
-        tilde_obj.info['properties']['termination'] = termination_formula
+        tilde_obj.info['termination'] = termination_formula
         
     tilde_obj.info['expanded'] = 1 # this means formula reduce is prohibited
     slab_elements = []

@@ -128,11 +128,11 @@ class API:
                     'class': classifier})
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])   
 
-    def wrap_cell(self, categ, obj, table_view=None):
+    def wrap_cell(self, categ, obj, table_view=False):
         '''
         Cell wrappers
         for customizing the GUI data table
-        TODO : must coincide with hierarchy.xml!
+        TODO : must coincide with hierarchy!
         '''
         html_class = '' # for GUI javascript
         out = ''
@@ -397,7 +397,7 @@ class API:
         if calc.info['energy']: calc.info['calctypes'].append('total energy')
 
         # TODO: standardize computational materials science methods
-        if 'vac' in calc.info['properties']:
+        if 'vac' in calc.info:
             if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
             else: calc.info['techs'].append('vacancy defect: void space')
        
@@ -422,8 +422,7 @@ class API:
         if calc.phonons['modes']:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
         
-        # electronic properties reasoning
-        # by bands
+        # electronic properties reasoning by bands
         if calc.electrons['bands']:
             if calc.electrons['bands'].is_conductor():
                 calc.info['etype'] = 'conductor'
@@ -438,7 +437,7 @@ class API:
                     calc.info['bandgap'] = round(gap, 2)
                     calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
         
-        # by DOS  
+        # electronic properties reasoning by DOS  
         if calc.electrons['dos']:            
             try: gap = round(calc.electrons['dos'].get_bandgap(), 2)
             except ElectronStructureError as e:
@@ -460,11 +459,6 @@ class API:
             calc.info['element' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
         for n, i in enumerate(calc.info['tags']):
             calc.info['tag' + str(n)] = i # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
-        
-        # properties determined by classifiers
-        for k, v in calc.info['properties'].iteritems():
-            calc.info[k] = v
-        del calc.info['properties']
         
         calc.benchmark() # this call must be at the very end of parsing
 

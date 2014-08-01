@@ -1,8 +1,7 @@
 
 # example classifier: tries to determine whatever you want...
 
-import os
-import sys
+import os, sys
 
 
 # hierarchy API: __order__ to apply classifier
