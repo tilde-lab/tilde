@@ -1,31 +1,24 @@
 #!/usr/bin/env python
 
-# Sqlite repo
-# build test
+# Repo build test
 
-import os
-import sys
-import time
+import os, sys, time
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from core.api import API
-from core.settings import settings, EXAMPLE_DIR, DATA_DIR
-
-try: import sqlite3
-except: from pysqlite2 import dbapi2 as sqlite3
+from core.settings import settings, connect_database, EXAMPLE_DIR
 
 
 starttime = time.time()
 
-db = sqlite3.connect(os.path.abspath(DATA_DIR + os.sep + settings['default_sqlite_db']))
-db.row_factory = sqlite3.Row
-db.text_factory = str
+settings['db']['engine'] == 'sqlite'
+dbname = '%s.db' % time.strftime("%m%d_%H%M%S")
 
-work = API(db_conn=db)
+session = connect_database(settings, dbname)
+work = API(session = session)
+tasks = work.savvyize(EXAMPLE_DIR, True) # True means recursive
 
-tasks = work.savvyize(EXAMPLE_DIR, True)  # True means recursive
-
-print '\n\nRepo build test:\n\n'
+print 'Repo build test: %s\n\n' % dbname
 
 for task in tasks:
     filename = os.path.basename(task)
@@ -47,5 +40,6 @@ for task in tasks:
         continue
 
     print filename + " added"
-    
+
+print "\n\nItems added:", work.count()
 print "Test repository done in %1.2f sec" % (time.time() - starttime)

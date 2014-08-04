@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Tilde project: cross-platform entry junction
+# Cross-platform entry junction
 # all the end user actions are done from here
 # v250714
 

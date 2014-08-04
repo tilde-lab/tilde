@@ -1,5 +1,5 @@
 
-# Tilde project: core
+# Functionality exposed into an API
 # v140714
 
 __version__ = "0.3.0"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
@@ -596,12 +596,13 @@ class API:
         if calc.phonons:
             sim.phonons = model.Phonons()
             sim.phonons.eigenvalues = model.Eigenvalues(eigenvalues = json.dumps(calc.phonons))
-
+        
+        # structure
+        sim.spacegroup = model.Spacegroup(n=calc.info['ng'])
+        sim.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'])
         for n, ase_repr in enumerate(calc.structures):
-            struct = model.Structure()
-
-            if n == len(calc.structures)-1:
-                struct.spacegroup = model.Spacegroup(n=calc.info['ng'])
+            is_final = True if n == len(calc.structures)-1 else False
+            struct = model.Structure(final = is_final)
 
             s = cell_to_cellpar(ase_repr.cell)
             struct.lattice_basis = model.Lattice_basis(a=s[0], b=s[1], c=s[2],
@@ -610,11 +611,11 @@ class API:
             a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0],
             a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2],
             a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1],
-            a33=ase_repr.cell[2][2])
-            struct.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'])
-
-            for i in ase_repr:
-                struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z ) )
+            a33=ase_repr.cell[2][2])            
+            
+            rmts = ase_repr.get_array('rmts') if 'rmts' in ase_repr.arrays else [None for j in range(len(ase_repr))]
+            for n, i in enumerate(ase_repr):
+                struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, rmt=rmts[n] ) )
 
             sim.structures.append(struct)
 

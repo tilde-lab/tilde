@@ -1,5 +1,5 @@
 
-# Tilde project: EXCITING text logs and XML outputs parser
+# EXCITING text logs and XML outputs parser
 # v010814
 
 import os

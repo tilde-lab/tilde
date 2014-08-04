@@ -47,6 +47,7 @@ Other known similar projects are collected below (in an alphabetic order):
 - Catapp, http://www.slac.stanford.edu/~strabo/catapp
 - CCLib (Python), http://cclib.sf.net
 - CDF (Python), http://kitchingroup.cheme.cmu.edu/cdf
+- CEPDB: Harvard Clean Energy Project and distributed volunteer computing, http://cepdb.molecularspace.org
 - CMR (Python), https://wiki.fysik.dtu.dk/cmr
 - Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
 - cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net

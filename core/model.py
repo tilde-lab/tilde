@@ -1,12 +1,16 @@
 
+# Database schema
+
 import os, sys
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps'))
-from sqlalchemy import MetaData, String, Table, Column, Boolean, Float, Integer, Text, ForeignKey, and_
+from sqlalchemy import MetaData, String, Table, Column, Boolean, Float, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint
 
+
+DB_SCHEMA_VERSION = '2.01'
 
 Base = declarative_base()
 
@@ -57,7 +61,7 @@ class uiTopic(UniqueMixin, Base):
 
     @classmethod
     def unique_filter(cls, query, cid, topic):
-        return query.filter(and_(uiTopic.cid == cid, uiTopic.topic == topic))
+        return query.filter(uiTopic.cid == cid, uiTopic.topic == topic)
 
 class uiGrid(Base):
     __tablename__ = 'grid'
@@ -74,6 +78,9 @@ class Simulation(Base):
     pottype_id = Column(Integer, ForeignKey('pottypes.id'), default=None)
     
     structures = relationship("Structure", backref="simulations")
+        
+    spacegroup = relationship("Spacegroup", uselist=False, backref="simulations")
+    struct_ratios = relationship("Struct_ratios", uselist=False, backref="simulations")
     auxiliary = relationship("Auxiliary", uselist=False, backref="simulations")
     basis = relationship("Basis", uselist=False, backref="simulations")
     recipinteg = relationship("Recipinteg", uselist=False, backref="simulations")
@@ -193,10 +200,9 @@ class Structure(Base):
     __tablename__ = 'structures'
     id = Column(Integer, primary_key=True)
     sid = Column(Integer, ForeignKey('simulations.id'), nullable=False)
-    lattice_basis = relationship("Lattice_basis", uselist=False, backref="structures", cascade="all, delete, delete-orphan")
-    atoms = relationship("Atom", backref="structures", cascade="all, delete, delete-orphan")
-    spacegroup = relationship("Spacegroup", uselist=False, backref="structures", cascade="all, delete, delete-orphan")
-    struct_ratios = relationship("Struct_ratios", uselist=False, backref="structures", cascade="all, delete, delete-orphan")
+    final = Column(Boolean, nullable=False)
+    lattice_basis = relationship("Lattice_basis", uselist=False, backref="structures")
+    atoms = relationship("Atom", backref="structures")
 
 class Lattice_basis(Base):
     __tablename__ = 'lattice_basises'
@@ -231,17 +237,17 @@ class Atom(Base):
 
 class Spacegroup(Base):
     __tablename__ = 'spacegroups'
-    struct_id = Column(Integer, ForeignKey('structures.id'), primary_key=True)
+    sid = Column(Integer, ForeignKey('simulations.id'), primary_key=True)
     n = Column(Integer, nullable=False)    
 
 class Struct_ratios(Base):
     __tablename__ = 'struct_ratios'
-    id = Column(Integer, primary_key=True)
+    sid = Column(Integer, ForeignKey('simulations.id'), primary_key=True)
     chemical_formula = Column(String, nullable=False)
     is_primitive = Column(Boolean, default=False)
     formula_units = Column(Integer, nullable=False)
-    struct_id = Column(Integer, ForeignKey('structures.id'), nullable=False)
-
+    nelem = Column(Integer, nullable=False)
+    
 # submodules table
 
 class Apps(Base):

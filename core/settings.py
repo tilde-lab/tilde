@@ -1,5 +1,5 @@
 
-# Tilde project: installation and actions to be always done
+# Installation and actions to be always done
 # v160714
 
 import sys
@@ -19,7 +19,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '2.00'
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/gui_entities.xml')
 DEFAULT_SQLITE_DB = 'default.db'
@@ -68,7 +67,7 @@ def connect_database(settings, uc):
             print '\nSQLite driver is not available!'
             return False  
         
-        connstring = settings['db']['engine'] + ':///' + os.path.abspath(DATA_DIR + os.sep + uc)
+        connstring = settings['db']['engine'] + ':///' + os.path.abspath(DATA_DIR + os.sep + os.path.basename(uc))
         
     elif settings['db']['engine'] == 'postgresql':
         try:            
@@ -92,10 +91,10 @@ def connect_database(settings, uc):
     
     try: p = session.query(model.Pragma.content).one()
     except NoResultFound:
-        p = model.Pragma(content=DB_SCHEMA_VERSION)
+        p = model.Pragma(content=model.DB_SCHEMA_VERSION)
         session.add(p)
     else:
-        if p.content != DB_SCHEMA_VERSION:
+        if p.content != model.DB_SCHEMA_VERSION:
             uc = uc if uc else 'at server'
             sys.exit('Sorry, database '+uc+' is incompatible.')
 
