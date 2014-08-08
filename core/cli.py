@@ -93,7 +93,7 @@ if args.add or args.xdebug:
     session = connect_database(settings, user_choice)
     if user_choice: print "The database selected:", user_choice
 
-Tilde = API(session=session, settings=settings)
+Tilde = API(settings)
 
 # path(s) OPTION
 
@@ -105,7 +105,7 @@ if args.path:
 # -x OPTION
 
 elif args.xdebug:
-    print "Items in DB:", Tilde.count()
+    print "Items in DB:", Tilde.count(session)
     sys.exit()
 
 # PROCESSING THE CALCULATIONS AT THE TARGET PATHS IN FILE SYSTEM
@@ -242,7 +242,7 @@ for target in args.path:
 
         if args.add:
             calc = Tilde.postprocess(calc)
-            checksum, error = Tilde.save(calc)
+            checksum, error = Tilde.save(calc, session)
             if error:
                 print task, error
                 continue

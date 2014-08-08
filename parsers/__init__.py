@@ -81,6 +81,7 @@ class Output:
             'standard':   '',
             'formula':    '',
             'dims':       False,
+            'natom':      0,
             'elements':   [], # corresponds to sharp-signed multiple tag container in Tilde hierarchy : todo simplify
             'contents':   [],
             'lack':       False,

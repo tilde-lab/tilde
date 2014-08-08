@@ -27,27 +27,31 @@ DATA_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../da
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 1
 DEFAULT_SETUP = {
-                'webport': 7777, # is it robust to use?
+                # DB scope:
                 'default_sqlite_db': DEFAULT_SQLITE_DB,
-                'local_dir': EXAMPLE_DIR,
-                'exportability': False,
-                'demo_regime': False,
-                'debug_regime': False,
-                'skip_unfinished': False,
-                'skip_if_path': "-_~",
-                'title': None,
-                'update_server': "http://tilde.pro/VERSION",
-                'custom_about_link': False, # only in demo mode: if set to URL, the URL is used
                 'db':{
-                    'engine': 'sqlite',   # may be postgresql
-                                          # NB if sqlite is chosen: further info is not used
+                    'engine': 'sqlite', # may be postgresql, NB if sqlite is chosen: further info is not used
                     'host': 'localhost',
                     'port': 5432, # may be 5433
                     'user': 'postgres',
                     'password': '',
-                    'dbname': 'postgres', # for initial first-time connection
+                    'dbname': 'nomad',
                     },
-                }
+
+                # API (parsing) scope:
+                'demo_regime': False,
+                'debug_regime': False,
+                'skip_unfinished': False,
+                'skip_if_path': "-_~",
+                
+                # GUI scope:
+                'webport': 7777, # is it robust to use?                
+                'local_dir': EXAMPLE_DIR,
+                'exportability': False,              
+                'title': None,
+                'update_server': "http://tilde.pro/VERSION",
+                'custom_about_link': False, # only in demo mode: if set to URL, the URL is used
+}
 repositories = []
 
 # begin obligatory routines

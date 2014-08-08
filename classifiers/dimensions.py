@@ -46,7 +46,7 @@ def classify(tilde_obj):
                     
     # extend the last ASE object with the new useful info (TODO: FOR ALL?)
     for n in range(len(tilde_obj.structures)):
-        tilde_obj.structures[n].periodicity = sum(tilde_obj.structures[n].get_pbc())
+        tilde_obj.structures[n].periodicity = int(sum(tilde_obj.structures[n].get_pbc()))
         tilde_obj.structures[n].dims = None
         if n == len(tilde_obj.structures)-1:         
             if tilde_obj.structures[n].periodicity == 3: tilde_obj.structures[n].dims = abs(det(tilde_obj.structures[n].cell))
@@ -58,5 +58,6 @@ def classify(tilde_obj):
                 tilde_obj.structures[n].dims = norm(cross(tilde_obj.structures[n].cell[mi], tilde_obj.structures[n].cell[ni])) # http://mathworld.wolfram.com/Parallelogram.html
                 
     tilde_obj.info['dims'] = tilde_obj.structures[-1].dims
+    tilde_obj.info['periodicity'] = tilde_obj.structures[-1].periodicity
         
     return tilde_obj

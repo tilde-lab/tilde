@@ -13,9 +13,9 @@ starttime = time.time()
 
 settings['db']['engine'] == 'sqlite'
 dbname = '%s.db' % time.strftime("%m%d_%H%M%S")
-
 session = connect_database(settings, dbname)
-work = API(session = session)
+
+work = API()
 tasks = work.savvyize(EXAMPLE_DIR, True) # True means recursive
 
 print 'Repo build test: %s\n\n' % dbname
@@ -34,12 +34,12 @@ for task in tasks:
         continue
         
     calc = work.postprocess(calc)
-    checksum, error = work.save(calc)
+    checksum, error = work.save(calc, session)
     if error:
         print filename, error
         continue
 
     print filename + " added"
 
-print "\n\nItems added:", work.count()
+print "\n\nItems added:", work.count(session)
 print "Test repository done in %1.2f sec" % (time.time() - starttime)

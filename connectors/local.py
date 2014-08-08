@@ -24,15 +24,15 @@ def list(path, root):
         output += viewer_wrap(i, path, 'FILE')
     return (output, error)
 
-def report(path, root, analyzer_obj):
+def report(analyzer_obj, sess_ctx, path, root):
     checksum, error = None, None
     try: calc, error = analyzer_obj.parse(root + path)
     except (OSError, IOError):
         error = 'Requested file is not readable!'
-    else:
+    if not error:
         calc, error = analyzer_obj.classify(calc)
         if not error:
             calc = analyzer_obj.postprocess(calc)
-            checksum, error = analyzer_obj.save(calc)
+            checksum, error = analyzer_obj.save(calc, sess_ctx)
         del calc
     return (checksum, error)

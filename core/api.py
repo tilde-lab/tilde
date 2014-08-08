@@ -1,6 +1,6 @@
 
 # Functionality exposed into an API
-# v140714
+# v080814
 
 __version__ = "0.3.0"   # numeric-only, should be the same as at GitHub repo, otherwise a warning is raised
 
@@ -14,7 +14,6 @@ import traceback
 import json
 
 from numpy import dot, array
-from numpy.linalg import det
 
 from common import u, is_binary_string, dict2ase, generate_cif, html_formula
 from symmetry import SymmetryHandler
@@ -33,14 +32,11 @@ from parsers import Output
 
 class API:
     version = __version__
-    __shared_state = {} # singleton
+    __shared_state = {}
 
-    def __init__(self, session=None, settings=DEFAULT_SETUP):
-        self.__dict__ = self.__shared_state
-        self.session = session
+    def __init__(self, settings = DEFAULT_SETUP):
         self.settings = settings
         self.hierarchy, self.supercategories = read_hierarchy()
-        self.deferred_storage = {}
 
         # *parser API*
         # Subfolder "parsers" contains directories with parsers.
@@ -141,34 +137,31 @@ class API:
             out = categ['cell_wrapper'](obj)
         else:
             if categ['source'] in ['standard', 'adsorbent', 'termination']:
-                out = html_formula(obj['info'][ categ['source'] ]) if categ['source'] in obj['info'] else '&mdash;'
+                out = html_formula(obj[ categ['source'] ]) if categ['source'] in obj else '&mdash;'
 
             elif categ['source'] == 'etype':
-                out = '?' if not 'etype' in obj['info'] else obj['info']['etype']
+                out = '?' if not 'etype' in obj else obj['etype']
 
             elif categ['source'] == 'bandgap':
                 html_class = ' class=_g'
-                out = '?' if not 'bandgap' in obj['info'] else obj['info']['bandgap']
+                out = '?' if not 'bandgap' in obj else obj['bandgap']
 
             # pseudo-source (derivative determination)
-            elif categ['source'] == 'natom':
-                out = "%3d" % len( obj['structures'][-1]['symbols'] )
-
             elif categ['source'] == 'e':
                 html_class = ' class=_e'
                 out = "%6.5f" % obj['energy'] if obj['energy'] else '&mdash;'
 
             elif categ['source'] == 'dims':
-                out = "%4.2f" % obj['structures'][-1]['dims'] if obj['structures'][-1]['periodicity'] in [2, 3] else '&mdash;'
+                out = "%4.2f" % obj['dims'] if obj['periodicity'] in [2, 3] else '&mdash;'
 
             elif categ['source'] == 'finished':
-                f = int(obj['info']['finished'])
+                f = int(obj['finished'])
                 if f > 0: out = 'yes'
                 elif f == 0: out = 'n/a'
                 elif f < 0: out = 'no'
 
             else:
-                out = '&mdash;' if not categ['source'] in obj['info'] or not obj['info'][ categ['source'] ] else obj['info'][ categ['source'] ]
+                out = '&mdash;' if not categ['source'] in obj or not obj[ categ['source'] ] else obj[ categ['source'] ]
 
         if table_view:
             return '<td rel=' + str(categ['cid']) + html_class + '>' + str(out) + '</td>'
@@ -176,15 +169,6 @@ class API:
             return '<span' + html_class + '>' + str(out) + '</span>'
         else:
             return str(out)
-
-    def reload(self, session=None, settings=None):
-        '''
-        Switch Tilde API object to another context, if provided
-        NB: this is the PUBLIC method
-        @procedure
-        '''
-        if session: self.session = session
-        if settings: self.settings = settings
 
     def assign_parser(self, name):
         '''
@@ -226,9 +210,8 @@ class API:
             formula += atom + n
         return formula
 
-    def count(self):
-        if not self.session: return None
-        return self.session.query(func.count(model.Simulation.id)).one()[0]
+    def count(self, sess_ctx):
+        return sess_ctx.query(func.count(model.Simulation.id)).one()[0]
 
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
@@ -351,8 +334,8 @@ class API:
         @returns (Tilde_obj, error)
         '''
         error = None
-
-        calc.info['formula'] = self.formula( calc.structures[-1].get_chemical_symbols() )
+        symbols = calc.structures[-1].get_chemical_symbols()
+        calc.info['formula'] = self.formula(symbols)
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
         if calc.info['input']:
             try: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
@@ -386,6 +369,7 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
         if not calc.info['expanded']: del calc.info['expanded']
         calc.info['nelem'] = len(calc.info['elements'])
+        calc.info['natom'] = len(symbols)
 
         # general calculation type reasoning
         if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append('charges') # numpy count_nonzero implementation
@@ -398,13 +382,8 @@ class API:
 
         # TODO: standardize computational materials science methods
         if 'vac' in calc.info:
-            if 'X' in calc.structures[-1].get_chemical_symbols(): calc.info['techs'].append('vacancy defect: ghost')
+            if 'X' in symbols: calc.info['techs'].append('vacancy defect: ghost')
             else: calc.info['techs'].append('vacancy defect: void space')
-
-        if calc.structures[-1].periodicity == 3: calc.info['periodicity'] = '3-periodic'
-        elif calc.structures[-1].periodicity == 2: calc.info['periodicity'] = '2-periodic'
-        elif calc.structures[-1].periodicity == 1: calc.info['periodicity'] = '1-periodic'
-        elif calc.structures[-1].periodicity == 0: calc.info['periodicity'] = 'non-periodic'
 
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
@@ -479,7 +458,7 @@ class API:
             if appclass['apptarget']:
                 for key in appclass['apptarget']:
                     negative = False
-                    if appclass['apptarget'][key].startswith('!'):
+                    if str(appclass['apptarget'][key]).startswith('!'):
                         negative = True
                         scope_prop = appclass['apptarget'][key][1:]
                     else:
@@ -487,7 +466,7 @@ class API:
 
                     if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
                         # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
-                        if (scope_prop in calc.info[key] or scope_prop == calc.info[key]) != negative: # true if only one, but not both
+                        if (str(scope_prop) in str(calc.info[key]) or scope_prop == calc.info[key]) != negative: # true if only one, but not both
                             run_permitted = True
                         else:
                             run_permitted = False
@@ -513,18 +492,16 @@ class API:
                         calc.warning( errmsg )
         return calc
 
-    def save(self, calc, db_transfer_mode=False):
+    def save(self, calc, sess_ctx, db_transfer_mode=False):
         '''
         Saves Tilde_obj into the database
         NB: this is the PUBLIC method
         @returns (id, error)
         '''
-        if not self.session: return (None, 'Database is not connected!')
-
         checksum = calc.get_checksum()
 
         # check unique
-        (already, ) = self.session.query(exists().where(model.Simulation.checksum==checksum)).one()
+        (already, ) = sess_ctx.query(exists().where(model.Simulation.checksum==checksum)).one()
         if already:
             del calc
             return (checksum, None)
@@ -568,7 +545,7 @@ class API:
         # ORM part
         sim = model.Simulation(checksum = checksum)
 
-        pot = model.Pottype.as_unique(self.session, name = calc.info['H'])
+        pot = model.Pottype.as_unique(sess_ctx, name = calc.info['H'])
         pot.instances.append(sim)
 
         sim.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
@@ -577,8 +554,8 @@ class API:
         sim.energy = model.Energy(convergence = json.dumps(calc.info['convergence']), total = calc.info['energy'])
         sim.auxiliary = model.Auxiliary(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'])
 
-        codefamily = model.Codefamily.as_unique(self.session, content = calc.info['framework'])
-        codeversion = model.Codeversion.as_unique(self.session, content = calc.info['prog'])
+        codefamily = model.Codefamily.as_unique(sess_ctx, content = calc.info['framework'])
+        codeversion = model.Codeversion.as_unique(sess_ctx, content = calc.info['prog'])
         codeversion.instances.append( sim.auxiliary )
         codefamily.versions.append( codeversion )
 
@@ -596,7 +573,7 @@ class API:
         if calc.phonons:
             sim.phonons = model.Phonons()
             sim.phonons.eigenvalues = model.Eigenvalues(eigenvalues = json.dumps(calc.phonons))
-        
+
         # structure
         sim.spacegroup = model.Spacegroup(n=calc.info['ng'])
         sim.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'])
@@ -611,8 +588,8 @@ class API:
             a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0],
             a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2],
             a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1],
-            a33=ase_repr.cell[2][2])            
-            
+            a33=ase_repr.cell[2][2])
+
             rmts = ase_repr.get_array('rmts') if 'rmts' in ase_repr.arrays else [None for j in range(len(ase_repr))]
             for n, i in enumerate(ase_repr):
                 struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, rmt=rmts[n] ) )
@@ -630,25 +607,25 @@ class API:
                 n=0
                 while 1:
                     try:
-                        sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=str(
+                        sim.uitopics.append( model.uiTopic.as_unique(sess_ctx, cid=entity['cid'], topic=str(
                             calc.info[ entity['source'].replace('#', str(n)) ]
                         )) )
                     except KeyError:
-                        if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
+                        if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(sess_ctx, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
                         break
                     else: n+=1
             else:
                 try:
-                    sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic=str(calc.info[ entity['source'] ])) )
+                    sim.uitopics.append( model.uiTopic.as_unique(sess_ctx, cid=entity['cid'], topic=str(calc.info[ entity['source'] ])) )
                 except KeyError:
-                    if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(self.session, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
+                    if 'negative_tagging' in entity: sim.uitopics.append( model.uiTopic.as_unique(sess_ctx, cid=entity['cid'], topic='none') ) # beware to add something new to an existing item!
 
         # save apps
         for appname, appcontent in calc.apps.iteritems():
             sim.apps.append(model.Apps(name = appname, data = json.dumps(appcontent)))
 
-        self.session.add(sim)
-        self.session.commit()
+        sess_ctx.add(sim)
+        sess_ctx.commit()
 
         del calc, sim
         return (checksum, None)

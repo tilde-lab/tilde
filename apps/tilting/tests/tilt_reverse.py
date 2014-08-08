@@ -47,7 +47,7 @@ perovskite._masked_rotate(center=array([a*math.sqrt(2)/2, a, a*math.sqrt(2)/2]),
 
 # second, incorporate ASE into tilde
 work = API()
-virtual_calc = Output() # this is how it works now, we always consider "calculation" while using tilde
+virtual_calc = Output() # we always consider "calculation" while using tilde
 virtual_calc.structures = [ perovskite ]
 virtual_calc, error = work.classify(virtual_calc)
 if error:
