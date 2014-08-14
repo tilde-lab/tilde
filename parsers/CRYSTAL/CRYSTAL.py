@@ -116,7 +116,7 @@ class CRYSTOUT(Output):
                 self.pdata = raw_data[ parts_pointer[0]: ]
                 self.properties_calc = True
 
-        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format is similar to CRYSTAL format, it is unknown!' )
+        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format looks similar to CRYSTAL format, it is unknown!' )
 
         if self.crystal_calc:
             self.info['duration'] = self.get_duration()
@@ -345,7 +345,7 @@ class CRYSTOUT(Output):
                 phonon_e = phonon_e.split()[0]
                 return float(phonon_e) * Hartree
             else:
-                self.warning( 'No energy in CRYSTAL output!' )
+                self.warning( 'No energy found!' )
                 return None
 
     '''def get_etot_props(self):

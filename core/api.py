@@ -18,7 +18,6 @@ from numpy import dot, array
 from common import u, is_binary_string, dict2ase, generate_cif, html_formula
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
-from electron_structure import ElectronStructureError
 import model
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps'))
@@ -28,6 +27,7 @@ from sqlalchemy import exists, func
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../'))
 from parsers import Output
+from core.electron_structure import ElectronStructureError
 
 
 class API:

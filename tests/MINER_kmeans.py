@@ -53,7 +53,8 @@ for n, s, e, r in session.query(func.distinct(model.Atom.number), model.Structur
 
         collected = []
 
-kmeans = KMeans(n_clusters=10)
+n_clusters = len(data) if len(data) < 10 else 10
+kmeans = KMeans(n_clusters=n_clusters)
 kmeans.fit(data)
 clusters = {}
 for n, i in enumerate(kmeans.labels_):
