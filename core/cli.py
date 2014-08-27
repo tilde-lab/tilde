@@ -64,7 +64,7 @@ if settings['demo_regime']: print "\nRestricted mode (demo_regime): on\n"
 if not args.path and not args.daemon and not args.xdebug: #if not len(vars(args)):
     args.daemon = 'shell'
 if args.daemon and not args.xdebug:
-    print "\nPlease, wait a bit while Tilde application is starting.....\n"
+    print "\nPlease, wait a bit while i start...\n"
     # replace current process with Tilde daemon process
     try:
         os.execv(sys.executable, [sys.executable, os.path.realpath(os.path.dirname(os.path.abspath(__file__))) + '/daemon.py'])
@@ -88,7 +88,7 @@ if args.add or args.xdebug:
     if settings['db']['engine'] == 'sqlite':
         user_choice = settings['default_sqlite_db']
         #if not os.access(os.path.abspath(DATA_DIR + os.sep + user_choice), os.W_OK): sys.exit("Sorry, database file is protected!")
-    elif settings['db']['engine'] == 'postgres':
+    elif settings['db']['engine'] == 'postgresql':
         pass
     session = connect_database(settings, user_choice)
     if user_choice: print "The database selected:", user_choice

@@ -116,10 +116,10 @@ class Request_Handler:
 
         if tids:
             data_clause = []
-            for i in DB_pool[ Users[session_id].cur_db ].query(model.Simulation.checksum) \
-                .join(model.Simulation.uitopics) \
+            for i in DB_pool[ Users[session_id].cur_db ].query(model.Calculation.checksum) \
+                .join(model.Calculation.uitopics) \
                 .filter(model.uiTopic.id.in_(tids)) \
-                .group_by(model.Simulation.checksum) \
+                .group_by(model.Calculation.checksum) \
                 .having(func.count(model.uiTopic.id) == len(tids)) \
                 .all():
                 data_clause += list(i)
@@ -155,7 +155,7 @@ class Request_Handler:
         data += '<tbody>'
 
         for row, checksum in DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info, model.Simulation.checksum) \
-            .filter(model.uiGrid.sid == model.Simulation.id, model.Simulation.checksum.in_(data_clause)) \
+            .filter(model.uiGrid.sid == model.Calculation.id, model.Simulation.checksum.in_(data_clause)) \
             .all():
 
             rescount += 1
@@ -624,15 +624,15 @@ class Request_Handler:
         cursor = DB_pool[ Users[session_id].cur_db ].cursor()
 
         data_clause = userobj['hashes']
-        data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgres
-        if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgres
+        data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgresql
+        if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgresql
 
         try:
             if settings['db']['engine'] == 'sqlite':
                 data_clause = '","'.join(data_clause)
                 cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
                 cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
-            elif settings['db']['engine'] == 'postgres':
+            elif settings['db']['engine'] == 'postgresql':
                 cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
                 cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
             DB_pool[ Users[session_id].cur_db ].commit()
@@ -882,7 +882,7 @@ if __name__ == "__main__":
         DB_pool[settings['default_sqlite_db']] = connect_database(settings, settings['default_sqlite_db'])
         if not settings['default_sqlite_db'] in DB_pool: sys.exit("Fatal error!\nDefault database " + DATA_DIR + os.sep + settings['default_sqlite_db'] + " is incompatible, please, remove it to proceed.")
 
-    elif settings['db']['engine'] == 'postgres':
+    elif settings['db']['engine'] == 'postgresql':
         DB_pool[DEFAULT_DBTITLE] = connect_database(settings, None)
 
     DuplexRouter = SockJSRouter(DuplexConnection, '/duplex')
@@ -908,7 +908,7 @@ if __name__ == "__main__":
         else: address = 'localhost'
         address = address + ('' if int(settings['webport']) == 80 else ':%s' % settings['webport'])
 
-        print "Welcome to " + CURRENT_TITLE + " GUI (" + settings['db']['engine'] + " backend)\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
+        print CURRENT_TITLE + " GUI (" + settings['db']['engine'] + " backend) ready\nPlease, open http://" + address + "/ in your browser\nTo terminate, hit Ctrl+C\n"
 
         try: tornado.ioloop.IOLoop.instance().start()
         except KeyboardInterrupt: sys.exit("\nBye-bye.")

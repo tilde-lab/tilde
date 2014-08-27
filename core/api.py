@@ -211,7 +211,7 @@ class API:
         return formula
 
     def count(self, sess_ctx):
-        return sess_ctx.query(func.count(model.Simulation.id)).one()[0]
+        return sess_ctx.query(func.count(model.Calculation.id)).one()[0]
 
     def savvyize(self, input_string, recursive=False, stemma=False):
         '''
@@ -501,7 +501,7 @@ class API:
         checksum = calc.get_checksum()
 
         # check unique
-        (already, ) = sess_ctx.query(exists().where(model.Simulation.checksum==checksum)).one()
+        (already, ) = sess_ctx.query(exists().where(model.Calculation.checksum==checksum)).one()
         if already:
             del calc
             return (checksum, None)
@@ -543,7 +543,7 @@ class API:
             calc.info['rgkmax'] = calc.electrons['rgkmax']
 
         # ORM part
-        sim = model.Simulation(checksum = checksum)
+        sim = model.Calculation(checksum = checksum)
 
         pot = model.Pottype.as_unique(sess_ctx, name = calc.info['H'])
         pot.instances.append(sim)
@@ -582,7 +582,7 @@ class API:
             struct = model.Structure(final = is_final)
 
             s = cell_to_cellpar(ase_repr.cell)
-            struct.lattice_basis = model.Lattice_basis(a=s[0], b=s[1], c=s[2],
+            struct.lattice = model.Lattice(a=s[0], b=s[1], c=s[2],
             alpha=s[3], beta=s[4], gamma=s[5],
             a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1],
             a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0],

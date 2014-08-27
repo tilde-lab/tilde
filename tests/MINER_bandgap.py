@@ -27,8 +27,10 @@ print "DB: %s" % db_choice
 
 # ^^^ the preparations above, the data-mining below VVV
 
+# TODO postgresql !!!
+
 for i, j, k, l in session.query(func.min(model.Energy.total), model.Structure, model.Struct_ratios, model.Electrons) \
-    .filter(model.Energy.sid == model.Structure.sid, model.Energy.sid == model.Struct_ratios.sid, model.Energy.sid == model.Electrons.sid, model.Structure.final == True, model.Electrons.is_direct != 0, 0 < model.Electrons.gap, model.Electrons.gap < 15) \
+    .filter(model.Energy.id == model.Structure.id, model.Energy.id == model.Struct_ratios.id, model.Energy.id == model.Electrons.id, model.Structure.final == True, model.Electrons.is_direct != 0, 0 < model.Electrons.gap, model.Electrons.gap < 15) \
     .group_by(model.Struct_ratios.chemical_formula) \
     .order_by(model.Electrons.gap) \
     .all():

@@ -37,8 +37,8 @@ data, ref = [], []
 i, collected = 0, []
 
 for n, s, e, r in session.query(func.distinct(model.Atom.number), model.Structure, model.Electrons, model.Struct_ratios) \
-    .filter(model.Structure.id == model.Atom.struct_id, model.Electrons.sid == model.Structure.sid, model.Electrons.sid == model.Struct_ratios.sid, model.Structure.final == True, model.Struct_ratios.nelem == 2, model.Electrons.is_direct != 0, 0 < model.Electrons.gap, model.Electrons.gap < 15) \
-    .order_by(model.Structure.sid) \
+    .filter(model.Structure.id == model.Atom.struct_id, model.Electrons.id == model.Structure.id, model.Electrons.id == model.Struct_ratios.id, model.Structure.final == True, model.Struct_ratios.nelem == 2, model.Electrons.is_direct != 0, 0 < model.Electrons.gap, model.Electrons.gap < 15) \
+    .order_by(model.Structure.id) \
     .all():
     i += 1
     el = Element(chemical_symbols[n])
