@@ -1,6 +1,6 @@
 /**
 *
-* Tilde project: GUI
+* DB GUI
 * v190514
 *
 */
@@ -102,7 +102,7 @@ function bindTree(elem, resourse_type){
 
 // UTILITIES
 function __send(act, req, nojson){
-    if (_tilde.debug_regime) logger('REQUESTED: '+act);
+    if (_tilde.debug_regime) logger('REQUESTED: '+act); // invalid for login TODO
     if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
     if (!nojson) req ? req = JSON.stringify(req) : req = '';
     $('#loadbox').show();
@@ -440,8 +440,10 @@ function resp__login(req, data){
     });
 
     // display DB type
-    if (_tilde.settings.db.type == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
-    else if (_tilde.settings.db.type == 'postgres') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
+    if (!_tilde.demo_regime){
+        if (_tilde.settings.db.engine == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
+        else if (_tilde.settings.db.engine == 'postgresql') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
+    }
 
     for (var attrname in data.settings.db){
         if (attrname == 'type') continue;
@@ -1039,106 +1041,90 @@ $(document).ready(function(){
 
         switch_menus();
 
-        if (anchors[0].substr(anchors[0].length-3) == '.db'){
-            // db changed?
-            if (anchors[0] != _tilde.settings.dbs[0]){
-                $('#splashscreen').empty();
-                __send('settings',  {area: 'switching', switching: anchors[0]} );
-            }
-            $('div.pane').hide();
+        // db changed?
+        if (anchors[0] != _tilde.settings.dbs[0]){
+            $('#splashscreen').empty();
+            __send('settings',  {area: 'switching', switching: anchors[0]} );
+        }
+        $('div.pane').hide();
+        $('#initbox').hide();
 
-            if (!anchors[1]){
+        if (anchors[1]){
+            
+            $('#connectors').hide();
+            $('#splashscreen_holder').hide();
+            $('#data_holder').show();
+            $('#databrowser').show();
+            $('#tagcloud_trigger').show();
+            $('#noclass_trigger').show();
 
-                // MAIN TAGS SCREEN
+            if (anchors[1] == 'browse'){
 
-                $('#databrowser').hide();
-                $('div.downscreen').hide();
-                $('#initbox').hide();
-                $('#countbox').hide();
-                $('#tagcloud_trigger').hide();
+                // TABLE SCREEN
+
                 $('#closeobj_trigger').hide();
-                $('#noclass_trigger').hide();
-
-                if (!$('#splashscreen_holder > #splashscreen').length || $('#splashscreen_holder > #splashscreen').is(':empty')){
-                    _tilde.timeout2 = setInterval(function(){
-                    if (!_tilde.freeze){
-                        __send('tags', {tids: false});
-                        clearInterval(_tilde.timeout2);
-                    }
-                    }, 500);
-                } else {
-                    $('#data_holder').show();
-                    $('#splashscreen_holder').show();
-                    if ($('a.activetag').length) $('#initbox').show();
-                    add_tag_expanders();
-                }
-
-                _tilde.rendered = {}; // reset objects
-                _tilde.tab_buffer = [];
-                $('tr.obj_holder').remove();
-                $('#data_holder').show();
-
+                if ($('#splashscreen').is(':empty')) document.location.hash = '#' + anchors[0];
+                _tilde.sortdisable = false; // sorting switch
             } else {
 
-                $('#connectors').hide();
-                $('#splashscreen_holder').hide();
-                $('#initbox').hide();
+                // HASH (+WINDOW) SCREEN
 
-                $('#data_holder').show();
-                $('#databrowser').show();
-                $('#tagcloud_trigger').show();
-                $('#noclass_trigger').show();
+                var hashes = anchors[1].split('+');
 
-                if (anchors[1] == 'browse'){
-
-                    // TABLE SCREEN
-
-                    $('#closeobj_trigger').hide();
-                    if ($('#splashscreen').is(':empty')) document.location.hash = '#' + anchors[0];
-                    _tilde.sortdisable = false; // sorting switch
+                if ($('#databrowser').is(':empty')){
+                    _tilde.timeout3 = setInterval(function(){
+                        if (!_tilde.freeze){
+                            __send('browse', {hashes: hashes} );
+                            clearInterval(_tilde.timeout3);
+                        }
+                    }, 500);
                 } else {
-
-                    // HASH (+WINDOW) SCREEN
-
-                    var hashes = anchors[1].split('+');
-
-                    if ($('#databrowser').is(':empty')){
-                        _tilde.timeout3 = setInterval(function(){
-                            if (!_tilde.freeze){
-                                __send('browse', {hashes: hashes} );
-                                clearInterval(_tilde.timeout3);
-                            }
-                        }, 500);
-                    } else {
-                        clean_plots();
-                        $.each(hashes, function(n, i){
-                            if (!_tilde.rendered[i] && i.length == 56) {
-                                var target_cell = $('#i_'+i);
-                                if (!target_cell.length) return false; // this is a crunch, in principle, a history dispatcher is needed : TODO
-                                var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
-                                target_cell.after(obf);
-                                __send('summary',  {datahash: i} )
-                                open_ipane('summary', i);
-                                _tilde.rendered[i] = true;
-                                window.scrollBy(0, 60);
-                            }
-                        });
-                    }
-                    _tilde.sortdisable = true; // sorting switch
+                    clean_plots();
+                    $.each(hashes, function(n, i){
+                        if (!_tilde.rendered[i] && i.length == 56) {
+                            var target_cell = $('#i_'+i);
+                            if (!target_cell.length) return false; // this is a crunch, in principle, a history dispatcher is needed : TODO
+                            var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
+                            target_cell.after(obf);
+                            __send('summary',  {datahash: i} )
+                            open_ipane('summary', i);
+                            _tilde.rendered[i] = true;
+                            window.scrollBy(0, 60);
+                        }
+                    });
                 }
+                _tilde.sortdisable = true; // sorting switch
             }
 
-        } else if (anchors[0] == 'about'){
-
-            // ABOUT SCREEN
-
-            $('div.pane').hide();
-            $('#landing_holder').show();
-            $("#tilde_logo").animate({ marginTop: '40px' }, { duration: 250, queue: false });
-            $("#mainframe").animate({ height: 'show' }, { duration: 250, queue: false });
         } else {
-            logger('ERROR 404');
-            document.location.hash = '#' + _tilde.settings.dbs[0];
+
+            // MAIN TAGS SCREEN
+
+            $('#databrowser').hide();
+            $('div.downscreen').hide();
+            $('#countbox').hide();
+            $('#tagcloud_trigger').hide();
+            $('#closeobj_trigger').hide();
+            $('#noclass_trigger').hide();
+
+            if (!$('#splashscreen_holder > #splashscreen').length || $('#splashscreen_holder > #splashscreen').is(':empty')){
+                _tilde.timeout2 = setInterval(function(){
+                if (!_tilde.freeze){
+                    __send('tags', {tids: false});
+                    clearInterval(_tilde.timeout2);
+                }
+                }, 500);
+            } else {
+                $('#data_holder').show();
+                $('#splashscreen_holder').show();
+                if ($('a.activetag').length) $('#initbox').show();
+                add_tag_expanders();
+            }
+
+            _tilde.rendered = {}; // reset objects
+            _tilde.tab_buffer = [];
+            $('tr.obj_holder').remove();
+            $('#data_holder').show();
         }
     }
     }, 333);
@@ -1701,9 +1687,9 @@ $(document).ready(function(){
             _tilde.settings.demo_regime = $('#settings_demo').is(':checked');
             _tilde.settings.webport = $('#settings_webport').val();
 
-            if ($('#settings_db_type_sqlite').is(':checked')) _tilde.settings.db.type = 'sqlite';
+            if ($('#settings_db_type_sqlite').is(':checked')) _tilde.settings.db.engine = 'sqlite';
             else if ($('#settings_db_type_postgres').is(':checked')){
-                _tilde.settings.db.type = 'postgres';
+                _tilde.settings.db.engine = 'postgresql';
                 _tilde.settings.db.host = $('#settings_postgres_host').val();
                 _tilde.settings.db.user = $('#settings_postgres_user').val();
                 _tilde.settings.db.port = $('#settings_postgres_port').val();

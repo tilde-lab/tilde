@@ -1,5 +1,4 @@
 #!/bin/bash
-# Tilde project: entry point for Unix (MacOS) environment
-# See http://tilde.pro
+# Entry point for Unix (MacOS) environment
 
 /usr/bin/env python $(dirname $0)/core/cli.py "$@"

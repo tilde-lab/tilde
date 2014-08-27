@@ -69,9 +69,10 @@ class Request_Handler:
 
         # settings of specified scope
         data['settings'] = { 'avcols': avcols, 'dbs': [DEFAULT_DBTITLE] + filter(lambda x: x != DEFAULT_DBTITLE, DB_pool.keys()) }
-        for i in ['exportability', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport', 'db']:
+        for i in ['exportability', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport']:
             if i in settings: data['settings'][i] = settings[i]
-
+        
+        if not settings['demo_regime']: data['settings']['db'] = settings['db']
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
 
         data = json.dumps(data)
@@ -118,9 +119,9 @@ class Request_Handler:
             data_clause = []
             for i in DB_pool[ Users[session_id].cur_db ].query(model.Calculation.checksum) \
                 .join(model.Calculation.uitopics) \
-                .filter(model.uiTopic.id.in_(tids)) \
+                .filter(model.uiTopic.tid.in_(tids)) \
                 .group_by(model.Calculation.checksum) \
-                .having(func.count(model.uiTopic.id) == len(tids)) \
+                .having(func.count(model.uiTopic.tid) == len(tids)) \
                 .all():
                 data_clause += list(i)
             rlen = len(data_clause)
@@ -154,8 +155,8 @@ class Request_Handler:
         data += '</thead>'
         data += '<tbody>'
 
-        for row, checksum in DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info, model.Simulation.checksum) \
-            .filter(model.uiGrid.sid == model.Calculation.id, model.Simulation.checksum.in_(data_clause)) \
+        for row, checksum in DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info, model.Calculation.checksum) \
+            .filter(model.uiGrid.id == model.Calculation.id, model.Calculation.checksum.in_(data_clause)) \
             .all():
 
             rescount += 1
@@ -189,7 +190,7 @@ class Request_Handler:
         else: tids = userobj['tids']
 
         if not tids:
-            for tid, cid, topic in DB_pool[ Users[session_id].cur_db ].query(model.uiTopic.id, model.uiTopic.cid, model.uiTopic.topic).all():
+            for tid, cid, topic in DB_pool[ Users[session_id].cur_db ].query(model.uiTopic.tid, model.uiTopic.cid, model.uiTopic.topic).all():
                 # TODO assure there are checksums on such tid!!!
 
                 try: match = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
@@ -218,8 +219,7 @@ class Request_Handler:
                 params["param" + str(n)] = list_item
                 n += 1
             current_engine = DB_pool[ Users[session_id].cur_db ].get_bind()
-            #q = text('SELECT cid, topic FROM topics WHERE id IN (SELECT DISTINCT t1.topics_id FROM tags t1, tags t2 WHERE t1.simulations_id = t2.simulations_id AND t2.topics_id IN (:' + ",:".join(params.keys()) + '))')
-            q = text('SELECT DISTINCT t1.topics_id FROM tags t1, tags t2 WHERE t1.simulations_id = t2.simulations_id AND t2.topics_id IN (:' + ",:".join(params.keys()) + ')')
+            q = text('SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid IN (:' + ",:".join(params.keys()) + ')') # TODO BUG!!!
             for i in current_engine.execute(q, **params).fetchall():
                 tags += list(i)
         data = json.dumps(tags)
