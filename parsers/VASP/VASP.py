@@ -124,7 +124,8 @@ class Kpoints():
                      Kpoints.supported_modes.Monkhorst) and len(kpts) > 1:
             raise ValueError("For fully automatic or automatic gamma or monk kpoints, only a single line for the number of divisions is allowed.")
 
-        self.comment = comment
+        #self.comment = comment
+        
         self.num_kpts = num_kpts
         self.style = style
         self.coord_type = coord_type
@@ -183,7 +184,6 @@ class Kpoints():
 
     def __str__(self):
         lines = []
-        lines.append(self.comment)
         lines.append(str(self.num_kpts))
         lines.append(self.style)
         style = self.style.lower()[0]
@@ -323,7 +323,7 @@ class XML_Output(Output):
                 "dynmat", "finished"]:
             setattr(self, k, getattr(self._handler, k))
         
-        try: self.energy = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
+        try: self.info['energy'] = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
         except KeyError: pass # for unphysical cases
         
         self.info['framework'] = 'VASP'
@@ -334,7 +334,8 @@ class XML_Output(Output):
         # basis sets
         self.potcar_sequence = [s.split()[1] for s in self.potcar_symbols]
         self.potcar_sequence = [s.split("_")[0].encode('ascii') for s in self.potcar_sequence]
-
+        
+        self.electrons['basis_set'] = {'ps': {}}
         for n, s in enumerate(self.potcar_sequence):
             self.electrons['basis_set']['ps'].update( {s: self.potcar_symbols[n].encode('ascii')} )
 
@@ -351,6 +352,8 @@ class XML_Output(Output):
                 self.phonons['dfp_magnitude'] = 0.02 # Standard phonon displacement in VASP for DFP method
         
         # electronic properties
+        self.electrons['type'] = 'PP_PW'
+        
         if self.e_last is None:
             self.warning('Electronic properties are not found!')
         else:            

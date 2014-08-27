@@ -24,7 +24,7 @@ def list(path, root):
         output += viewer_wrap(i, path, 'FILE')
     return (output, error)
 
-def report(path, root, analyzer_obj):
+def report(analyzer_obj, sess_ctx, path, root):
     checksum, error = None, None
     try: calc, error = analyzer_obj.parse(root + path)
     except (OSError, IOError):
@@ -32,6 +32,7 @@ def report(path, root, analyzer_obj):
     if not error:
         calc, error = analyzer_obj.classify(calc)
         if not error:
-            checksum, error = analyzer_obj.save(calc)
+            calc = analyzer_obj.postprocess(calc)
+            checksum, error = analyzer_obj.save(calc, sess_ctx)
         del calc
     return (checksum, error)

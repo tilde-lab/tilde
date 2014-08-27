@@ -6,6 +6,7 @@
 
 import os, sys
 
+
 class ElectronStructureError(Exception):
     def __init__(self, value):
         self.value = value
@@ -46,16 +47,16 @@ class Edos():
         self.properties = {}
         for key in obj.keys():
             if key not in ['x', 'total']: self.properties[key] = obj[key]
-    
+
     def get_bandgap(self):
         dim = len(self.abscissa)
         for n in range(1, dim):
             if self.abscissa[n] > 0:
                 if self.alldos[n] > 0: return 0.0
-                k, t = n, n
+                k, t = n, n                
                 while self.alldos[k] == 0:
                     k += 1                  
-                    if k > dim: raise ElectronStructureError("Unexpected data in band structure: only one eigenvalue found!")
+                    if k > dim-1: raise ElectronStructureError("Unexpected data in band structure: no values above zero found!")
                 while self.alldos[t] == 0:
                     t -= 1                  
                     if t==0: raise ElectronStructureError("Unexpected data in band structure: not enough eigenvalues to determine the band gap!")

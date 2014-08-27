@@ -42,11 +42,12 @@ Other known similar projects are collected below (in an alphabetic order):
 - Accelrys Pipeline Pilot and Materials Studio, http://accelrys.com/products
 - ADMIRAL framework: Advanced Data-Mining for Improved Research And Learning, Trinity College, Dublin
 - AFLOW framework and Aflowlib.org repository, http://www.aflowlib.org
-- AIDA: Automated Infrastructure and Database for Ab-initio design, Bosch LLC, http://www.cecam.org/workshop-4-717.html?presentation_id=9102
+- AiiDA: Automated Infrastructure and Database for Ab-initio design, Bosch LLC, http://aiida.net
 - Blue Obelisk Data Repository (XSLT, XML), http://bodr.sourceforge.net
 - Catapp, http://www.slac.stanford.edu/~strabo/catapp
 - CCLib (Python), http://cclib.sf.net
 - CDF (Python), http://kitchingroup.cheme.cmu.edu/cdf
+- CEPDB: Harvard Clean Energy Project and distributed volunteer computing, http://cepdb.molecularspace.org
 - CMR (Python), https://wiki.fysik.dtu.dk/cmr
 - Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
 - cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net

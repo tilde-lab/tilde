@@ -116,7 +116,7 @@ class CRYSTOUT(Output):
                 self.pdata = raw_data[ parts_pointer[0]: ]
                 self.properties_calc = True
 
-        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format is similar to CRYSTAL format, it is unknown!' )
+        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format looks similar to CRYSTAL format, it is unknown!' )
 
         if self.crystal_calc:
             self.info['duration'] = self.get_duration()
@@ -126,11 +126,12 @@ class CRYSTOUT(Output):
             self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
             self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
 
-            self.energy = self.get_etot()
+            self.info['energy'] = self.get_etot()
             self.structures = self.get_structures()
             
             self.set_charges()
             
+            self.electrons['type'] = 'LCAO'
             self.electrons['basis_set'] = self.get_bs()
 
             self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
@@ -344,7 +345,7 @@ class CRYSTOUT(Output):
                 phonon_e = phonon_e.split()[0]
                 return float(phonon_e) * Hartree
             else:
-                self.warning( 'No energy in CRYSTAL output!' )
+                self.warning( 'No energy found!' )
                 return None
 
     '''def get_etot_props(self):
@@ -1000,6 +1001,8 @@ class CRYSTOUT(Output):
 
         if '\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ' in self.data:
             f = float( self.data.split('\n FERMI SMEARING - TEMPERATURE SMEARING OF FERMI SURFACE ', 1)[-1].split("\n", 1)[0] )
+            self.info['smear'] = f
+            self.info['smeartype'] = 'Mermin'
             if       0<f<=0.005:self.info['techs'].append('smearing<0.005au')
             elif 0.005<f<=0.01: self.info['techs'].append('smearing 0.005-0.01au')
             elif  0.01<f:       self.info['techs'].append('smearing>0.01au')

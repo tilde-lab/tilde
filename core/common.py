@@ -9,12 +9,8 @@ import json
 from numpy import dot, array, matrix
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
-
-from deps.ase.atoms import Atoms
-
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
-
-from spacegroup.cell import cell_to_cellpar
+from ase.atoms import Atoms
+from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 
 class ModuleError(Exception): # not working! TODO
@@ -103,7 +99,8 @@ def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     cif_data += "_symmetry_space_group_name_H-M 'P1'" + "\n"
     cif_data += 'loop_' + "\n"
     cif_data += '_symmetry_equiv_pos_as_xyz' + "\n"
-    for i in symops: cif_data += i + "\n"
+    for i in symops:
+        cif_data += i + "\n"
     cif_data += 'loop_' + "\n"
     cif_data += '_atom_site_type_symbol' + "\n"
     cif_data += '_atom_site_fract_x' + "\n"

@@ -18,6 +18,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 from core.common import ModuleError, ase2dict
 from core.constants import Perovskite_Structure
+from core.symmetry import SymmetryFinder
 
 
 class Tilting():
@@ -49,20 +50,21 @@ class Tilting():
 
     def __init__(self, tilde_calc):
         self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles
-        self.angles = {}         # rounded, uniquified, one-plane angles
+        self.angles = {}         # rounded, uniquified, one-plane angles        
         
-        if not 'refinedcell' in tilde_calc.info: raise ModuleError("Cell must be refined (refinedcell classifier) in advance!")
-        
-        bulk = tilde_calc.info['refinedcell']        
-        
+        symm = SymmetryFinder()
+        symm.refine_cell(tilde_calc)
+        if symm.error:
+            raise ModuleError("Cell refinement error: %s" % symm.error)
+
         # check if the longest axis is Z, rotate otherwise
-        lengths = map(norm, bulk.cell)
+        lengths = map(norm, symm.refinedcell.cell)
         if not (lengths[2] - lengths[0] > 1E-6 and lengths[2] - lengths[1] > 1E-6):
             axnames = {0: 'x', 1: 'y'}
             principal_ax = axnames[ lengths.index(max(lengths[0], lengths[1])) ]
-            bulk.rotate(principal_ax, 'z', rotate_cell = True)
+            symm.refinedcell.rotate(principal_ax, 'z', rotate_cell = True)
                 
-        self.virtual_atoms = bulk.copy()
+        self.virtual_atoms = symm.refinedcell.copy()
         
         #f = open('tilting.xyz', 'w')
         #f.write(generate_xyz(self.virtual_atoms))
@@ -71,13 +73,13 @@ class Tilting():
         # translate atoms around octahedra in all directions
         shift_dirs = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (1, 1, 0), (1, -1, 0), (-1, -1, 0), (-1, 1, 0), (0, 0, 1), (0, 0, -1)]
         
-        for k, i in enumerate(bulk):
+        for k, i in enumerate(symm.refinedcell):
             if i.symbol in Perovskite_Structure.C:
                 for dir in shift_dirs:
-                    self.translate(k, bulk.cell, dir, self.virtual_atoms)
+                    self.translate(k, symm.refinedcell.cell, dir, self.virtual_atoms)
 
         # extract octahedra and their main tilting planes
-        for octahedron in self.get_octahedra(bulk, bulk.periodicity):
+        for octahedron in self.get_octahedra(symm.refinedcell, symm.refinedcell.periodicity):
             #print 'octahedron:', octahedron[0]+1 #, self.virtual_atoms[octahedron[0]].symbol, self.virtual_atoms[octahedron[0]].x, self.virtual_atoms[octahedron[0]].y, self.virtual_atoms[octahedron[0]].z          
             #print 'corners:', [i+1 for i in octahedron[1]]
             

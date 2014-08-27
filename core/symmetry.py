@@ -9,11 +9,10 @@ from numpy import array
 from numpy import zeros
 from numpy.linalg import det
 
-# this is done to have all third-party code in deps folder
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps/ase/lattice'))
-
+sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 from ase.atoms import Atoms
-from spacegroup.cell import cell_to_cellpar
+from ase.lattice.spacegroup.cell import cell_to_cellpar
+
 
 # Dirty hack to provide cross-platform compatibility
 try:

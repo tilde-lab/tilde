@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://xml.exciting-code.org/excitinginput.xsd">
   <title>Test Co8Sb24</title>
-  <structure speciespath="/users/sol/eb/software/RC3/species/" autormt="false">
+  <structure speciespath="." autormt="false">
     <crystal>
       <basevect>17.08312266212961 0.00000000000000 0.00000000000000</basevect>
       <basevect>0.00000000000000 17.08312266212961 0.00000000000000</basevect>
