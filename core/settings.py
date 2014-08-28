@@ -22,7 +22,6 @@ from xml.etree import ElementTree as ET
 SETTINGS_FILE = 'settings.json'
 HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/gui_entities.xml')
 DEFAULT_SQLITE_DB = 'default.db'
-DEFAULT_POSTGRES_DB = 'tilde_master'
 DATA_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../data')
 EXAMPLE_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../tests/examples')
 MAX_CONCURRENT_DBS = 1

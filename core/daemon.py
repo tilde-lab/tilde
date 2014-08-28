@@ -30,7 +30,7 @@ from plotter import bdplotter, eplotter
 
 
 DELIM = '~#~#~'
-CURRENT_TITLE = settings['title'] if settings['title'] else 'Tilde ' + API.version
+CURRENT_TITLE = settings['title'] if settings['title'] else 'API version ' + API.version
 E_LOWER_DEFAULT = -7.0
 E_UPPER_DEFAULT = 7.0
 DEFAULT_DBTITLE = settings['default_sqlite_db'] if settings['db']['engine'] == 'sqlite' else settings['db']['dbname']
