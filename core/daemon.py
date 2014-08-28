@@ -183,9 +183,7 @@ class Request_Handler:
 
     @staticmethod
     def tags(userobj, session_id):
-        data, error = None, None
         tags = []
-
         if not 'tids' in userobj: tids = None # json may contain nulls, standardize them
         else: tids = userobj['tids']
 
@@ -194,7 +192,7 @@ class Request_Handler:
                 # TODO assure there are checksums on such tid!!!
 
                 try: match = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
-                except IndexError: return (data, 'Schema and data do not match: different versions of code and database?')
+                except IndexError: return (None, 'Schema and data do not match: different versions of code and database?')
 
                 if not 'has_label' in match or not match['has_label']: continue
 
@@ -219,11 +217,11 @@ class Request_Handler:
                 params["param" + str(n)] = list_item
                 n += 1
             current_engine = DB_pool[ Users[session_id].cur_db ].get_bind()
-            q = text('SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid IN (:' + ",:".join(params.keys()) + ')') # TODO BUG!!!
+            q = text( 'SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid = :' + " INTERSECT SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid = :".join(params.keys()) ) # TODO optimize and use ORM
             for i in current_engine.execute(q, **params).fetchall():
                 tags += list(i)
-        data = json.dumps(tags)
-        return (data, error)
+                
+        return (json.dumps(tags), None)
 
     '''@staticmethod
     def phonons(userobj, session_id):
