@@ -1,5 +1,5 @@
 
-# *includable* Tilde routines
+# includable routines
 
 import os
 import sys
@@ -59,32 +59,6 @@ def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
     nontext = bytes.translate(''.join(map(chr, range(256))), ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))) # all bytes and text bytes
     return bool(nontext)
-    
-def ase2dict(ase_obj):
-    return {
-    'symbols': ase_obj.get_chemical_symbols(),
-    'cell': ase_obj.cell.tolist(),
-    'atoms': ase_obj.positions.tolist(),
-    'dims': ase_obj.dims,
-    'periodicity': int(ase_obj.periodicity),
-    'info': ase_obj.info,
-    'charges': ase_obj.get_initial_charges().tolist(),
-    'magmoms': ase_obj.get_initial_magnetic_moments().tolist()
-    }
-    
-def dict2ase(ase_dict):
-    ase_obj = Atoms( \
-        symbols=map(lambda x: x.encode('ascii'), ase_dict['symbols']),
-        cell=ase_dict['cell'], 
-        positions=ase_dict['atoms'],
-        pbc=ase_dict['periodicity'], 
-        info=ase_dict['info'],
-        magmoms=ase_dict['magmoms'],
-        charges=ase_dict['charges']
-    )
-    ase_obj.dims = ase_dict['dims']
-    ase_obj.periodicity = ase_dict['periodicity']
-    return ase_obj
         
 def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     parameters = cell_to_cellpar(structure.cell)    

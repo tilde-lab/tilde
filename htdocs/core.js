@@ -1,53 +1,47 @@
 /**
 *
 * DB GUI
-* v190514
-*
-*/
-/**
-*
-*
-* ============================================================================================================================================================================================================
+* v280814
 *
 */
 // common flags, settings and object for their storage
-var _tilde = {};
-_tilde.debug_regime = false; // major debugging switch
-_tilde.demo_regime = false;
-_tilde.degradation = false;
-_tilde.hashes = [];
-_tilde.rendered = {}; // datahash : bool, ...
-_tilde.tab_buffer = []; // tab_name, ...
-_tilde.last_request = false; // todo: request history dispatcher
-_tilde.last_browse_request = false; // todo: request history dispatcher
-_tilde.socket = null;
-_tilde.freeze = false;
-_tilde.wsock_delim = '~#~#~';
-_tilde.cur_anchor = false;
-_tilde.multireceive = 0;
-_tilde.filetree = {};
-_tilde.filetree.transports = [];
-_tilde.filetree.root = '';
-_tilde.filetree.load_msg = 'Requesting directory listing...';
-_tilde.busy_msg = 'Program core is now busy serving your request. Please, wait a bit and try again.';
-_tilde.cwidth = 0;
-_tilde.cinterval = null;
-_tilde.connattempts = 0;
-_tilde.maxconnattempts = 5;
-_tilde.plots = [];
-_tilde.last_chkbox = null;
+var _gui = {};
+_gui.debug_regime = false; // major debugging switch
+_gui.demo_regime = false;
+_gui.degradation = false;
+_gui.hashes = [];
+_gui.rendered = {}; // datahash : bool, ...
+_gui.tab_buffer = []; // tab_name, ...
+_gui.last_request = false; // todo: request history dispatcher
+_gui.last_browse_request = false; // todo: request history dispatcher
+_gui.socket = null;
+_gui.freeze = false;
+_gui.wsock_delim = '~#~#~';
+_gui.cur_anchor = false;
+_gui.multireceive = 0;
+_gui.filetree = {};
+_gui.filetree.transports = [];
+_gui.filetree.root = '';
+_gui.filetree.load_msg = 'Requesting directory listing...';
+_gui.busy_msg = 'Program core is now busy serving your request. Please, wait a bit and try again.';
+_gui.cwidth = 0;
+_gui.cinterval = null;
+_gui.connattempts = 0;
+_gui.maxconnattempts = 5;
+_gui.plots = [];
+_gui.last_chkbox = null;
 
 // units
-_tilde.units = {
+_gui.units = {
     'energy': {'au':0.03674932601, 'eV':1, 'Ry':0.07349861206},
     'phonons': {'cm<sup>-1</sup>':1, 'THz':0.029979}
 };
-_tilde.unit_capts = {'energy':'Energy', 'phonons':'Phonon frequencies'};
-_tilde.default_settings = {};
-_tilde.default_settings.units = {'energy':'eV', 'phonons':'cm<sup>-1</sup>'};
-_tilde.default_settings.cols = [1, 1002, 7, 25, 17, 9, 10, 12, 22]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
-_tilde.default_settings.colnum = 100;
-_tilde.default_settings.objects_expand = true;
+_gui.unit_capts = {'energy':'Energy', 'phonons':'Phonon frequencies'};
+_gui.default_settings = {};
+_gui.default_settings.units = {'energy':'eV', 'phonons':'cm<sup>-1</sup>'};
+_gui.default_settings.cols = [1, 1002, 7, 25, 17, 9, 10, 12, 22]; // these are cid's of hierarchy API (cid>1000 means specially defined column)
+_gui.default_settings.colnum = 100;
+_gui.default_settings.objects_expand = true;
 
 // IE indexOf()
 if (!Array.prototype.indexOf){
@@ -102,19 +96,19 @@ function bindTree(elem, resourse_type){
 
 // UTILITIES
 function __send(act, req, nojson){
-    if (_tilde.debug_regime) logger('REQUESTED: '+act); // invalid for login TODO
-    if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
+    if (_gui.debug_regime) logger('REQUESTED: '+act); // invalid for login TODO
+    if (_gui.freeze){ notify(_gui.busy_msg); return; }
     if (!nojson) req ? req = JSON.stringify(req) : req = '';
     $('#loadbox').show();
-    _tilde.freeze = true;
+    _gui.freeze = true;
 
     // beware heavy and recursive requests!
-    if ($.inArray(act, ["report", "restart", "clean", "login"])) _tilde.last_request = false; // todo: request history dispatcher
-    else _tilde.last_request = act + _tilde.wsock_delim + req; // todo: request history dispatcher
+    if ($.inArray(act, ["report", "restart", "clean", "login"])) _gui.last_request = false; // todo: request history dispatcher
+    else _gui.last_request = act + _gui.wsock_delim + req; // todo: request history dispatcher
 
-    if (act == 'browse') _tilde.last_browse_request = req; // todo: request history dispatcher
+    if (act == 'browse') _gui.last_browse_request = req; // todo: request history dispatcher
 
-    try{ _tilde.socket.send( act + _tilde.wsock_delim + req ) }
+    try{ _gui.socket.send( act + _gui.wsock_delim + req ) }
     catch(ex){ logger('AN ERROR WHILE SENDING DATA HAS OCCURED: '+ex) }
 }
 
@@ -130,14 +124,14 @@ function set_console(show){
 }
 
 function set_dbs(){
-    $('#metablock').html( '<span class="link white">' + _tilde.settings.dbs[0] + '</span>' );
+    $('#metablock').html( '<span class="link white">' + _gui.settings.dbs[0] + '</span>' );
 
-    var title = 'Current DB: ' + _tilde.settings.dbs[0];
-    if (!!_tilde.settings.dbs.length && _tilde.settings.dbs.length > 1) title += ' (<span class=link>' + (_tilde.settings.dbs.length - 1) + ' more</span>)';
+    var title = 'Current DB: ' + _gui.settings.dbs[0];
+    if (!!_gui.settings.dbs.length && _gui.settings.dbs.length > 1) title += ' (<span class=link>' + (_gui.settings.dbs.length - 1) + ' more</span>)';
     $('h1').html( title );
 
     var options = '<option value="0" selected="selected">copy to ...</option>';
-    $.each(_tilde.settings.dbs, function(n, item){
+    $.each(_gui.settings.dbs, function(n, item){
         if (n==0) return true;
         options += '<option value="' + item + '">copy to ' + item + '</option>';
     });
@@ -153,7 +147,7 @@ function open_ipane(cmd, target){
     current.css('border-bottom-color', '#fff').parent().parent().children( 'div.ipane' ).hide();
     current.parent().parent().find( 'div[rel='+cmd+']' ).show();
 
-    if (_tilde.tab_buffer.indexOf(target+'_'+cmd) != -1) return;
+    if (_gui.tab_buffer.indexOf(target+'_'+cmd) != -1) return;
 
     switch(cmd){
         case 'ph_dos':
@@ -168,7 +162,7 @@ function open_ipane(cmd, target){
             __send('phonons',  {datahash: target} );
             break;
     }
-    _tilde.tab_buffer.push(target+'_'+cmd);
+    _gui.tab_buffer.push(target+'_'+cmd);
 }
 
 function redraw_vib_links( text2link, target ){
@@ -190,8 +184,8 @@ function redraw_vib_links( text2link, target ){
 }
 
 function close_obj_tab(tab_id){
-    if (delete _tilde.rendered[tab_id] && $('#i_'+tab_id).next('tr').hasClass('obj_holder')) $('#i_'+tab_id).next('tr').remove();
-    _tilde.tab_buffer = $.grep(_tilde.tab_buffer, function(val, index){
+    if (delete _gui.rendered[tab_id] && $('#i_'+tab_id).next('tr').hasClass('obj_holder')) $('#i_'+tab_id).next('tr').remove();
+    _gui.tab_buffer = $.grep(_gui.tab_buffer, function(val, index){
         if (val.indexOf(tab_id) == -1) return true;
     });
 }
@@ -220,7 +214,7 @@ function e_plotter(req, plot, divclass, ordinate){
 
     $.plot(target, plot, options);
     $(target).bind("plotclick", function(event, pos, item){
-        if (item) document.getElementById('f_'+req.datahash).contentWindow.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.datahash + '/' + item.dataIndex;
+        if (item) document.getElementById('f_'+req.datahash).contentWindow.location.hash = '#' + _gui.settings.dbs[0] + '/' + req.datahash + '/' + item.dataIndex;
     });
 
     target.append('<div style="position:absolute;z-index:4;width:200px;left:40%;bottom:0;text-align:center;font-size:1.5em;background:#fff;">Step</div>&nbsp;');
@@ -347,9 +341,9 @@ function remdublicates(arr){
 
 function gather_plots_data(){
     var data = [], ids = [];
-    for (var j=0; j < _tilde.plots.length; j++){
+    for (var j=0; j < _gui.plots.length; j++){
         data.push([]);
-        $('#databrowser td[rel='+_tilde.plots[j]+']').each(function(index){
+        $('#databrowser td[rel='+_gui.plots[j]+']').each(function(index){
             var t = $(this).text();
             if (t.indexOf('x') != -1){
                 // special case of k-points
@@ -384,11 +378,11 @@ function gather_plots_data(){
 }
 
 function clean_plots(){
-    $.each(_tilde.plots, function(n, i){
+    $.each(_gui.plots, function(n, i){
         $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').removeClass('shared');
         $('#databrowser th[rel='+i+']').children('input').prop('checked', false);
     });
-    _tilde.plots = [];
+    _gui.plots = [];
 }
 /**
 *
@@ -399,20 +393,20 @@ function clean_plots(){
 // RESPONSE FUNCTIONS
 function resp__login(req, data){
 
-    if (_tilde.last_request){ // something was not completed in a production mode
-        var action = _tilde.last_request.split( _tilde.wsock_delim );
+    if (_gui.last_request){ // something was not completed in a production mode
+        var action = _gui.last_request.split( _gui.wsock_delim );
         __send(action[0], action[1], true);
     }
     data = JSON.parse(data);
 
     if (data.debug_regime){
-        _tilde.debug_regime = true;
+        _gui.debug_regime = true;
         $('#settings_debug').prop('checked', true);
     } else $('#settings_debug').prop('checked', false);
 
-    if (_tilde.debug_regime) logger("RECEIVED SETTINGS: " + JSON.stringify(data.settings));
-    for (var attrname in data.settings){ _tilde.settings[attrname] = data.settings[attrname] }
-    //if (_tilde.debug_regime) logger("FINAL SETTINGS: " + JSON.stringify(_tilde.settings));
+    if (_gui.debug_regime) logger("RECEIVED SETTINGS: " + JSON.stringify(data.settings));
+    for (var attrname in data.settings){ _gui.settings[attrname] = data.settings[attrname] }
+    //if (_gui.debug_regime) logger("FINAL SETTINGS: " + JSON.stringify(_gui.settings));
 
     // general switches (and settings)
     $('#version').text(data.version);
@@ -420,11 +414,11 @@ function resp__login(req, data){
     $('#settings_title').val(data.title);
 
     if (data.demo_regime){
-        _tilde.demo_regime = true;
+        _gui.demo_regime = true;
         $('.protected').hide();
         if (data.custom_about_link){
             $('#custom_about_link_trigger').show();
-            _tilde.custom_about_link = data.custom_about_link;
+            _gui.custom_about_link = data.custom_about_link;
         }
     }
     $('#settings_webport').val(data.settings.webport);
@@ -432,17 +426,17 @@ function resp__login(req, data){
     // display DBs
     set_dbs();
     var dbs_str = '', btns = '';
-    if (!_tilde.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
+    if (!_gui.demo_regime) btns += '<div class="btn btn3 right db-delete-trigger">delete</div>';
 
-    $.each(_tilde.settings.dbs, function(n, item){
+    $.each(_gui.settings.dbs, function(n, item){
         if (n == 0) dbs_str += '<div rel=' + item + ' class="ipane_db_field ipane_db_field_active"><span>' + item + '</span></div>';
         else dbs_str += '<div rel=' + item + ' class="ipane_db_field"><span>' + item + '</span>' + btns + '</div>';
     });
 
     // display DB type
-    if (!_tilde.demo_regime){
-        if (_tilde.settings.db.engine == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
-        else if (_tilde.settings.db.engine == 'postgresql') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
+    if (!_gui.demo_regime){
+        if (_gui.settings.db.engine == 'sqlite') $('#settings_db_type_sqlite').prop('checked', true);
+        else if (_gui.settings.db.engine == 'postgresql') { $('#settings_db_type_postgres').prop('checked', true); $('#settings_postgres').show(); }
     }
 
     for (var attrname in data.settings.db){
@@ -450,19 +444,19 @@ function resp__login(req, data){
         $('#settings_postgres_'+attrname).val(data.settings.db[attrname]);
     }
 
-    if (!_tilde.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
+    if (!_gui.demo_regime) dbs_str += '<div class="btn clear" id="create-db-trigger" style="width:90px;margin:20px auto 0;">create new</div>'
     $('div[rel=dbs] div').html( dbs_str );
 
     // display columns settings (depend on server + client state)
-    $('#maxcols').html(_tilde.maxcols);
+    $('#maxcols').html(_gui.maxcols);
 
-    _tilde.settings.avcols.sort(function(a, b){
+    _gui.settings.avcols.sort(function(a, b){
         if (a.sort < b.sort) return -1;
         else if (a.sort > b.sort) return 1;
         else return 0;
     });
 
-    $.each(_tilde.settings.avcols, function(n, item){
+    $.each(_gui.settings.avcols, function(n, item){
         var checked_state = item.enabled ? ' checked=checked' : '';
         $.each(data.cats, function(i, n){
             if ($.inArray(item.cid, n.includes) != -1){
@@ -479,20 +473,20 @@ function resp__login(req, data){
     var colnum_str = '';
     $.each([50, 100, 500], function(n, item){
         var checked_state = '';
-        if (_tilde.settings.colnum == item) checked_state = ' checked=checked';
+        if (_gui.settings.colnum == item) checked_state = ' checked=checked';
         colnum_str += ' <input type="radio"'+checked_state+' name="s_rdclnm" id="s_rdclnm_'+n+'" value="'+item+'" /><label for="s_rdclnm_'+n+'"> '+item+'</label>';
     });
     $('#ipane-maxitems-holder').empty().append(colnum_str);
-    _tilde.settings.objects_expand ? $('#settings_objects_expand').prop('checked', true) : $('#settings_objects_expand').prop('checked', false);
+    _gui.settings.objects_expand ? $('#settings_objects_expand').prop('checked', true) : $('#settings_objects_expand').prop('checked', false);
 
     // display units settings (depend on client state only)
     var units_str = '';
-    $.each(_tilde.units, function(k, v){
+    $.each(_gui.units, function(k, v){
         //units_str += k.charAt(0).toUpperCase() + k.slice(1)+':';
-        units_str += _tilde.unit_capts[k]+':';
+        units_str += _gui.unit_capts[k]+':';
         $.each(v, function(kk, vv){
             var checked_state = '';
-            if (_tilde.settings.units[k] == kk) checked_state = ' checked=checked';
+            if (_gui.settings.units[k] == kk) checked_state = ' checked=checked';
             units_str += ' <input type="radio"'+checked_state+' name="'+k+'" id="s_rd_'+k+'_'+kk+'" value="'+kk+'" /><label for="s_rd_'+k+'_'+kk+'"> '+kk+'</label>';
         });
         units_str += '<br /><br /><br />';
@@ -500,27 +494,27 @@ function resp__login(req, data){
     $('#ipane-units-holder').empty().append( units_str );
 
     // display scan settings (depend on server state only)
-    _tilde.settings.skip_unfinished ? $('#settings_skip_unfinished').prop('checked', true) : $('#settings_skip_unfinished').prop('checked', false);
+    _gui.settings.skip_unfinished ? $('#settings_skip_unfinished').prop('checked', true) : $('#settings_skip_unfinished').prop('checked', false);
 
-    if (!!_tilde.settings.skip_if_path) {
+    if (!!_gui.settings.skip_if_path) {
         $('#settings_skip_if_path').prop('checked', true);
-        $('#settings_skip_if_path_mask').val(_tilde.settings.skip_if_path);
+        $('#settings_skip_if_path_mask').val(_gui.settings.skip_if_path);
     } else $('#settings_skip_if_path').prop('checked', false);
 
-    $('#settings_local_path').val(_tilde.settings.local_dir);
+    $('#settings_local_path').val(_gui.settings.local_dir);
 
     // display export settings
     if (data.settings.exportability) $('#export_rows_trigger').show();
 
-    if (!document.location.hash) document.location.hash = '#' + _tilde.settings.dbs[0];
+    if (!document.location.hash) document.location.hash = '#' + _gui.settings.dbs[0];
 }
 
 function resp__browse(req, data){
     // reset objects
-    _tilde.rendered = {};
-    _tilde.tab_buffer = [];
-    _tilde.plots = [];
-    _tilde.last_chkbox = null;
+    _gui.rendered = {};
+    _gui.tab_buffer = [];
+    _gui.plots = [];
+    _gui.last_chkbox = null;
 
     switch_menus();
 
@@ -537,14 +531,14 @@ function resp__browse(req, data){
 
     $('td._e').each(function(){
         var val = parseFloat( $(this).text() );
-        if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
+        if (val) $(this).text( ( Math.round(val * _gui.units.energy[ _gui.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
     });
     $('td._g').each(function(){
         var val = parseFloat( $(this).text() );
-        if (val) $(this).text( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
+        if (val) $(this).text( Math.round(val * _gui.units.energy[ _gui.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
     });
 
-    $('span.units-energy').text(_tilde.settings.units.energy);
+    $('span.units-energy').text(_gui.settings.units.energy);
     $('#databrowser').show();
     $('#initbox').hide();
     if ($('#databrowser td').length > 1) $('#databrowser').tablesorter({sortMultiSortKey:'ctrlKey'});
@@ -559,28 +553,28 @@ function resp__browse(req, data){
         $('input.SHFT_cb').prop('checked', false);
 
         if ($(this).is(':checked')){
-            _tilde.plots.push(cat);
-            if (_tilde.plots.length > 2){
-                var old = _tilde.plots.shift();
+            _gui.plots.push(cat);
+            if (_gui.plots.length > 2){
+                var old = _gui.plots.shift();
                 $('#databrowser th[rel='+old+']').children('input').prop('checked', false);
             }
         } else {
             $(this).parent().removeClass('shared');
-            var iold = _tilde.plots.indexOf(cat);
-            _tilde.plots.splice(iold, 1);
+            var iold = _gui.plots.indexOf(cat);
+            _gui.plots.splice(iold, 1);
         }
 
-        $.each(_tilde.plots, function(n, i){
+        $.each(_gui.plots, function(n, i){
             $('#databrowser td[rel='+i+'], #databrowser th[rel='+i+']').addClass('shared');
         });
 
-        if (_tilde.plots.length) switch_menus(2);
+        if (_gui.plots.length) switch_menus(2);
         else switch_menus();
     });
 
     // this is to account any data request by hash
     if (req.hashes) __send('tags', {tids: req.tids, switchto: 'browse'});
-    else document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+    else document.location.hash = '#' + _gui.settings.dbs[0] + '/browse';
 }
 
 function resp__tags(req, data){
@@ -657,7 +651,7 @@ function resp__tags(req, data){
     $('#splashscreen_holder').show();
     add_tag_expanders();
     // junction
-    if (req.switchto) document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + req.switchto;
+    if (req.switchto) document.location.hash = '#' + _gui.settings.dbs[0] + '/' + req.switchto;
 }
 
 function resp__list(obj, data){
@@ -667,18 +661,18 @@ function resp__list(obj, data){
         data = "<li>(<span rel='"+obj.path+"' class='link mult_read'>scan folder</span><span class=comma>, </span><span rel='"+obj.path+"' class='link mult_read' rev='recv'>scan folder + subfolders</span>)</li>"+data;
     data = "<ul class=jqueryFileTree style=display:none>" + data + "</ul>";
 
-    if (obj.path == _tilde.filetree.root){
+    if (obj.path == _gui.filetree.root){
         $('#tilde_'+obj.transport+'_filetree').find('.start').remove();
         $('#tilde_'+obj.transport+'_filetree').append(data).find('ul:hidden').show();
         bindTree($('#tilde_'+obj.transport+'_filetree'), obj.transport);
-        $('#settings_local_path').val(_tilde.settings.local_dir + obj.path);
+        $('#settings_local_path').val(_gui.settings.local_dir + obj.path);
     } else {
         var $el = $('#tilde_'+obj.transport+'_filetree a[rel="'+obj.path+'"]').parent();
         $el.removeClass('collapsed wait').addClass('expanded').append(data).find('ul:hidden').show();
         bindTree($el, obj.transport);
-        $('#settings_local_path').val(_tilde.settings.local_dir + obj.path + _tilde.settings.local_dir.substr(_tilde.settings.local_dir.length-1));
+        $('#settings_local_path').val(_gui.settings.local_dir + obj.path + _gui.settings.local_dir.substr(_gui.settings.local_dir.length-1));
     }
-    _tilde.filetree.transports[obj.transport] = true;
+    _gui.filetree.transports[obj.transport] = true;
 }
 
 function resp__report(obj, data){
@@ -687,8 +681,8 @@ function resp__report(obj, data){
             // NO RESULTS
             $('span[rel="__read__'+obj.path+'"]').after('no files to scan in this folder').remove();
 
-            _tilde.freeze = false; $('#loadbox').hide();
-            _tilde.multireceive = 0;
+            _gui.freeze = false; $('#loadbox').hide();
+            _gui.multireceive = 0;
 
             setTimeout(function(){ set_console(false) }, 1000);
             return;
@@ -697,26 +691,26 @@ function resp__report(obj, data){
             logger('..', true);
             return;
         }
-        _tilde.multireceive++;
+        _gui.multireceive++;
         data = JSON.parse(data);
-        if (!_tilde.multireceive) logger( '===========BEGIN OF SCAN '+obj.path+'===========', false, true );
+        if (!_gui.multireceive) logger( '===========BEGIN OF SCAN '+obj.path+'===========', false, true );
 
-        if (data.checksum) _tilde.hashes.push( data.checksum );
+        if (data.checksum) _gui.hashes.push( data.checksum );
         if (data.error) logger( data.filename + ': ' + data.error );
         else logger( '<strong>' + data.filename + ': OK</strong>' );
 
         if (data.finished){
             // GOT RESULTS
-            _tilde.freeze = false; $('#loadbox').hide();
-            _tilde.multireceive = 0;
+            _gui.freeze = false; $('#loadbox').hide();
+            _gui.multireceive = 0;
 
             var $el = $('#tilde_'+obj.transport+'_filetree span[rel="__read__'+obj.path+'"]');
-            if (_tilde.hashes.length){
+            if (_gui.hashes.length){
                 $el.parent().children().show();
                 $el.after('<span class="scan_done_trigger link">done</span>, <span class="scan_details_trigger link">details in console</span>').remove();
                 //$el.after('<span dest="browse/' + tk + '" class="link">view reports</span>').remove();
-                __send('browse', {hashes: _tilde.hashes});
-                _tilde.hashes = [];
+                __send('browse', {hashes: _gui.hashes});
+                _gui.hashes = [];
                 $('#tagcloud_trigger').show();
                 $('#noclass_trigger').show();
             } else $('span[rel="__read__'+obj.path+'"]').parent().html('(all files were omitted)');
@@ -726,7 +720,7 @@ function resp__report(obj, data){
             setTimeout(function(){ set_console(false) }, 1000);
         }
     } else {
-        _tilde.freeze = false; $('#loadbox').hide();
+        _gui.freeze = false; $('#loadbox').hide();
         __send('browse', {hashes: [ data ]});
         var $el = $('#tilde_'+obj.transport+'_filetree a[rel="'+obj.path+'"]');
         $el.addClass('_done').after('&nbsp; &mdash; <span class="scan_done_trigger link">done</span>');
@@ -761,19 +755,18 @@ function resp__phonons(req, data){
     //if ($('th.thsorter').hasClass('header')) $('#freqs_holder').trigger("update");
     //else $('#freqs_holder').tablesorter({textExtraction:'complex',headers:{0:{sorter:'text'},1:{sorter:'text'},2:{sorter:'integer'},3:{sorter:'text'},4:{sorter:'text'}}});
     var rnd_ph = 0;
-    if (_tilde.settings.units.phonons == 'THz') rnd_ph = 2;
+    if (_gui.settings.units.phonons == 'THz') rnd_ph = 2;
     $('#o_'+req.datahash+' td._p').each(function(){
-        $(this).text( Math.round( parseFloat($(this).text()) * _tilde.units.phonons[ _tilde.settings.units.phonons ] * Math.pow(10, rnd_ph) )/Math.pow(10, rnd_ph) );
+        $(this).text( Math.round( parseFloat($(this).text()) * _gui.units.phonons[ _gui.settings.units.phonons ] * Math.pow(10, rnd_ph) )/Math.pow(10, rnd_ph) );
     });
-    $('span.units-phonons').html(_tilde.settings.units.phonons);
+    $('span.units-phonons').html(_gui.settings.units.phonons);
 }
 
 function resp__summary(req, data){
-    data = JSON.parse(data);
-    var info = JSON.parse(data.info);
+    data = JSON.parse(data); 
 
     // PHONONS IPANES
-    if (data.phonons && !_tilde.degradation){
+    /*if (data.phonons && !_gui.degradation){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').show();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').show();
@@ -781,35 +774,33 @@ function resp__summary(req, data){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=vib]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_dos]').hide();
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=ph_bands]').hide();
-    }
+    }*/
 
     // INPUT IPANE
-    if (info.input){
+    if (data.info.input){
         $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=inp]').show();
-        if (info.prog.indexOf('Exciting') !== -1) info.input = info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="white-space:pre;height:489px;width:'+(_tilde.cwidth/2-65)+'px;margin:20px auto auto 20px;">'+info.input+'</div>');
+        if (data.info.prog.indexOf('Exciting') !== -1) data.info.input = data.info.input.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        $('#o_'+req.datahash + ' div[rel=inp]').append('<div class=preformatter style="font-face:Courier New;white-space:pre;height:489px;width:'+(_gui.cwidth/2-65)+'px;margin:20px auto auto 20px;">'+data.info.input+'</div>');
     }
 
     // OPTGEOM IPANE
-    if ($.inArray('geometry optimization', info.calctypes) != -1 && !_tilde.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
+    if ($.inArray('geometry optimization', data.info.calctypes) != -1 && !_gui.degradation){  $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=optstory]').show() }
 
     // ESTORY IPANE
-    if (info.convergence.length && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=estory]').show();
+    if (data.info.convergence.length && !_gui.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=estory]').show();
 
-    // EDOS IPANE
-    if (data.electrons.dos && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
+    // EDOS / EBANDS IPANE
+    /*if (data.electrons.dos && !_gui.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').show();
     else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_dos]').hide();
-
-    // EBANDS IPANE
-    if (data.electrons.bands && !_tilde.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
-    else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').hide();
+    if (data.electrons.bands && !_gui.degradation) $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').show();
+    else $('#o_'+req.datahash+' ul.ipane_ctrl li[rel=e_bands]').hide();*/
 
     // SUMMARY (MAIN) IPANE
-    var html = '<div><strong>'+info.location+'</strong></div>';
+    var html = '<div><strong>'+data.info.location+'</strong></div>';
     html += '<div class=preformatter style="height:445px;"><ul class=tags>';
-    if (info.warns){
-        for (var i=0; i<info.warns.length; i++){
-            html += '<li class=warn>'+info.warns[i]+'</li>';
+    if (data.info.warns){
+        for (var i=0; i<data.info.warns.length; i++){
+            html += '<li class=warn>'+data.info.warns[i]+'</li>';
         }
     }
     $.each(data.summary, function(num, value){
@@ -821,19 +812,19 @@ function resp__summary(req, data){
     $('#o_'+req.datahash + ' div[rel=summary]').append('<div class=summary>'+html+'</div>');
     $('span._e').each(function(){
         var val = parseFloat( $(this).text() );
-        if (val) $(this).text( ( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
+        if (val) $(this).text( ( Math.round(val * _gui.units.energy[ _gui.settings.units.energy ] * Math.pow(10, 5))/Math.pow(10, 5) ).toFixed(5) );
     });
     $('span._g').each(function(){
         var val = parseFloat( $(this).text() );
-        if (val) $(this).text( Math.round(val * _tilde.units.energy[ _tilde.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
+        if (val) $(this).text( Math.round(val * _gui.units.energy[ _gui.settings.units.energy ] * Math.pow(10, 4))/Math.pow(10, 4) );
     });
-    $('span.units-energy').text(_tilde.settings.units.energy);
+    $('span.units-energy').text(_gui.settings.units.energy);
 
     // 3D IPANE
     open_ipane('3dview', req.datahash);
-    if (!_tilde.degradation){
-        _tilde.rendered[req.datahash] = true;
-        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html?2#' + _tilde.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
+    if (!_gui.degradation){
+        _gui.rendered[req.datahash] = true;
+        $('#o_'+req.datahash + ' div.renderer').empty().append('<iframe id=f_'+req.datahash+' frameborder=0 scrolling="no" width="100%" height="500" src="/static/player.html?33#' + _gui.settings.dbs[0] + '/' + req.datahash + '"></iframe>');
         //$('#phonons_animate').text('animate');
     } else {
         $('#o_'+req.datahash+' div.ipane[rel=3dview]').removeClass('loading').append('<br /><br /><p class=warn>Bumper! This content is not supported in your browser.<br /><br />Please, use a newer version of Chrome, Firefox, Safari or Opera browser.<br /><br />Thank you in advance and sorry for inconvenience.</p><br /><br />');
@@ -842,23 +833,23 @@ function resp__summary(req, data){
 
 function resp__settings(req, data){
     if (req.area == 'path'){
-        _tilde.settings.local_dir = data;
-        $('#tilde_local_filepath input').val(_tilde.settings.local_dir);
-        $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
-        __send('list', {path:_tilde.filetree.root, transport:'local'} );
+        _gui.settings.local_dir = data;
+        $('#tilde_local_filepath input').val(_gui.settings.local_dir);
+        $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _gui.filetree.load_msg + '</li></ul>');
+        __send('list', {path:_gui.filetree.root, transport:'local'} );
         $('#profile_holder').hide();
     } else if (req.area == 'cols'){
         // re-draw data table without modifying tags
-        if (!_tilde.last_browse_request) return;
+        if (!_gui.last_browse_request) return;
         if (!$('#databrowser').is(':visible')) return;
-        __send('browse', _tilde.last_browse_request, true);
+        __send('browse', _gui.last_browse_request, true);
     } else if (req.area == 'switching'){
         //$('div.ipane_db_field_active').append('<div class="btn right db-make-active-trigger">make active</div>');
-        if (!_tilde.demo_regime) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
+        if (!_gui.demo_regime) $('div.ipane_db_field_active').append('<div class="btn btn3 right db-delete-trigger">delete</div>');
         $('div.ipane_db_field_active').removeClass('ipane_db_field_active');
         $('div[rel="' + req.switching + '"]').addClass('ipane_db_field_active').children('div').remove();
-        _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.switching), 1)
-        _tilde.settings.dbs.unshift(req.switching);
+        _gui.settings.dbs.splice(_gui.settings.dbs.indexOf(req.switching), 1)
+        _gui.settings.dbs.unshift(req.switching);
         set_dbs();
     } else if (req.area == 'general'){
         notify('Saving new settings and restarting...');
@@ -866,13 +857,13 @@ function resp__settings(req, data){
         logger('RESTART SIGNAL SENT');
         setInterval(function(){document.location.reload()}, 2000); // setTimeout doesn't work here, 2 sec are optimal
     }
-    $.jStorage.set('tilde_settings', _tilde.settings);
+    $.jStorage.set('tilde_settings', _gui.settings);
     logger('SETTINGS SAVED!');
 }
 
 function resp__clean(req, data){
     $('div[rel="' + req.db + '"]').remove();
-    _tilde.settings.dbs.splice(_tilde.settings.dbs.indexOf(req.db), 1);
+    _gui.settings.dbs.splice(_gui.settings.dbs.indexOf(req.db), 1);
     set_dbs();
     logger('DATABASE ' + req.db + ' REMOVED.');
 }
@@ -881,7 +872,7 @@ function resp__db_create(req, data){
     req.newname += '.db'
     //$('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn right db-make-active-trigger">make active</div><div class="btn btn3 right db-delete-trigger">delete</div></div>');
     $('div.ipane_db_field:last').after('<div class="ipane_db_field" rel="' + req.newname + '"><span>' + req.newname + '</span><div class="btn btn3 right db-delete-trigger">delete</div></div>');
-    _tilde.settings.dbs.push(req.newname);
+    _gui.settings.dbs.push(req.newname);
     set_dbs();
     logger('DATABASE ' + req.newname + ' CREATED.');
 }
@@ -904,7 +895,7 @@ function resp__delete(req, data){
     $('#splashscreen').empty();
 
     if ($('#databrowser tbody').is(':empty')){
-        document.location.hash = '#' + _tilde.settings.dbs[0];
+        document.location.hash = '#' + _gui.settings.dbs[0];
     }
     $('#databrowser').trigger('update');
 }
@@ -940,7 +931,7 @@ function resp__estory(req, data){
 
 function resp__try_pgconn(req, data){
     // continue gracefully
-    __send('settings',  {area: 'general', settings: _tilde.settings} );
+    __send('settings',  {area: 'general', settings: _gui.settings} );
 }
 /**
 *
@@ -953,52 +944,52 @@ $(document).ready(function(){
 
     if (!window.JSON) return; // sorry, we live in 2014
 
-    _tilde.cwidth = document.body.clientWidth;
+    _gui.cwidth = document.body.clientWidth;
     var centerables = ['notifybox', 'loadbox', 'countbox', 'connectors', 'column_plot_holder'];
     var centerize = function(){
         $.each(centerables, function(n, i){
-            document.getElementById(i).style.left = _tilde.cwidth/2 - $('#'+i).width()/2 + 'px';
+            document.getElementById(i).style.left = _gui.cwidth/2 - $('#'+i).width()/2 + 'px';
         });
     };
     centerize();
     if (navigator.appName == 'Microsoft Internet Explorer'){
-        _tilde.degradation = true;
+        _gui.degradation = true;
         notify('Microsoft Internet Explorer doesn\'t support display of some content. You may try other browser.<br />Thank you in advance and sorry for inconvenience.');
     }
     $('#notifybox').hide();
 
     // initialize client-side settings
-    _tilde.settings = $.jStorage.get('tilde_settings', _tilde.default_settings);
-    _tilde.maxcols = Math.round(_tilde.cwidth/160) || 2;
-    if (_tilde.settings.cols.length > _tilde.maxcols) _tilde.settings.cols.splice(_tilde.maxcols-1, _tilde.settings.cols.length-_tilde.maxcols+1);
+    _gui.settings = $.jStorage.get('tilde_settings', _gui.default_settings);
+    _gui.maxcols = Math.round(_gui.cwidth/160) || 2;
+    if (_gui.settings.cols.length > _gui.maxcols) _gui.settings.cols.splice(_gui.maxcols-1, _gui.settings.cols.length-_gui.maxcols+1);
 /**
 *
 *
 * ============================================================================================================================================================================================================
 *
 */
-    (_tilde.conn = function(){
-        _tilde.socket = new SockJS('http://' + window.location.host  + '/duplex', null, ['websocket', 'xhr-polling']);
+    (_gui.conn = function(){
+        _gui.socket = new SockJS('http://' + window.location.host  + '/duplex', null, ['websocket', 'xhr-polling']);
 
-        _tilde.socket.onopen = function(){
+        _gui.socket.onopen = function(){
             logger('CONNECTED.');
             $('#notifybox').hide();
-            _tilde.freeze = false;
-            _tilde.connattempts = 0;
-            clearInterval(_tilde.cinterval);
-            _tilde.cinterval = null;
-            __send('login',  {settings: _tilde.settings} );
+            _gui.freeze = false;
+            _gui.connattempts = 0;
+            clearInterval(_gui.cinterval);
+            _gui.cinterval = null;
+            __send('login',  {settings: _gui.settings} );
         }
 
-        _tilde.socket.onmessage = function(a){
-            var split = a.data.split( _tilde.wsock_delim );
+        _gui.socket.onmessage = function(a){
+            var split = a.data.split( _gui.wsock_delim );
             var response = {};
             response.act = split[0];
             response.req = split[1].length ? JSON.parse(split[1]) : {};
             response.error = split[2];
             response.data = split[3];
-            if (_tilde.debug_regime) logger('RECEIVED: '+response.act);
-            if (response.act != 'report' || response.req.directory < 1){ _tilde.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
+            if (_gui.debug_regime) logger('RECEIVED: '+response.act);
+            if (response.act != 'report' || response.req.directory < 1){ _gui.freeze = false; $('#loadbox').hide(); } // global lock for multireceive
             if (response.error && response.error.length>1){
                 notify('Diagnostic message:<br />'+response.error);
                 return;
@@ -1007,18 +998,18 @@ $(document).ready(function(){
             else notify('Unhandled action received: ' + response.act);
         }
 
-        _tilde.socket.onclose = function(data){
-            _tilde.connattempts += 1;
-            if (_tilde.connattempts > _tilde.maxconnattempts){
-                clearInterval(_tilde.cinterval);
+        _gui.socket.onclose = function(data){
+            _gui.connattempts += 1;
+            if (_gui.connattempts > _gui.maxconnattempts){
+                clearInterval(_gui.cinterval);
                 notify('Connection to program core cannot be established due to the failed server or network restrictions. Sometimes <a href=javascript:window.location.reload()>refresh</a> may help.');
                 return;
             }
             logger('CONNECTION WITH PROGRAM CORE HAS FAILED!');
-            if (_tilde.debug_regime){
+            if (_gui.debug_regime){
                 notify('Program core does not respond. Please, try to <a href=javascript:document.location.reload()>restart</a>.');
             } else {
-                if (!_tilde.cinterval) _tilde.cinterval = setInterval(function(){ _tilde.conn() }, 2000);
+                if (!_gui.cinterval) _gui.cinterval = setInterval(function(){ _gui.conn() }, 2000);
             }
         }
     })();
@@ -1030,19 +1021,19 @@ $(document).ready(function(){
 */
     // STATE FUNCTIONALITY GIVEN BY ANCHORS
     setInterval(function(){
-    if (_tilde.cur_anchor != document.location.hash){
-        _tilde.cur_anchor = document.location.hash;
+    if (_gui.cur_anchor != document.location.hash){
+        _gui.cur_anchor = document.location.hash;
 
-        var anchors = _tilde.cur_anchor.substr(1).split('/');
+        var anchors = _gui.cur_anchor.substr(1).split('/');
 
-        if (!anchors.length || !_tilde.settings.dbs) return;
+        if (!anchors.length || !_gui.settings.dbs) return;
 
-        if (_tilde.freeze){ _tilde.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
+        if (_gui.freeze){ _gui.cur_anchor = null; return; } // freeze and wait for server responce if any command is given
 
         switch_menus();
 
         // db changed?
-        if (anchors[0] != _tilde.settings.dbs[0]){
+        if (anchors[0] != _gui.settings.dbs[0]){
             $('#splashscreen').empty();
             __send('settings',  {area: 'switching', switching: anchors[0]} );
         }
@@ -1064,7 +1055,7 @@ $(document).ready(function(){
 
                 $('#closeobj_trigger').hide();
                 if ($('#splashscreen').is(':empty')) document.location.hash = '#' + anchors[0];
-                _tilde.sortdisable = false; // sorting switch
+                _gui.sortdisable = false; // sorting switch
             } else {
 
                 // HASH (+WINDOW) SCREEN
@@ -1072,28 +1063,28 @@ $(document).ready(function(){
                 var hashes = anchors[1].split('+');
 
                 if ($('#databrowser').is(':empty')){
-                    _tilde.timeout3 = setInterval(function(){
-                        if (!_tilde.freeze){
+                    _gui.timeout3 = setInterval(function(){
+                        if (!_gui.freeze){
                             __send('browse', {hashes: hashes} );
-                            clearInterval(_tilde.timeout3);
+                            clearInterval(_gui.timeout3);
                         }
                     }, 500);
                 } else {
                     clean_plots();
                     $.each(hashes, function(n, i){
-                        if (!_tilde.rendered[i] && i.length == 56) {
+                        if (!_gui.rendered[i] && i.length == 56) {
                             var target_cell = $('#i_'+i);
                             if (!target_cell.length) return false; // this is a crunch, in principle, a history dispatcher is needed : TODO
                             var obf = $('<tr class=obj_holder></tr>').append( $('<th colspan=20></th>').append( $('#object_factory').clone().removeAttr('id').attr('id', 'o_'+i) ) );
                             target_cell.after(obf);
                             __send('summary',  {datahash: i} )
                             open_ipane('summary', i);
-                            _tilde.rendered[i] = true;
+                            _gui.rendered[i] = true;
                             window.scrollBy(0, 60);
                         }
                     });
                 }
-                _tilde.sortdisable = true; // sorting switch
+                _gui.sortdisable = true; // sorting switch
             }
 
         } else {
@@ -1108,10 +1099,10 @@ $(document).ready(function(){
             $('#noclass_trigger').hide();
 
             if (!$('#splashscreen_holder > #splashscreen').length || $('#splashscreen_holder > #splashscreen').is(':empty')){
-                _tilde.timeout2 = setInterval(function(){
-                if (!_tilde.freeze){
+                _gui.timeout2 = setInterval(function(){
+                if (!_gui.freeze){
                     __send('tags', {tids: false});
-                    clearInterval(_tilde.timeout2);
+                    clearInterval(_gui.timeout2);
                 }
                 }, 500);
             } else {
@@ -1121,8 +1112,8 @@ $(document).ready(function(){
                 add_tag_expanders();
             }
 
-            _tilde.rendered = {}; // reset objects
-            _tilde.tab_buffer = [];
+            _gui.rendered = {}; // reset objects
+            _gui.tab_buffer = [];
             $('tr.obj_holder').remove();
             $('#data_holder').show();
         }
@@ -1185,8 +1176,8 @@ $(document).ready(function(){
         var hashes = anchors[1].split('+');
         var i = $.inArray(id, hashes);
         hashes.splice(i, 1);
-        if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
-        else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+        if (!hashes.length) document.location.hash = '#' + _gui.settings.dbs[0] + '/browse';
+        else document.location.hash = '#' + _gui.settings.dbs[0] + '/' + hashes.join('+');
     });
 /**
 *
@@ -1199,12 +1190,12 @@ $(document).ready(function(){
         if ($(this).parent().attr('id')) var id = $(this).parent().attr('id').substr(2);
         else return;
 
-        if (!_tilde.settings.objects_expand){
+        if (!_gui.settings.objects_expand){
             $('#d_cb_' + id).trigger('click');
             return;
         }
 
-        if (_tilde.rendered[id]) {
+        if (_gui.rendered[id]) {
             // close tab
             close_obj_tab(id);
 
@@ -1216,13 +1207,13 @@ $(document).ready(function(){
             var hashes = anchors[1].split('+');
             var i = $.inArray(id, hashes);
             hashes.splice(i, 1);
-            if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
-            else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+            if (!hashes.length) document.location.hash = '#' + _gui.settings.dbs[0] + '/browse';
+            else document.location.hash = '#' + _gui.settings.dbs[0] + '/' + hashes.join('+');
         } else {
             // open tab
             var size = 0, key;
-            for (key in _tilde.rendered){
-                if (_tilde.rendered[key]) size++;
+            for (key in _gui.rendered){
+                if (_gui.rendered[key]) size++;
             }
             if (size == 3){
                 // remove the first tab
@@ -1236,11 +1227,11 @@ $(document).ready(function(){
 
                 close_obj_tab(first);
 
-                document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+                document.location.hash = '#' + _gui.settings.dbs[0] + '/' + hashes.join('+');
             }
             if (document.location.hash.length > 55){
                 document.location.hash += '+' + id
-            } else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + id;
+            } else document.location.hash = '#' + _gui.settings.dbs[0] + '/' + id;
             $('#closeobj_trigger').show();
         }
         $('div.downscreen').hide();
@@ -1249,25 +1240,25 @@ $(document).ready(function(){
     // DATABROWSER CHECKBOXES
     $('#databrowser').on('click', 'input.SHFT_cb', function(event){
         event.stopPropagation();
-        if (_tilde.plots.length) clean_plots();
+        if (_gui.plots.length) clean_plots();
 
         if ($(this).is(':checked')) $(this).parent().parent().addClass('shared');
         else $(this).parent().parent().removeClass('shared');
 
-        if (event.shiftKey && _tilde.last_chkbox){
+        if (event.shiftKey && _gui.last_chkbox){
             var $chkboxes = $('input.SHFT_cb');
             var start = $chkboxes.index(this);
-            var end = $chkboxes.index(_tilde.last_chkbox);
+            var end = $chkboxes.index(_gui.last_chkbox);
             $chkboxes.slice(Math.min(start,end) + 1, Math.max(start,end)).trigger('click');
         }
 
-        _tilde.last_chkbox = this;
+        _gui.last_chkbox = this;
 
         var flag = ($('input.SHFT_cb').is(':checked')) ? 1 : false;
         switch_menus(flag);
     });
     $('#databrowser').on('click', '#d_cb_all', function(){
-        if (_tilde.plots.length) clean_plots();
+        if (_gui.plots.length) clean_plots();
 
         if ($(this).is(':checked') && $('#databrowser td').length > 1) {
             $('input.SHFT_cb').prop('checked', true);
@@ -1283,7 +1274,7 @@ $(document).ready(function(){
     // IPANE COMMANDS
     $(document.body).on('click', 'ul.ipane_ctrl li', function(){
         var cmd = $(this).attr('rel');
-        if (_tilde.freeze && !_tilde.tab_buffer[cmd] && cmd != 'admin'){ notify(_tilde.busy_msg); return; }
+        if (_gui.freeze && !_gui.tab_buffer[cmd] && cmd != 'admin'){ notify(_gui.busy_msg); return; }
         var target = $(this).parents('.object_factory_holder');
         target = (target.length) ? target.attr('id').substr(2) : false;
         open_ipane(cmd, target);
@@ -1305,7 +1296,7 @@ $(document).ready(function(){
         }
     });
     $('#databrowser').on('click', 'div.ph_animate_trigger', function(){
-        if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
+        if (_gui.freeze){ notify(_gui.busy_msg); return; }
         var target = $(this).parents('.object_factory_holder').attr('id').substr(2);
         var capt = $(this).text();
         if (capt.indexOf('stop') != -1){
@@ -1333,16 +1324,16 @@ $(document).ready(function(){
         $('html, body').animate({scrollTop: 0});
         $('#connectors').show();
         open_ipane('conn-local');
-        if (!_tilde.filetree.transports['local']){
-            $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _tilde.filetree.load_msg + '</li></ul>');
-            __send('list',   {path:_tilde.filetree.root, transport:'local'} );
+        if (!_gui.filetree.transports['local']){
+            $("#tilde_local_filetree").html('<ul class="jqueryFileTree start"><li class="wait">' + _gui.filetree.load_msg + '</li></ul>');
+            __send('list',   {path:_gui.filetree.root, transport:'local'} );
         }
     });
     $('#noclass_trigger').click(function(){
         $('#tagcloud_trigger').hide();
         $(this).hide();
         $('#splashscreen').empty();
-        document.location.hash = '#' + _tilde.settings.dbs[0];
+        document.location.hash = '#' + _gui.settings.dbs[0];
     });
     $('#closeobj_trigger').click(function(){
         $(this).hide();
@@ -1355,7 +1346,7 @@ $(document).ready(function(){
         $.each(hashes, function(n, i){
             close_obj_tab(i);
         });
-        document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
+        document.location.hash = '#' + _gui.settings.dbs[0] + '/browse';
     });
     $('#tagcloud_trigger').click(function(){
         set_console(false);
@@ -1395,11 +1386,11 @@ $(document).ready(function(){
     $('#export_rows_trigger').click(function(){
         if ($('#databrowser tr.shared').length == 1){
             var id = $('#databrowser tr.shared').attr('id').substr(2);
-            __send('check_export', {id: id, db: _tilde.settings.dbs[0]});
+            __send('check_export', {id: id, db: _gui.settings.dbs[0]});
         } else notify('Batch export is not implemented.');
     });
     $('#export_cols_trigger').click(function(){
-        if (!_tilde.plots.length) return;
+        if (!_gui.plots.length) return;
         var data = gather_plots_data(), dump = '';
         if (!data) return;
 
@@ -1415,7 +1406,7 @@ $(document).ready(function(){
 
     // PLOT COLUMNS (ONLY TWO AT THE TIME)
     $('#plot_trigger').click(function(){
-        if (_tilde.plots.length == 1){ notify('Please, select yet another column to plot!'); return; }
+        if (_gui.plots.length == 1){ notify('Please, select yet another column to plot!'); return; }
 
         var plot = [{'color': '#0066CC', 'data': [], 'ids': []}], data = gather_plots_data(); // note ids!
         if (!data) return;
@@ -1450,7 +1441,7 @@ $(document).ready(function(){
             }
         });
 
-        var x_label = $('#databrowser th[rel='+_tilde.plots[0]+']').children('span').html(), y_label = $('#databrowser th[rel='+_tilde.plots[1]+']').children('span').html(), h = target.height()/2+53; // rotate!
+        var x_label = $('#databrowser th[rel='+_gui.plots[0]+']').children('span').html(), y_label = $('#databrowser th[rel='+_gui.plots[1]+']').children('span').html(), h = target.height()/2+53; // rotate!
         target.append('<div style="position:absolute;z-index:499;width:300px;left:40%;bottom:0;text-align:center;font-size:1.25em;background:#fff;">'+x_label+'</div>&nbsp;');
         target.append('<div style="position:absolute;z-index:499;width:300px;left:0;top:'+h+'px;text-align:center;font-size:1.25em;transform:rotate(-90deg);transform-origin:left top;-webkit-transform:rotate(-90deg);-webkit-transform-origin:left top;-moz-transform:rotate(-90deg);-moz-transform-origin:left top;background:#fff;">'+y_label+'</div>');
 
@@ -1464,7 +1455,7 @@ $(document).ready(function(){
             if ($(this).is(':checked')){
                 var i = $(this).attr('id').substr(5); // d_cb_
                 todel.push( i );
-                if (_tilde.rendered[i]){
+                if (_gui.rendered[i]){
                     // close tab
                     close_obj_tab(i);
 
@@ -1476,8 +1467,8 @@ $(document).ready(function(){
                     var hashes = anchors[1].split('+');
                     var id = $.inArray(i, hashes);
                     hashes.splice(id, 1);
-                    if (!hashes.length) document.location.hash = '#' + _tilde.settings.dbs[0] + '/browse';
-                    else document.location.hash = '#' + _tilde.settings.dbs[0] + '/' + hashes.join('+');
+                    if (!hashes.length) document.location.hash = '#' + _gui.settings.dbs[0] + '/browse';
+                    else document.location.hash = '#' + _gui.settings.dbs[0] + '/' + hashes.join('+');
                 }
             }
         });
@@ -1487,7 +1478,7 @@ $(document).ready(function(){
     // HIDE ITEM
     $('#hide_trigger').click(function(){
         $('div._closable').hide();
-        if (!$.isEmptyObject(_tilde.rendered)){
+        if (!$.isEmptyObject(_gui.rendered)){
             $('#closeobj_trigger').trigger('click');
         }
 
@@ -1566,7 +1557,7 @@ $(document).ready(function(){
             $('#profile_holder').hide();
         } else {
             $('#profile_holder').show();
-            _tilde.demo_regime ? open_ipane('cols') : open_ipane('general');
+            _gui.demo_regime ? open_ipane('cols') : open_ipane('general');
         }
     });
 
@@ -1617,7 +1608,7 @@ $(document).ready(function(){
 
     // SETTINGS: MAXCOLS
     $('#settings_cols').on('click', 'input', function(){
-        if ($('#settings_cols input:checked').length > _tilde.maxcols){
+        if ($('#settings_cols input:checked').length > _gui.maxcols){
             $('#maxcols').parent().css('background-color', '#f99');
             return false;
         }
@@ -1634,10 +1625,10 @@ $(document).ready(function(){
         if ($('#settings_skip_unfinished').is(':visible')){
 
             // SETTINGS: SCAN
-            _tilde.settings.skip_unfinished = $('#settings_skip_unfinished').is(':checked');
-            _tilde.settings.skip_if_path = $('#settings_skip_if_path').is(':checked') ? $('#settings_skip_if_path_mask').val() : false;
+            _gui.settings.skip_unfinished = $('#settings_skip_unfinished').is(':checked');
+            _gui.settings.skip_if_path = $('#settings_skip_if_path').is(':checked') ? $('#settings_skip_if_path_mask').val() : false;
 
-            __send('settings',  {area: 'scan', settings: _tilde.settings} );
+            __send('settings',  {area: 'scan', settings: _gui.settings} );
         } else if ($('#settings_cols').is(':visible')){
 
             // SETTINGS: COLS
@@ -1649,9 +1640,9 @@ $(document).ready(function(){
                 notify('Please, choose at least anything to display.');
                 return;
             }
-            _tilde.settings.cols = sets;
+            _gui.settings.cols = sets;
 
-            __send('settings', {area: 'cols', settings: _tilde.settings} );
+            __send('settings', {area: 'cols', settings: _gui.settings} );
 
             $('#profile_holder').hide();
 
@@ -1660,47 +1651,47 @@ $(document).ready(function(){
             // SETTINGS: TABLE
             $('#ipane-maxitems-holder > input').each(function(){
                 if ($(this).is(':checked')){
-                    _tilde.settings.colnum = parseInt( $(this).attr('value') );
+                    _gui.settings.colnum = parseInt( $(this).attr('value') );
                 }
             });
 
             // SETTINGS: EXPAND OBJECTS
-            _tilde.settings.objects_expand = $('#settings_objects_expand').is(':checked');
+            _gui.settings.objects_expand = $('#settings_objects_expand').is(':checked');
 
-            __send('settings', {area: 'cols', settings: _tilde.settings} );
+            __send('settings', {area: 'cols', settings: _gui.settings} );
 
             $('#profile_holder').hide();
         } else if ($('#ipane-units-holder').is(':visible')){
             $('#profile_holder').hide();
 
             // re-draw data table without modifying tags
-            if (!_tilde.last_browse_request) return;
+            if (!_gui.last_browse_request) return;
             if (!$('#databrowser').is(':visible')) return;
-            __send('browse', _tilde.last_browse_request, true);
+            __send('browse', _gui.last_browse_request, true);
         } else if ($('#settings_title').is(':visible')){
 
             // TODO
-            // here is some mess, whether the piece of settings is stored inside _tilde or inside _tilde.settings
-            // we save here all inside _tilde.settings as it would be easier to process by a server
-            _tilde.settings.title = $('#settings_title').val();
-            _tilde.settings.debug_regime = $('#settings_debug').is(':checked');
-            _tilde.settings.demo_regime = $('#settings_demo').is(':checked');
-            _tilde.settings.webport = $('#settings_webport').val();
+            // here is some mess, whether the piece of settings is stored inside _gui or inside _gui.settings
+            // we save here all inside _gui.settings as it would be easier to process by a server
+            _gui.settings.title = $('#settings_title').val();
+            _gui.settings.debug_regime = $('#settings_debug').is(':checked');
+            _gui.settings.demo_regime = $('#settings_demo').is(':checked');
+            _gui.settings.webport = $('#settings_webport').val();
 
-            if ($('#settings_db_type_sqlite').is(':checked')) _tilde.settings.db.engine = 'sqlite';
+            if ($('#settings_db_type_sqlite').is(':checked')) _gui.settings.db.engine = 'sqlite';
             else if ($('#settings_db_type_postgres').is(':checked')){
-                _tilde.settings.db.engine = 'postgresql';
-                _tilde.settings.db.host = $('#settings_postgres_host').val();
-                _tilde.settings.db.user = $('#settings_postgres_user').val();
-                _tilde.settings.db.port = $('#settings_postgres_port').val();
-                _tilde.settings.db.password = $('#settings_postgres_password').val();
-                _tilde.settings.db.dbname = $('#settings_postgres_dbname').val();
-                __send('try_pgconn', {creds: _tilde.settings.db});
+                _gui.settings.db.engine = 'postgresql';
+                _gui.settings.db.host = $('#settings_postgres_host').val();
+                _gui.settings.db.user = $('#settings_postgres_user').val();
+                _gui.settings.db.port = $('#settings_postgres_port').val();
+                _gui.settings.db.password = $('#settings_postgres_password').val();
+                _gui.settings.db.dbname = $('#settings_postgres_dbname').val();
+                __send('try_pgconn', {creds: _gui.settings.db});
                 return;
             }
 
             // SETTINGS: GENERAL
-            __send('settings',  {area: 'general', settings: _tilde.settings} );
+            __send('settings',  {area: 'general', settings: _gui.settings} );
         }
     });
 
@@ -1712,7 +1703,7 @@ $(document).ready(function(){
 
     // SETTINGS: UNITS
     $('#ipane-units-holder').on('click', 'input', function(){
-        var sets = _tilde.settings.units;
+        var sets = _gui.settings.units;
         $('#ipane-units-holder > input').each(function(){
             if ($(this).is(':checked')){
                 var name = $(this).attr('name');
@@ -1720,8 +1711,8 @@ $(document).ready(function(){
                 sets[ name ] = value;
             }
         });
-        _tilde.settings.units = sets;
-        $.jStorage.set('tilde_settings', _tilde.settings);
+        _gui.settings.units = sets;
+        $.jStorage.set('tilde_settings', _gui.settings);
     });
 
     // SETTINGS: GENERAL
@@ -1730,13 +1721,13 @@ $(document).ready(function(){
 
     // SETTINGS: RESTART + TERMINATE
     $('#core-restart').click(function(){
-        if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
+        if (_gui.freeze){ notify(_gui.busy_msg); return; }
         __send('restart');
         logger('RESTART SIGNAL SENT');
         setInterval(function(){document.location.reload()}, 2000); // setTimeout doesn't work here, 2 sec are optimal
     });
     $('#core-terminate').click(function(){
-        if (_tilde.freeze){ notify(_tilde.busy_msg); return; }
+        if (_gui.freeze){ notify(_gui.busy_msg); return; }
         __send('terminate');
         logger('TERMINATE SIGNAL SENT');
         notify('This window may be closed now.');
@@ -1745,11 +1736,11 @@ $(document).ready(function(){
 
     // ABOUT
     $('#about_trigger').click(function(){
-        if (_tilde.custom_about_link) document.location = _tilde.custom_about_link;
+        if (_gui.custom_about_link) document.location = _gui.custom_about_link;
         else document.location.hash = '#about';
     });
     $('#custom_about_link_trigger').click(function(){
-        document.location = _tilde.custom_about_link;
+        document.location = _gui.custom_about_link;
     });
 /**
 *
@@ -1764,26 +1755,26 @@ $(document).ready(function(){
 
     // ABOUT WINDOW
     $('#continue_trigger').click(function(){
-        var action = function(){ document.location.hash = '#' + _tilde.settings.dbs[0]; }
+        var action = function(){ document.location.hash = '#' + _gui.settings.dbs[0]; }
         $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
         $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
 
     // RESIZE
     $(window).resize(function(){
-        if (Math.abs(_tilde.cwidth - document.body.clientWidth) < 30) return; // width of scrollbar
-        _tilde.cwidth = document.body.clientWidth;
+        if (Math.abs(_gui.cwidth - document.body.clientWidth) < 30) return; // width of scrollbar
+        _gui.cwidth = document.body.clientWidth;
         centerize();
         add_tag_expanders();
-        _tilde.maxcols = Math.round(_tilde.cwidth/160) || 2;
-        $('#maxcols').html(_tilde.maxcols);
+        _gui.maxcols = Math.round(_gui.cwidth/160) || 2;
+        $('#maxcols').html(_gui.maxcols);
     });
 
     // Q/q/ESC HOTKEYS TO CLOSE ALL (ESC KEY NOT WORKING IN FF)
     $(document).keyup(function(ev){
         if (ev.keyCode == 27 || ev.keyCode == 81 || ev.keyCode == 113){
             $('div._closable').hide();
-            if (!$.isEmptyObject(_tilde.rendered)){
+            if (!$.isEmptyObject(_gui.rendered)){
                 $('#closeobj_trigger').trigger('click'); // TODO : FIXME
             }
         }

@@ -15,7 +15,7 @@ import json
 
 from numpy import dot, array
 
-from common import u, is_binary_string, dict2ase, generate_cif, html_formula
+from common import u, is_binary_string, generate_cif, html_formula
 from symmetry import SymmetryHandler
 from settings import DEFAULT_SETUP, read_hierarchy
 import model
@@ -579,7 +579,7 @@ class API:
         sim.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'])
         for n, ase_repr in enumerate(calc.structures):
             is_final = True if n == len(calc.structures)-1 else False
-            struct = model.Structure(final = is_final)
+            struct = model.Structure(step = n, final = is_final)
 
             s = cell_to_cellpar(ase_repr.cell)
             struct.lattice = model.Lattice(a=s[0], b=s[1], c=s[2],

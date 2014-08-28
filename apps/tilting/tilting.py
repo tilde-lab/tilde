@@ -2,7 +2,6 @@
 # Perovskites octahedral tilting extraction
 # based on Surf.Sci.602 3674 (2008)
 # http://dx.doi.org/10.1016/j.susc.2008.10.002
-# initial version created in php 20.04.09 by Evgeny Blokhin
 # v180314
 
 import os
@@ -16,7 +15,7 @@ from numpy.linalg import norm
 from ase import Atom, Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from core.common import ModuleError, ase2dict
+from core.common import ModuleError
 from core.constants import Perovskite_Structure
 from core.symmetry import SymmetryFinder
 

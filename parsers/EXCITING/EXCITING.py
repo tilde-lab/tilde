@@ -232,8 +232,7 @@ class INFOOUT(Output):
 
         # NB lattice is always the same
         for structure in atoms_holder:
-            symbols = []
-            pos = []
+            symbols, pos = [], []
             for a in structure:
                 symbols.append(a[0])
                 pos.append(a[1:])

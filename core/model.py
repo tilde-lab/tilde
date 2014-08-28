@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint
 
 
-DB_SCHEMA_VERSION = '2.02'
+DB_SCHEMA_VERSION = '2.03'
 
 Base = declarative_base()
 
@@ -201,6 +201,7 @@ class Structure(Base):
     __tablename__ = 'structures'
     struct_id = Column(Integer, primary_key=True)
     id = Column(Integer, ForeignKey('calculations.id'), nullable=False)
+    step = Column(Integer, nullable=False)
     final = Column(Boolean, nullable=False)
     lattice = relationship("Lattice", uselist=False, backref="structures")
     atoms = relationship("Atom", backref="structures")

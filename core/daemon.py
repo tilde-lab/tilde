@@ -13,10 +13,11 @@ from itertools import ifilter
 from numpy import dot, array
 
 sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps'))
-from sqlalchemy import text, func # NB subpackages use causes bug here
+from sqlalchemy import text, and_, func # NB subpackages use causes bug here
 import tornado
 from sockjs.tornado import SockJSRouter, SockJSConnection
 
+from ase.atoms import Atoms
 from ase.data import chemical_symbols, covalent_radii
 from ase.data.colors import jmol_colors
 from ase.lattice.spacegroup.cell import cell_to_cellpar
@@ -121,8 +122,7 @@ class Request_Handler:
                 .join(model.Calculation.uitopics) \
                 .filter(model.uiTopic.tid.in_(tids)) \
                 .group_by(model.Calculation.checksum) \
-                .having(func.count(model.uiTopic.tid) == len(tids)) \
-                .all():
+                .having(func.count(model.uiTopic.tid) == len(tids)).all():
                 data_clause += list(i)
             rlen = len(data_clause)
 
@@ -156,8 +156,7 @@ class Request_Handler:
         data += '<tbody>'
 
         for row, checksum in DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info, model.Calculation.checksum) \
-            .filter(model.uiGrid.id == model.Calculation.id, model.Calculation.checksum.in_(data_clause)) \
-            .all():
+            .filter(model.uiGrid.id == model.Calculation.id, model.Calculation.checksum.in_(data_clause)).all():
 
             rescount += 1
             data_obj = json.loads(row)
@@ -235,63 +234,51 @@ class Request_Handler:
             data = row[0]
         return (data, error)'''
 
-    '''@staticmethod
+    @staticmethod
     def summary(userobj, session_id):
-        data, error = None, None
-        cursor = DB_pool[ Users[session_id].cur_db ].cursor()
-        sql = 'SELECT structures, energy, phonons, electrons, info, apps FROM results WHERE checksum = %s' % settings['ph']
-        try: cursor.execute( sql, (userobj['datahash'], ) )
-        except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
-        else:
-            row = cursor.fetchone()
-            if row is None: error = 'No objects found!'
+        if len(userobj['datahash']) != 56:
+            return (data, 'Invalid request!')
+            
+        info = DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info) \
+            .filter(model.Calculation.id == model.uiGrid.id, model.Calculation.checksum == userobj['datahash']).one()
+        
+        summary = []
+        info = json.loads(info[0])
+
+        for entity in Tilde.hierarchy:
+            if not 'has_summary_contrb' in entity: continue # additional control to avoid redundancy
+            #if entity['cid'] > 2000:
+            # apps
+            #summary.append( {  'category': i['category'], 'sort': i['sort'], 'content': [ Tilde.wrap_cell(i, data_obj) ]  } )
+
+            content = []
+            if 'multiple' in entity:
+                n=0
+                while 1:
+                    try: content.append(info[ entity['source'].replace('#', str(n)) ])
+                    except KeyError: break
+                    n+=1
             else:
-                # TODO
-                summary = []
-                data_obj = {}
-                data_obj['structures'] = json.loads(row[0])
-                data_obj['energy'] = row[1]
-                data_obj['info'] = json.loads(row[4])
-                data_obj['apps'] = json.loads(row[5])
+                content.append( Tilde.wrap_cell(entity, info) )
+            if len(content):
+                catname = str2html(entity['html']) if 'html' in entity else entity['category'][0].upper() + entity['category'][1:]
+                summary.append( {'category': catname, 'sort': entity['sort'], 'content': content} )
 
-                for i in Tilde.hierarchy:
-                    if not 'has_summary_contrb' in i: continue # additional control on skipping to avoid redundancy
+        summary.sort(key=lambda x: x['sort'])
 
-                    if i['cid'] > 2000:
-                        # apps
-                        summary.append( {  'category': i['category'], 'sort': i['sort'], 'content': [ Tilde.wrap_cell(i, data_obj) ]  } )
+        '''ph_flag = False
+        if len(row[1]) > 10: ph_flag = True # avoids json.loads
 
-                    else:
-                        # classification
-                        content = []
-                        if '#' in i['source']:
-                            n=0
-                            while 1:
-                                try: content.append(data_obj['info'][ i['source'].replace('#', str(n)) ])
-                                except KeyError: break
-                                n+=1
-                        else:
-                            content.append( Tilde.wrap_cell(i, data_obj) )
-                        if len(content):
-                            catname = str2html(i['html']) if 'html' in i else i['category'][0].upper() + i['category'][1:]
-                            summary.append( {'category': catname, 'sort': i['sort'], 'content': content} )
+        e_flag = {'dos': True, 'bands': True}
+        if '"dos": {}' in row[2] and '"projected": []' in row[2]: e_flag['dos'] = False # avoids json.loads
+        if '"bands": {}' in row[2]: e_flag['bands'] = False'''
 
-                summary.sort(key=lambda x: x['sort'])
-
-                phon_flag = False
-                if len(row[2]) > 10: phon_flag = True # avoids json.loads
-
-                e_flag = {'dos': True, 'bands': True}
-                if '"dos": {}' in row[3] and '"projected": []' in row[3]: e_flag['dos'] = False # avoids json.loads
-                if '"bands": {}' in row[3]: e_flag['bands'] = False
-
-                data = json.dumps({
-                'phonons': phon_flag,
-                'electrons': e_flag,
-                'info': row[4], # raw info object
+        return (json.dumps({
+                'phonons': None,
+                'electrons': None,
+                'info': info, # raw info object
                 'summary': summary # refined object
-                })
-        return (data, error)'''
+                }), None)
 
     '''@staticmethod
     def optstory(userobj, session_id):
@@ -386,8 +373,8 @@ class Request_Handler:
 
         # *server + client-side* settings
         elif userobj['area'] == 'switching':
-            if settings['db']['engine'] != 'sqlite': return (data, 'Database ' + userobj['switching'] + ' was left!')
-            if not userobj['switching'] in DB_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Database ' + userobj['switching'] + ' was left!')
+            if settings['db']['engine'] != 'sqlite': return (data, 'Database ' + userobj['switching'] + ' was switched!')
+            if not userobj['switching'] in DB_pool or Users[session_id].cur_db == userobj['switching']: return (data, 'Database was not switched!')
 
             Users[session_id].cur_db = userobj['switching']
             logging.debug('Switched to ' + userobj['switching'])
@@ -752,81 +739,84 @@ class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         self.render(os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + "/../htdocs/frontend.html"))
 
-'''class JSON3DDownloadHandler(tornado.web.RequestHandler):
+class JSON3DDownloadHandler(tornado.web.RequestHandler):
     def get(self, req_str):
         if not '/' in req_str: raise tornado.web.HTTPError(404)
         items = req_str.split('/')
         if len(items) < 2 or len(items) > 3: raise tornado.web.HTTPError(404)
 
-        db, hash, pos = items[0], items[1], -1
+        db, hash, step = items[0], items[1], -1
         if len(items) > 2:
-            try: pos = int(items[2])
+            try: step = int(items[2])
             except ValueError: raise tornado.web.HTTPError(404)
 
         if len(hash) != 56 or not db in DB_pool: raise tornado.web.HTTPError(404)
 
-        try:
-            cursor = DB_pool[ db ].cursor()
-            sql = 'SELECT structures, info, apps FROM results WHERE checksum = %s' % settings['ph']
-            cursor.execute( sql, (hash,) )
-            row = cursor.fetchone()
-            if not row: raise tornado.web.HTTPError(404)
-        except:
-            raise tornado.web.HTTPError(404)
-        else:
-            try: ase_obj = dict2ase(json.loads(row[0])[pos])
-            except IndexError: raise tornado.web.HTTPError(404)
+        symbols, positions, is_final = [], [], False
+        clauses = [model.Lattice.struct_id == model.Atom.struct_id, model.Lattice.struct_id == model.Structure.struct_id, model.Structure.id == model.Calculation.id, model.Calculation.checksum == hash]
+        if step != -1: clauses.append(model.Structure.step == step)
+        else: clauses.append(model.Structure.final == True)
+        
+        query = DB_pool[ db ].query(model.Lattice, model.Atom, model.Structure.final) \
+            .filter(and_(*clauses))        
+        if query.count() == 0: raise tornado.web.HTTPError(404)
+        
+        n = 0
+        for l, a, s in query.all():
+            symbols.append(a.number)
+            positions.append([a.x, a.y, a.z])
+            if n == 0:
+                if s: is_final = True
+                cell = [[l.a11, l.a12, l.a13], [l.a21, l.a22, l.a23], [l.a31, l.a32, l.a33]]
+            n += 1
+        ase_obj = Atoms(symbols=symbols, cell=cell, positions=positions, pbc=True)
 
-            info = json.loads(row[1])
-            #symmetry = info['ng']
-            nstruc = len(info['tresholds']) - 1 # from zero-th
+        overlayed_apps = {}
+        '''if is_final:
+            overlay_data = json.loads(row[2])
+            for appkey in Tilde.Apps.keys():
+                if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
+                    overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']'''
 
-            overlayed_apps = {}
-            if pos in [-1, nstruc]:
-                overlay_data = json.loads(row[2])
-                for appkey in Tilde.Apps.keys():
-                    if Tilde.Apps[appkey]['on3d'] and appkey in overlay_data:
-                        overlayed_apps[appkey] = Tilde.Apps[appkey]['appcaption']
+        #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
 
-            #if ase_obj.periodicity: ase_obj = crystal(ase_obj, spacegroup=symmetry, ondublicates='keep') # Warning! Symmetry may be determined for redefined structure! Needs testing : TODO
+        if len(ase_obj) > 1250: raise tornado.web.HTTPError(404)
 
-            if len(ase_obj) > 1250: raise tornado.web.HTTPError(404) # Sorry, this structure is too large for me to display!
+        #ase_obj.center() # NB: check for slabs!
+        #mass_center = ase_obj.get_center_of_mass()
+        #for i in range(len(mass_center)):
+        #    if mass_center[i] == 0: mass_center[i] = 1
+        #mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
 
-            #ase_obj.center() # NB: check for slabs!
-            #mass_center = ase_obj.get_center_of_mass()
-            #for i in range(len(mass_center)):
-            #    if mass_center[i] == 0: mass_center[i] = 1
-            #mass_center_octant = [ mass_center[0]/abs(mass_center[0]), mass_center[1]/abs(mass_center[1]), mass_center[2]/abs(mass_center[2]) ]
+        # player.html atoms JSON format
+        atoms = []
+        for n, i in enumerate(ase_obj):
+            if i.symbol == 'X': radius, rgb = 0.66, '0xffff00'
+            else:
+                rgblist = (jmol_colors[ chemical_symbols.index( i.symbol ) ] * 255).tolist()
+                rgb = '0x%02x%02x%02x' % ( rgblist[0], rgblist[1], rgblist[2] )
+                if rgb == '0xffffff': rgb = '0xcccccc'
+                radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
+            oa = {'t':i.symbol}
+            for app in overlayed_apps.keys():
+                try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
+                except KeyError: pass
+            atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
 
-            # player.html atoms JSON format
-            atoms = []
-            for n, i in enumerate(ase_obj):
-                if i.symbol == 'X': radius, rgb = 0.66, '0xffff00'
-                else:
-                    rgblist = (jmol_colors[ chemical_symbols.index( i.symbol ) ] * 255).tolist()
-                    rgb = '0x%02x%02x%02x' % ( rgblist[0], rgblist[1], rgblist[2] )
-                    if rgb == '0xffffff': rgb = '0xcccccc'
-                    radius = covalent_radii[ chemical_symbols.index( i.symbol ) ]
-                oa = {'t':i.symbol}
-                for app in overlayed_apps.keys():
-                    try: oa[app] = str( overlay_data[app][str(n+1)] ) # atomic index is counted from zero!
-                    except KeyError: pass
-                atoms.append( {'c':rgb, 'r': "%2.3f" % radius, 'x': "%2.3f" % i.position[0], 'y': "%2.3f" % i.position[1], 'z': "%2.3f" % i.position[2], 'o': oa} )
+        # player.html cell depiction
+        cell_points = []
+        if ase_obj.get_pbc().all():
+            for i in ase_obj.cell.tolist():
+                #cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
+                cell_points.append(i)
 
-            # player.html cell depiction
-            cell_points = []
-            if ase_obj.get_pbc().all():
-                for i in ase_obj.cell.tolist():
-                    #cell_points.append([i[0]*mass_center_octant[0], i[1]*mass_center_octant[1], i[2]*mass_center_octant[2]])
-                    cell_points.append(i)
+        # player.html caption
+        cellpar = cell_to_cellpar( ase_obj.cell ).tolist()
+        descr = {'a': "%2.3f" % cellpar[0], 'b': "%2.3f" % cellpar[1], 'c': "%2.3f" % cellpar[2], 'alpha': "%2.3f" % cellpar[3], 'beta': "%2.3f" % cellpar[4], 'gamma': "%2.3f" % cellpar[5]}
 
-            # player.html info area
-            cellpar = cell_to_cellpar( ase_obj.cell ).tolist()
-            descr = {'a': "%2.3f" % cellpar[0], 'b': "%2.3f" % cellpar[1], 'c': "%2.3f" % cellpar[2], 'alpha': "%2.3f" % cellpar[3], 'beta': "%2.3f" % cellpar[4], 'gamma': "%2.3f" % cellpar[5]}
-
-            content = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': descr, 'overlayed': overlayed_apps})
-            self.set_header('Content-type', 'application/json')
-            self.write(content)'''
+        content = json.dumps({'atoms': atoms, 'cell': cell_points, 'descr': descr, 'overlayed': overlayed_apps})
+        self.set_header('Content-type', 'application/json')
+        self.write(content)
 
 '''class DataExportHandler(tornado.web.RequestHandler):
     def get(self, req_str):
@@ -889,7 +879,7 @@ if __name__ == "__main__":
         application = tornado.web.Application(
             [(r"/", IndexHandler),
             (r"/static/(.*)", tornado.web.StaticFileHandler),
-            #(r"/json3d/(.*)", JSON3DDownloadHandler),
+            (r"/json3d/(.*)", JSON3DDownloadHandler),
             #(r"/export/(.*)", DataExportHandler),
             ] + DuplexRouter.urls,
             static_path = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../htdocs'),

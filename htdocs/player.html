@@ -1,12 +1,11 @@
 <!--
-Tilde project: 3d atomic structure canvas renderer
-based on three.js and tween.js
-v170514
+Atomic structure canvas renderer
+three.js / tween.js
+v280814
 -->
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title></title>
 <meta charset="utf-8">
 <style>
 body{margin:0;padding:0;overflow:hidden;}
@@ -16,10 +15,8 @@ body{margin:0;padding:0;overflow:hidden;}
 div.L{display:block;position:absolute;font-size:0.55em;z-index:200;font-family:sans-serif;}
 </style>
 
-
 <script type="text/javascript" src="three.custom.js"></script>
 <!--script type="text/javascript" src="stats.min.js"></script-->
-
 
 <script type="text/javascript">
 // tween.js r13 - http://github.com/sole/tween.js
@@ -251,7 +248,7 @@ var container, stats, camera, scene, renderer, controls, atoms;
 var forced_labels=false, active_overlay="", overlay_backup="";
 var loaded_3D=false, obj_3D=false, sample = '{"atoms": [{"x": "0", "y": "0", "z": "0", "c": "0x000000", "r": "1.25", "o": {"m": 42, "mm": -0.000022, "t": "Uuo"}}, {"x": "1.25", "y": "1.25", "z": "1.25", "c": "0xFF0000", "r": "1", "o": {"m": 8, "t": "O"}}], "cell": [[3, 0, 0], [0, 3, 0], [0, 0, 3]], "descr": {"a": 3.00, "b": 3.00, "c": 3.00, "alpha": 90, "beta": 90, "gamma": 90}, "overlayed": {"m": "atomic ambivalence", "mm": "my test property"}}';
 
-function iframe_download( request, scope, hash ){
+/*function iframe_download( request, scope, hash ){
     var dl = document.createElement( 'form' );
     dl.method = "GET";
     dl.action = '/' + request + '/' + scope + '/' + hash;
@@ -259,7 +256,7 @@ function iframe_download( request, scope, hash ){
     dl.style.display = "none";
     document.body.appendChild(dl);
     dl.submit();
-}
+}*/
 function json_download(request){
     var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
     xmlhttp.onreadystatechange = function(){
@@ -502,7 +499,7 @@ function init_3D(){
         if (y<44){
             var uri = document.location.hash.substr(1).split('/');
             if (uri.length == 2){
-                if (!!window.parent._tilde) window.open('/static/player.html#' + uri[0] + '/' + uri[1]);
+                if (!!window.parent._gui) window.open('/static/player.html#' + uri[0] + '/' + uri[1]);
                 else self.close();
             }
             return;
