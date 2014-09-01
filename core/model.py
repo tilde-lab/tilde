@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint
 
 
-DB_SCHEMA_VERSION = '2.04' # determined by the schema below and GUI entities
+DB_SCHEMA_VERSION = '2.05' # determined by the schema below and GUI entities
 
 Base = declarative_base()
 

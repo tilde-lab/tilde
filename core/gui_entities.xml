@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>
-    <superentity category="properties"      includes="6, 26, 27, 28" fontsize="38" />
+    <superentity category="properties"      includes="6, 26, 27, 28, 1002" fontsize="38" />
     <superentity category="structure"       includes="1, 2, 3, 4, 1001, 8, 510, 511, 520, 521, 522, 1003" fontsize="28" />
     <superentity category="symmetry"        includes="5, 9, 10, 11, 12, 13" fontsize="16" />    
     <superentity category="method"          includes="7, 14, 15, 17, 19, 20, 21, 501" fontsize="16" />    
@@ -48,7 +48,7 @@
 
     <entity cid="501" category="basis set"              source="bs#" multiple="1" has_summary_contrb="1" has_label="1" sort="26"/>
 
-    <entity cid="1002" category="total energy"          source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="31" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
+    <entity cid="1002" category="total energy"          source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="31" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="1003" category="cell volume"           source='dims' html="Cell, A^^2** or A^^3**" sort="12" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="1005" category="source file"           source='location' sort="36" has_column="1"/>
     <entity cid="1006" category="finished"              source='finished' html="Finished?" sort="37" has_summary_contrb="1" has_column="1"/>
