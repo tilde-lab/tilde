@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>
-    <superentity category="structure"       includes="1, 2, 3, 4, 1001, 8, 510, 511, 520, 521, 522, 1003" />
-    <superentity category="symmetry"        includes="5, 9, 10, 11, 12, 13" />
-    <superentity category="method"          includes="7, 14, 15, 17, 19, 20, 21, 501" />
-    <superentity category="properties"      includes="6, 26, 27, 28, 1002" />
-    <superentity category="auxiliary"       includes="22, 23, 24, 25, 1005, 1006, 2001, 2002, 2003" />
+    <superentity category="properties"      includes="6, 26, 27, 28" fontsize="38" />
+    <superentity category="structure"       includes="1, 2, 3, 4, 1001, 8, 510, 511, 520, 521, 522, 1003" fontsize="28" />
+    <superentity category="symmetry"        includes="5, 9, 10, 11, 12, 13" fontsize="16" />    
+    <superentity category="method"          includes="7, 14, 15, 17, 19, 20, 21, 501" fontsize="16" />    
+    <superentity category="other"           includes="22, 23, 24, 25, 1005, 1006, 2001, 2002, 2003" fontsize="16" />
     
     <!-- TODO: APPS -->
     
     <entity cid="1" category="chemical formula"         source="standard" sort="1" has_summary_contrb="1" has_column="1" has_label="1"/>
     <entity cid="2" category="containing element"       source="element#" multiple="1" sort="2" has_summary_contrb="1" has_label="1"/>
-    <entity cid="3" category="host elements number"     source="nelem" sort="3" has_summary_contrb="1" has_label="1" plottable="1"/>
+    <entity cid="3" category="number of elements"       source="nelem" sort="3" has_summary_contrb="1" has_label="1" plottable="1"/>
     <entity cid="4" category="formula units"            source="expanded" sort="4" has_summary_contrb="1" has_column="1" has_label="1" plottable="1"/>
     <entity cid="1001" category="number of atoms"       source="natom" has_summary_contrb="1" html="N,,atoms__" sort="5" has_column="1" plottable="1"/>
 
@@ -36,8 +36,8 @@
     <entity cid="24" category="modeling time, hr"       source='duration' sort="34" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="25" category="parsing time, sc"        source='perf' sort="35" has_summary_contrb="1" has_column="1" plottable="1"/>
 
-    <entity cid="26" category="conduct./insulat."       source='etype' sort="28" has_summary_contrb="1" has_column="1" has_label="1"/>
-    <entity cid="27" category="min.band gap"            source='bandgap' html="Min. band gap, {{units-energy}}" sort="29" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
+    <entity cid="26" category="conductor/insulator"     source='etype' sort="28" has_summary_contrb="1" has_column="1" has_label="1"/>
+    <entity cid="27" category="min.band gap"            source='bandgap' html="Min.band gap, {{units-energy}}" sort="29" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="28" category="band gap type"           source='bandgaptype' sort="30" has_summary_contrb="1" has_column="1" has_label="1"/>
 
     <entity cid="510" category="vacancy content"        source="vac" sort="7" negative_tagging="1" plottable="1"/>
@@ -46,10 +46,10 @@
     <entity cid="521" category="adsorbent"              source="adsorbent" sort="10"/>
     <entity cid="522" category="surface termination"    source="termination" sort="11"/>
 
-    <entity cid="501" category="basis set"              source="bs#" multiple="1" sort="26"/>
+    <entity cid="501" category="basis set"              source="bs#" multiple="1" has_summary_contrb="1" has_label="1" sort="26"/>
 
     <entity cid="1002" category="total energy"          source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="31" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
-    <entity cid="1003" category="cell vol.or area"      source='dims' html="Cell, A^^2** or A^^3**" sort="12" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
+    <entity cid="1003" category="cell volume"           source='dims' html="Cell, A^^2** or A^^3**" sort="12" has_slider="1" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="1005" category="source file"           source='location' sort="36" has_column="1"/>
     <entity cid="1006" category="finished"              source='finished' html="Finished?" sort="37" has_summary_contrb="1" has_column="1"/>
 

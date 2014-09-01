@@ -123,7 +123,7 @@ table.freqs_holder tbody tr td{font-style:italic;line-height:18px;}
 table.freqs_holder th{border-bottom:1px solid #000;}
 table.freqs_holder td.white{border:0;}
 div.tagrow{display:none;width:100%;}
-div.tagcapt{float:left;width:250px;color:#333;padding:18px 15px 0 0;font-size:1.2em;word-wrap:break-word;font-weight:bold;vertical-align:top;text-align:right;}
+div.tagcapt{float:left;width:250px;color:#ccc;padding:12px 15px 8px 0;font-size:1.35em;word-wrap:break-word;font-weight:normal;vertical-align:top;text-align:right;}
 div.tagarea{float:left;width:80%;margin:8px 0;min-height:30px;}
 div.tagarea_reduced{height:2.25em;overflow:hidden;}
 a.taglink{display:inline-block;height:24px;min-width:2.5em;font-size:1.25em;border:1px solid #fff;color:#333;background:#fff;text-decoration:underline;padding:2px;margin:2px;text-align:center;}
@@ -181,7 +181,7 @@ div.loading{background:#fff url(images/spinner.gif) no-repeat center center;}
 #tagcloud_holder > #splashscreen{width:100%;height:100%;overflow-y:scroll;}
 
 /* DB TITLE */
-#repo_title_holder{width:100%;text-align:center;padding:25px 0;}
+#repo_title_holder{display:none;width:100%;text-align:center;padding:25px 0;}
 h1{font-size:1.4em;}
 
 /* OTHER DYNBLOCKS */
@@ -192,8 +192,8 @@ h1{font-size:1.4em;}
 #errormsg{margin:20px;}
 
 /* SUPERCATS */
-div.supercat{width:100%;margin:0 auto 24px;height:36px;background:#eeeeee;clear:both;cursor:pointer;}
-div.supercat_name{width:100%;padding:3px 0 3px;height:30px;font-size:1.4em;font-weight:bold;text-align:center;}
+div.supercat{width:100%;margin:0 auto 18px;min-height:36px;background:#f8f8f8;clear:both;cursor:pointer;}
+div.supercat_name{width:100%;margin:0 auto;padding:6px 0;font-size:1.4em;font-weight:bold;text-align:center;}
 div.supercat_content{display:none;margin:0;}
 
 /* WINDOWS AND IFRAMES */
@@ -218,3 +218,147 @@ li.ext_xml{background:url(images/structure0.gif) left top no-repeat;}
 li.ext_out{background:url(images/structure1.gif) left top no-repeat;}
 li.ext_scf, li.ext_struct{background:url(images/structure3.gif) left top no-repeat;}
 li.ext_cif{background:url(images/structure2.gif) left top no-repeat;}
+
+
+/* SLIDERS */
+.noUi-target,
+.noUi-target * {
+-webkit-touch-callout: none;
+-webkit-user-select: none;
+-ms-touch-action: none;
+-ms-user-select: none;
+-moz-user-select: none;
+-moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.noUi-target {
+    position: relative;
+}
+.noUi-base {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+.noUi-origin {
+    position: absolute;
+    right: 0;
+    top: 0;
+    left: 0;
+    bottom: 0;
+}
+.noUi-handle {
+    position: relative;
+    z-index: 1;
+}
+.noUi-stacking .noUi-handle {
+/* This class is applied to the lower origin when
+   its values is > 50%. */
+    z-index: 10;
+}
+.noUi-stacking + .noUi-origin {
+/* Fix stacking order in IE7, which incorrectly
+   creates a new context for the origins. */
+    *z-index: -1;
+}
+.noUi-state-tap .noUi-origin {
+-webkit-transition: left 0.3s, top 0.3s;
+    transition: left 0.3s, top 0.3s;
+}
+.noUi-state-drag * {
+    cursor: inherit !important;
+}
+.noUi-origin,
+.noUi-handle {
+    -webkit-transform: translate3d(0,0,0);
+    transform: translate3d(0,0,0);
+}
+.noUi-horizontal {
+    height: 18px;
+}
+.noUi-horizontal .noUi-handle {
+    width: 34px;
+    height: 28px;
+    left: -17px;
+    top: -6px;
+}
+.noUi-vertical {
+    width: 18px;
+}
+.noUi-vertical .noUi-handle {
+    width: 28px;
+    height: 34px;
+    left: -6px;
+    top: -17px;
+}
+.noUi-background {
+    background: #FAFAFA;
+    box-shadow: inset 0 1px 1px #f0f0f0;
+}
+.noUi-connect {
+    background: #cef;
+    box-shadow: inset 0 0 3px rgba(51,51,51,0.45);
+-webkit-transition: background 450ms;
+    transition: background 450ms;
+}
+.noUi-origin {
+    border-radius: 2px;
+}
+.noUi-target {
+    border-radius: 4px;
+    border: 1px solid #D3D3D3;
+    box-shadow: inset 0 1px 1px #F0F0F0, 0 3px 6px -5px #BBB;
+}
+.noUi-target.noUi-connect {
+    box-shadow: inset 0 0 3px rgba(51,51,51,0.45), 0 3px 6px -5px #BBB;
+}
+.noUi-dragable {
+    cursor: w-resize;
+}
+.noUi-vertical .noUi-dragable {
+    cursor: n-resize;
+}
+.noUi-handle {
+    border: 1px solid #D9D9D9;
+    border-radius: 3px;
+    background: #FFF;
+    cursor: default;
+    box-shadow: inset 0 0 1px #FFF,
+                inset 0 1px 7px #EBEBEB,
+                0 3px 6px -3px #BBB;
+}
+.noUi-active {
+    box-shadow: inset 0 0 1px #FFF,
+                inset 0 1px 7px #DDD,
+                0 3px 6px -3px #BBB;
+}
+.noUi-handle:before,
+.noUi-handle:after {
+    content: "";
+    display: block;
+    position: absolute;
+    height: 14px;
+    width: 1px;
+    background: #E8E7E6;
+    left: 14px;
+    top: 6px;
+}
+.noUi-handle:after {
+    left: 17px;
+}
+.noUi-vertical .noUi-handle:before,
+.noUi-vertical .noUi-handle:after {
+    width: 14px;
+    height: 1px;
+    left: 6px;
+    top: 14px;
+}
+.noUi-vertical .noUi-handle:after {
+    top: 17px;
+}
+[disabled].noUi-connect,
+[disabled] .noUi-connect {
+    background: #B8B8B8;
+}
+[disabled] .noUi-handle {
+    cursor: not-allowed;
+}

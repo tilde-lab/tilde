@@ -193,7 +193,7 @@ class Request_Handler:
                 try: match = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
                 except IndexError: return (None, 'Schema and data do not match: different versions of code and database?')
 
-                if not 'has_label' in match or not match['has_label']: continue
+                if not 'has_label' in match or not match['has_label']: continue # TODO: redundant!
 
                 if match['cid'] in [1, 511, 521, 522]: ready_topic = html_formula(topic) # TODO!!!
                 else: ready_topic = topic
@@ -206,7 +206,9 @@ class Request_Handler:
                         tags[n]['content'].append( {'tid': tid, 'topic': ready_topic} )
                         break
                 else: tags.append({'cid': match['cid'], 'category': match['category'], 'sort': sort, 'content': [ {'tid': tid, 'topic': ready_topic} ]})
-
+            
+            tags += Tilde.sliders
+            
             tags.sort(key=lambda x: x['sort'])
             tags = {'blocks': tags, 'cats': Tilde.supercategories}
             

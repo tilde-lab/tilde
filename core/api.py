@@ -36,7 +36,7 @@ class API:
 
     def __init__(self, settings = DEFAULT_SETUP):
         self.settings = settings
-        self.hierarchy, self.supercategories = read_hierarchy()
+        self.hierarchy, self.supercategories, self.sliders = read_hierarchy()
 
         # *parser API*
         # Subfolder "parsers" contains directories with parsers.

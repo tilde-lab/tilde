@@ -460,13 +460,13 @@ function resp__login(req, data){
         var checked_state = item.enabled ? ' checked=checked' : '';
         $.each(data.cats, function(i, n){
             if ($.inArray(item.cid, n.includes) != -1){
-                n.contains.push( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
+                n.jspocket.push( '<li><input type="checkbox" id="s_cb_'+item.cid+'"'+checked_state+'" value="'+item.cid+'" /><label for="s_cb_'+item.cid+'"> '+item.category.charAt(0).toUpperCase() + item.category.slice(1)+'</label></li>' );
             }
         });
     });
     var result_html = '';
     $.each(data.cats, function(i, n){
-        result_html += '<div class="ipane_cols_holder"><span>' + n.category.charAt(0).toUpperCase() + n.category.slice(1) + '</span><ul>' + n.contains.join('') + '</ul></div>';
+        result_html += '<div class="ipane_cols_holder"><span>' + n.category.charAt(0).toUpperCase() + n.category.slice(1) + '</span><ul>' + n.jspocket.join('') + '</ul></div>';
     });
     $('#settings_cols').empty().append( result_html );
 
@@ -607,15 +607,20 @@ function resp__tags(req, data){
 
         $.each(data.blocks, function(num, value){
             tags_html += '<div class="tagrow" rel="' + value.cid + '"><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea">';
-
-            value.content.sort(function(a, b){
-                if (a.topic < b.topic) return -1;
-                else if (a.topic > b.topic) return 1;
-                else return 0;
-            });
-            $.each(value.content, function(n, i){
-                tags_html += '<a class="taglink visibletag _tag' + i.tid + '" rel="' + i.tid + '" href=#>' + i.topic + '</a>';
-            });
+            
+            if (value.content){
+                value.content.sort(function(a, b){
+                    if (a.topic < b.topic) return -1;
+                    else if (a.topic > b.topic) return 1;
+                    else return 0;
+                });
+                $.each(value.content, function(n, i){
+                    tags_html += '<a class="taglink visibletag _tag' + i.tid + '" rel="' + i.tid + '" href=#>' + i.topic + '</a>';
+                });
+            } else {
+                // sliders
+                tags_html += '<div class=gui_slider id=gui_slider_'+num+' style="width:60%;"></div>';
+            }
             tags_html += '</div></div>'
         });
 
@@ -626,21 +631,25 @@ function resp__tags(req, data){
 
         // TODO
         $('#splashscreen > div').each(function(){
-            var content = $(this);
+            var contains = $(this);
             $.each(data.cats, function(i, n){
-                if ($.inArray(parseInt(content.attr('rel')), n.includes) != -1){
-                    n.contains.push('<div class=tagrow>' + content.html() + '</div>');
+                if ($.inArray(parseInt(contains.attr('rel')), n.includes) != -1){
+                    n.jspocket.push('<div class=tagrow>' + contains.html() + '</div>');
                 }
             });
         });
         var result_html = '';
         $.each(data.cats, function(i, n){
-            result_html += '<div class=supercat> <div class=supercat_name>'+n.category.charAt(0).toUpperCase() + n.category.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + n.contains.join('') + '</div> </div>';
+            result_html += '<div class=supercat> <div class=supercat_name style="font-size:'+n.fontsize+'px;">'+n.category.charAt(0).toUpperCase() + n.category.slice(1)+' (<span class="link">show</span>)</div> <div class=supercat_content>' + n.jspocket.join('') + '</div> </div>';
         });
 
         if (empty_flag) result_html = '<center>DB is empty!</center>';
 
         $('#splashscreen').empty().append(result_html);
+        
+        $('div.gui_slider').each(function(){
+            $(this).noUiSlider({  start:[ 4000, 8000 ], range: {'min': [  2000 ],'max': [ 10000 ]}, animate: false, connect: true  });
+        });
 
         if (!$('#splashscreen_holder > #splashscreen').length) $('#splashscreen_holder').append($('#splashscreen'));
 
@@ -1528,6 +1537,7 @@ $(document).ready(function(){
             __send('tags', {tids: tags});
         } else {
             $('#splashscreen a.taglink').removeClass('activetag').addClass('visibletag').show();
+            $('div.tagrow').show();
             $('#initbox').hide();
             add_tag_expanders();
         }

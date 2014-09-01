@@ -129,6 +129,7 @@ def read_hierarchy():
     except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
     
     hierarchy, supercategories = [], []
+    sliders = []
     
     doc = tree.getroot()
     
@@ -137,11 +138,14 @@ def read_hierarchy():
         # type corrections
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
         hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
+        if 'has_slider' in elem.attrib:
+            sliders.append( elem.attrib )
+            sliders[-1]['cid'] = int(sliders[-1]['cid'])
         
     for elem in doc.findall('superentity'):
-        supercategories.append(  {  'category': elem.attrib['category'], 'includes': map(int, elem.attrib['includes'].split(',')), 'contains': []  }  )
+        supercategories.append(  {  'category': elem.attrib['category'], 'includes': map(int, elem.attrib['includes'].split(',')), 'jspocket': [], 'fontsize': elem.attrib['fontsize']  }  )
         
-    return hierarchy, supercategories
+    return hierarchy, supercategories, sliders
     
 # end obligatory routines
 
