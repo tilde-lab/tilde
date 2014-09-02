@@ -7,14 +7,14 @@ v070514
 <head>
 <title></title>
 <meta charset="utf-8" />
-<link type="text/css" href="/static/~.css?11" rel="stylesheet" media="screen" />
+<link type="text/css" href="/static/~.css" rel="stylesheet" media="screen" />
 <script type="text/javascript" src="/static/jquery.min.js"></script>
 <script type="text/javascript" src="/static/sockjs.min.js"></script>
 <script type="text/javascript" src="/static/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="/static/jquery.flot.min.js"></script>
 <script type="text/javascript" src="/static/jquery.nos.min.js"></script>
 <script type="text/javascript" src="/static/jstorage.min.js"></script>
-<script type="text/javascript" src="/static/core.js?15"></script>
+<script type="text/javascript" src="/static/core.js"></script>
 </head>
 <body>
 
@@ -291,29 +291,6 @@ v070514
 </div>
 
 
-<!-- ABOUT LAYOUT -->
-<div id="landing_holder" class="pane">
-
-    <!-- TOP LOGO SIDE -->
-    <div id="top">
-        <div id="tilde_logo"></div>
-    </div>
-
-    <!-- MAIN CONTENT SIDE -->
-    <div id="mainframe" class="shadow">
-        <div id="welcome">
-            <p>Welcome to Tilde <span id="version"></span> GUI (more info at <a href="http://github.com/jam31/tilde">GitHub</a>). Here you manage your modeling data. Your actual files stay always untouched. Your data aren't sent to anywhere. No Internet connection is needed.</p>
-            
-            <p>Please, send your feedback, bugreports and feature requests via <a href="mailto:eb@tilde.pro">email</a>, <a href="http://twitter.com/tildepro">Twitter</a> or <a href="http://github.com/jam31/tilde/issues">GitHub</a>.</p>
-
-            <div id="continue_trigger" class="btn btn2" style="width:147px;margin:13px auto;font-size:1.1em">Continue <span style="font-size:2.1em">&rarr;</span></div>
-
-        </div>
-    </div>
-
-</div>
-
-
 <!-- COLUMN PLOT -->
 <div id="column_plot_holder" class="shadow _closable">
     <div class="cross _close"></div>
@@ -321,13 +298,13 @@ v070514
     <div id="column_plot" class="flot_holder"></div>
 </div>
 
+
 <!-- DATA MENUS, SPLASHSCREEN AND DATABROWSER LAYOUTS -->
 <div id="data_holder" class="pane">
     
     <div id="menu">
         
         <div id="menu_main_cmds" class="menu_cmds">
-            <!-- div class="btn left" id="custom_about_link_trigger" style="display:none;"><span style="font-size:1.8em;">&larr;</span> start</div -->
             <div class="btn left protected" id="add_trigger">add data</div>
             <div class="btn btn2 left" id="noclass_trigger">all topics</div>
             <div class="btn btn2 left" id="tagcloud_trigger" style="display:none;">sub-topics</div>
@@ -364,7 +341,5 @@ v070514
     <table id="databrowser" class="tablesorter"></table>
     
 </div>
-
-
 </body>
 </html>

@@ -428,10 +428,7 @@ function resp__login(req, data){
     if (data.demo_regime){
         _gui.demo_regime = true;
         $('.protected').hide();
-        if (data.custom_about_link){
-            $('#custom_about_link_trigger').show();
-            _gui.custom_about_link = data.custom_about_link;
-        }
+        if (data.custom_about_link) _gui.custom_about_link = data.custom_about_link;
     }
     $('#settings_webport').val(data.settings.webport);
 
@@ -1772,10 +1769,6 @@ $(document).ready(function(){
     // ABOUT
     $('#about_trigger').click(function(){
         if (_gui.custom_about_link) document.location = _gui.custom_about_link;
-        else document.location.hash = '#about';
-    });
-    $('#custom_about_link_trigger').click(function(){
-        document.location = _gui.custom_about_link;
     });
 /**
 *
@@ -1786,13 +1779,6 @@ $(document).ready(function(){
     // DEBUG CONSOLE
     $('#console_trigger').click(function(){
         set_console(true);
-    });
-
-    // ABOUT WINDOW
-    $('#continue_trigger').click(function(){
-        var action = function(){ document.location.hash = '#' + _gui.settings.dbs[0]; }
-        $("#tilde_logo").animate({ marginTop: '175px' }, { duration: 330, queue: false });
-        $("#mainframe").animate({ height: 'hide' }, { duration: 330, queue: false, complete: function(){ action() } });
     });
 
     // RESIZE
