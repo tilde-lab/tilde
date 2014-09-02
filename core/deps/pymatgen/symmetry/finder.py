@@ -35,12 +35,9 @@ from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import PeriodicSite
 from pymatgen.core.structure_modifier import SupercellMaker
 
-# MODIFIED BY jam31 at 301113
-# Dirty hack to provide cross-platform compatibility : TODO
+# MODIFIED BY jam31
 import os, sys
-try:
-    if 'win' in sys.platform: sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../../windows/spglib/'))
-    import _spglib as spg
+try: import _spglib as spg
 except ImportError: raise RuntimeError('Cannot start symmetry finder!')
 
 

@@ -1,10 +1,10 @@
 
-# Tilde project: compiler for C-extensions
+# Compiler for C-extensions
 # v301113
 
 import os, sys
 
-if not 'win' in sys.platform and not os.path.exists( os.path.dirname(os.path.abspath(__file__)) + "/_spglib.so" ):
+if not os.path.exists( os.path.dirname(os.path.abspath(__file__)) + "/_spglib.so" ):
     
     # this currently compiles spglib at Unix
     
@@ -16,7 +16,7 @@ if not 'win' in sys.platform and not os.path.exists( os.path.dirname(os.path.abs
     from distutils.command.build_ext import build_ext
     from numpy.distutils.misc_util import get_numpy_include_dirs
     
-    spglibdir = os.path.realpath(os.path.dirname(__file__) + '/deps/spglib')
+    spglibdir = os.path.realpath(os.path.join(os.path.dirname(__file__), 'deps/spglib'))
     spgsrcdir = os.path.join(spglibdir, 'src')
     include_dirs = [spgsrcdir]
     sources = ["cell.c", "debug.c", "hall_symbol.c", "kpoint.c", "lattice.c", "mathfunc.c", "pointgroup.c", "primitive.c", "refinement.c", "sitesym_database.c", "site_symmetry.c", "spacegroup.c", "spin.c", "spg_database.c", "spglib.c", "symmetry.c"]

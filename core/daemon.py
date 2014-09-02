@@ -375,8 +375,6 @@ class Request_Handler:
 
             if not len(userobj['path']): return (data, 'Please, input a valid working path.')
             if not os.path.exists(userobj['path']) or not os.access(userobj['path'], os.R_OK): return (data, 'Cannot read this path, may be invalid or not enough privileges?')
-            if 'win' in sys.platform and userobj['path'].startswith('/'): return (data, 'Working path should not start with slash.')
-            if 'linux' in sys.platform and not userobj['path'].startswith('/'): return (data, 'Working path should start with slash.')
 
             userobj['path'] = os.path.abspath(userobj['path'])
             if not userobj['path'].endswith(os.sep): userobj['path'] += os.sep

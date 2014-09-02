@@ -13,12 +13,7 @@ sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) +
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-
-# Dirty hack to provide cross-platform compatibility
-try:
-    if 'win' in sys.platform:
-        sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../windows/spglib/'))
-    import _spglib as spg
+try: import _spglib as spg
 except ImportError: raise RuntimeError('Cannot start symmetry finder!')
 
 
