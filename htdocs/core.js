@@ -328,6 +328,18 @@ function gather_tags(area, myself){
     return found_tags;
 }
 
+function gather_continuous(){
+    var condition = [];
+    
+    $('div.gui_slider').each(function(){
+        var min = parseFloat($(this).attr('min')), max = parseFloat($(this).attr('max'));
+        var v = $(this).val();
+        if (parseFloat(v[0]) !== min || parseFloat(v[1]) !== max) condition.push({cid: $(this).parent().parent().attr('rel'), min: v[0], max: v[1]});
+    });
+    
+    return condition;
+}
+
 function remdublicates(arr){
     var i, len=arr.length, out=[], obj={};
     for (i=0;i<len;i++){
@@ -604,24 +616,27 @@ function resp__tags(req, data){
         });
     } else {
         // BUILD TAGS FROM SCRATCH
-
+        var tags_piece = '';
         $.each(data.blocks, function(num, value){
-            tags_html += '<div class="tagrow" rel="' + value.cid + '"><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div class="tagarea">';
+            tags_piece = 'rel="' + value.cid + '"><div class=tagcapt>' + value.category.charAt(0).toUpperCase() + value.category.slice(1) + ':</div><div';
             
             if (value.content){
+                tags_piece = '<div class="tagrow" ' + tags_piece + ' class="tagarea">';
                 value.content.sort(function(a, b){
                     if (a.topic < b.topic) return -1;
                     else if (a.topic > b.topic) return 1;
                     else return 0;
                 });
                 $.each(value.content, function(n, i){
-                    tags_html += '<a class="taglink visibletag _tag' + i.tid + '" rel="' + i.tid + '" href=#>' + i.topic + '</a>';
+                    tags_piece += '<a class="taglink visibletag _tag' + i.tid + '" rel="' + i.tid + '" href=#>' + i.topic + '</a>';
                 });
             } else {
                 // sliders
-                tags_html += '<div class=gui_slider id=gui_slider_'+num+' style="width:60%;"></div>';
+                tags_piece = '<div class="sliderow" ' + tags_piece + ' class="tagarea">';
+                tags_piece += '<div class="gui_slider_min left"></div> <div class="gui_slider left" id=gui_slider_'+num+' style="width:60%;" min='+value.min+' max='+value.max+'></div> <div class="gui_slider_max left"></div>';
             }
-            tags_html += '</div></div>'
+            tags_piece += '</div></div>';
+            tags_html += tags_piece;
         });
 
         var empty_flag = false;
@@ -634,7 +649,7 @@ function resp__tags(req, data){
             var contains = $(this);
             $.each(data.cats, function(i, n){
                 if ($.inArray(parseInt(contains.attr('rel')), n.includes) != -1){
-                    n.jspocket.push('<div class=tagrow>' + contains.html() + '</div>');
+                    n.jspocket.push('<div class=' + contains.attr('class') + ' rel=' + contains.attr('rel') + '>' + contains.html() + '</div>');
                 }
             });
         });
@@ -648,12 +663,16 @@ function resp__tags(req, data){
         $('#splashscreen').empty().append(result_html);
         
         $('div.gui_slider').each(function(){
-            $(this).noUiSlider({  start:[ 4000, 8000 ], range: {'min': [  2000 ],'max': [ 10000 ]}, animate: false, connect: true  });
+            var min = parseFloat($(this).attr('min')), max = parseFloat($(this).attr('max'));
+            $(this).prev().text(min.toFixed(2)).end().next().text(max.toFixed(2)).end()
+            .noUiSlider({  start:[ min, max ], range: {'min':[min],'max':[max]}, animate: false, connect: true  }).on({set:
+            function(){ var v = $(this).val(); $(this).prev().text(parseFloat(v[0]).toFixed(2)).end().next().text(parseFloat(v[1]).toFixed(2)); if (parseFloat(v[0]) !== min || parseFloat(v[1]) !== max) $('#initbox').show() }, slide:
+            function(){ var v = $(this).val(); $(this).prev().text(parseFloat(v[0]).toFixed(2)).end().next().text(parseFloat(v[1]).toFixed(2)) }});
         });
 
         if (!$('#splashscreen_holder > #splashscreen').length) $('#splashscreen_holder').append($('#splashscreen'));
 
-        $('div.tagrow').show();
+        $('div.tagrow, div.sliderow').show();
     }
 
     if (!$.isEmptyObject(data)) $('#splashscreen').show();
@@ -807,16 +826,16 @@ function resp__summary(req, data){
     // SUMMARY (MAIN) IPANE
     var html = '<div><strong>'+data.info.location+'</strong></div>';
     html += '<div class=preformatter style="height:445px;"><ul class=tags>';
-    if (data.info.warns){
-        for (var i=0; i<data.info.warns.length; i++){
-            html += '<li class=warn>'+data.info.warns[i]+'</li>';
-        }
-    }
     $.each(data.summary, function(num, value){
         if ($.inArray(value.content[0], ['&mdash;', '?']) == -1) {
             html += '<li><strong>' + value.category + '</strong>: <span>' + value.content.join('</span>, <span>') + '</span></li>';
         }
     });
+    if (data.info.warns){
+        for (var i=0; i<data.info.warns.length; i++){
+            html += '<li class=warn>'+data.info.warns[i]+'</li>';
+        }
+    }
     html += '</ul></div>';
     $('#o_'+req.datahash + ' div[rel=summary]').append('<div class=summary>'+html+'</div>');
     $('span._e').each(function(){
@@ -954,7 +973,7 @@ $(document).ready(function(){
     if (!window.JSON) return; // sorry, we live in 2014
 
     _gui.cwidth = document.body.clientWidth;
-    var centerables = ['notifybox', 'loadbox', 'countbox', 'connectors', 'column_plot_holder'];
+    var centerables = ['notifybox', 'initbox', 'loadbox', 'countbox', 'connectors', 'column_plot_holder'];
     var centerize = function(){
         $.each(centerables, function(n, i){
             document.getElementById(i).style.left = _gui.cwidth/2 - $('#'+i).width()/2 + 'px';
@@ -1547,13 +1566,19 @@ $(document).ready(function(){
     // SPLASHSCREEN INIT TAG QUERY
     $('#init_trigger').click(function(){
         var tags = gather_tags($('#splashscreen'));
-        __send('browse', {tids: tags});
+        var condition = gather_continuous();
+        __send('browse', {tids: tags, condition: condition});
         $('#initbox').hide();
     });
     $('#cnl_trigger').click(function(){
         $('#splashscreen a.taglink').removeClass('activetag').addClass('visibletag').show();
+        $('div.tagrow').show();
         $('#initbox').hide();
         add_tag_expanders();
+        $('div.gui_slider').each(function(){
+            var min = parseFloat($(this).attr('min')), max = parseFloat($(this).attr('max'));
+            $(this).noUiSlider({ start: [min, max] }, true);
+        });
     });
 /**
 *

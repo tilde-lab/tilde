@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import UniqueConstraint
 
 
-DB_SCHEMA_VERSION = '2.05' # determined by the schema below and GUI entities
+DB_SCHEMA_VERSION = '2.06' # determined by the schema below and GUI entities
 
 Base = declarative_base()
 
@@ -249,6 +249,7 @@ class Struct_ratios(Base):
     is_primitive = Column(Boolean, default=False)
     formula_units = Column(Integer, nullable=False)
     nelem = Column(Integer, nullable=False)
+    dimensions = Column(Float, nullable=False)
     
 # submodules table
 

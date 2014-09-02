@@ -52,11 +52,6 @@ for task in tasks:
             print "+"*50
             for j in i['states']:
                 print "->", j'''
-    print "-"*50
-    n=0
-    while 1:
-        try: print calc.info[ 'bs' + str(n) ]
-        except KeyError: break
-        n += 1
+    pprint.pprint( calc.info )
     
     #print calc.structures[-1].get_array('mtrp')

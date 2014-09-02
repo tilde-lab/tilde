@@ -36,7 +36,7 @@ class API:
 
     def __init__(self, settings = DEFAULT_SETUP):
         self.settings = settings
-        self.hierarchy, self.supercategories, self.sliders = read_hierarchy()
+        self.hierarchy, self.supercategories = read_hierarchy()
 
         # *parser API*
         # Subfolder "parsers" contains directories with parsers.
@@ -384,7 +384,14 @@ class API:
         if 'vac' in calc.info:
             if 'X' in symbols: calc.info['techs'].append('vacancy defect: ghost')
             else: calc.info['techs'].append('vacancy defect: void space')
-
+        
+        calc.info['lata'] = round(calc.info['cellpar'][0], 3)
+        calc.info['latb'] = round(calc.info['cellpar'][1], 3)
+        calc.info['latc'] = round(calc.info['cellpar'][2], 3)
+        calc.info['latalpha'] = round(calc.info['cellpar'][3], 2)
+        calc.info['latbeta'] = round(calc.info['cellpar'][4], 2)
+        calc.info['latgamma'] = round(calc.info['cellpar'][5], 2)
+        
         # invoke symmetry finder
         found = SymmetryHandler(calc, symprec)
         if found.error:
@@ -576,7 +583,7 @@ class API:
 
         # structure
         sim.spacegroup = model.Spacegroup(n=calc.info['ng'])
-        sim.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'])
+        sim.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'], dimensions=calc.info['dims'])
         for n, ase_repr in enumerate(calc.structures):
             is_final = True if n == len(calc.structures)-1 else False
             struct = model.Structure(step = n, final = is_final)

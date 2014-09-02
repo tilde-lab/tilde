@@ -72,7 +72,7 @@ class Request_Handler:
         data['settings'] = { 'avcols': avcols, 'dbs': [DEFAULT_DBTITLE] + filter(lambda x: x != DEFAULT_DBTITLE, DB_pool.keys()) }
         for i in ['exportability', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport']:
             if i in settings: data['settings'][i] = settings[i]
-        
+
         if not settings['demo_regime']: data['settings']['db'] = settings['db']
         # TODO: RESTRICT IN ACTIONS EVERYBODY EXCEPT THE FIRST USER!
 
@@ -113,27 +113,53 @@ class Request_Handler:
         data, error = None, None
         startn = 0 # TODO (pagination?) not user-editable actually
 
-        if not 'tids' in userobj: tids = None # json may contain nulls, standardize them
-        else: tids = userobj['tids']
+        if 'hashes' in userobj:
+            if not userobj['hashes'] or not isinstance(userobj['hashes'], list) or len(userobj['hashes'][0]) != 56: return (data, 'Invalid request!')
+            proposition = userobj['hashes']
 
-        if tids:
-            data_clause = []
-            for i in DB_pool[ Users[session_id].cur_db ].query(model.Calculation.checksum) \
-                .join(model.Calculation.uitopics) \
-                .filter(model.uiTopic.tid.in_(tids)) \
-                .group_by(model.Calculation.checksum) \
-                .having(func.count(model.uiTopic.tid) == len(tids)).all():
-                data_clause += list(i)
-            rlen = len(data_clause)
+        else:
+            pre_proposition = []
+            if 'condition' in userobj:
+                join_exception = None
+                clauses = []
+                for c in userobj['condition']:
+                    if not 'cid' in c or not 'min' in c or not 'max' in c: return (data, 'Invalid request!')
+                    try: match = [x for x in Tilde.hierarchy if x['cid'] == int(c['cid'])][0]
+                    except IndexError: return (data, 'Invalid request!')
+                    cls, attr = match['has_slider'].split('.')
+                    orm_inst = getattr(getattr(model, cls), attr)
+                    clauses.append(orm_inst.between(c['min'], c['max']))
+                    if cls == 'Lattice': join_exception = cls
+                    else: clauses.append(getattr(getattr(model, cls), 'id') == model.Calculation.id)
 
-        elif 'hashes' in userobj:
-            data_clause = userobj['hashes']
-            rlen = len(data_clause)
-            if not rlen or not isinstance(data_clause, list) or len(data_clause[0]) != 56: return (data, 'Invalid browsing!')
+                if join_exception == 'Lattice':
+                    # Lattice objects require special join clause:
+                    clauses.extend([model.Lattice.struct_id == model.Structure.struct_id, model.Structure.final == True, model.Structure.id == model.Calculation.id])
 
-        else: return (data, 'Error: neither tid nor hash was provided!')
+                for i in DB_pool[ Users[session_id].cur_db ].query(model.Calculation.checksum) \
+                .filter(and_(*clauses)).all():
+                    pre_proposition += list(i) # TODO high-load reliability
 
-        data_clause = data_clause[ startn : Users[session_id].usettings['colnum']+1 ]
+            if 'tids' in userobj and len(userobj['tids']):
+                for x in userobj['tids']:
+                    try: int(x)
+                    except ValueError: return (data, 'Invalid request!')
+                proposition = []
+                for i in DB_pool[ Users[session_id].cur_db ].query(model.Calculation.checksum) \
+                    .join(model.Calculation.uitopics) \
+                    .filter(model.uiTopic.tid.in_(userobj['tids'])) \
+                    .group_by(model.Calculation.checksum) \
+                    .having(func.count(model.uiTopic.tid) == len(userobj['tids'])).all():
+                    proposition += list(i)
+                if pre_proposition:
+                    proposition = [x for x in proposition if x in pre_proposition] # TODO in ORM                
+            
+            else:
+                if pre_proposition: proposition = pre_proposition                    
+                else: return (data, 'Empty result.')
+        
+        rlen = len(proposition)
+        proposition = proposition[ startn : Users[session_id].usettings['colnum']+1 ]
 
         rescount = 0
         data = '<thead>'
@@ -156,7 +182,7 @@ class Request_Handler:
         data += '<tbody>'
 
         for row, checksum in DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info, model.Calculation.checksum) \
-            .filter(model.uiGrid.id == model.Calculation.id, model.Calculation.checksum.in_(data_clause)).all():
+            .filter(model.uiGrid.id == model.Calculation.id, model.Calculation.checksum.in_(proposition)).all():
 
             rescount += 1
             data_obj = json.loads(row)
@@ -177,7 +203,7 @@ class Request_Handler:
         if not rescount: error = 'No objects match!'
         data += '||||Matched items: %s' % rlen
         if rescount > Users[session_id].usettings['colnum']: data += ' (%s shown)' % Users[session_id].usettings['colnum']
-        
+
         return (data, error)
 
     @staticmethod
@@ -206,12 +232,19 @@ class Request_Handler:
                         tags[n]['content'].append( {'tid': tid, 'topic': ready_topic} )
                         break
                 else: tags.append({'cid': match['cid'], 'category': match['category'], 'sort': sort, 'content': [ {'tid': tid, 'topic': ready_topic} ]})
-            
-            tags += Tilde.sliders
-            
+
+            sliders = []
+            for i in Tilde.hierarchy: # TODO: optimize
+                if 'has_slider' in i:
+                    cls, attr = i['has_slider'].split('.')
+                    orm_inst = getattr(getattr(model, cls), attr)
+                    minimum, maximum = DB_pool[ Users[session_id].cur_db ].query(func.min(orm_inst), func.max(orm_inst)).one()
+                    if minimum and maximum: sliders.append({'cid': i['cid'], 'category': i['category'], 'sort': i['sort'], 'min': math.floor(minimum*100)/100, 'max': math.ceil(maximum*100)/100})
+
+            tags += sliders
             tags.sort(key=lambda x: x['sort'])
             tags = {'blocks': tags, 'cats': Tilde.supercategories}
-            
+
         else:
             params, n = {}, 1
             for list_item in tids:
@@ -221,7 +254,7 @@ class Request_Handler:
             q = text( 'SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid = :' + " INTERSECT SELECT DISTINCT t1.tid FROM tags t1, tags t2 WHERE t1.id = t2.id AND t2.tid = :".join(params.keys()) ) # TODO optimize and use ORM
             for i in current_engine.execute(q, **params).fetchall():
                 tags += list(i)
-                
+
         return (json.dumps(tags), None)
 
     '''@staticmethod
@@ -240,10 +273,10 @@ class Request_Handler:
     def summary(userobj, session_id):
         if len(userobj['datahash']) != 56:
             return (data, 'Invalid request!')
-            
+
         info = DB_pool[ Users[session_id].cur_db ].query(model.uiGrid.info) \
             .filter(model.Calculation.id == model.uiGrid.id, model.Calculation.checksum == userobj['datahash']).one()
-        
+
         summary = []
         info = json.loads(info[0])
 
@@ -456,9 +489,9 @@ class Request_Handler:
         if not 'tocopy' in userobj or not 'dest' in userobj or not userobj['tocopy'] or not userobj['dest']: return (data, 'Action invalid!')
         if not userobj['dest'] in DB_pool: return (data, 'Copying destination invalid!')
 
-        data_clause = '","'.join(  userobj['tocopy']  )
+        proposition = '","'.join(  userobj['tocopy']  )
         cursor = DB_pool[ Users[session_id].cur_db ].cursor()
-        try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % data_clause )
+        try: cursor.execute( 'SELECT id, checksum, structures, energy, phonons, electrons, info, apps FROM results WHERE checksum IN ("%s")' % proposition )
         except: error = 'DB error: ' + "%s" % sys.exc_info()[1]
         else:
             for r in cursor.fetchall():
@@ -610,18 +643,18 @@ class Request_Handler:
 
         cursor = DB_pool[ Users[session_id].cur_db ].cursor()
 
-        data_clause = userobj['hashes']
-        data_clause = map(lambda x: x.encode('utf-8'), data_clause) # for postgresql
-        if len(data_clause) == 1: data_clause.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgresql
+        proposition = userobj['hashes']
+        proposition = map(lambda x: x.encode('utf-8'), proposition) # for postgresql
+        if len(proposition) == 1: proposition.append('dummy_entity_to_prevent_an_error_with_one_value') # for postgresql
 
         try:
             if settings['db']['engine'] == 'sqlite':
-                data_clause = '","'.join(data_clause)
-                cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % data_clause)
-                cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % data_clause)
+                proposition = '","'.join(proposition)
+                cursor.execute( 'DELETE FROM results WHERE checksum IN ("%s")' % proposition)
+                cursor.execute( 'DELETE FROM tags WHERE checksum IN ("%s")' % proposition)
             elif settings['db']['engine'] == 'postgresql':
-                cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(data_clause),))
-                cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(data_clause),))
+                cursor.execute( 'DELETE FROM results WHERE checksum IN %s' % (tuple(proposition),))
+                cursor.execute( 'DELETE FROM tags WHERE checksum IN %s' % (tuple(proposition),))
             DB_pool[ Users[session_id].cur_db ].commit()
         except:
             DB_pool[ Users[session_id].cur_db ].commit() # Postgres: prevent transaction aborting...
@@ -758,11 +791,11 @@ class JSON3DDownloadHandler(tornado.web.RequestHandler):
         clauses = [model.Lattice.struct_id == model.Atom.struct_id, model.Lattice.struct_id == model.Structure.struct_id, model.Structure.id == model.Calculation.id, model.Calculation.checksum == hash]
         if step != -1: clauses.append(model.Structure.step == step)
         else: clauses.append(model.Structure.final == True)
-        
+
         query = DB_pool[ db ].query(model.Lattice, model.Atom, model.Structure.final) \
-            .filter(and_(*clauses))        
+            .filter(and_(*clauses))
         if query.count() == 0: raise tornado.web.HTTPError(404)
-        
+
         n = 0
         for l, a, s in query.all():
             symbols.append(a.number)
