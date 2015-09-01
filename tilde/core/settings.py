@@ -34,7 +34,7 @@ DEFAULT_SETUP = {
                     'port': 5432, # may be 5433
                     'user': 'postgres',
                     'password': '',
-                    'dbname': 'nomad',
+                    'dbname': 'tilde',
                     },
 
                 # API (parsing) scope:
