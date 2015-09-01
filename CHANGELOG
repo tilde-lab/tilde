@@ -1,6 +1,8 @@
+0.7.0
+reproducing the Nomad pathway
+
 0.3.0
 relational schema and ORM introduction
-change project name to nomad
 
 0.2.8
 columns plot-export functionality (plottable directive)

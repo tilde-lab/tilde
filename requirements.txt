@@ -1,0 +1,13 @@
+numpy
+ujson
+pg8000 == 1.10.2
+https://pypi.python.org/packages/source/p/python-ase/python-ase-3.8.1.3440.tar.gz
+httplib2 == 0.9
+tornado == 4.1.0
+sockjs-tornado == 1.0.1
+backports.ssl_match_hostname == 3.4.0.2
+sqlalchemy == 1.0.6
+nose
+argparse == 1.2.1
+importlib
+alembic == 0.7.6
