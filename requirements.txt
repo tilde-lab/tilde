@@ -1,5 +1,6 @@
 numpy
 ujson
+bcrypt
 pg8000 == 1.10.2
 https://pypi.python.org/packages/source/p/python-ase/python-ase-3.8.1.3440.tar.gz
 httplib2 == 0.9

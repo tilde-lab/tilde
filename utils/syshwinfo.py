@@ -144,7 +144,7 @@ def distro():
     return {"Distro":d[0], "DistroVersion":d[1]}
 
 def hostname():
-    """Get hostname. 
+    """Get hostname.
 
     Use the fqdn to get a consistent hostname, otherwise using
     gethostname() might or might not give a fqdn depending on the
@@ -163,6 +163,7 @@ def ip_address():
 
 def mac_address(ip):
     """Get the MAC address"""
+    mac = ''
     for line in os.popen('/sbin/ifconfig'):
         s = line.split()
         if len(s) > 3:
@@ -240,7 +241,7 @@ if __name__=="__main__":
 with the --table option")
     parser.add_option("-a", "--agent", dest="agent", action="store_true",
             help="Run in agent mode, send data to server.")
-    parser.add_option("-s", "--server", dest="server", 
+    parser.add_option("-s", "--server", dest="server",
             help="Server to send results to when running in agent mode.")
     (options, args) = parser.parse_args()
     if (options.table):
