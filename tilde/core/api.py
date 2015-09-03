@@ -601,7 +601,7 @@ class API:
             uitopics, error = model.syncdb( map(lambda x: model.uiTopic.as_unique_todict(session, cid=x.cid, topic=x.topic), uitopics), model, self.settings['syncdb'] )
             if error: return None, "DB items cannot be synced: %s" % error
         else:
-            uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic=x.topic), uitopics)
+            uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
 
         ormcalc.uitopics.extend(uitopics)
 
@@ -799,7 +799,7 @@ class API:
             if not 'has_label' in entity: continue
 
             for item in info_obj.get( entity['source'], [] ):
-                parent_calc.uitopics.append( model.uiTopic.as_unique(session, cid=entity['cid'], topic=item) )
+                parent_calc.uitopics.append( model.uiTopic.as_unique(session, cid=entity['cid'], topic="%s" % item) )
 
         for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(filtered_addendum)).all():
             parent_calc.children.append(child)
