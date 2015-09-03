@@ -1,14 +1,14 @@
 
 # Tilde API demo
 # calculates molecular weight for organic molecules
+# Author: Evgeny Blokhin
 
-import os
-import sys
+import os, sys
 
 # deps third-party code and common routines
 # here are already available:
 from ase.data import chemical_symbols, atomic_masses
-from core.common import ModuleError
+from tilde.core.common import ModuleError
 
 
 class Example_app():

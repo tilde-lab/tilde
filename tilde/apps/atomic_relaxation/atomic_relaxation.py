@@ -1,12 +1,12 @@
 
 # Calculation of atomic relaxations
 # during atomic structure optimization
+# Author: Evgeny Blokhin
 
-import os
-import sys
+import os, sys
 import math
 
-from core.common import ModuleError
+from tilde.core.common import ModuleError
 
 class Atomic_relaxation():
     def __init__(self, tilde_calc):

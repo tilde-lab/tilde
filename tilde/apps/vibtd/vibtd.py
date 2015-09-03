@@ -1,16 +1,13 @@
 
 # Vibrational thermodynamics module
-# this is a check module,
-# to assure if we are able to avoid TD extraction
-# and obtain TD from phonons only;
+# this is to assure if we are able to avoid TD extraction
+# and obtain TD from phonons only
+# Author: Evgeny Blokhin
+# partly uses Phonopy code written by Atsushi Togo
 
-# partly uses Phonopy code
-# written by Atsushi Togo
+import os, sys
 
-import os
-import sys
-
-from core.common import ModuleError
+from tilde.core.common import ModuleError
 
 class Vibtd():
     def __init__(self, tilde_calc):

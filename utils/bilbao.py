@@ -1,5 +1,6 @@
 
 # Bilbao server symmetry XML extractor
+# Author: Evgeny Blokhin
 
 import os, sys
 import urllib2

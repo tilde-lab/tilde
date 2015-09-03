@@ -15,8 +15,6 @@
 # chmod 755 /etc/init.d/tilde
 # update-rc.d tilde defaults 99 01
 #
-# NB always run the production service with "demo_regime" set to "true"
-# otherwise the server filesystem can be seen in the filetree by any visitor!
 
 DAEMON_NAME=tilde
 DIR=/var/tilde

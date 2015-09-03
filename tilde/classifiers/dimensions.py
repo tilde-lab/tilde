@@ -1,8 +1,8 @@
 
-# accounts the 2d surface case
-# (when the PW-based codes are forced to put vacuum in a "non-periodical" direction)
+# accounts low-dimensional cases in 3D
+# (NB the PW-based codes are forced to put vacuum in a "non-periodical" direction)
 # extends ASE object(s)
-
+# Author: Evgeny Blokhin
 # TODO: account all "pseudo-periodic" cases for 1d and 0d
 
 import math
@@ -17,47 +17,45 @@ from ase.data import chemical_symbols, covalent_radii
 # hierarchy API: __order__ to apply classifier
 __order__ = 1
 
-L = 3.9 # empirical criterion: a must be L times larger than b and c
-r_EC = 0.0 # empirical criterion: radius of electron cloud around the atom
-#ADDED_VACUUM1D_TOL = 12 # empirical criterion: if too much vacuum in 1d
-ADDED_VACUUM3D_TOL = 12 # empirical criterion: if too much vacuum in 3d
+# empirical criteria
+L = 3.9                     # a must be L times larger than b and c
+r_EC = 0.0                  # additional radius of electron cloud around the atom
+ADDED_VACUUM_3D_TOL = 12    # if too much vacuum in 3d
 
-def classify(tilde_obj):    
+def classify(tilde_obj):
     if sum(tilde_obj.structures[-1].get_pbc()) == 3: # only those initially 3-periodic
         zi, mi = tilde_obj.info['cellpar'].index(max(tilde_obj.info['cellpar'][0:3])), tilde_obj.info['cellpar'].index(min(tilde_obj.info['cellpar'][0:3]))
         cmpveci = [i for i in range(3) if i not in [zi, mi]][0]
-            
-        # 1. First step: based on vacuum per one atom (av)
+
+        # vacuum per one atom (av)
         atoms_volume = 0.0
         for i in tilde_obj.structures[-1]:
             atoms_volume += 4/3 * math.pi * (covalent_radii[ chemical_symbols.index( i.symbol ) ] + r_EC) ** 3
         av = (abs(det(tilde_obj.structures[-1].cell)) - atoms_volume)/len(tilde_obj.structures[-1])
         #print "av:", av
-        
-        # 2. Second step: too much vacuum
-        if av > ADDED_VACUUM3D_TOL:
+
+        # too much vacuum
+        if av > ADDED_VACUUM_3D_TOL:
+            # 2D
             if tilde_obj.info['cellpar'][cmpveci] * L < tilde_obj.info['cellpar'][zi]:
-            
+
                 tilde_obj.info['techs'].append( 'vacuum %sA' % int(round(tilde_obj.info['cellpar'][zi])) )
 
-                # FOR surfaces:
-                for i in range(len(tilde_obj.structures)):
-                    tilde_obj.structures[i].set_pbc((True, True, False))
-                    
-    # extend the last ASE object with the new useful info (TODO: FOR ALL?)
-    for n in range(len(tilde_obj.structures)):
-        tilde_obj.structures[n].periodicity = int(sum(tilde_obj.structures[n].get_pbc()))
-        tilde_obj.structures[n].dims = None
-        if n == len(tilde_obj.structures)-1:         
-            if tilde_obj.structures[n].periodicity == 3: tilde_obj.structures[n].dims = abs(det(tilde_obj.structures[n].cell))
-            elif tilde_obj.structures[n].periodicity == 2:
-                # area for surfaces
-                v = [norm(i) for i in tilde_obj.structures[n].cell]
-                zi, mi = v.index(max(v)), v.index(min(v))
-                ni = [i for i in range(3) if i not in [zi, mi]][0]
-                tilde_obj.structures[n].dims = norm(cross(tilde_obj.structures[n].cell[mi], tilde_obj.structures[n].cell[ni])) # http://mathworld.wolfram.com/Parallelogram.html
-                
+                tilde_obj.structures[-1].set_pbc((True, True, False))
+
+            # TODO: 1D ?
+
+            # 0D
+            elif av > ADDED_VACUUM_3D_TOL*4: # TODO
+                tilde_obj.structures[-1].set_pbc((False, False, False))
+
+    # extend the last ASE object
+    tilde_obj.structures[-1].periodicity = int(sum(tilde_obj.structures[-1].get_pbc()))
+    tilde_obj.structures[-1].dims = abs(det(tilde_obj.structures[-1].cell))
+
+    # TODO: area for surfaces
+
     tilde_obj.info['dims'] = tilde_obj.structures[-1].dims
     tilde_obj.info['periodicity'] = tilde_obj.structures[-1].periodicity
-        
+
     return tilde_obj

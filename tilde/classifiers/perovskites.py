@@ -1,14 +1,12 @@
 
-# determines perovskite structures: classifies by vacancy and substitutional defects (impurities)
-# v011013
+# Determines perovskite structures: classifies by vacancy and substitutional defects (impurities)
+# Author: Evgeny Blokhin
 
-import os
-import sys
-import math
+import os, sys, math
 
-from core.deps.ase.data import chemical_symbols
-from core.deps.ase.data import covalent_radii
-from core.constants import Perovskite_Structure
+from ase.data import chemical_symbols
+from ase.data import covalent_radii
+from tilde.core.constants import Perovskite_Structure
 
 
 # hierarchy API: __order__ to apply classifier
@@ -39,7 +37,7 @@ def classify(tilde_obj):
     # all other 2-component systems are not perovskites
     if not A_site or not B_site: return tilde_obj
 
-    if not 1.3 < D < 1.9: return tilde_obj
+    if not 1.3 < D < 2.1: return tilde_obj # D ratio grows for 2D adsorption cases (>1.9)
 
     # Goldschmidt tolerance factor
     # t = (rA + rC) / sqrt(2) * (rB + rC)
@@ -87,9 +85,9 @@ def classify(tilde_obj):
             B_hosts[ contents[num][1] ] = tilde_obj.info['contents'][ contents[num][0] ]
 
     #print impurities, A_hosts, B_hosts
-    
+
     if len(A_hosts) > 1 or len(B_hosts) > 1: return tilde_obj # not for alloys below
-    
+
     # A site or B site?
     num=0
     for impurity_element, content in impurities.iteritems():

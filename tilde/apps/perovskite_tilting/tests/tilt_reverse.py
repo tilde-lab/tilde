@@ -2,6 +2,7 @@
 
 # Euler tilting angles extraction reverse test
 # First, distort on the known angle, then extract tilting and check if it is the same
+# Author: Evgeny Blokhin
 
 import os
 import sys
@@ -9,13 +10,12 @@ import math
 import random
 from numpy import array
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../'))
-from core.api import API
-from parsers import Output
-from core.constants import Perovskite_Structure
-from apps.tilting.tilting import Tilting # for MAX_TILTING_DEGREE
+import set_path
+from tilde.core.api import API
+from tilde.parsers import Output
+from tilde.core.constants import Perovskite_Structure
+from tilde.apps.perovskite_tilting.perovskite_tilting import Perovskite_tilting # for limits
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../core/deps'))
 from ase import Atoms
 from ase.lattice.spacegroup import crystal
 
@@ -25,17 +25,17 @@ from ase.lattice.spacegroup import crystal
 # NB: in Euler notation delta is gamma, delta plus/minus phi is alpha
 # or in another terminology: phi is gamma, phi plus/minus psi is alpha
 
-a = round(random.uniform(3.5, Tilting.OCTAHEDRON_BOND_LENGTH_LIMIT*2), 3)
+a = round(random.uniform(3.5, Perovskite_tilting.OCTAHEDRON_BOND_LENGTH_LIMIT*2), 3)
 
-phi = round(random.uniform(0, Tilting.MAX_TILTING_DEGREE), 3)
-theta = round(random.uniform(0, Tilting.MAX_TILTING_DEGREE), 3)
-psi = round(random.uniform(0, Tilting.MAX_TILTING_DEGREE), 3)
+phi = round(random.uniform(0, Perovskite_tilting.MAX_TILTING_DEGREE), 3)
+theta = round(random.uniform(0, Perovskite_tilting.MAX_TILTING_DEGREE), 3)
+psi = round(random.uniform(0, Perovskite_tilting.MAX_TILTING_DEGREE), 3)
 
 perovskite = crystal( \
             [random.choice(Perovskite_Structure.A),
             random.choice(Perovskite_Structure.B),
             random.choice(Perovskite_Structure.C),
-            random.choice(Perovskite_Structure.C)],         
+            random.choice(Perovskite_Structure.C)],
             [(0.5, 0.25, 0.0), (0.0, 0.0, 0.0), (0.0, 0.25, 0.0), (0.25, 0.0, 0.75)],
             spacegroup=62, cellpar=[a*math.sqrt(2), 2*a, a*math.sqrt(2), 90, 90, 90])
 
@@ -53,8 +53,10 @@ virtual_calc, error = work.classify(virtual_calc)
 if error:
     raise RuntimeError(error)
 virtual_calc = work.postprocess(virtual_calc)
+is_perovskite = ('perovskite' in virtual_calc.info['tags'])
 
 print "Test object:", virtual_calc.info['standard']
-print "Is perovskite?", ('perovskite' in virtual_calc.info['tags'])
-print "Octahedra tilted on:", phi, theta, psi
-print "Extracted tilting is:", virtual_calc.apps['tilting']['data']
+print "Is perovskite?", is_perovskite
+if is_perovskite:
+    print "Octahedra tilted on:", phi, theta, psi
+    print "Extracted tilting is:", virtual_calc.apps['perovskite_tilting']['data']

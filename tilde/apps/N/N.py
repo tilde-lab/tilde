@@ -1,13 +1,13 @@
 
 # Tilde API demo
 # calculates the ratio N between dimensions and number of atoms
+# Author: Evgeny Blokhin
 
-import os
-import sys
+import os, sys
 import math
 
 from ase.data import chemical_symbols, covalent_radii
-from core.common import ModuleError
+from tilde.core.common import ModuleError
 
 R_ADDON = 0.5
 

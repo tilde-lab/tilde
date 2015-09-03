@@ -1,6 +1,6 @@
 
 # Data bank of various const values
-# employed by Tilde
+# Author: Evgeny Blokhin
 
 from math import pi, sqrt
 
@@ -38,9 +38,9 @@ class Constants:
     EvTokJmol = EV / 1000 * Avogadro # [kJ/mol] 96.4853910
     Wien2kToTHz = sqrt(Rydberg/1000*EV/AMU)/(Bohr*1e-10)/(2*pi)/1e12 # [THz] 3.44595837
     EVAngstromToGPa = EV * 1e21
-    
+
     ha2rcm = 2.194746313708e05
-    
+
     kJmolToAucel = 0.00038088
     cm2THz = 0.0299792458
 
@@ -48,6 +48,6 @@ class Constants:
 # Perovskite elements
 
 class Perovskite_Structure:
-    A = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Ag, Pb, Bi, Th'.split(', ')
-    B = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re'.split(', ')
+    A = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Ag, Pb, Bi, Th, In, Mn, Zn'.split(', ')
+    B = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re, Se, La, Pr'.split(', ')
     C = 'O, F'.split(', ') # todo: add elements to C site

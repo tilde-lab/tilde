@@ -1,5 +1,6 @@
 
-# determines organic molecules by content
+# Determines organic molecules by content
+# Author: Evgeny Blokhin
 
 import os
 import sys

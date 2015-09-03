@@ -1,31 +1,34 @@
 
-# includable routines
+# Includable routines
+# Author: Evgeny Blokhin
 
-import os
-import sys
-import math
-import json
+import os, sys
+import math, datetime, re
 
 from numpy import dot, array, matrix
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
+try: import ujson as json
+except ImportError: import json
 
-class ModuleError(Exception): # not working! TODO
+
+class ModuleError(Exception):
     def __init__(self, value):
-        self.value = value        
+        self.value = value
 
 def metric(v):
-    ''' Get direction of vector '''
+    '''
+    Get direction of vector
+    '''
     return map(lambda x: int(math.copysign(1, x)) if x else 0, v)
 
 def u(obj, encoding='utf-8'):
     if not isinstance(obj, unicode):
         return unicode(obj, encoding)
     else: return obj
-    
+
 def str2html(i):
     # TODO
     tokens = { \
@@ -39,12 +42,12 @@ def str2html(i):
     for k, v in tokens.iteritems():
         i = i.replace(k, v)
     return i
-    
+
 def html_formula(string):
     sub, html_formula = False, ''
     for n, i in enumerate(string):
         if i.isdigit() or i=='.' or i=='-':
-            if not sub and n != 0:
+            if not sub:
                 html_formula += '<sub>'
                 sub = True
         else:
@@ -54,14 +57,67 @@ def html_formula(string):
         html_formula += i
     if sub: html_formula += '</sub>'
     return html_formula
-    
+
+def extract_chemical_symbols(string):
+    sub, elems, elem = False, [], ''
+    for i in string:
+        if i==' ' or i==':': break # for " slab" and basis sets
+        if not i.isalpha():
+            sub = True
+            continue
+        if i.isupper():
+            if len(elem): elems.append(elem)
+            elem = i
+            sub = False
+        else:
+            if not sub: elem += i
+    if len(elem): elems.append(elem)
+    return elems
+
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
     nontext = bytes.translate(''.join(map(chr, range(256))), ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))) # all bytes and text bytes
     return bool(nontext)
-        
+
+def hrsize(num):
+    for x in ['bytes', 'KB', 'MB', 'GB']:
+        if num < 1024.0:
+            return "%3.1f%s" % (num, x)
+        num /= 1024.0
+    return "%3.1f%s" % (num, 'TB')
+
+def get_urlregex():
+    # https://github.com/django/django/blob/master/django/core/validators.py
+    ul = '\u00a1-\uffff' # unicode letters range (must be a unicode string, not a raw string)
+
+    # IP patterns
+    ipv4_re = r'(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}'
+    ipv6_re = r'\[[0-9a-f:\.]+\]' # (simple regex, validated later)
+
+    # Host patterns
+    hostname_re = r'[a-z' + ul + r'0-9](?:[a-z' + ul + r'0-9-]*[a-z' + ul + r'0-9])?'
+    domain_re = r'(?:\.[a-z' + ul + r'0-9]+(?:[a-z' + ul + r'0-9-]*[a-z' + ul + r'0-9]+)*)*'
+    tld_re = r'\.[a-z' + ul + r']{2,}\.?'
+    host_re = '(' + hostname_re + domain_re + tld_re + '|localhost)'
+
+    urlregex = re.compile(
+        r'^(?:[a-z0-9\.\-]*)://' # scheme is validated separately
+        r'(?:\S+(?::\S*)?@)?' # user:pass authentication
+        r'(?:' + ipv4_re + '|' + ipv6_re + '|' + host_re + ')'
+        r'(?::\d{2,5})?' # port
+        r'(?:[/?#][^\s]*)?' # resource path
+        r'$', re.IGNORECASE)
+    return urlregex
+
+def cmp_e_conv(vals):
+    out = []
+    for n in range(len(vals)):
+        try: out.append( int( math.floor( math.log( abs( vals[n] - vals[n+1] ), 10 ) ) )  )
+        except (IndexError, ValueError): pass # beware log math domain error when the adjacent values are the same
+    return out
+
 def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
-    parameters = cell_to_cellpar(structure.cell)    
+    parameters = cell_to_cellpar(structure.cell)
     cif_data = "# " + comment + "\n\n" if comment else ''
     cif_data += 'data_tilde_project\n'
     cif_data += '_cell_length_a    ' + "%2.6f" % parameters[0] + "\n"
@@ -84,13 +140,13 @@ def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     for n, i in enumerate(structure):
         cif_data += "%s   % 1.8f   % 1.8f   % 1.8f\n" % (i.symbol, pos[n][0], pos[n][1], pos[n][2])
     return cif_data
-    
+
 def generate_xyz(atoms):
     xyz_data = "%s" % len(atoms) + "\nXYZ\n"
     for i in range(len(atoms)):
         xyz_data += atoms[i].symbol + " " + "%2.4f" % atoms[i].x + " " + "%2.4f" % atoms[i].y + " " + "%2.4f" % atoms[i].z + "\n"
     return xyz_data[0:-1]
-    
+
 def write_cif(filename, structure, comment=None):
     try:
         file = open(filename, 'w')

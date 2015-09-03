@@ -1,30 +1,25 @@
 
-# Tilde project: VASP XML parser
-# contains code from pymatgen iovasp module (author: Shyue Ping Ong)
-# v140714
+# VASP vasprun.xml parser
+# based on pymatgen iovasp module (author: Shyue Ping Ong)
+# Author: Evgeny Blokhin
 
-import os
-import sys
-import re
-import math
+import os, sys, re, math
 import itertools
 import traceback
 import xml.sax
 import StringIO
 from collections import defaultdict
 
-from numpy import dot
-from numpy import array
-from numpy import zeros
+from numpy import dot, array, zeros
 
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.data import atomic_numbers, chemical_symbols
 from ase.atoms import Atoms
 from ase.units import Hartree
 
-from parsers import Output
-from core.electron_structure import Edos, Ebands
-from core.constants import Constants
+from tilde.parsers import Output
+from tilde.core.electron_structure import Edos
+from tilde.core.constants import Constants
 
 
 def str_delimited(results, header=None, delimiter="\t"):
@@ -32,9 +27,7 @@ def str_delimited(results, header=None, delimiter="\t"):
     returnstr = ""
     if header is not None:
         returnstr += delimiter.join(header) + "\n"
-    return returnstr + "\n".join([delimiter.join([str(m) for m in result])
-                                  for result in results])
-
+    return returnstr + "\n".join([delimiter.join([str(m) for m in result]) for result in results])
 
 def str_aligned(results, header=None):
     """ Given a tuple, generate a nicely aligned string form  in a table-like format. """
@@ -122,10 +115,10 @@ class Kpoints():
         if style in (Kpoints.supported_modes.Automatic,
                      Kpoints.supported_modes.Gamma,
                      Kpoints.supported_modes.Monkhorst) and len(kpts) > 1:
-            raise ValueError("For fully automatic or automatic gamma or monk kpoints, only a single line for the number of divisions is allowed.")
+            raise ValueError("For fully automatic or automatic gamma or monkhorst kpoints, only a single line for the number of divisions is allowed.")
 
         #self.comment = comment
-        
+
         self.num_kpts = num_kpts
         self.style = style
         self.coord_type = coord_type
@@ -178,7 +171,7 @@ class Kpoints():
         if not is_hexagonal:
             num_div = [i + i % 2 for i in num_div]
             style = Kpoints.supported_modes.Monkhorst
-        comment = "pymatgen generated KPOINTS with grid density = {0} / atom".format(kppa)
+        comment = "KPOINTS with grid density = {0} / atom".format(kppa)
         num_kpts = 0
         return Kpoints(comment, num_kpts, style, [num_div], [0, 0, 0])
 
@@ -273,7 +266,7 @@ class Incar(dict):
                         return True
                     else:
                         return False
-                raise ValueError(key + " should be a boolean type!")
+                raise ValueError("%s should be a boolean type!" % key)
 
             if key in float_keys:
                 return float(val)
@@ -288,13 +281,13 @@ class Incar(dict):
 class XML_Output(Output):
     def __init__(self, filename, **kwargs):
         Output.__init__(self, filename)
-
+        self.related_files.append(filename)
         self._handler = VasprunHandler()
-        
+
         # TODO: this will be very slow
         # use iterative parser here?
         filestring = open(filename).read()
-        
+
         illegal_unichrs = [ (0x00, 0x08), (0x0B, 0x1F), (0x7F, 0x84), (0x86, 0x9F),
                             (0xD800, 0xDFFF), (0xFDD0, 0xFDDF), (0xFFFE, 0xFFFF),
                             (0x1FFFE, 0x1FFFF), (0x2FFFE, 0x2FFFF), (0x3FFFE, 0x3FFFF),
@@ -312,32 +305,27 @@ class XML_Output(Output):
         except:
             #exc_type, exc_value, exc_tb = sys.exc_info()
             raise RuntimeError('VASP output corrupted or not correctly finalized!') # + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
-                
+
         # TODO: reorganize
         for k in ["vasp_version", "incar",
-                "parameters", "potcar_symbols",
+                "parameters", "bsseq", "potcar_sequence", "potcar_symbols",
                 "kpoints", "actual_kpoints", "structures",
                 "actual_kpoints_weights", "dos_energies",
                 "eigvals", "tdos", "pdos", "e_last",
                 "ionic_steps", "dos_error",
                 "dynmat", "finished"]:
             setattr(self, k, getattr(self._handler, k))
-        
+
         try: self.info['energy'] = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
         except KeyError: pass # for unphysical cases
-        
+
         self.info['framework'] = 'VASP'
         self.info['prog'] = 'VASP ' + self.vasp_version
         self.info['finished'] = self.finished
         self.info['input'] = str(self.incar)
 
-        # basis sets
-        self.potcar_sequence = [s.split()[1] for s in self.potcar_symbols]
-        self.potcar_sequence = [s.split("_")[0].encode('ascii') for s in self.potcar_sequence]
-        
-        self.electrons['basis_set'] = {'ps': {}}
-        for n, s in enumerate(self.potcar_sequence):
-            self.electrons['basis_set']['ps'].update( {s: self.potcar_symbols[n].encode('ascii')} )
+        self.electrons['basis_set'] = self.potcar_symbols
+        self.structures[-1].new_array('bs', self.bsseq, int)
 
         self.set_method()
 
@@ -350,13 +338,13 @@ class XML_Output(Output):
             self.phonons['dfp_magnitude'] = self.incar.get("POTIM", False)
             if not self.phonons['dfp_magnitude']:
                 self.phonons['dfp_magnitude'] = 0.02 # Standard phonon displacement in VASP for DFP method
-        
+
         # electronic properties
-        self.electrons['type'] = 'PP_PW'
-        
+        self.electrons['type'] = 'plane waves'
+
         if self.e_last is None:
             self.warning('Electronic properties are not found!')
-        else:            
+        else:
             if self.dos_error:
                 self.warning('Error in DOS: ' + self.dos_error)
             else:
@@ -383,15 +371,24 @@ class XML_Output(Output):
 
                 del self.eigvals[i]'''
 
+        if not filename.endswith('.xml'): # special filenames treatment
+            cur_folder = os.path.dirname(filename)
+            cur_file =   os.path.basename(filename)
+            if cur_file in ['vasprun.xml.bands', 'vasprun.xml.static', 'vasprun.xml.relax1', 'vasprun.xml.relax2']:
+                ext = cur_file.split('.')[-1]
+                for check in [ 'CHG', 'CHGCAR', 'CONTCAR', 'DOSCAR', 'EIGENVAL', 'OUTCAR', 'POSCAR']:
+                    try_file = os.path.join(cur_folder, check + '.' + ext + '.bz2')
+                    if os.path.exists(try_file): self.related_files.append(try_file)
+
     @staticmethod
     def fingerprints(test_string):
-        if '<modeling>' in test_string: return True
+        if '<i name="program" type="string">vasp' in test_string: return True
         else: return False
 
     def set_method(self):
         # Hamiltonians: Hubbard U method
-        if self.incar.get("LDAU", False):
-            self.info['H'] = 'LSDA+U'
+        if self.incar.get("LDAU", False): # TODO check on top of other xc!
+            self.info['H'] = 'GGA+U'
 
             ldautype = self.incar.get("LDAUTYPE", self.parameters.get("LDAUTYPE"))[0]
             if ldautype == 2: self.info['H'] += '(std.)'
@@ -421,15 +418,23 @@ class XML_Output(Output):
             for atom in sorted(atom_hubbard.keys()):
                 self.info['H'] += ' %s:%s' % (atom, atom_hubbard[atom])
 
+            self.info['H_types'].append('+U')
+
         # Hamiltonians: HF admixing
         elif self.parameters.get("LHFCALC", False):
             screening = self.incar.get("HFSCREEN", self.parameters.get("HFSCREEN"))
-            if screening == 0.0: self.info['H'] = "PBE-GGA(+25%HF)/PBE-GGA" # like in CRYSTAL, todo
-            elif screening == 0.2: self.info['H'] = "HSE06"
-            else: self.info['H'] = "HSE %d%%screen" % round(screening*100)
+            if screening == 0.0: self.info['H'] = "PBE0"
+            elif screening == 0.2:
+                self.info['H'] = "HSE06"
+            else:
+                self.info['H'] = "HSE06 %f" % round(screening, 2)
 
-        # Regular GGA
-        else: self.info['H'] = "GGA"
+            self.info['H_types'].extend(['GGA', 'hybrid'])
+
+        # Hamiltonians: GGA
+        else:
+            self.info['H'] = "PBE" # TODO GGA options
+            self.info['H_types'].append('GGA')
 
         # tolerances
         self.info['tol'] = 'cutoff %seV' % int(self.parameters['ENMAX'])
@@ -445,12 +450,14 @@ class XML_Output(Output):
 class VasprunHandler(xml.sax.handler.ContentHandler):
     """ Sax handler for vasprun.xml. Attributes are mirrored into Vasprun object. """
     def __init__(self):
-        
+
         # variables to be filled
         self.vasp_version = None
         self.finished = 1 # if we are here, we are always correct
         self.incar = Incar()
         self.parameters = Incar()
+        self.bsseq = []
+        self.potcar_sequence = []
         self.potcar_symbols = []
         self.atomic_symbols = []
         self.kpoints = Kpoints()
@@ -545,7 +552,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
     def _init_input(self, name, attributes):
         if (name == "i" or name == "v") and (self.state["incar"] or self.state["parameters"]):
             self.incar_param = attributes["name"]
-            self.param_type = "float" if "type" not in attributes else attributes["type"]
+            self.param_type = "float" if not attributes.has_key("type") else attributes["type"]
             self.read_val = True
         elif name == "v" and self.state["kpoints"]:
             self.read_val = True
@@ -580,7 +587,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif self.read_dos:
                 if (name == "i" and self.state["i"] == "efermi") or (name == "r" and self.state["set"]):
                     self.read_val = True
-                elif name == "set" and "comment" in attributes:
+                elif name == "set" and attributes.has_key("comment"):
                     comment = attributes["comment"]
                     self.state["set"] = comment
                     if self.state["partial"]:
@@ -599,7 +606,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif self.read_eigen:
                 if name == "r" and self.state["set"]:
                     self.read_val = True
-                elif name == "set" and "comment" in attributes:
+                elif name == "set" and attributes.has_key("comment"):
                     comment = attributes["comment"]
                     self.state["set"] = comment
                     if comment.startswith("spin"):
@@ -648,15 +655,17 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self.incar_param = None
         elif name == "set":
             if self.state["array"] == "atoms":
+                self.bsseq = map(lambda x: int(x)-1, self.atomic_symbols[1::2])
                 self.atomic_symbols = self.atomic_symbols[::2]
             elif self.state["array"] == "atomtypes":
+                self.potcar_sequence = self.potcar_symbols[1::5]
                 self.potcar_symbols = self.potcar_symbols[4::5]
                 self.input_read = True
         elif name == "c":
             if self.state["array"] == "atoms":
                 self.atomic_symbols.append(self.val.getvalue().strip().encode('ascii'))
             elif self.state["array"] == "atomtypes":
-                self.potcar_symbols.append(self.val.getvalue().strip())
+                self.potcar_symbols.append(self.val.getvalue().strip().encode('ascii'))
         elif name == "v":
             if self.state["incar"]:
                 self.incar[self.incar_param] = self.parse_v_parameters(self.param_type, self.val.getvalue().strip(), self.incar_param)
@@ -706,8 +715,8 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self.lattice.shape = (3, 3)
             pos = array([float(x) for x in self.posstr.getvalue().split()])
             pos.shape = (len(self.atomic_symbols), 3)
-            
-            self.structures.append(Atoms(symbols=self.atomic_symbols, cell=self.lattice, scaled_positions=pos, pbc=True))            
+
+            self.structures.append(Atoms(symbols=self.atomic_symbols, cell=self.lattice, scaled_positions=pos, pbc=True))
 
             #self.lattice_rec = [float(x) for x in self.latticerec.getvalue().split()]
             self.read_structure = False
@@ -737,7 +746,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif name == "r" and self.state["total"] and str(self.state["set"]).startswith("spin"):
                 tok = self.val.getvalue().split()
                 try: self.dos_energies_val.append(float(tok[0]))
-                except ValueError: self.dos_energies_val.append(1000) # > 8 digits fixed place                
+                except ValueError: self.dos_energies_val.append(1000) # > 8 digits fixed place
                 try: self.dos_val.append(float(tok[1]))
                 except ValueError: self.dos_val.append(1000) # > 8 digits fixed place
                 #self.idos_val.append(float(tok[2]))

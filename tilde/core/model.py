@@ -1,61 +1,53 @@
 
-# Database schema
+# DB schema
+# Author: Evgeny Blokhin
 
 import os, sys
+import logging
+import datetime
+from collections import namedtuple
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps'))
-from sqlalchemy import MetaData, String, Table, Column, Boolean, Float, Integer, Text, Date, ForeignKey
+from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics, syncdb
+
+from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.sql.expression import insert, delete
+
+try: import ujson as json
+except ImportError: import json
 
 
-DB_SCHEMA_VERSION = '2.06' # determined by the schema below and GUI entities
+class NullHandler(logging.Handler): # for Python 2.6
+    def emit(self, record): pass
+
+logger = logging.getLogger('tilde')
+#handler = logging.StreamHandler(sys.stdout)
+handler = NullHandler()
+#handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s', datefmt="%d/%m %H:%M"))
+logger.setLevel(logging.CRITICAL)
+logger.addHandler(handler)
 
 Base = declarative_base()
-
-# https://bitbucket.org/zzzeek/sqlalchemy/wiki/UsageRecipes/UniqueObject
-
-def _unique(session, cls, queryfunc, constructor, arg, kw):
-    with session.no_autoflush:
-        q = session.query(cls)
-        q = queryfunc(q, *arg, **kw)
-        obj = q.first()
-        if not obj:
-            obj = constructor(*arg, **kw)
-            session.add(obj)
-    return obj
-
-class UniqueMixin(object):
-    @classmethod
-    def unique_filter(cls, query, *arg, **kw):
-        raise NotImplementedError()
-
-    @classmethod
-    def as_unique(cls, session, *arg, **kw):
-        return _unique(
-                    session,
-                    cls,
-                    cls.unique_filter,
-                    cls,
-                    arg, kw)
-
-# Versioning table
 
 class Pragma(Base):
     __tablename__ = 'pragma'
     content = Column(String, primary_key=True)
 
-# UI caching tables
-    
 tags = Table('tags', Base.metadata,
-    Column('id', Integer, ForeignKey('calculations.id')),
-    Column('tid', Integer, ForeignKey('topics.tid'))
+    Column('checksum', String, ForeignKey('calculations.checksum')),
+    Column('tid', Integer, ForeignKey('topics.tid')),
+    UniqueConstraint('checksum', 'tid', name='u_checksum_tid'),
+    Index('checksum_to_tid', "checksum", "tid"),
 )
-    
+
+tag = namedtuple('tag', ['checksum', 'tid'])
+topic = namedtuple('topic', ['cid', 'topic'])
+
 class uiTopic(UniqueMixin, Base):
     __tablename__ = 'topics'
-    tid = Column(Integer, primary_key=True)    
+    tid = Column(Integer, primary_key=True)
     cid = Column(Integer, nullable=False)
     topic = Column(String)
 
@@ -65,146 +57,151 @@ class uiTopic(UniqueMixin, Base):
 
 class uiGrid(Base):
     __tablename__ = 'grid'
-    id = Column(Integer, ForeignKey('calculations.id'), nullable=False, primary_key=True)
-    info = Column(Text, default=None)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    info = Column(LargeBinary, default=None)
 
-# Relational paradigm tables
+calcsets = Table('calcsets', Base.metadata,
+    Column('parent_checksum', String, ForeignKey('calculations.checksum'), primary_key=True),
+    Column('children_checksum', String, ForeignKey('calculations.checksum'), primary_key=True),
+    UniqueConstraint('parent_checksum', 'children_checksum', name='parent_children_checksum')
+)
 
 class Calculation(Base):
     __tablename__ = 'calculations'
-    id = Column(Integer, primary_key=True)
-    checksum = Column(String, nullable=False)
-    
-    pottype_id = Column(Integer, ForeignKey('pottypes.pottype_id'), default=None)
-    
-    structures = relationship("Structure", backref="calculations")
-        
-    spacegroup = relationship("Spacegroup", uselist=False, backref="calculations")
-    struct_ratios = relationship("Struct_ratios", uselist=False, backref="calculations")
-    auxiliary = relationship("Auxiliary", uselist=False, backref="calculations")
-    basis = relationship("Basis", uselist=False, backref="calculations")
-    recipinteg = relationship("Recipinteg", uselist=False, backref="calculations")
-    energy = relationship("Energy", uselist=False, backref="calculations")
-    charges = relationship("Charges", uselist=False, backref="calculations")
-    electrons = relationship("Electrons", uselist=False, backref="calculations")
-    phonons = relationship("Phonons", uselist=False, backref="calculations")
-    forces = relationship("Forces", uselist=False, backref="calculations")
-    
-    uigrid = relationship("uiGrid", uselist=False, backref="calculations")
-    uitopics = relationship("uiTopic", backref="calculations", secondary=tags)
-    apps = relationship("Apps", backref="calculations")
+    checksum = Column(String, primary_key=True, index=True)
 
-class Auxiliary(Base):
-    __tablename__ = 'auxiliaries'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
+    siblings_count = Column(Integer, default=0)
+    nested_depth = Column(Integer, default=0)
+    children = relationship("Calculation", backref="parent", secondary=calcsets, primaryjoin=checksum==calcsets.c.parent_checksum, secondaryjoin=checksum==calcsets.c.children_checksum)
+
+    pottype_id = Column(Integer, ForeignKey('pottypes.pottype_id'), default=None)
+
+    structures = relationship("Structure")
+    spectra = relationship("Spectra")
+    spacegroup = relationship("Spacegroup", uselist=False)
+    struct_ratios = relationship("Struct_ratios", uselist=False)
+    struct_optimisation = relationship("Struct_optimisation", uselist=False)
+    main_metadata = relationship("Metadata", uselist=False)
+    basis = relationship("Basis", uselist=False)
+    recipinteg = relationship("Recipinteg", uselist=False)
+    energy = relationship("Energy", uselist=False)
+    electrons = relationship("Electrons", uselist=False)
+    phonons = relationship("Phonons", uselist=False)
+    forces = relationship("Forces", uselist=False)
+    uigrid = relationship("uiGrid", uselist=False)
+    uitopics = relationship("uiTopic", backref="calculations", secondary=tags)
+    references = relationship("Reference", backref="calculations", secondary="metadata_references")
+
+class Metadata(Base):
+    __tablename__ = 'metadata'
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     version_id = Column(Integer, ForeignKey('codeversions.version_id'))
-    location = Column(String, nullable=False)
+    location = Column(String, default=None)
     finished = Column(Integer, default=0)
     raw_input = Column(Text, default=None)
-    author = Column(String, default=None)
-    date = Column(Date, default=None)
-    
+    modeling_time = Column(Float, default=None)
+    chemical_formula = Column(String, default=None)
+    added = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+    download_size = Column(BigInteger, default=None)
+    filenames = Column(LargeBinary, default=None)
+
+class Reference(Base):
+    __tablename__ = 'references'
+    reference_id = Column(Integer, primary_key=True)
+    content = Column(String, nullable=False, unique=True)
+
+metadata_references = Table('metadata_references', Base.metadata,
+    Column('checksum', String, ForeignKey('calculations.checksum')),
+    Column('reference_id', Integer, ForeignKey('references.reference_id')),
+    UniqueConstraint('checksum', 'reference_id', name='u_checksum_reference_id')
+)
+
 class Codeversion(UniqueMixin, Base):
     __tablename__ = 'codeversions'
-    version_id = Column(Integer, primary_key=True)    
-    family_id = Column(Integer, ForeignKey('codefamilies.family_id'))    
-    content = Column(String, nullable=False)
-    instances = relationship("Auxiliary", backref="codeversions")
-    
+    version_id = Column(Integer, primary_key=True)
+    family_id = Column(Integer, ForeignKey('codefamilies.family_id'))
+    content = Column(String, nullable=False, unique=True)
+    instances = relationship("Metadata")
+
     @classmethod
     def unique_filter(cls, query, content):
         return query.filter(Codeversion.content == content)
 
 class Codefamily(UniqueMixin, Base):
     __tablename__ = 'codefamilies'
-    family_id = Column(Integer, primary_key=True)    
-    content = Column(String, nullable=False)
-    versions = relationship("Codeversion", backref="codefamilies")
-    
+    family_id = Column(Integer, primary_key=True)
+    content = Column(String, nullable=False, unique=True)
+    versions = relationship("Codeversion")
+
     @classmethod
     def unique_filter(cls, query, content):
         return query.filter(Codefamily.content == content)
 
 class Energy(Base):
     __tablename__ = 'energies'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    convergence = Column(Text, default=None)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    convergence = Column(LargeBinary, default=None)
     total = Column(Float, default=None)
-    
+
 class Basis(Base):
     __tablename__ = 'basis_sets'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    type = Column(String, nullable=False)
-    rgkmax = Column(Float, default=None)
-    lmaxapw = Column(Float, default=None)
-    lmaxmat = Column(Float, default=None)
-    lmaxvr = Column(Float, default=None)
-    gmaxvr = Column(Float, default=None)
-    repr = Column(Text, default=None) # TODO
-    
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    kind = Column(String, nullable=False)
+    content = Column(LargeBinary, default=None)
+
 class Recipinteg(Base):
     __tablename__ = 'recipintegs'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     kgrid = Column(String, default=None)
     kshift = Column(Float, default=None)
     smearing = Column(Float, default=None)
     smeartype = Column(String, default=None)
-    
+
 class Pottype(UniqueMixin, Base):
     __tablename__ = 'pottypes'
-    pottype_id = Column(Integer, primary_key=True)    
-    name = Column(String, nullable=False)
-    instances = relationship("Calculation", backref="pottypes")
-    
+    pottype_id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    instances = relationship("Calculation")
+
     @classmethod
     def unique_filter(cls, query, name):
         return query.filter(Pottype.name == name)
-    
-class Charges(Base):
-    __tablename__ = 'charges'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    core = Column(Float, nullable=False)
-    leakage = Column(Float, nullable=False)
-    valence = Column(Float, nullable=False)
-    interstitial = Column(Float, nullable=False)
-    muffintins = Column(Float, nullable=False)
-    total = Column(Float, nullable=False)
 
 class Electrons(Base):
     __tablename__ = 'electrons'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     gap = Column(Float, default=None)
     is_direct = Column(Integer, default=0)
-    eigenvalues = relationship("Eigenvalues", uselist=False, backref="electrons")
 
 class Phonons(Base):
     __tablename__ = 'phonons'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    eigenvalues = relationship("Eigenvalues", uselist=False, backref="phonons")
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
 
-class Eigenvalues(Base):
-    __tablename__ = 'eigenvalues'
-    eid = Column(Integer, primary_key=True)
-    electrons_id = Column(Integer, ForeignKey('electrons.id'))
-    phonons_id = Column(Integer, ForeignKey('phonons.id'))
-    dos = Column(Text, default=None)
-    bands = Column(Text, default=None)
-    projected = Column(Text, default=None)
-    eigenvalues = Column(Text, default=None) # TODO rename
-    
+class Spectra(Base):
+    __tablename__ = 'spectra'
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    ELECTRON = 'ELECTRON'
+    PHONON = 'PHONON'
+    kind = Column(Enum(ELECTRON, PHONON, name='spectrum_kind_enum'), primary_key=True)
+    dos =           Column(LargeBinary, default=None)
+    bands =         Column(LargeBinary, default=None)
+    projected =     Column(LargeBinary, default=None)
+    eigenvalues =   Column(LargeBinary, default=None)
+
 class Forces(Base):
     __tablename__ = 'forces'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    values = Column(Text, nullable=False)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    content = Column(LargeBinary, nullable=False)
 
 class Structure(Base):
     __tablename__ = 'structures'
     struct_id = Column(Integer, primary_key=True)
-    id = Column(Integer, ForeignKey('calculations.id'), nullable=False)
+    checksum = Column(String, ForeignKey('calculations.checksum'), nullable=False)
     step = Column(Integer, nullable=False)
     final = Column(Boolean, nullable=False)
-    lattice = relationship("Lattice", uselist=False, backref="structures")
-    atoms = relationship("Atom", backref="structures")
+    #struct_checksum = Column(String, nullable=False)
+    lattice = relationship("Lattice", uselist=False)
+    atoms = relationship("Atom")
 
 class Lattice(Base):
     __tablename__ = 'lattices'
@@ -223,7 +220,7 @@ class Lattice(Base):
     a23 = Column(Float, nullable=False)
     a31 = Column(Float, nullable=False)
     a32 = Column(Float, nullable=False)
-    a33 = Column(Float, nullable=False)    
+    a33 = Column(Float, nullable=False)
 
 class Atom(Base):
     __tablename__ = 'atoms'
@@ -235,27 +232,24 @@ class Atom(Base):
     z = Column(Float, nullable=False)
     charge = Column(Float, default=None)
     magmom = Column(Float, default=None)
-    rmt = Column(Float, default=None)    
+    rmt = Column(Float, default=None)
 
 class Spacegroup(Base):
     __tablename__ = 'spacegroups'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
-    n = Column(Integer, nullable=False)    
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    n = Column(Integer, nullable=False)
 
 class Struct_ratios(Base):
     __tablename__ = 'struct_ratios'
-    id = Column(Integer, ForeignKey('calculations.id'), primary_key=True)
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     chemical_formula = Column(String, nullable=False)
     is_primitive = Column(Boolean, default=False)
     formula_units = Column(Integer, nullable=False)
     nelem = Column(Integer, nullable=False)
-    dimensions = Column(Float, nullable=False)
-    
-# submodules table
+    dimensions = Column(Float, default=None)
 
-class Apps(Base):
-    __tablename__ = 'apps'
-    app_id = Column(Integer, primary_key=True)
-    id = Column(Integer, ForeignKey('calculations.id'), nullable=False)
-    name = Column(String, nullable=False)
-    data = Column(Text, default=None)
+class Struct_optimisation(Base):
+    __tablename__ = 'struct_optimisation'
+    checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
+    tresholds = Column(LargeBinary, default=None)
+    ncycles = Column(LargeBinary, default=None)

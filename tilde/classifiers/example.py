@@ -1,5 +1,6 @@
 
-# example classifier: tries to determine whatever you want...
+# Example classifier: tries to determine whatever you want...
+# Author: Evgeny Blokhin
 
 import os, sys
 

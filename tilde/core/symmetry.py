@@ -1,43 +1,71 @@
 
 # *SymmetryFinder*: platform-independent symmetry finder, wrapping Spglib code
 # *SymmetryHandler*: symmetry inferences for 0D, 1D, 2D and 3D-systems
-# v170314
+# Author: Evgeny Blokhin
 
 import os, sys
 
-from numpy import array
-from numpy import zeros
+from numpy import array, zeros
 from numpy.linalg import det
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 try: import _spglib as spg
-except ImportError: raise RuntimeError('Cannot start symmetry finder!')
+except ImportError:
+
+    # this currently compiles spglib at Unix
+    from tilde.core.settings import BASE_DIR
+    from distutils.core import Extension, Distribution
+    from distutils.command.build_ext import build_ext
+    from numpy.distutils.misc_util import get_numpy_include_dirs
+
+    prev_location = os.getcwd()
+    print '\nPreparation in progress...\n'
+    os.chdir(BASE_DIR)
+
+    spglibdir = os.path.join(BASE_DIR, 'spglib')
+    spgsrcdir = os.path.join(spglibdir, 'src')
+    include_dirs = [spgsrcdir]
+    sources = ["cell.c", "debug.c", "hall_symbol.c", "kpoint.c", "lattice.c", "mathfunc.c", "pointgroup.c", "primitive.c", "refinement.c", "sitesym_database.c", "site_symmetry.c", "spacegroup.c", "spin.c", "spg_database.c", "spglib.c", "symmetry.c"]
+    sources = [os.path.join(spgsrcdir, srcfile) for srcfile in sources]
+    ext = Extension("_spglib", include_dirs=include_dirs + get_numpy_include_dirs(), sources=[os.path.join(spglibdir, "_spglib.c")] + sources)
+    dist = Distribution({'name': '_spglib', 'ext_modules': [ext]})
+    cmd = build_ext(dist)
+    cmd.ensure_finalized()
+    cmd.inplace = 1
+    cmd.run()
+
+    os.chdir(prev_location)
+    import _spglib as spg
+    print '\nPrepared successfully!\n'
 
 
-class SymmetryFinder:    
+class SymmetryFinder:
     accuracy = 1e-04 # recommended accuracy value = 0.0001
-    
+
     def __init__(self, accuracy=None):
         self.error = None
         self.accuracy=accuracy if accuracy else SymmetryFinder.accuracy
-        self.angle_tolerance=4   
+        self.angle_tolerance=4
 
     def get_spacegroup(self, tilde_obj):
-        try: symmetry = spg.spacegroup(
+        try:
+            symmetry = spg.spacegroup(
             tilde_obj['structures'][-1].get_cell().T.copy(),
             tilde_obj['structures'][-1].get_scaled_positions().copy(),
             array(tilde_obj['structures'][-1].get_atomic_numbers(), dtype='intc'),
             self.accuracy,
-            self.angle_tolerance)            
+            self.angle_tolerance)
         except Exception, ex:
-            self.error = 'Symmetry finder error: %s' % ex            
+            self.error = 'Symmetry finder error: %s' % ex
         else:
             symmetry = symmetry.split()
-            self.n = int( symmetry[1].replace("(", "").replace(")", "") )
             self.i = symmetry[0]
+            try: self.n = int( symmetry[1].replace("(", "").replace(")", "") )
+            except (ValueError, IndexError): self.n = 0
+            if self.n == 0:
+                self.error = 'Symmetry finder error: probably, coinciding atoms!'
 
     def refine_cell(self, tilde_obj):
         # Atomic positions have to be specified by scaled positions for spglib
@@ -55,7 +83,7 @@ class SymmetryFinder:
                                            self.accuracy,
                                            self.angle_tolerance)
         except Exception, ex:
-            self.error = 'Symmetry finder error: %s' % ex  
+            self.error = 'Symmetry finder error: %s' % ex
         else:
             # TODO : BAD DESIGN
             self.refinedcell = Atoms(numbers=numbers[:num_atom_bravais].copy(),
@@ -64,7 +92,7 @@ class SymmetryFinder:
                                     pbc=tilde_obj['structures'][-1].get_pbc())
             self.refinedcell.periodicity = sum(self.refinedcell.get_pbc())
             self.refinedcell.dims = abs(det(tilde_obj['structures'][-1].cell))
-            
+
 '''
 # Dummy class for testing purposes
 class SymmetryHandler(SymmetryFinder):
@@ -89,7 +117,7 @@ class SymmetryHandler(SymmetryFinder):
         # "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
 
         # space group 2 crystal system
-        # TODO: only for 3d systems!!!
+        # TODO: only for 3d systems
         if   195 <= self.n <= 230: self.symmetry = 'cubic'
         elif 168 <= self.n <= 194: self.symmetry = 'hexagonal'
         elif 143 <= self.n <= 167: self.symmetry = 'rhombohedral'
@@ -137,7 +165,7 @@ class SymmetryHandler(SymmetryFinder):
             if self.n in [25, 26, 28, 51]:
                 tilde_obj.warning('Warning! Diperiodical group setting is undefined!')
             DIPERIODIC_MAPPING = {3:8, 4:9, 5:10, 6:11, 7:12, 8:13, 10:14, 11:15, 12:16, 13:17, 14:18, 16:19, 17:20, 18:21, 21:22, 25:23, 25:24, 26:25, 26:26, 27:27, 28:28, 28:29, 29:30, 30:31, 31:32, 32:33, 35:34, 38:35, 39:36, 47:37, 49:38, 50:39, 51:40, 51:41, 53:42, 54:43, 55:44, 57:45, 59:46, 65:47, 67:48, 75:49, 81:50, 83:51, 85:52, 89:53, 90:54, 99:55, 100:56, 111:57, 113:58, 115:59, 117:60, 123:61, 125:62, 127:63, 129:64, 143:65, 147:66, 149:67, 150:68, 156:69, 157:70, 162:71, 164:72, 168:73, 174:74, 175:75, 177:76, 183:77, 187:78, 189:79, 191:80}
-            
+
             cellpar = cell_to_cellpar( tilde_obj.structures[-1].cell ).tolist()
             if cellpar[3] != 90 or cellpar[4] != 90 or cellpar[5] != 90:
                 DIPERIODIC_MAPPING.update({1:1, 2:2, 3:3, 6:4, 7:5, 10:6, 13:7})
@@ -148,4 +176,3 @@ class SymmetryHandler(SymmetryFinder):
                 elif 49 <= self.dg <= 64: self.symmetry = 'square'
                 elif 8  <= self.dg <= 48: self.symmetry = 'rectangular'
                 elif 1  <= self.dg <= 7:  self.symmetry = 'oblique'
-                

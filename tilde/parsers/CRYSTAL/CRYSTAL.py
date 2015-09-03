@@ -1,62 +1,22 @@
 
-# Tilde project: CRYSTAL outputs parser
-# v140714
+# CRYSTAL cryst.out parser
+# Author: Evgeny Blokhin
 
-import os
-import sys
-import math
-import re
+import os, sys, math, re
 import time
 import copy
 from fractions import Fraction
 
-from numpy import dot
-from numpy import array
-from numpy import cross
-from numpy import append
+from numpy import dot, array, cross, append
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.lattice.spacegroup.cell import cellpar_to_cell
 from ase.units import Hartree
 from ase import Atoms
 
-from parsers import Output
-from core.common import metric
+from tilde.parsers import Output
+from tilde.core.common import metric
 
-
-patterns = { \
-    'Etot' :        re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL),
-    'pEtot' :       re.compile(r"\n\sTOTAL ENERGY\s(.+?)\sCONVERGENCE"),
-    'syminfos' :    re.compile(r"SYMMOPS - TRANSLATORS IN FRACTIONA\w{1,2} UNITS(.+?)\n\n", re.DOTALL),
-    'frac_primitive_cells' : re.compile(r"\n\sPRIMITIVE CELL(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
-    'molecules' :   re.compile(r"\n\sATOMS IN THE ASYMMETRIC UNIT(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
-    'cart_vectors' : re.compile(r"DIRECT LATTICE VECTORS CARTESIAN COMPONENTS \(ANGSTROM\)(.+?)\n\n", re.DOTALL),
-    'crystallographic_cell' : re.compile(r"\n\sCRYSTALLOGRAPHIC(.+?)\n\sT\s=", re.DOTALL),
-    'at_str' :      re.compile(r"^\s{0,3}\d{1,4}\s"),
-    'charges' :     re.compile(r"ALPHA\+BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
-    'magmoms' :     re.compile(r"ALPHA-BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
-    'icharges' :    re.compile(r"\n\sATOMIC NUMBER(.{4}),\sNUCLEAR CHARGE(.{7}),"),
-    'starting' :    re.compile(r"EEEEEEEEEE STARTING(.+?)\n"),
-    'ending' :      re.compile(r"EEEEEEEEEE TERMINATION(.+?)\n"),
-    'freqs' :       re.compile(r"DISPERSION K POINT(.+?)FREQ\(CM\*\*\-1\)", re.DOTALL),
-    'gamma_freqs' : re.compile(r"\(HARTREE\*\*2\)   \(CM\*\*\-1\)     \(THZ\)             \(KM\/MOL\)(.+?)NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES", re.DOTALL),
-    'ph_eigvecs' :  re.compile(r"NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES(.+?)\*{79}", re.DOTALL),
-    'needed_disp' : re.compile(r"\d{1,4}\s{2,6}(\d{1,4})\s{1,3}\w{1,2}\s{11,12}(\w{1,2})\s{11,12}\d{1,2}"),
-    'symdisps' :    re.compile(r"N   LABEL SYMBOL DISPLACEMENT     SYM.(.*)NUMBER OF IRREDUCIBLE ATOMS", re.DOTALL),
-    'ph_k_degeneracy' : re.compile(r"K       WEIGHT       COORD(.*)AND RECIPROCAL LATTICE VECTORS", re.DOTALL),
-    'supmatrix' :   re.compile(r"EXPANSION MATRIX OF PRIMITIVE CELL(.+?)\sNUMBER OF ATOMS PER SUPERCELL", re.DOTALL),
-    'cyc' :         re.compile(r"\n\sCYC\s(.+?)\n"),
-    'enes' :        re.compile(r"\n\sTOTAL ENERGY\((.+?)\n"),
-    'k1' :          re.compile(r"\n\sMAX\sGRADIENT(.+?)\n"),
-    'k2' :          re.compile(r"\n\sRMS\sGRADIENT(.+?)\n"),
-    'k3' :          re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n"),
-    'k4' :          re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n"),
-    'version' :     re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL),
-    'pv' :          re.compile(r"\n PV            :\s(.*)\n"),
-    'ts' :          re.compile(r"\n TS            :\s(.*)\n"),
-    'et' :          re.compile(r"\n ET            :\s(.*)\n"),
-    'T' :           re.compile(r"\n AT \(T =(.*)MPA\):\n"),
-}
 
 def find_all(a_str, sub):
     ''' str finder iterator '''
@@ -68,16 +28,49 @@ def find_all(a_str, sub):
         start += len(sub)
 
 class CRYSTOUT(Output):
-    def __init__(self, file, **kwargs):
-        Output.__init__(self, file)
+    patterns = {
+    'Etot' :                    re.compile(r"\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s(\S{20})\s{1,10}DE(?!.*\n\sTOTAL ENERGY\(.{2,3}\)\(.{2}\)\(.{3,4}\)\s)", re.DOTALL),
+    'pEtot' :                   re.compile(r"\n\sTOTAL ENERGY\s(.+?)\sCONVERGENCE"),
+    'syminfos' :                re.compile(r"SYMMOPS - TRANSLATORS IN FRACTIONA\w{1,2} UNITS(.+?)\n\n", re.DOTALL),
+    'frac_primitive_cells' :    re.compile(r"\n\sPRIMITIVE CELL(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
+    'molecules' :               re.compile(r"\n\sATOMS IN THE ASYMMETRIC UNIT(.+?)ATOM BELONGING TO THE ASYMMETRIC UNIT", re.DOTALL),
+    'cart_vectors' :            re.compile(r"DIRECT LATTICE VECTORS CARTESIAN COMPONENTS \(ANGSTROM\)(.+?)\n\n", re.DOTALL),
+    'crystallographic_cell' :   re.compile(r"\n\sCRYSTALLOGRAPHIC(.+?)\n\sT\s=", re.DOTALL),
+    'at_str' :                  re.compile(r"^\s{0,3}\d{1,4}\s"),
+    'charges' :                 re.compile(r"ALPHA\+BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
+    'magmoms' :                 re.compile(r"ALPHA-BETA ELECTRONS\n\sMULLIKEN POPULATION ANALYSIS(.+?)OVERLAP POPULATION CONDENSED TO ATOMS", re.DOTALL),
+    'icharges' :                re.compile(r"\n\sATOMIC NUMBER(.{4}),\sNUCLEAR CHARGE(.{7}),"),
+    'starting' :                re.compile(r"EEEEEEEEEE STARTING(.+?)\n"),
+    'ending' :                  re.compile(r"EEEEEEEEEE TERMINATION(.+?)\n"),
+    'freqs' :                   re.compile(r"DISPERSION K POINT(.+?)FREQ\(CM\*\*\-1\)", re.DOTALL),
+    'gamma_freqs' :             re.compile(r"\(HARTREE\*\*2\)   \(CM\*\*\-1\)     \(THZ\)             \(KM\/MOL\)(.+?)NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES", re.DOTALL),
+    'ph_eigvecs' :              re.compile(r"NORMAL MODES NORMALIZED TO CLASSICAL AMPLITUDES(.+?)\*{79}", re.DOTALL),
+    'needed_disp' :             re.compile(r"\d{1,4}\s{2,6}(\d{1,4})\s{1,3}\w{1,2}\s{11,12}(\w{1,2})\s{11,12}\d{1,2}"),
+    'symdisps' :                re.compile(r"N   LABEL SYMBOL DISPLACEMENT     SYM.(.*)NUMBER OF IRREDUCIBLE ATOMS", re.DOTALL),
+    'ph_k_degeneracy' :         re.compile(r"K       WEIGHT       COORD(.*)AND RECIPROCAL LATTICE VECTORS", re.DOTALL),
+    'supmatrix' :               re.compile(r"EXPANSION MATRIX OF PRIMITIVE CELL(.+?)\sNUMBER OF ATOMS PER SUPERCELL", re.DOTALL),
+    'cyc' :                     re.compile(r"\n\sCYC\s(.+?)\n"),
+    'enes' :                    re.compile(r"\n\sTOTAL ENERGY\((.+?)\n"),
+    'k1' :                      re.compile(r"\n\sMAX\sGRADIENT(.+?)\n"),
+    'k2' :                      re.compile(r"\n\sRMS\sGRADIENT(.+?)\n"),
+    'k3' :                      re.compile(r"\n\sMAX\sDISPLAC.(.+?)\n"),
+    'k4' :                      re.compile(r"\n\sRMS\sDISPLAC.(.+?)\n"),
+    'version' :                 re.compile(r"\s\s\s\s\sCRYSTAL\d{2}(.*)\*\n", re.DOTALL),
+    'pv' :                      re.compile(r"\n PV            :\s(.*)\n"),
+    'ts' :                      re.compile(r"\n TS            :\s(.*)\n"),
+    'et' :                      re.compile(r"\n ET            :\s(.*)\n"),
+    'T' :                       re.compile(r"\n AT \(T =(.*)MPA\):\n"),
+    }
+
+    def __init__(self, filename, **kwargs):
+        Output.__init__(self, filename)
         self.properties_calc, self.crystal_calc = False, False
-        
+
         # this is the limiting distance, after which the direction is considered non-periodic
         # be careful, as this has no physical meaning and may vary
-        # e.g.: non-periodic component(s) are assigned 500 in CRYSTAL
-        # hovewer, in PW codes this is ambiguous
+        # NB non-periodic component(s) are assigned 500 in CRYSTAL
         self.PERIODIC_LIMIT = 50
-        
+
         '''if kwargs:
             if not 'basis_set' in kwargs or not 'atomtypes' in kwargs:
                 raise RuntimeError( 'Invalid missing properties defined!' )
@@ -92,18 +85,17 @@ class CRYSTOUT(Output):
         # by _coupler_ property (E_tot).
         # However if we have received *missing_props*,
         # we do parse them now
+        if not missing_props: self._coupler_ = self.is_coupling(filename)'''
 
-        if not missing_props: self._coupler_ = self.is_coupling(file)'''
-        
         # normalize breaks and get rid of possible odd MPI incusions in important data
-        raw_data = open(file).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
+        raw_data = open(filename).read().replace('\r\n', '\n').replace('\r', '\n').replace('FORTRAN STOP\n', '')
         parts_pointer = list(find_all(raw_data, "*                              MAIN AUTHORS"))
 
         # determine whether to deal with CRYSTAL and/or PROPERTIES output formats
         if len(parts_pointer) > 1:
             if not self.is_properties(raw_data[ parts_pointer[1]: ]) and \
             len(raw_data[ parts_pointer[1]: ]) > 2000: # in case of empty properties outputs
-                raise RuntimeError( 'File contains several merged outputs - currently not supported!' )
+                raise RuntimeError( 'File contains several merged outputs, currently not supported!' )
             else:
                 self.data = raw_data[ parts_pointer[0] : parts_pointer[1] ]
                 self.pdata = raw_data[ parts_pointer[1]: ]
@@ -116,22 +108,23 @@ class CRYSTOUT(Output):
                 self.pdata = raw_data[ parts_pointer[0]: ]
                 self.properties_calc = True
 
-        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file format looks similar to CRYSTAL format, it is unknown!' )
+        if not self.crystal_calc and not self.properties_calc: raise RuntimeError( 'Though this file looks similar to CRYSTAL output, its format is unknown!' )
 
         if self.crystal_calc:
             self.info['duration'] = self.get_duration()
             self.info['finished'] = self.is_finished()
-            
+
             self.info['framework'] = 'CRYSTAL'
+            self.electrons['type'] = 'gaussians'
+
             self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
             self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
 
             self.info['energy'] = self.get_etot()
             self.structures = self.get_structures()
-            
+
             self.set_charges()
-            
-            self.electrons['type'] = 'LCAO'
+
             self.electrons['basis_set'] = self.get_bs()
 
             self.phonons['ph_k_degeneracy'] = self.get_k_degeneracy()
@@ -140,15 +133,15 @@ class CRYSTOUT(Output):
             self.phonons['dfp_disps'], self.phonons['dfp_magnitude'] = self.get_ph_sym_disps()
             self.phonons['dielectric_tensor'] = self.get_static_dielectric_tensor()
 
-            self.info['convergence'], self.info['ncycles'], self.info['tresholds'] = self.get_convergence()
+            self.convergence, self.ncycles, self.tresholds = self.get_convergence()
 
             self.set_method()
-            
+
             # extract zero-point energy, depending on phonons presence
-            if self.phonons['modes']:                    
+            if self.phonons['modes']:
                 self.phonons['zpe'] = self.get_zpe()
                 self.phonons['td'] = self.get_td()
-            
+
             # format ph_k_degeneracy
             if self.phonons['ph_k_degeneracy']:
                 bz, d = [], []
@@ -178,12 +171,22 @@ class CRYSTOUT(Output):
             #    self.info['prog'] += '+PROPERTIES'
         '''
 
+        self.related_files.append(filename)
+        cur_folder = os.path.dirname(filename)
+        check_files = []
+        if filename.endswith('.cryst.out'):
+            check_files = [filename.replace('.cryst.out', '') + '.d12', filename.replace('.cryst.out', '') + '.gui']
+        elif filename.endswith('.out'):
+            check_files = [filename.replace('.out', '') + '.d12', filename.replace('.out', '') + '.gui']
+        for check in check_files:
+            if os.path.exists(os.path.join(cur_folder, check)): self.related_files.append(os.path.join(cur_folder, check))
+
     @staticmethod
     def fingerprints(test_string):
         if "*                              MAIN AUTHORS" in test_string: return True
         else: return False
 
-    def is_coupling(self, file):
+    def is_coupling(self, filename):
         '''
         determines if this output should be *coupled* with another one, i.e. needed information is present there (which may be expensive to extract).
         This should be done as fast as possible because the file may be very large. So there are 4 criteria:
@@ -193,7 +196,7 @@ class CRYSTOUT(Output):
         (4) absent CRYSTAL-type output
         '''
         e, crit_1, crit_2, crit_3 = None, False, False, False
-        f = open(file, 'r')
+        f = open(filename, 'r')
         while 1:
             str = f.readline()
             if not str: break
@@ -212,7 +215,7 @@ class CRYSTOUT(Output):
         else: return False
 
     '''def get_symops(self):
-        syms = patterns['syminfos'].findall(self.data)
+        syms = self.patterns['syminfos'].findall(self.data)
         if not syms:
             self.warning( 'No sym info found, assuming P1!' )
             return ['+x,+y,+z']
@@ -248,10 +251,10 @@ class CRYSTOUT(Output):
         if len(symops) == 0:
             raise RuntimeError( 'Sym info is invalid!' )
         return symops'''
-        
+
     def get_cart2frac(self):
         matrix = []
-        vectors = patterns['cart_vectors'].findall(self.data)
+        vectors = self.patterns['cart_vectors'].findall(self.data)
 
         if vectors:
             lines = vectors[-1].splitlines()
@@ -266,21 +269,22 @@ class CRYSTOUT(Output):
                 matrix.append( vector )
         else:
             if not self.molecular_case: raise RuntimeError( 'Unable to extract cartesian vectors!' )
-        
+
         return matrix
 
     def get_structures(self):
         structures = []
-        if self.molecular_case: compiled_pattern = patterns['molecules']
-        else: compiled_pattern = patterns['frac_primitive_cells']
+        if self.molecular_case: compiled_pattern = self.patterns['molecules']
+        else: compiled_pattern = self.patterns['frac_primitive_cells']
 
         strucs = compiled_pattern.findall(self.data)
 
         if not strucs: raise RuntimeError( 'No structure was found!' )
 
         for crystal_data in strucs:
-            symbols, parameters, atoms, periodicity = [], [], [], [True, True, True]
-            
+            symbols, parameters, atoms = [], [], []
+            periodicity = [True, True, True]
+
             if self.molecular_case: periodicity = False
 
             crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
@@ -291,7 +295,7 @@ class CRYSTOUT(Output):
             ab_normal = [0,0,1] if self.molecular_case else metric(cross(cell[0], cell[1]))
             a_direction = None if self.molecular_case else metric(cell[0])
 
-            oth = patterns['crystallographic_cell'].search(crystal_data)
+            oth = self.patterns['crystallographic_cell'].search(crystal_data)
             if oth is not None: crystal_data = crystal_data.replace(oth.group(), "") # delete other cells info except primitive cell
 
             lines = crystal_data.splitlines()
@@ -300,13 +304,13 @@ class CRYSTOUT(Output):
                     parameters = lines[li+1].split()
                     try: parameters = [float(i) for i in parameters]
                     except ValueError: raise RuntimeError( 'Cell data are invalid: ' + lines[li+1] )
-                elif patterns['at_str'].search(lines[li]):
+                elif self.patterns['at_str'].search(lines[li]):
                     atom = lines[li].split()
                     if len(atom) in [7, 8] and len(atom[-2]) > 7:
                         for i in range(4, 7):
                             try: atom[i] = round(float(atom[i]), 10)
                             except ValueError: raise RuntimeError('Atomic coordinates are invalid!')
-                        
+
                         # Warning: we lose here the non-equivalency in the same atom types, denoted by integer! For magmoms refer to corresp. property!
                         atom[3] = ''.join([letter for letter in atom[3] if not letter.isdigit()]).capitalize()
                         if atom[3] == 'Xx': atom[3] = 'X'
@@ -314,30 +318,30 @@ class CRYSTOUT(Output):
                         atomdata = atom[4:7]
                         #atomdata.append(atom[1]) # irreducible (T or F)
                         atoms.append(atomdata)
-                        
+
             if len(atoms) == 0: raise RuntimeError('No atoms found, cell info is corrupted!')
-            if 0 in parameters: raise RuntimeError('Zero-vector found, cell info is corrupted!') # prevent cell collapses known in CRYSTAL RESTART outputs
-            
+            if parameters and len(filter(lambda x: x > 0.75, parameters)) < 6: raise RuntimeError('Cell is collapsed!') # prevent cell collapses known in CRYSTAL RESTART outputs
+
             # check whether angstroms are used instead of fractions
             if periodicity:
                 for i in range(0, 3):
                     if parameters[i] > self.PERIODIC_LIMIT:
                         parameters[i] = self.PERIODIC_LIMIT
                         periodicity[i] = False
-                        
+
                         # TODO : account case with not direct angles
                         for j in range(0, len(atoms)):
                             atoms[j][i] /= self.PERIODIC_LIMIT
 
                 matrix = cellpar_to_cell(parameters, ab_normal, a_direction) # TODO : ab_normal, a_direction may in some cases belong to completely other structure!
-                structures.append(Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=periodicity))
+                structures.append( Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=periodicity) )
             else:
-                structures.append(Atoms(symbols=symbols, positions=atoms, pbc=False))
-                
+                structures.append( Atoms(symbols=symbols, positions=atoms, pbc=False) )
+
         return structures
 
     def get_etot(self):
-        e = patterns['Etot'].search(self.data)
+        e = self.patterns['Etot'].search(self.data)
         if e is not None: return float(e.groups()[0]) * Hartree
         else:
             if '  CENTRAL POINT ' in self.data:
@@ -349,7 +353,7 @@ class CRYSTOUT(Output):
                 return None
 
     '''def get_etot_props(self):
-        e = patterns['pEtot'].search(self.pdata)
+        e = self.patterns['pEtot'].search(self.pdata)
         if e is not None: return float(e.groups()[0])
         else:
             self.warning( 'No energy in PROPERTIES output!' )
@@ -358,12 +362,12 @@ class CRYSTOUT(Output):
     def get_phonons(self):
         if not "U   U  EEEE  N   N   CCC  Y   Y" in self.data: return None, None, None, None
         freqdata = []
-        freqsp = patterns['freqs'].findall(self.data)
+        freqsp = self.patterns['freqs'].findall(self.data)
         if freqsp:
             for i in freqsp:
                 freqdata.append( filter( None, i.strip().splitlines() ) )
         else:
-            freqsp = patterns['gamma_freqs'].search(self.data)
+            freqsp = self.patterns['gamma_freqs'].search(self.data)
             if freqsp is None: return None, None, None, None
             else:   freqdata.append( filter( None, freqsp.group(1).strip().splitlines() ) )
         bz_modes, bz_irreps, kpoints = {}, {}, []
@@ -417,7 +421,7 @@ class CRYSTOUT(Output):
     def get_ph_eigvecs(self):
         if not self.phonons['modes']: return None
         eigvecdata = []
-        eigvecsp = patterns['ph_eigvecs'].search(self.data)
+        eigvecsp = self.patterns['ph_eigvecs'].search(self.data)
         if eigvecsp:
             eigvecsp = eigvecsp.group(1)
             parts = eigvecsp.split("DISPERSION K POINT")
@@ -458,10 +462,10 @@ class CRYSTOUT(Output):
                     ph_eigvecs.append( freqs_container[fn] )
 
                 if 'ANTI-PHASE' in i:
-                    self.warning( 'Phase and anti-phase eigenvectors found at k=('+kpoints[-1]+'), the latter will be omitted' )
+                    self.warning( 'Phase and anti-phase eigenvectors found at k=(%s), the latter will be omitted' % kpoints[-1] )
                     break
             if len(ph_eigvecs) != len(self.phonons['modes']['0 0 0']):
-                raise RuntimeError( 'Fatal error! Number of eigenvectors does not correlate to number of freqs!' )
+                raise RuntimeError( 'Fatal error! Number of eigenvectors does not correspond to the number of freqs!' )
 
             if not kpoints: BZ_point_coord = '0 0 0'
             else: BZ_point_coord = kpoints[-1]
@@ -473,7 +477,7 @@ class CRYSTOUT(Output):
         return bz_eigvecs
 
     def get_k_degeneracy(self):
-        ph_k_degeneracy = patterns['ph_k_degeneracy'].search(self.data)
+        ph_k_degeneracy = self.patterns['ph_k_degeneracy'].search(self.data)
         if ph_k_degeneracy is None: return None
         k_degeneracy_data = {}
         lines = ph_k_degeneracy.group(1).splitlines()
@@ -504,14 +508,14 @@ class CRYSTOUT(Output):
 
     def set_charges(self):
         charges, magmoms = [], []
-        atomcharges = patterns['charges'].search(self.data)
-        atommagmoms = patterns['magmoms'].search(self.data)
-        
-        if not atomcharges and self.properties_calc: atomcharges = patterns['charges'].search(self.pdata)
-        if not atommagmoms and self.properties_calc: atommagmoms = patterns['magmoms'].search(self.pdata)
+        atomcharges = self.patterns['charges'].search(self.data)
+        atommagmoms = self.patterns['magmoms'].search(self.data)
+
+        if not atomcharges and self.properties_calc: atomcharges = self.patterns['charges'].search(self.pdata)
+        if not atommagmoms and self.properties_calc: atommagmoms = self.patterns['magmoms'].search(self.pdata)
 
         # obtain formal charges from pseudopotentials
-        iatomcharges = patterns['icharges'].findall(self.data)
+        iatomcharges = self.patterns['icharges'].findall(self.data)
         pseudo_charges = copy.deepcopy(atomic_numbers)
         for i in range(len(iatomcharges)):
             try:
@@ -526,7 +530,7 @@ class CRYSTOUT(Output):
             parts = atomcharges.group().split("ATOM    Z CHARGE  SHELL POPULATION")
             chargedata = parts[1].splitlines()
             for i in chargedata:
-                if patterns['at_str'].match(i):
+                if self.patterns['at_str'].match(i):
                     val = i.split()
                     val[1] = val[1].capitalize()
                     val[3] = val[3][:6] # erroneous by stars
@@ -537,12 +541,12 @@ class CRYSTOUT(Output):
             try: self.structures[-1].set_initial_charges(charges)
             except ValueError: self.warning('Number of atoms and found charges does not match!') # some issues with CRYSTAL03
         else: self.warning( 'No charges available!' )
-        
+
         if atommagmoms is not None:
             parts = atommagmoms.group().split("ATOM    Z CHARGE  SHELL POPULATION")
             chargedata = parts[1].splitlines()
             for i in chargedata:
-                if patterns['at_str'].match(i):
+                if self.patterns['at_str'].match(i):
                     val = i.split()
                     val[3] = val[3][:6] # erroneous by stars
                     magmoms.append(float(val[3]))
@@ -553,7 +557,7 @@ class CRYSTOUT(Output):
     def get_input_and_version(self, inputdata):
         # get version
         version = 'CRYSTAL'
-        v = patterns['version'].search(inputdata)
+        v = self.patterns['version'].search(inputdata)
         if v:
             v = v.group().split("\n")
             major, minor = v[0], v[1]
@@ -564,8 +568,8 @@ class CRYSTOUT(Output):
                 if ':' in minor: minor = minor.split(':')[1].split()[0]
                 else: minor = minor.split()[1]
                 version += ' ' + minor
-        
-        # get input data        
+
+        # get input data
         inputdata = inputdata.splitlines()
         keywords = []
         keywords_flag = False
@@ -593,7 +597,7 @@ class CRYSTOUT(Output):
         else: return -1
 
     def get_ph_sym_disps(self):
-        symdisps = patterns['symdisps'].search(self.data)
+        symdisps = self.patterns['symdisps'].search(self.data)
         if symdisps is None: return None, None
         else:
             lines = symdisps.group().splitlines()
@@ -601,7 +605,7 @@ class CRYSTOUT(Output):
             if 'NUMERICAL GRADIENT COMPUTED WITH A SINGLE DISPLACEMENT (+-dx) FOR EACH' in self.data: plusminus = True
             disps, magnitude = [], 0
             for n in lines:
-                r=patterns['needed_disp'].search(n)
+                r=self.patterns['needed_disp'].search(n)
                 if r:
                     disps.append([ int(r.group(1)), r.group(2).replace('D', '').lower() ])
                     if plusminus:
@@ -611,7 +615,7 @@ class CRYSTOUT(Output):
             if magnitude == 0: raise RuntimeError( 'Cannot find displacement magnitude in FREQCALC output!')
             if not len(disps): raise RuntimeError( 'Cannot find valid displacement data in FREQCALC output!')
             return disps, magnitude
-            
+
     def get_static_dielectric_tensor(self):
         return "\n VIBRATIONAL CONTRIBUTIONS TO THE STATIC DIELECTRIC TENSOR:\n" in self.data or \
         "\n VIBRATIONAL CONTRIBUTIONS TO THE STATIC POLARIZABILITY TENSOR:\n" in self.data
@@ -622,13 +626,12 @@ class CRYSTOUT(Output):
 
     def get_bs(self):
         gbasis = { 'bs': {}, 'ps': {} }
-        
+
         if " ATOM   X(AU)   Y(AU)   Z(AU)  N. TYPE" in self.data: bs = self.data.split(" ATOM   X(AU)   Y(AU)   Z(AU)  N. TYPE") # CRYSTAL<14
         else: bs = self.data.split(" ATOM  X(AU)  Y(AU)  Z(AU)    NO. TYPE  EXPONENT ") # CRYSTAL14
-        
+
         if len(bs) == 1:
-            self.warning('Basis set is absent in output, input may be not enough!')
-            return self.get_bs_input()
+            return self.get_bs_input() # Basis set is absent in output, input may be not enough!
         bs = bs[-1].split("*******************************************************************************\n", 1)[-1] # NO BASE FIXINDEX IMPLEMENTED!
         bs = re.sub( ' PROCESS(.{32})WORKING\n', '', bs) # warning! MPI statuses may spoil valuable data!
         bs = bs.splitlines()
@@ -660,7 +663,7 @@ class CRYSTOUT(Output):
                         bs_concurrency = False
                         try: gbasis['bs'][ atom_type ]
                         except KeyError: gbasis['bs'][ atom_type ] = []
-                        else: raise RuntimeError( 'More than two different basis sets for one element - not supported case!' )
+                        else: raise RuntimeError( 'More than two different basis sets for one element - not supported case!' ) # TODO
                     gbasis['bs'][ atom_type ].append( [ symb ] )
 
             else: # atom No or end
@@ -877,53 +880,83 @@ class CRYSTOUT(Output):
         return gbasis
 
     def set_method(self):
-        hamiltonians = {
-            'PERDEW-WANG GGA': 'PW-GGA',
-            'BECKE': 'B-GGA',
-            'LEE-YANG-PARR': 'LYP-GGA',
-            'DIRAC-SLATER LDA': 'LSD',
-            'PERDEW-ZUNGER': 'PZ-LSD',
-            'PERDEW-BURKE-ERNZERHOF': 'PBE-GGA',
-            'SOGGA': 'SOGGA',
-            'PERDEW86': 'P86-GGA',
-            'PBEsol': 'PBESOL-GGA',
-            'PERDEW-WANG LSD': 'PW-LSD',
-            'VON BARTH-HEDIN': 'VBH-LSD',
-            'WILSON-LEVY': 'WL-GGA',
-            'WU-COHEN GGA': 'WC-GGA',
-            'VOSKO-WILK-NUSAIR': 'WVN-LSD'
-            }
 
         # Hamiltonian part
-        if ' HARTREE-FOCK HAMILTONIAN\n' in self.data: self.info['H'] = 'pure HF'
+        hamiltonian_parts = { # TODO CRYSTAL14
+        'DIRAC-SLATER LDA': {'name': 'LDA', 'type': 'LDA'},
+        'PERDEW-ZUNGER': {'name': 'PZ_LDA', 'type': 'LDA'},
+        'VOSKO-WILK-NUSAIR': {'name': 'WVN_LDA', 'type': 'LDA'},
+        'PERDEW-WANG LSD': {'name': 'PW_LDA', 'type': 'LDA'},
+        'VON BARTH-HEDIN': {'name': 'VBH_LDA', 'type': 'LDA'},
+
+        'PERDEW-WANG GGA': {'name': 'PW_GGA', 'type': 'GGA'},
+        'BECKE': {'name': 'B_GGA', 'type': 'GGA'},
+        'LEE-YANG-PARR': {'name': 'LYP_GGA', 'type': 'GGA'},
+        'PERDEW-BURKE-ERNZERHOF': {'name': 'PBE_GGA', 'type': 'GGA'},
+        'SOGGA': {'name': 'SOGGA', 'type': 'GGA'},
+        'PERDEW86': {'name': 'P86_GGA', 'type': 'GGA'},
+        'PBEsol': {'name': 'PBESOL_GGA', 'type': 'GGA'},
+        'WILSON-LEVY': {'name': 'WL_GGA', 'type': 'GGA'},
+        'WU-COHEN GGA': {'name': 'WC_GGA', 'type': 'GGA'},
+        }
+
+        if ' HARTREE-FOCK HAMILTONIAN\n' in self.data:
+            self.info['H'] = 'Hartree-Fock'
+            self.info['H_types'].append('HF')
+
         elif ' (EXCHANGE)[CORRELATION] FUNCTIONAL:' in self.data:
             ex, corr = self.data.split(' (EXCHANGE)[CORRELATION] FUNCTIONAL:', 1)[-1].split("\n", 1)[0].split(')[')
             ex = ex.replace("(", "")
             corr = corr.replace("]", "")
-            try: ex = hamiltonians[ex]
+            try:
+                self.info['H_types'].append(hamiltonian_parts[ex]['type'])
+                ex = hamiltonian_parts[ex]['name']
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
-            try: corr = hamiltonians[corr]
+            try:
+                if not hamiltonian_parts[corr]['type'] in self.info['H_types']:
+                    self.info['H_types'].append(hamiltonian_parts[corr]['type'])
+                corr = hamiltonian_parts[corr]['name']
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
-            self.info['H'] = "%s/%s" % (ex, corr)
+
+            if ex == 'PBE_GGA' and corr == 'PBE_GGA':
+                self.info['H'] = 'PBE'
+            elif ex == 'PBESOL_GGA' and corr == 'PBESOL_GGA':
+                self.info['H'] = 'PBEsol'
+            else:
+                self.info['H'] = "%s/%s" % (ex, corr)
+
         elif '\n THE CORRELATION FUNCTIONAL ' in self.data:
             corr = self.data.split('\n THE CORRELATION FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
-            try: corr = hamiltonians[corr]
+            try:
+                corr = hamiltonian_parts[corr]['name']
+                self.info['H_types'].extend([ hamiltonian_parts[corr]['type'], 'HF' ]) # is it correct? TODO check
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
-            self.info['H'] = "HF/%s" % corr
+            self.info['H'] = "Hartree-Fock/%s" % corr
+
         elif '\n THE EXCHANGE FUNCTIONAL ' in self.data:
             ex = self.data.split('\n THE EXCHANGE FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
-            try: ex = hamiltonians[ex]
+            try:
+                ex = hamiltonian_parts[ex]['name']
+                self.info['H_types'].append(hamiltonian_parts[ex]['type'])
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
             self.info['H'] = "pure %s" % ex
-        if not self.info['H']:
-            self.warning( 'Hamiltonian not found!' )
-            self.info['H'] = "none"
+
         if '\n HYBRID EXCHANGE ' in self.data:
+            self.info['H_types'].append('hybrid')
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))
-            h = self.info['H'].split('/')
-            h[0] += "(+" + str(hyb) + "%HF)"
-            self.info['H'] = '/'.join( h )
+
+            # TODO combinations
+            if hyb == 25 and self.info['H'] == 'PBE':
+                self.info['H'] = 'PBE0'
+            else:
+                h = self.info['H'].split('/')
+                h[0] += " (+" + str(hyb) + "%HF)"
+                self.info['H'] = '/'.join( h )
+
+        if not self.info['H']:
+            self.warning( 'Hamiltonian not found!' )
+            self.info['H'] = "unknown"
 
         # Spin part
         if ' TYPE OF CALCULATION :  UNRESTRICTED OPEN SHELL' in self.data:
@@ -931,8 +964,8 @@ class CRYSTOUT(Output):
             if '\n ALPHA-BETA ELECTRONS LOCKED TO ' in self.data:
                 spin_info = self.data.split('\n ALPHA-BETA ELECTRONS LOCKED TO ', 1)[-1].split("\n", 1)[0].replace('FOR', '').split()
                 cyc = int(spin_info[1])
-                if self.info['ncycles']:
-                    if self.info['ncycles'][0] < cyc:
+                if self.ncycles:
+                    if self.ncycles[0] < cyc:
                         self.info['lockstate'] = int( spin_info[0] )
 
         # K-points part
@@ -940,7 +973,7 @@ class CRYSTOUT(Output):
             kset = self.data.split('\n SHRINK. FACT.(MONKH.) ', 1)[-1].split()
             if len(kset) < 4: self.warning( 'Unknown k-points format!' )
             self.info['k'] = "x".join( kset[:3] )
-            
+
         # Perturbation part
         if "* *        COUPLED-PERTURBED KOHN-SHAM CALCULATION (CPKS)         * *" in self.data:
             self.info['techs'].append('perturbation: analytical')
@@ -972,10 +1005,10 @@ class CRYSTOUT(Output):
             elif 50<f<=75:self.info['techs'].append('mixing 50-75%')
             elif 75<f<=90:self.info['techs'].append('mixing 75-90%')
             elif 90<f:    self.info['techs'].append('mixing>90%')
-            
+
         if ' ANDERSON MIX: BETA= ' in self.data:
             self.info['techs'].append('mixing by anderson')
-            
+
         if '\n % OF FOCK/KS MATRICES MIXING WHEN BROYDEN METHOD IS ON' in self.data:
             # mixing percentage, parameter and number of activation cycle
             f = int( self.data.split('\n % OF FOCK/KS MATRICES MIXING WHEN BROYDEN METHOD IS ON', 1)[-1].split("\n", 1)[0] )
@@ -1006,11 +1039,11 @@ class CRYSTOUT(Output):
             if       0<f<=0.005:self.info['techs'].append('smearing<0.005au')
             elif 0.005<f<=0.01: self.info['techs'].append('smearing 0.005-0.01au')
             elif  0.01<f:       self.info['techs'].append('smearing>0.01au')
-    
+
     def get_duration(self):
-        starting = patterns['starting'].search(self.data)
-        ending = patterns['ending'].search(self.data)
-        if ending is None and self.properties_calc: ending = patterns['ending'].search(self.pdata)
+        starting = self.patterns['starting'].search(self.data)
+        ending = self.patterns['ending'].search(self.data)
+        if ending is None and self.properties_calc: ending = self.patterns['ending'].search(self.pdata)
         if starting is not None and ending is not None:
             starting = starting.group(1).replace("DATE", "").replace("TIME", "").strip()[:-2]
             ending = ending.group(1).replace("DATE", "").replace("TIME", "").strip()[:-2]
@@ -1024,14 +1057,14 @@ class CRYSTOUT(Output):
 
     def get_convergence(self):
         if self.info['input'] is not None and "ONELOG" in self.info['input']:
-            self.warning("ONELOG keyword is not yet supported!")
+            self.warning("ONELOG keyword is not supported!")
             return None, None, None
         convergdata = []
         ncycles = []
         energies = []
         criteria = [[], [], [], []]
         tresholds = []
-        zpcycs = patterns['cyc'].findall(self.data)
+        zpcycs = self.patterns['cyc'].findall(self.data)
         if zpcycs is not None:
             for i in zpcycs:
                 numdata = i.split(" DETOT ")
@@ -1040,8 +1073,8 @@ class CRYSTOUT(Output):
                 except ValueError: f = 0
                 if f != 0 and not math.isnan(f): convergdata.append(   int( math.floor( math.log( abs( f ), 10 ) ) )   )
         else: self.warning( 'SCF not found!' )
-        
-        enes = patterns['enes'].findall(self.data)
+
+        enes = self.patterns['enes'].findall(self.data)
         if enes is not None:
             for i in enes:
                 i = i.replace("DFT)(AU)(", "").replace("HF)(AU)(", "").split(")")
@@ -1054,7 +1087,7 @@ class CRYSTOUT(Output):
                 except ValueError: ene = None
                 energies.append(ene)
         n = 0
-        for cr in [patterns['k1'], patterns['k2'], patterns['k3'], patterns['k4']]:
+        for cr in [self.patterns['k1'], self.patterns['k2'], self.patterns['k3'], self.patterns['k4']]:
             kd = cr.findall(self.data)
             if kd is not None:
                 for i in kd:
@@ -1085,7 +1118,7 @@ class CRYSTOUT(Output):
             for i in range(0, len(criteria[0])):
                 tresholds.append([ criteria[0][i], criteria[1][i], criteria[2][i], criteria[3][i], energies[i] ])
         return convergdata, ncycles, tresholds
-    
+
     def get_zpe(self):
         if "\n E0            :" in self.data:
             zpe = self.data.split("\n E0            :")[1].split("\n", 1)[0].split()[0] # AU
@@ -1093,18 +1126,18 @@ class CRYSTOUT(Output):
             except ValueError: return None
             else: return zpe * Hartree
         else: return None
-        
+
     def get_td(self):
         td = {'t':[], 'pv':[], 'ts':[], 'et':[]}
-        t = patterns['T'].findall(self.data)
+        t = self.patterns['T'].findall(self.data)
         if t is not None:
             for i in t:
                 td['t'].append(float(i.split('K,')[0]))
-        pv = patterns['pv'].findall(self.data)
+        pv = self.patterns['pv'].findall(self.data)
         if pv is not None:
             for i in pv:
                 td['pv'].append(float(i.split()[0])) # AU/CELL
-        ts = patterns['ts'].findall(self.data)
+        ts = self.patterns['ts'].findall(self.data)
         if ts is not None:
             for i in ts:
                 i = i.split()[0]
@@ -1113,7 +1146,7 @@ class CRYSTOUT(Output):
                     if math.isnan(i): i = 0.0
                 except ValueError: i = 0.0
                 td['ts'].append(float(i)) # AU/CELL
-        et = patterns['et'].findall(self.data)
+        et = self.patterns['et'].findall(self.data)
         if et is not None:
             for i in et:
                 i = i.split()[0]
@@ -1123,142 +1156,7 @@ class CRYSTOUT(Output):
                 except ValueError: i = 0.0
                 td['et'].append(float(i)) # AU/CELL
         if td['t'] and td['pv'] and td['ts'] and td['et']:
-            return td 
+            return td
         else:
             self.warning( 'Errors in thermodynamics!' )
             return None
-    
-    '''def get_e_last(self):
-        if "TOP OF VALENCE BANDS" in self.pdata:
-            foundv = []
-
-            #found_pointer = list(find_all(self.pdata, "TOP OF VALENCE BANDS"))
-            #for n in range(len(found_pointer)):
-            #    #try: nxt = found_pointer[n+1]
-            #    #except IndexError: nxt = -1
-            #    #lbreak = self.pdata[found_pointer[n] : nxt].find("\n")
-            #    #i = self.pdata[found_pointer[n] : found_pointer[n] + lbreak]
-            #    vstr = ''
-            #    for s in self.pdata[found_pointer[n]:]:
-            #        vstr += s
-            #        if s == "\n": break
-            #    if "AU" in vstr: vstr = vstr.replace("AU", "")[-15:]
-            #    elif "(A.U.) " in vstr: vstr = vstr.replace("(A.U.) ", " "*7)[-15:]
-            #    foundv.append( float(vstr) )
-
-            for i in self.pdata.split("TOP OF VALENCE BANDS")[1:]:
-                i = i[:i.find("\n")]
-                later_ver = i.find("AU")
-                early_ver = i.find("(A.U.) ")
-
-                if later_ver != -1: val = i.replace("AU", "")[-15:]
-                elif early_ver != -1: val = i[early_ver+7:]
-
-                try: val = float(val)
-                except ValueError: val = max(  map(float, filter(lambda x: '.' in x, val.split()))  )
-                foundv.append( val )
-
-            e_last = max(foundv)
-
-        elif "POSSIBLY CONDUCTING STATE - EFERMI(AU)" in self.pdata:
-            pos = self.pdata.find("POSSIBLY CONDUCTING STATE - EFERMI(AU)")
-            v = self.pdata[ pos : pos + self.pdata[ pos: ].find("\n") ].split()[5]
-            e_last = float( v )
-
-        else: return None
-
-        # LEVSHIFT keyword technique account?
-        #shifter = self.pdata.split("ENERGY LEVEL SHIFTING")[1]
-        #shifter = float( shifter.split("\n", 1)[0] )
-        #e_last += shifter
-        return e_last * Hartree
-
-    def get_e_eigvals(self):
-        if not " EIGENVALUES - " in self.pdata: return None
-
-        e_last = self.get_e_last()
-        eigvals = {}
-
-        for bzp in self.pdata.split(" EIGENVALUES - ")[1:]:
-            lines = bzp[:bzp.find("\n\n")].splitlines()
-            vals = array([])
-            for i in xrange(len(lines)):
-                if i == 0: k = lines[i].split('(')[1].replace(')', '').strip().replace('  ', ' ')
-                else: vals = append( vals, map(lambda x: round(float(x)*Hartree - e_last, 2), lines[i].split()) ) # scaled: E - Ef
-            if k in eigvals: eigvals[k]['beta'] = sorted(vals)
-            else: eigvals[k] = {'alpha':  sorted(vals) }
-        return eigvals
-
-    def get_e_eigvecs(self):
-        if not " HAMILTONIAN EIGENVECTORS" in self.pdata: return None
-        e_eigvecs = {}
-        for bzp in self.pdata.split(" HAMILTONIAN EIGENVECTORS")[1:]:
-            if " TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT NEWK" in bzp: bzp = bzp.split(" TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT NEWK")[0] # if more than one printing or eof
-            vals = {}
-            bands = [] # + 4 virtual!
-            crystalline_orbitals = {}
-            i=0
-            for section in bzp.split("\n\n"):
-                orbital_indeces = []
-                if i == 0: kpoint = section.split('(')[1].replace(')', '').strip().replace('  ', ' ')
-                else:
-                    for line in section.splitlines():
-                        if line.startswith("      "):
-                            orbital_indeces = map(float, line.split())
-                        else:
-                            bkey = int(line[0:9])
-                            #if bkey in vals: vals[bkey].extend( map(float, line[9:].split()) )
-                            #else: vals[bkey] = map(float, line[9:].split())
-                            if bkey in vals: vals[bkey] = append( vals[bkey], map(float, line[9:].split()) )
-                            else: vals[bkey] = array( map(float, line[9:].split()) )
-
-                if len(orbital_indeces): bands.extend(orbital_indeces)
-                i+=1
-
-            # now transpose atomic orbitals and crystalline orbitals
-            aonums = sorted( vals.keys() )
-            for n, item in enumerate(bands):
-                c = array([])
-                for k in aonums:
-                    c = append( c, round(vals[k][n], 5) )
-                crystalline_orbitals[int(item)] = c # WARNING! In some k-points crystalline orbitals are doubled -- the former are omitted!
-            del vals
-            if kpoint in e_eigvecs: e_eigvecs[kpoint]['beta'] = crystalline_orbitals
-            else: e_eigvecs[kpoint] = {'alpha': crystalline_orbitals  }
-            del crystalline_orbitals
-
-        return e_eigvecs
-
-    def get_e_impacts(self, e_eigvecs, atoms_sequence, orbs_sequence):
-        if e_eigvecs is None: return None
-        compacted_e_vv = []
-
-        atomtypes_orbs = []
-        for i in atoms_sequence:
-            s = 0
-            for field in orbs_sequence[ i.encode('ascii') ]: # encode from sqlite
-                field[0] = field[0].encode('ascii')
-                if field[0] == 'S': f = 1
-                elif field[0] == 'SP': f = 4
-                elif field[0] == 'P': f = 3
-                elif field[0] == 'D': f = 5
-                elif field[0] == 'F': f = 7
-                s += f
-            atomtypes_orbs.append(s)
-
-        for k, vocab in e_eigvecs.iteritems():
-            for alphabeta, bands in vocab.iteritems():
-                for atbnum in bands.keys():
-                    if len(bands[atbnum]) != sum(atomtypes_orbs): raise RuntimeError( 'A given basis set and found number of orbitals do not match!' )
-                    s = sum( map(abs, bands[atbnum]) )
-                    iter = 0
-                    impacts_in_band = []
-                    for cnt in atomtypes_orbs:
-                        pa = sum( map(abs, bands[atbnum][iter : iter+cnt]) )
-                        impacts_in_band.append(  round(pa / s, 3)  )
-                        iter += cnt
-                    compacted_e_vv.append(   { 'val' : self.electrons['eigvals'][k][alphabeta][atbnum-1], 'impacts': impacts_in_band }   )
-        del e_eigvecs
-        compacted_e_vv = sorted(compacted_e_vv, key=lambda v: v['val'])
-        return compacted_e_vv'''
-    

@@ -1,3 +1,5 @@
+# Author: Evgeny Blokhin
+
 import os
 from htmlentitydefs import codepoint2name
 
@@ -9,15 +11,15 @@ def htmlentities(source):
         new_source += char
     return new_source
 
-def viewer_wrap(actual, prefix, type):
+def viewer_wrap(actual, prefix, kind):
     if len(prefix): prefix += os.sep
     actual = actual.replace('\\', '/')
     prefix = prefix.replace('\\', '/')
     capt = actual if len(actual) <= 68 else actual[:67] + '...'
     a = htmlentities(actual)
     p = htmlentities(prefix)
-    if type is 'DIR':
+    if kind is 'DIR':
         return "<li class='directory collapsed'><a href='' rel='" + p + a + "'>" + capt + "</a></li>"
-    elif type is 'FILE':
+    elif kind is 'FILE':
         ext_class = actual.split('.')[-1]
         return "<li class='file ext_" + ext_class + "'><a href='' rel='" + p + a + "'>" + capt + "</a></li>"

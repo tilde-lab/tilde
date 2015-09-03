@@ -1,5 +1,6 @@
 
-# gives compacted basis set labels as strings for GUI
+# Compacted basis set labels as strings for GUI
+# Author: Evgeny Blokhin
 
 import os, sys
 
@@ -8,16 +9,25 @@ import os, sys
 __order__ = 5
 
 def classify(tilde_obj):
-    if tilde_obj.electrons['basis_set'] is None or tilde_obj.electrons['type'] is None:
+    if not tilde_obj.electrons['basis_set'] or not tilde_obj.electrons['type']:
         return tilde_obj
 
-    if tilde_obj.electrons['type'] == 'PP_PW':
-        i=0
-        for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
-            tilde_obj.info['bs' + str(i)] = k + ':' + v
-            i+=1
+    if tilde_obj.electrons['type'] == 'plane waves':
+        if not 'bs' in tilde_obj.structures[-1].arrays:
+            return tilde_obj
 
-    elif tilde_obj.electrons['type'] == 'LCAO':
+        seq = tilde_obj.structures[-1].get_array('bs').tolist()
+        symbols = tilde_obj.structures[-1].get_chemical_symbols()
+        lookup, num = [], 0
+
+        for n, i in enumerate(tilde_obj.electrons['basis_set']):
+            elem = symbols[ seq.index(n) ]
+            if elem + ':' + i in lookup: continue # WTF: several same PPs per an element
+            lookup.append(elem + ':' + i)
+            tilde_obj.info['bs' + str(num)] = elem + ':' + i
+            num += 1
+
+    elif tilde_obj.electrons['type'] == 'gaussians': # TODO
         ps = {}
         for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
             ps[k] = ''
@@ -26,10 +36,10 @@ def classify(tilde_obj):
 
         i=0
         for k, v in tilde_obj.electrons['basis_set']['bs'].iteritems():
-            if k == 'Xx': continue
+            if k == 'X': continue
 
             chk = "".join([a for a in k if a.isdigit()])
-            if len(chk): continue
+            if len(chk): continue # TODO: important information is lost here!
 
             if type(v) == str: # GAUSSIAN
                 tilde_obj.info['bs' + str(i)] = k + ':' + v
@@ -53,8 +63,10 @@ def classify(tilde_obj):
 
             i+=1
 
-    elif tilde_obj.electrons['type'] == 'FP_LAPW':
-        if not 'bs' in tilde_obj.structures[-1].arrays: return tilde_obj
+    elif tilde_obj.electrons['type'] == 'LAPW':
+        if not 'bs' in tilde_obj.structures[-1].arrays:
+            return tilde_obj
+
         seq = tilde_obj.structures[-1].get_array('bs').tolist()
         symbols = tilde_obj.structures[-1].get_chemical_symbols()
 

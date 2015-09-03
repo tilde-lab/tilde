@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 # Euler tilting angles extraction test
+# Author: Evgeny Blokhin
 
-import os
-import sys
+import os, sys
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(__file__) + '/../../../'))
-from core.api import API
+import set_path
+from tilde.core.api import API
 
 
 data_dir = os.path.realpath(os.path.dirname(__file__) + '/outputs')
@@ -54,22 +54,22 @@ test_data = {
 
 
 work = API()
-print '\n\nTilting module test:\n\n'
+print '\n\nPerovskite tilting module test:\n\n'
 for k, v in test_data.iteritems():
     if not os.path.exists(data_dir + os.sep + k):
         raise RuntimeError(k + ': missed file for test!')
-    calc, error = work.parse(data_dir + os.sep + k)
-    if error:
-        raise RuntimeError(k + ': ' + error)
-    calc, error = work.classify(calc)
-    if error:
-        raise RuntimeError(k + ': ' + error)
-    calc = work.postprocess(calc)
-    if not 'tilting' in calc.apps:
-        raise RuntimeError(k + ': invalid result!')
-    for corner in v['data'].keys():
-        if not corner in calc.apps['tilting']['data']:
+    for calc, error in work.parse(data_dir + os.sep + k):
+        if error:
+            raise RuntimeError(k + ': ' + error)
+        calc, error = work.classify(calc)
+        if error:
+            raise RuntimeError(k + ': ' + error)
+        calc = work.postprocess(calc)
+        if not 'perovskite_tilting' in calc.apps:
             raise RuntimeError(k + ': invalid result!')
-        print 'Octahedron N', corner
-        print 'expected:', v['data'][corner]
-        print 'got     :', calc.apps['tilting']['data'][corner]
+        for corner in v['data'].keys():
+            if not corner in calc.apps['perovskite_tilting']['data']:
+                raise RuntimeError(k + ': invalid result!')
+            print 'Octahedron N', corner
+            print 'expected:', v['data'][corner]
+            print 'got     :', calc.apps['perovskite_tilting']['data'][corner]

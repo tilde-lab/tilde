@@ -1,7 +1,8 @@
-import os
-import sys
+# Author: Evgeny Blokhin
 
-from connectors import viewer_wrap
+import os, sys
+
+from tilde.connectors import viewer_wrap
 
 
 def list(path, root):

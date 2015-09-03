@@ -1,120 +1,142 @@
 
 # Installation and actions to be always done
-# v160714
+# Author: Evgeny Blokhin
 
-import sys
-import os
-import re
-import json
+import os, sys
+import logging
+import tempfile
+import json # using native driver due to indent
 
-import installation # DEFAULT ACTIONS: EXTENSIONS COMPILATION & INSTALLATION
-import model
+import tilde.core.model as model
 
-sys.path.insert(0, os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/deps')) # this is done to have all 3rd party code in core/deps
-from sqlalchemy import create_engine, MetaData, desc, exists
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.pool import NullPool
 
 from xml.etree import ElementTree as ET
 
 
+DB_SCHEMA_VERSION = '5.00'
 SETTINGS_FILE = 'settings.json'
-HIERARCHY_FILE = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/gui_entities.xml')
 DEFAULT_SQLITE_DB = 'default.db'
-DATA_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../data')
-EXAMPLE_DIR = os.path.realpath(os.path.dirname(os.path.abspath(__file__)) + '/../tests/examples')
-MAX_CONCURRENT_DBS = 1
-DEFAULT_SETUP = {
-                # DB scope:
-                'default_sqlite_db': DEFAULT_SQLITE_DB,
-                'db':{
-                    'engine': 'sqlite', # may be postgresql, NB if sqlite is chosen: further info is not used
-                    'host': 'localhost',
-                    'port': 5432, # may be 5433
-                    'user': 'postgres',
-                    'password': '',
-                    'dbname': 'tilde',
-                    },
 
-                # API (parsing) scope:
-                'demo_regime': False,
-                'debug_regime': False,
-                'skip_unfinished': False,
-                'skip_if_path': "-_~",
-                
-                # GUI scope:
-                'webport': 7777, # is it robust to use?                
-                'local_dir': EXAMPLE_DIR,
-                'exportability': False,              
-                'title': None,
-                'update_server': "http://tilde.pro/VERSION",
-                'custom_about_link': False, # only in demo mode: if set to URL, the URL is used
+BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+HIERARCHY_FILE = os.path.join(BASE_DIR, 'hierarchy.xml')
+ROOT_DIR = os.path.normpath(BASE_DIR + '/../../')
+DATA_DIR = os.path.join(ROOT_DIR, 'data')
+EXAMPLE_DIR = os.path.join(ROOT_DIR, 'tests/examples')
+TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
+TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
+
+DEFAULT_SETUP = {
+    # DB part
+    'db':{
+    'default_sqlite_db': DEFAULT_SQLITE_DB,
+    'engine': 'sqlite', # if sqlite is chosen: further info is not used
+    'host': 'localhost',
+    'port': 5432, # may be 5433
+    'user': 'postgres',
+    'password': '',
+    'dbname': 'tilde'},
+    'add_default_values': False,
+
+    # DB replication part
+    'syncdb':{
+    'mode': None, # None, MASTER or SLAVE
+    'port': 9999,
+    'password': '',
+    'url': ''}, # only for SLAVE
+
+    # API (parsing) part
+    'skip_unfinished': False,
+    'skip_if_path': "",
+
+    # Server part
+    'debug_regime': False,
+    'webport': 8888,
+    'title': "Tilde GUI",
+    'log_dir': os.path.join(DATA_DIR, "logs")
 }
 repositories = []
 
-# begin obligatory routines
+def get_virtual_path(item):
+    return item
 
-def connect_database(settings, uc):
-    '''
-    Tries to connect to a DB
-    @returns handler on success
-    @returns False on failure
-    '''    
+def connect_url(settings, uc=None, testing=False):
     if settings['db']['engine'] == 'sqlite':
-        if uc is None: sys.exit('Sqlite DB name was not given!')
-        
+        if not uc:          uc = settings['db']['default_sqlite_db']
+        if os.sep in uc:    uc = os.path.realpath(os.path.abspath(uc))
+        else:               uc = os.path.join(DATA_DIR, uc)
         try:
             import sqlite3
         except ImportError:
-            print '\nSQLite driver is not available!'
-            return False  
-        
-        connstring = settings['db']['engine'] + ':///' + os.path.abspath(DATA_DIR + os.sep + os.path.basename(uc))
-        
+            raise Exception('SQLite driver is not available!')
+
+        connstring = settings['db']['engine'] + ':///' + uc
+
     elif settings['db']['engine'] == 'postgresql':
-        try:            
+        try:
             import psycopg2
             postgres_driver = 'psycopg2'
         except ImportError:
-            print '\nNative Postgres driver not available, falling back to a slower Python version!\n'
+            print '\nFast psycopg2 postgres driver not available, falling back to a slower pure-Python version!\n'
             import pg8000
             postgres_driver = 'pg8000'
-            
+
         connstring = settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
-    
-    else:
-        print '\nUnsupported DB type: %s!\n' % settings['db']['engine']
-        return False    
-    
-    engine = create_engine(connstring, echo=settings['debug_regime'])
-    Session = sessionmaker(bind=engine)
+
+    else: raise Exception('Unsupported DB type: %s!\n' % settings['db']['engine'])
+    return connstring
+
+def connect_database(settings, uc=None, testing=False):
+    '''
+    Tries to connect to a DB
+    @returns session factory on success
+    @returns False on failure
+    '''
+    try:
+        connstring = connect_url(settings, uc, testing)
+    except Exception:
+        logging.exception("stopping")
+        sys.exit(-1)
+    if not connstring:
+        return False
+    poolclass = None if not testing else NullPool
+    engine = create_engine(connstring, echo=settings['debug_regime'], poolclass=poolclass)
+    Session = sessionmaker(bind=engine, autoflush=False)
     model.Base.metadata.create_all(engine)
+
+    # default actions below
     session = Session()
-    
+
     try: p = session.query(model.Pragma.content).one()
     except NoResultFound:
-        p = model.Pragma(content=model.DB_SCHEMA_VERSION)
+        p = model.Pragma(content = DB_SCHEMA_VERSION)
         session.add(p)
     else:
-        if p.content != model.DB_SCHEMA_VERSION:
-            uc = uc if uc else 'at server'
-            sys.exit('Sorry, database '+uc+' is incompatible.')
+        if p.content != DB_SCHEMA_VERSION:
+            sys.exit('Sorry, database '+connstring+' is incompatible.')
 
-    return session
+    '''if settings['add_default_values']:
+        pass'''
+
+    session.commit()
+    session.close()
+    return Session
 
 def write_settings(settings):
     '''
     Saves user's settings
     @returns True on success
-    @returns False on failure    
-    ''' 
+    @returns False on failure
+    '''
     if not os.access(DATA_DIR, os.W_OK): return False
     try:
         f = open(DATA_DIR + os.sep + SETTINGS_FILE, 'w')
         f.writelines(json.dumps(settings, indent=0))
         f.close()
-        os.chmod(os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ), 0777) # to avoid (or create?) IO problems with multiple users
+        os.chmod(os.path.abspath(DATA_DIR + os.sep + SETTINGS_FILE), 0777) # to avoid (or create?) IO problems with multiple users
     except IOError:
         return False
     else:
@@ -127,27 +149,34 @@ def read_hierarchy():
     '''
     try: tree = ET.parse(HIERARCHY_FILE)
     except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
-    
+
     hierarchy, supercategories = [], []
-    
+
     doc = tree.getroot()
-    
+
     for elem in doc.findall('entity'):
-        hierarchy.append( elem.attrib )        
+        hierarchy.append( elem.attrib )
         # type corrections
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
         hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
-        
+
     for elem in doc.findall('superentity'):
-        supercategories.append(  {  'category': elem.attrib['category'], 'includes': map(int, elem.attrib['includes'].split(',')), 'jspocket': [], 'fontsize': elem.attrib['fontsize']  }  )
-        
+        supercategories.append({
+            'id': elem.attrib['id'],
+            'category': elem.attrib['category'],
+            'includes': map(int, elem.attrib['includes'].split(',')),
+            'html_pocket': '',
+            'landing_group': elem.attrib.get('landing_group'),
+            'settings_group': elem.attrib.get('settings_group'),
+            'toggling': elem.attrib.get('toggling')
+        })
+
     return hierarchy, supercategories
-    
-# end obligatory routines
 
-# DEFAULT ACTIONS: MAIN INSTALLATION
 
-if not os.path.exists( os.path.abspath(  DATA_DIR + os.sep + SETTINGS_FILE  ) ):
+# DEFAULT ACTIONS: LOAD/SAVE SETTINGS
+
+if not os.path.exists( os.path.abspath( DATA_DIR + os.sep + SETTINGS_FILE ) ):
     settings = DEFAULT_SETUP
     if not os.path.exists(DATA_DIR):
         try: os.makedirs(DATA_DIR)
@@ -163,23 +192,23 @@ except NameError:
 
 # DEFAULT ACTIONS: CHECK SETTINGS COMBINATIONS & RESTRICTIONS
 
-if not settings['local_dir'].endswith(os.sep):
-    settings['local_dir'] += os.sep
+'''if not settings['local_dir'].endswith(os.sep):
+    settings['local_dir'] += os.sep'''
 
-if settings['demo_regime'] and settings['debug_regime']:
-    settings['debug_regime'] = False
-    
-if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
-    settings['local_dir'] = EXAMPLE_DIR
-    
+'''if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
+    settings['local_dir'] = EXAMPLE_DIR'''
+
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3:
     sys.exit('Path skipping directive must not contain more than 3 symbols due to memory limits!')
 
 if not 'engine' in settings['db'] or settings['db']['engine'] not in ['sqlite', 'postgresql']:
-    sys.exit('Wrong / outdated DB definition!')
+    sys.exit('This DB backend is not supported!')
 
-if not 'http://' in settings['update_server']:
-    sys.exit('Directive update_server must be a valid url!')
-    
-if settings['custom_about_link'] and not 'http://' in settings['custom_about_link']:
-    sys.exit('Directive custom_about_link must be a valid url!')
+if not 'default_sqlite_db' in settings['db']:
+    sys.exit('Note that the settings.json format has been changed with the respect to the default sqlite DB.')
+if settings['syncdb']['mode'] and not settings['syncdb']['password']:
+    sys.exit('Please, specify security password in order to allow replication')
+if settings['syncdb']['mode'] == 'SLAVE' and not settings['syncdb']['url']:
+    sys.exit('Please, specify master syncdb daemon URL')
+if settings['syncdb']['mode'] == 'MASTER' and settings['db']['engine'] != 'postgresql':
+    sys.exit('Only Postgres DB can be master!')

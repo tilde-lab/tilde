@@ -1,5 +1,6 @@
 
-# libxc.py path/to/libxc_funcs.f90
+# Usage: libxc.py path/to/libxc_funcs.f90
+# Author: Evgeny Blokhin
 
 import os, sys
 import json
