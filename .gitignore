@@ -7,9 +7,8 @@ pip-selfcheck.json
 pip-log.txt
 debug.log
 nohup.out
-windows/cef/debug.log
-tilde/build
-tilde/_spglib.*
+tilde/core/_spglib.*
+tilde/core/build/
 /data
 /bin
 /include

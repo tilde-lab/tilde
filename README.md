@@ -5,11 +5,18 @@ Tilde is a data organizer and software framework for computational (**ab initio*
 
 ## Installation
 
-Set up Python virtualenv inside the Tilde folder. Run ```pip install -r requirements.txt```.
+System packages ```build-essential python-dev libffi-dev``` (-dev or -devel) should be present. Set up Python virtualenv inside the Tilde folder and activate it:
+
+```shell
+. bin/activate
+```
+
+Virtualenv should be always used while working with the codebase.
+Run ```pip install -r requirements.txt``` to install Python dependencies.
 Test if the framework is ready:
 
 ```shell
-utils/tilde.sh -x
+./utils/tilde.sh -x
 ```
 
 ## Example
@@ -17,22 +24,28 @@ utils/tilde.sh -x
 Display help message:
 
 ```shell
-utils/tilde.sh -h
+./utils/tilde.sh -h
 ```
 
 To scan folder(s) recursively (-r), with terse print (-t), showing information on calculation convergence (-v) and adding results to a database (-a):
 
 ```shell
-utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
+./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
 ```
 
 ## GUI hints
 
 Hit ESC (or "q") key to close all the active windows. Press SHIFT to (un)check multiple checkboxes in a table. Use CTRL+mouse wheel to increase font size to your taste. Avoid using **GUI** on large folders with data (more than several gigabytes), as **CLI** is much faster in this case.
 
+## Testing
+
+```shell
+sh tests/run_tests.sh
+```
+
 ## Licensing
 
-[MIT](https://en.wikipedia.org/wiki/MIT_License).
+[MIT](https://en.wikipedia.org/wiki/MIT_License)
 
 ## Similar projects
 
@@ -75,8 +88,6 @@ Other known similar initiatives are listed below:
 ## Openness principle
 
 Tilde adopts the principle of open data, open source code and open standards declared by an initiative group with a symbolic name [Blue Obelisk](http://www.jcheminf.com/content/3/1/37).
-
-![Blue Obelisk logo and tagline](https://wwwtilda.googlecode.com/files/blue_obelisk.gif)
 
 ## Contact
 
