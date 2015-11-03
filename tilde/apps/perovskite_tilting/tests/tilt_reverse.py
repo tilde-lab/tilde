@@ -4,8 +4,12 @@
 # First, distort on the known angle, then extract tilting and check if it is the same
 # Author: Evgeny Blokhin
 
-import os
-import sys
+# known issues TODO
+# full-fluoride perovskites do not show up
+# sometimes not perovskites are generated, check if it correct
+# new perovskites discovered in 2015 are not included in the test
+
+import os, sys
 import math
 import random
 from numpy import array
