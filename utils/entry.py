@@ -2,11 +2,14 @@
 #
 # Entry junction
 # Author: Evgeny Blokhin
-
+"""
+Welcome to Tilde,
+Open-Source Materials Informatics Framework
+"""
 import os, sys, time
 import logging
 
-if sys.version_info < (2, 6): sys.exit('\n\nI cannot proceed. Your python is too old. At least version 2.6 is required!\n\n')
+if (2, 6) > sys.version_info > (2, 7): raise NotImplementedError
 
 import argparse
 from numpy import array
@@ -39,13 +42,9 @@ parser.add_argument("-l",       dest="targetlist", action="store", help="file wi
 args = parser.parse_args()
 
 session = None
-class EmptyReport():
-    @staticmethod
-    def info(msg): pass
-user_report = EmptyReport()
-origin_upload_id = None
 
 if not args.path and not args.service and not args.targetlist:
+    print __doc__
     sys.exit(parser.print_help())
 
 # -a option
@@ -92,16 +91,16 @@ for target in target_source:
             if error:
                 if args.terse and 'was read' in error: continue
                 print task, error
-                user_report.info("%s %s" % (task, error))
+                logging.info("%s %s" % (task, error))
                 continue
 
             calc, error = Tilde.classify(calc, args.symprec)
             if error:
                 print task, error
-                user_report.info("%s %s" % (task, error))
+                logging.info("%s %s" % (task, error))
                 continue
 
-            header_line = task + " (E=" + str(calc.info['energy']) + " eV)"
+            header_line = (task + " (E=" + str(calc.info['energy']) + " eV)") if calc.info['energy'] else task
             if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
 
             # -i option
@@ -176,7 +175,7 @@ for target in target_source:
                 checksum, error = Tilde.save(calc, session)
                 if error:
                     print task, error
-                    user_report.info("%s %s" % (task, error))
+                    logging.info("%s %s" % (task, error))
                     continue
                 header_line += ' added'
                 detected = True
@@ -185,7 +184,7 @@ for target in target_source:
             print header_line + add_msg + output_lines
 
         if detected:
-            user_report.info(task + " successfully processed")
+            logging.info(task + " successfully processed")
         # NB: from here the calc instance is not functional anymore!
 
 if session:             session.close()
