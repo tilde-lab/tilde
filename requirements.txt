@@ -7,4 +7,4 @@ pg8000 == 1.10.2
 httplib2 == 0.9
 sqlalchemy == 1.0.6
 argparse == 1.2.1
-https://pypi.python.org/packages/source/p/python-ase/python-ase-3.8.1.3440.tar.gz
+ase
