@@ -239,10 +239,12 @@ class API:
         try:
             for calc in self.Parsers[parser_name].iparse(parsable):
                 yield calc, None
+            return
         except RuntimeError as e: error = "routine %s parser error in %s: %s" % ( parser_name, parsable, e )
         except:
             exc_type, exc_value, exc_tb = sys.exc_info()
             error = "unexpected %s parser error in %s:\n %s" % ( parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+        yield None, error
 
     def parse(self, parsable):
         ''' High-level parsing:
