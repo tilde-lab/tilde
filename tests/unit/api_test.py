@@ -28,7 +28,7 @@ class Test_API(unittest.TestCase):
     def test_savvyize_simple(self):
         path = os.path.join(EXAMPLE_DIR, 'CRYSTAL')
         found = self.sample.savvyize(path)
-        self.assertEqual(len(found), 2,
+        self.assertEqual(len(found), 3,
             "Unexpected number of files has been found in %s: %s. May be number of files has been changed since?" % (path, len(found)))
 
     def test_savvyize_recursive(self):

@@ -1,0 +1,47 @@
+&CONTROL
+    calculation = 'vc-relax'
+    nstep = 500
+    etot_conv_thr = 1.d-4
+    forc_conv_thr = 1.d-3
+    prefix = 'aiida'
+    pseudo_dir = '../../pseudo'
+    restart_mode = 'from_scratch'
+    verbosity = 'low'
+    disk_io = 'none' 
+    etot_conv_thr = 1.d-7
+    forc_conv_thr = 1.d-5
+/
+&SYSTEM
+    ecutwfc = 44
+    ibrav = 0
+    nat = 5
+    ntyp = 3
+    input_dft = 'pbesol'
+    celldm = 6.614
+/
+&ELECTRONS
+    conv_thr = 1.d-7
+    mixing_beta = 0.8
+/
+&IONS
+    ion_dynamics = 'bfgs'
+/
+&CELL
+    cell_dynamics = 'bfgs'
+/
+ATOMIC_SPECIES
+    Sr     87.62     Sr.pbesol-spn-rrkjus_psl.1.0.0.UPF
+    Ti     47.88     ti_pbesol_v1.4.uspp.F.UPF
+    O      15.9994   o_pbesol_v1.2.uspp.F.UPF
+CELL_PARAMETERS alat
+    1 0 0
+    0 1 0
+    0 0 1
+ATOMIC_POSITIONS crystal
+    Sr  0.0  0.0  0.0
+    Ti  0.5  0.5  0.5
+    O   0.5  0.5  0.0
+    O   0.5  0.0  0.5
+    O   0.0  0.5  0.5
+K_POINTS automatic
+    6 6 6 0 0 0
