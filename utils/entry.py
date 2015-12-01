@@ -25,6 +25,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 
 starttime = time.time()
+Tilde = API(settings)
 
 parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version+" (" + settings['db']['engine'] + " backend)", argument_default=argparse.SUPPRESS)
 parser.add_argument("path",     action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
@@ -35,6 +36,7 @@ parser.add_argument("-a",       dest="add", action="store", help="add results to
 parser.add_argument("-v",       dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f",       dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i",       dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-m",       dest="module", action="store", help="invoke a module from [{mentioned}]", nargs='?', const=True, default=False, choices=Tilde.Apps.keys())
 parser.add_argument("-s",       dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-c",       dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-x",       dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -54,8 +56,6 @@ if args.add or args.service:
 
     session = connect_database(settings, user_choice)()
     if user_choice: print "The database selected:", user_choice
-
-Tilde = API(settings)
 
 # path(s)
 if args.path or args.targetlist:
@@ -154,6 +154,19 @@ for target in target_source:
                         output_lines += cif_file + " ready" + "\n"
                     else:
                         output_lines += "Warning! " + cif_file + " cannot be written!" + "\n"
+
+            # -m option
+            if args.module:
+                if args.module == True:
+                    calc = Tilde.postprocess(calc, dry_run=True)
+                    output_lines += "Modules to be invoked: " + str([i for i in calc.apps]) + "\n"
+                else:
+                    calc = Tilde.postprocess(calc, args.module)
+                    if args.module not in calc.apps:
+                        output_lines += "Module \"" + args.module + "\" is not suitable for this case (outside the scope defined in module manifest)!" + "\n"
+                    else:
+                        out = str(calc.apps[args.module]['error']) if calc.apps[args.module]['error'] else str(calc.apps[args.module]['data'])
+                        output_lines += out + "\n"
 
             # -f option
             if args.freqs:
