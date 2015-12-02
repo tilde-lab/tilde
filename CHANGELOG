@@ -1,5 +1,8 @@
 0.7.0
-reproducing the Nomad pathway
+major codebase restructuring
+new Quantum ESPRESSO parser, for possible future integration with AiiDA
+installation with pip "like-it-must-be"
+---still many features are incomplete: DB structure, GUI, testing, replication etc.
 
 0.3.0
 relational schema and ORM introduction

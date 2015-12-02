@@ -36,7 +36,7 @@ parser.add_argument("-a",       dest="add", action="store", help="add results to
 parser.add_argument("-v",       dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f",       dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i",       dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m",       dest="module", action="store", help="invoke a module from [{mentioned}]", nargs='?', const=True, default=False, choices=Tilde.Apps.keys())
+parser.add_argument("-m",       dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=Tilde.Apps.keys())
 parser.add_argument("-s",       dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-c",       dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-x",       dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)

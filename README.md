@@ -1,7 +1,7 @@
 Tilde
 ==========
 
-Tilde is a data organizer and software framework for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository, systemized and visualized.
+Tilde is an intelligent data organizer and Python framework for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository. Repository GUI is coming.
 
 ## Installation
 
@@ -19,23 +19,21 @@ Test if the framework is ready:
 ./utils/tilde.sh -x
 ```
 
-## Example
-
-Display help message:
+## Usage
 
 ```shell
-./utils/tilde.sh -h
+./utils/tilde.sh --help
 ```
 
-To scan folder(s) recursively (-r), with terse print (-t), showing information on calculation convergence (-v) and adding results to a database (-a):
+For example, to scan folder(s) recursively (-r), with terse print (-t), showing information on calculation convergence (-v) and adding results to a database (-a):
 
 ```shell
 ./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
 ```
 
-## GUI hints
+## GUI
 
-Hit ESC (or "q") key to close all the active windows. Press SHIFT to (un)check multiple checkboxes in a table. Use CTRL+mouse wheel to increase font size to your taste. Avoid using **GUI** on large folders with data (more than several gigabytes), as **CLI** is much faster in this case.
+In progress
 
 ## Testing
 
