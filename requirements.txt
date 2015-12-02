@@ -8,3 +8,4 @@ httplib2 == 0.9
 sqlalchemy == 1.0.6
 argparse == 1.2.1
 ase
+-e "git+https://github.com/atztogo/spglib.git#egg=pyspglib&subdirectory=python/ase"

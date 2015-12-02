@@ -24,7 +24,7 @@ test_data = {
     'check_last_point.cryst.out': {
         'comment': '[1], Table 1, calculated, Euler notation',
         'data': {
-            6: [0.04, 12.26, 7.93],
+            5: [0.04, 12.26, 7.93],
             }
     },
     'y4h4srhfo3_62_pbe0_9hf_cis_go.cryst.out': {

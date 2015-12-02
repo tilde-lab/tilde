@@ -2,6 +2,7 @@
 # *SymmetryFinder*: platform-independent symmetry finder, wrapping Spglib code
 # *SymmetryHandler*: symmetry inferences for 0D, 1D, 2D and 3D-systems
 # Author: Evgeny Blokhin
+# v021215
 
 import os, sys
 
@@ -11,34 +12,7 @@ from numpy.linalg import det
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-try: import _spglib as spg
-except ImportError:
-
-    # this currently compiles spglib at Unix
-    from tilde.core.settings import BASE_DIR
-    from distutils.core import Extension, Distribution
-    from distutils.command.build_ext import build_ext
-    from numpy.distutils.misc_util import get_numpy_include_dirs
-
-    prev_location = os.getcwd()
-    print '\nPreparation in progress...\n'
-    os.chdir(BASE_DIR)
-
-    spglibdir = os.path.join(BASE_DIR, 'spglib')
-    spgsrcdir = os.path.join(spglibdir, 'src')
-    include_dirs = [spgsrcdir]
-    sources = ["cell.c", "debug.c", "hall_symbol.c", "kpoint.c", "lattice.c", "mathfunc.c", "pointgroup.c", "primitive.c", "refinement.c", "sitesym_database.c", "site_symmetry.c", "spacegroup.c", "spin.c", "spg_database.c", "spglib.c", "symmetry.c"]
-    sources = [os.path.join(spgsrcdir, srcfile) for srcfile in sources]
-    ext = Extension("_spglib", include_dirs=include_dirs + get_numpy_include_dirs(), sources=[os.path.join(spglibdir, "_spglib.c")] + sources)
-    dist = Distribution({'name': '_spglib', 'ext_modules': [ext]})
-    cmd = build_ext(dist)
-    cmd.ensure_finalized()
-    cmd.inplace = 1
-    cmd.run()
-
-    os.chdir(prev_location)
-    import _spglib as spg
-    print '\nPrepared successfully!\n'
+from pyspglib import spglib as spg
 
 
 class SymmetryFinder:
@@ -51,12 +25,7 @@ class SymmetryFinder:
 
     def get_spacegroup(self, tilde_obj):
         try:
-            symmetry = spg.spacegroup(
-            tilde_obj['structures'][-1].get_cell().T.copy(),
-            tilde_obj['structures'][-1].get_scaled_positions().copy(),
-            array(tilde_obj['structures'][-1].get_atomic_numbers(), dtype='intc'),
-            self.accuracy,
-            self.angle_tolerance)
+            symmetry = spg.get_spacegroup(tilde_obj['structures'][-1], symprec=self.accuracy, angle_tolerance=self.angle_tolerance)
         except Exception, ex:
             self.error = 'Symmetry finder error: %s' % ex
         else:
@@ -65,31 +34,17 @@ class SymmetryFinder:
             try: self.n = int( symmetry[1].replace("(", "").replace(")", "") )
             except (ValueError, IndexError): self.n = 0
             if self.n == 0:
-                self.error = 'Symmetry finder error: probably, coinciding atoms!'
+                self.error = 'Symmetry finder error (probably, coinciding atoms)'
 
     def refine_cell(self, tilde_obj):
-        # Atomic positions have to be specified by scaled positions for spglib
-        num_atom = tilde_obj['structures'][-1].get_number_of_atoms()
-        lattice = tilde_obj['structures'][-1].get_cell().T.copy()
-        pos = zeros((num_atom * 4, 3), dtype='double')
-        pos[:num_atom] = tilde_obj['structures'][-1].get_scaled_positions()
-
-        numbers = zeros(num_atom * 4, dtype='intc')
-        numbers[:num_atom] = array(tilde_obj['structures'][-1].get_atomic_numbers(), dtype='intc')
-        try: num_atom_bravais = spg.refine_cell(lattice,
-                                           pos,
-                                           numbers,
-                                           num_atom,
-                                           self.accuracy,
-                                           self.angle_tolerance)
+        '''
+        NB only used for perovskite_tilting app
+        '''
+        try: lattice, positions, numbers = spg.refine_cell(tilde_obj['structures'][-1], symprec=self.accuracy, angle_tolerance=self.angle_tolerance)
         except Exception, ex:
             self.error = 'Symmetry finder error: %s' % ex
         else:
-            # TODO : BAD DESIGN
-            self.refinedcell = Atoms(numbers=numbers[:num_atom_bravais].copy(),
-                                    cell=lattice.T.copy(),
-                                    scaled_positions=pos[:num_atom_bravais].copy(),
-                                    pbc=tilde_obj['structures'][-1].get_pbc())
+            self.refinedcell = Atoms(numbers=numbers, cell=lattice, scaled_positions=positions, pbc=tilde_obj['structures'][-1].get_pbc())
             self.refinedcell.periodicity = sum(self.refinedcell.get_pbc())
             self.refinedcell.dims = abs(det(tilde_obj['structures'][-1].cell))
 
