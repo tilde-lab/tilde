@@ -3,6 +3,12 @@
 # based on Surf.Sci.602 3674 (2008)
 # http://dx.doi.org/10.1016/j.susc.2008.10.002
 # Author: Evgeny Blokhin
+#
+# KNOWN BUG: in some low-symmetry cases ("batio3_lda_hw12d_160_to.out"),
+# octahedra are not adjusted with the axes, and their distortion origin is unknown.
+# Even if the rotation is absent (i.e. pseudo-cubic structure),
+# an "artificial" rotation can be extracted
+# FIXME?
 
 import os, sys
 import math
@@ -14,7 +20,7 @@ from numpy.linalg import norm
 from ase import Atom, Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from tilde.core.common import ModuleError
+from tilde.core.common import ModuleError #, generate_xyz
 from tilde.core.constants import Perovskite_Structure
 from tilde.core.symmetry import SymmetryFinder
 
@@ -24,31 +30,9 @@ class Perovskite_tilting():
     OCTAHEDRON_ATOMS_Z_DIFFERENCE = 1.6 # Angstrom
     MAX_TILTING_DEGREE = 22.4           # degrees, this is for adjusting, may produce unphysical results
 
-    '''@staticmethod
-    def cell_wrapper(obj):
-        repr = ''
-        selfname = __name__.split('.')[-1]
-
-        if not selfname in obj['apps']: return "&mdash;"
-
-        for k in obj['apps'][selfname]:
-            nonzero = filter(None, obj['apps'][selfname][k])
-            if len(nonzero) == 0:
-                repr += '0.0'
-            elif len(nonzero) == 1:
-                repr += str(nonzero[0])
-            else:
-                for i in obj['apps'][selfname][k]:
-                    repr += str(i) + ', '
-                repr = repr[:-2]
-            #if sum(obj['apps'][selfname][k]): repr += ' (' + str(k) + ')'
-            repr += ',<br />'
-        repr = repr[:-7]
-        return "<span class=sml>%s</span>" % repr'''
-
     def __init__(self, tilde_calc):
-        self.prec_angles = {}    # non-rounded, non-uniquified, all-planes angles
-        self.angles = {}         # rounded, uniquified, one-plane angles
+        self.prec_angles = {}    # non-rounded, non-unique, all-planes angles
+        self.angles = {}         # rounded, unique, one-plane angles
 
         symm = SymmetryFinder()
         symm.refine_cell(tilde_calc)
@@ -81,7 +65,7 @@ class Perovskite_tilting():
             #print 'octahedron:', octahedron[0]+1 #, self.virtual_atoms[octahedron[0]].symbol, self.virtual_atoms[octahedron[0]].x, self.virtual_atoms[octahedron[0]].y, self.virtual_atoms[octahedron[0]].z
             #print 'corners:', [i+1 for i in octahedron[1]]
 
-            # Option 1. Extract only one tilting plane, the "most perpendicular" to Z-axis
+            # Option 1. Extract only one tilting plane, the closest to perpendicular to Z-axis
             '''tiltplane = self.get_tiltplane(octahedron[1])
             if len(tiltplane) == 4:
                 t = self.get_tilting(tiltplane)
@@ -89,7 +73,7 @@ class Perovskite_tilting():
                 self.prec_angles.update( { octahedron[0]: [ t ] } )'''
 
             # Option 2. Extract all three possible tilting planes,
-            # try to spot the "most perpendicular" to Z-axis
+            # try to spot the closest to perpendicular to Z-axis
             # and consider the smallest tilting
             plane_tilting = []
             for oplane in self.get_tiltplanes(octahedron[1]):
@@ -335,7 +319,7 @@ class Perovskite_tilting():
         beta = math.degrees(math.atan2(math.sqrt(self.virtual_atoms[tilt_z].x**2 + self.virtual_atoms[tilt_z].y**2), self.virtual_atoms[tilt_z].z))
         gamma = math.degrees(math.atan2(self.virtual_atoms[tilt_z].y, -self.virtual_atoms[tilt_z].x))
 
-        # angles adjusting procedure
+        # angles adjusting
         adjust_angles = [45, 90, 135, 180, 225, 270, 315, 360]
         tilting = [alpha, beta, gamma]
         for i in range(0, 3):

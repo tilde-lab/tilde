@@ -20,7 +20,6 @@ from tilde.parsers import Output
 from tilde.core.constants import Perovskite_Structure
 from tilde.apps.perovskite_tilting.perovskite_tilting import Perovskite_tilting # for limits
 
-from ase import Atoms
 from ase.lattice.spacegroup import crystal
 
 
