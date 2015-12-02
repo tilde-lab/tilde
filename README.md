@@ -5,7 +5,7 @@ Tilde is an intelligent data organizer and Python framework for computational (*
 
 ## Installation
 
-System packages ```build-essential python-dev libffi-dev``` (-dev or -devel) should be present. Set up Python virtualenv inside the Tilde folder and activate it:
+System packages ```build-essential python-dev libffi-dev``` (-dev or -devel) should be present. [Set up Python virtualenv](https://virtualenv.readthedocs.org) inside the Tilde folder and activate it with the command:
 
 ```shell
 . bin/activate
@@ -29,6 +29,12 @@ For example, to scan folder(s) recursively (-r), with terse print (-t), showing 
 
 ```shell
 ./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
+```
+
+Other example: for the perovskite structures, extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles) and detailed calculation info:
+
+```shell
+./utils/tilde.sh tilde/apps/perovskite_tilting/tests/outputs -m perovskite_tilting -i
 ```
 
 ## GUI
@@ -90,8 +96,3 @@ Tilde adopts the principle of open data, open source code and open standards dec
 ## Contact
 
 Please, send your feedback, bugreports and feature requests via [email](mailto:eb@tilde.pro), [Twitter](http://twitter.com/tildepro) or [GitHub](http://github.com/tilde-lab/tilde/issues).
-
-## Links
-
-- http://github.com/tilde-lab/tilde
-- http://twitter.com/tildepro
