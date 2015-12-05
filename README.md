@@ -1,5 +1,6 @@
 Tilde
 ==========
+[![DOI](https://zenodo.org/badge/18811/tilde-lab/tilde.svg)](https://zenodo.org/badge/latestdoi/18811/tilde-lab/tilde)
 
 Tilde is an intelligent data organizer and Python framework for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository. Repository GUI is coming.
 
