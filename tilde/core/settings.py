@@ -12,7 +12,7 @@ import tilde.core.model as model
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import QueuePool, NullPool
 
 from xml.etree import ElementTree as ET
 
@@ -63,17 +63,17 @@ repositories = []
 def get_virtual_path(item):
     return item
 
-def connect_url(settings, uc=None, testing=False):
+def connect_url(settings, named=None):
     if settings['db']['engine'] == 'sqlite':
-        if not uc:          uc = settings['db']['default_sqlite_db']
-        if os.sep in uc:    uc = os.path.realpath(os.path.abspath(uc))
-        else:               uc = os.path.join(DATA_DIR, uc)
+        if not named:       named = settings['db']['default_sqlite_db']
+        if os.sep in named: named = os.path.realpath(os.path.abspath(named))
+        else:               named = os.path.join(DATA_DIR, named)
         try:
             import sqlite3
         except ImportError:
             raise Exception('SQLite driver is not available!')
 
-        connstring = settings['db']['engine'] + ':///' + uc
+        return settings['db']['engine'] + ':///' + named
 
     elif settings['db']['engine'] == 'postgresql':
         try:
@@ -84,28 +84,21 @@ def connect_url(settings, uc=None, testing=False):
             import pg8000
             postgres_driver = 'pg8000'
 
-        connstring = settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
+        return settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
 
     else: raise Exception('Unsupported DB type: %s!\n' % settings['db']['engine'])
-    return connstring
 
-def connect_database(settings, uc=None, testing=False):
+def connect_database(settings, named=None, no_pooling=False, schema_creation=True):
     '''
-    Tries to connect to a DB
     @returns session factory on success
     @returns False on failure
     '''
-    try:
-        connstring = connect_url(settings, uc, testing)
-    except Exception:
-        logging.exception("stopping")
-        sys.exit(-1)
-    if not connstring:
-        return False
-    poolclass = None if not testing else NullPool
+    connstring = connect_url(settings, named)
+    poolclass = NullPool if no_pooling else QueuePool
     engine = create_engine(connstring, echo=settings['debug_regime'], poolclass=poolclass)
     Session = sessionmaker(bind=engine, autoflush=False)
-    model.Base.metadata.create_all(engine)
+    if schema_creation:
+        model.Base.metadata.create_all(engine)
 
     # default actions below
     session = Session()

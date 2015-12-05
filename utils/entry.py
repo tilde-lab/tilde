@@ -54,7 +54,7 @@ if args.add or args.service:
     if settings['db']['engine'] == 'sqlite':        user_choice = args.add
     elif settings['db']['engine'] == 'postgresql':  user_choice = None
 
-    session = connect_database(settings, user_choice)()
+    session = connect_database(settings, named=user_choice)()
     if user_choice: print "The database selected:", user_choice
 
 # path(s)
