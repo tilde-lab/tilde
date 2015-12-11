@@ -2,7 +2,7 @@
 # Functionality exposed into an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 import os, sys
 import time, math, random
@@ -471,8 +471,6 @@ class API:
         NB: this is the PUBLIC method
         @returns checksum, error
         '''
-        if calc._calcset and self.settings['syncdb']['mode'] == 'SLAVE': return None, 'This action is only allowed at the main repo!'
-
         checksum = calc.get_checksum()
 
         try: existing_calc = session.query(model.Calculation).filter(model.Calculation.checksum == checksum).one()
@@ -544,22 +542,12 @@ class API:
             ormcalc.main_metadata = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
-
-            if self.settings['syncdb']['mode'] == 'SLAVE':
-                results, error = model.syncdb( [model.Codeversion.as_unique_todict(session, content = calc.info['prog'])], model, self.settings['syncdb'] )
-                if error: return None, "DB item cannot be synced: %s" % error
-                codeversion = results[0]
-            else: codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
+            codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
 
             codeversion.instances.append( ormcalc.main_metadata )
             codefamily.versions.append( codeversion )
 
-            if self.settings['syncdb']['mode'] == 'SLAVE':
-                results, error = model.syncdb( [model.Pottype.as_unique_todict(session, name = calc.info['H'])], model, self.settings['syncdb'] )
-                if error: return None, "DB item cannot be synced: %s" % error
-                pot = results[0]
-            else: pot = model.Pottype.as_unique(session, name = calc.info['H'])
-
+            pot = model.Pottype.as_unique(session, name = calc.info['H'])
             pot.instances.append(ormcalc)
             ormcalc.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
             ormcalc.basis = model.Basis(kind = calc.electrons['type'], content = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
@@ -599,11 +587,7 @@ class API:
                 topic = calc.info.get(entity['source'])
                 if topic: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
-        if self.settings['syncdb']['mode'] == 'SLAVE':
-            uitopics, error = model.syncdb( map(lambda x: model.uiTopic.as_unique_todict(session, cid=x.cid, topic=x.topic), uitopics), model, self.settings['syncdb'] )
-            if error: return None, "DB items cannot be synced: %s" % error
-        else:
-            uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
+        uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
 
         ormcalc.uitopics.extend(uitopics)
 
@@ -621,8 +605,6 @@ class API:
         NB: this is the PUBLIC method
         @returns error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return 'This action is only allowed at the main repo!'
-
         C = session.query(model.Calculation).get(checksum)
 
         if not C: return 'Calculation does not exist!'
@@ -698,8 +680,6 @@ class API:
         NB: this is the PUBLIC method
         @returns DATASET, error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return None, 'This action is only allowed at the main repo!'
-
         calc = Output(calcset=checksums)
 
         cur_depth = 0
@@ -737,8 +717,6 @@ class API:
         NB: this is the PUBLIC method
         @returns error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return 'This action is only allowed at the main repo!'
-
         parent_calc = session.query(model.Calculation).get(parent)
         if not parent_calc or not parent_calc.siblings_count: return 'Dataset is erroneously selected!'
 

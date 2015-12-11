@@ -39,14 +39,6 @@ DEFAULT_SETUP = {
     'user': 'postgres',
     'password': '',
     'dbname': 'tilde'},
-    'add_default_values': False,
-
-    # DB replication part
-    'syncdb':{
-    'mode': None, # None, MASTER or SLAVE
-    'port': 9999,
-    'password': '',
-    'url': ''}, # only for SLAVE
 
     # API (parsing) part
     'skip_unfinished': False,
@@ -54,7 +46,7 @@ DEFAULT_SETUP = {
 
     # Server part
     'debug_regime': False,
-    'webport': 8888,
+    'webport': 8070,
     'title': "Tilde GUI",
     'log_dir': os.path.join(DATA_DIR, "logs")
 }
@@ -110,9 +102,6 @@ def connect_database(settings, named=None, no_pooling=False, schema_creation=Tru
     else:
         if p.content != DB_SCHEMA_VERSION:
             sys.exit('Sorry, database '+connstring+' is incompatible.')
-
-    '''if settings['add_default_values']:
-        pass'''
 
     session.commit()
     session.close()
@@ -199,9 +188,3 @@ if not 'engine' in settings['db'] or settings['db']['engine'] not in ['sqlite', 
 
 if not 'default_sqlite_db' in settings['db']:
     sys.exit('Note that the settings.json format has been changed with the respect to the default sqlite DB.')
-if settings['syncdb']['mode'] and not settings['syncdb']['password']:
-    sys.exit('Please, specify security password in order to allow replication')
-if settings['syncdb']['mode'] == 'SLAVE' and not settings['syncdb']['url']:
-    sys.exit('Please, specify master syncdb daemon URL')
-if settings['syncdb']['mode'] == 'MASTER' and settings['db']['engine'] != 'postgresql':
-    sys.exit('Only Postgres DB can be master!')

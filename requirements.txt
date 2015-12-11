@@ -2,9 +2,10 @@ ujson
 bcrypt
 nose
 importlib
-pg8000 == 1.10.2
-httplib2 == 0.9
-sqlalchemy == 1.0.6
-argparse == 1.2.1
+pg8000
+sqlalchemy
+argparse
 ase
 -e "git+https://github.com/atztogo/spglib.git#egg=pyspglib&subdirectory=python/ase"
+tornado
+sockjs-tornado

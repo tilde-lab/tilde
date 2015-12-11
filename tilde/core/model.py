@@ -7,7 +7,7 @@ import logging
 import datetime
 from collections import namedtuple
 
-from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics, syncdb
+from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics
 
 from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship

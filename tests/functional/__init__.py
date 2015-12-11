@@ -23,8 +23,6 @@ DELETE_TEST_DB = False
 
 class Setup_DB:
     def __init__(self, dbname='test'):
-        global settings
-        settings['add_default_values'] = True
         self.dbname = '%s__%s_%s_db' % ( dbname, time.strftime("%m%d_%H%M%S"), "".join( random.choice("0123456789abcdef") for i in range(4) ) )
         self.session = None
 
@@ -39,9 +37,6 @@ class Setup_DB:
             else:
                 with open(TEST_DBS_REF_FILE, "a") as refsave:
                     refsave.write(self.dbname + "\n")
-
-    '''def add_user(self):
-        pass'''
 
 class Setup_FileDB(Setup_DB):
     def create(self):
