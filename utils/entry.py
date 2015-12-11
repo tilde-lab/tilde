@@ -2,11 +2,9 @@
 #
 # Entry junction
 # Author: Evgeny Blokhin
-"""
-Welcome to Tilde,
-Open-Source Materials Informatics Framework
-"""
-import os, sys, time
+
+import os, sys
+import time
 import logging
 
 if (2, 6) > sys.version_info > (2, 7): raise NotImplementedError
@@ -54,7 +52,7 @@ if args.add or args.service:
     if settings['db']['engine'] == 'sqlite':        user_choice = args.add
     elif settings['db']['engine'] == 'postgresql':  user_choice = None
 
-    session = connect_database(settings, named=user_choice)()
+    session = connect_database(settings, named=user_choice)
     if user_choice: print "The database selected:", user_choice
 
 # path(s)

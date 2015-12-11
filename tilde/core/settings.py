@@ -3,16 +3,16 @@
 # Author: Evgeny Blokhin
 
 import os, sys
-import logging
-import tempfile
 import json # using native driver due to indent
 
-import tilde.core.model as model
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.pool import QueuePool, NullPool
+
+import pg8000
+
+import tilde.core.model as model
 
 from xml.etree import ElementTree as ET
 
@@ -60,27 +60,14 @@ def connect_url(settings, named=None):
         if not named:       named = settings['db']['default_sqlite_db']
         if os.sep in named: named = os.path.realpath(os.path.abspath(named))
         else:               named = os.path.join(DATA_DIR, named)
-        try:
-            import sqlite3
-        except ImportError:
-            raise Exception('SQLite driver is not available!')
-
         return settings['db']['engine'] + ':///' + named
 
     elif settings['db']['engine'] == 'postgresql':
-        try:
-            import psycopg2
-            postgres_driver = 'psycopg2'
-        except ImportError:
-            print '\nFast psycopg2 postgres driver not available, falling back to a slower pure-Python version!\n'
-            import pg8000
-            postgres_driver = 'pg8000'
-
-        return settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
+        return settings['db']['engine'] + '+pg8000://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
 
     else: raise Exception('Unsupported DB type: %s!\n' % settings['db']['engine'])
 
-def connect_database(settings, named=None, no_pooling=False, schema_creation=True):
+def connect_database(settings, named=None, no_pooling=False, default_actions=True, scoped=False):
     '''
     @returns session factory on success
     @returns False on failure
@@ -89,23 +76,25 @@ def connect_database(settings, named=None, no_pooling=False, schema_creation=Tru
     poolclass = NullPool if no_pooling else QueuePool
     engine = create_engine(connstring, echo=settings['debug_regime'], poolclass=poolclass)
     Session = sessionmaker(bind=engine, autoflush=False)
-    if schema_creation:
+
+    if default_actions:
         model.Base.metadata.create_all(engine)
 
-    # default actions below
-    session = Session()
+        session = Session()
 
-    try: p = session.query(model.Pragma.content).one()
-    except NoResultFound:
-        p = model.Pragma(content = DB_SCHEMA_VERSION)
-        session.add(p)
-    else:
-        if p.content != DB_SCHEMA_VERSION:
-            sys.exit('Sorry, database '+connstring+' is incompatible.')
+        try: p = session.query(model.Pragma.content).one()
+        except NoResultFound:
+            p = model.Pragma(content = DB_SCHEMA_VERSION)
+            session.add(p)
+        else:
+            if p.content != DB_SCHEMA_VERSION:
+                sys.exit('Sorry, database '+connstring+' is incompatible.')
 
-    session.commit()
-    session.close()
-    return Session
+        session.commit()
+        session.close()
+
+    if scoped: return scoped_session(Session)
+    else:      return Session()
 
 def write_settings(settings):
     '''

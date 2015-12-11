@@ -41,7 +41,7 @@ class Setup_DB:
 class Setup_FileDB(Setup_DB):
     def create(self):
         self.dbtype = settings['db']['engine'] = 'sqlite'
-        self.session = connect_database(settings, named=self.dbname)()
+        self.session = connect_database(settings, named=self.dbname)
         logger.warning( '%s created' % self.dbname )
 
         if not DELETE_TEST_DB:
@@ -78,7 +78,7 @@ class Setup_ServerDB(Setup_DB):
                 tmpsave.write(self.dbname + "\n")
 
         settings['db']['dbname'] = self.dbname
-        self.session = connect_database(settings, no_pooling=True)()
+        self.session = connect_database(settings, no_pooling=True)
 
     def __del__(self):
         if self.session:
