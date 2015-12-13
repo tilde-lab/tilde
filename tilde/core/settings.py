@@ -30,25 +30,28 @@ TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
 
 DEFAULT_SETUP = {
-    # DB part
-    'db':{
-    'default_sqlite_db': DEFAULT_SQLITE_DB,
-    'engine': 'sqlite', # if sqlite is chosen: further info is not used
-    'host': 'localhost',
-    'port': 5432, # may be 5433
-    'user': 'postgres',
-    'password': '',
-    'dbname': 'tilde'},
 
-    # API (parsing) part
+    # General part
+    'debug_regime': False, # TODO
+    'log_dir': os.path.join(DATA_DIR, "logs"), # TODO
     'skip_unfinished': False,
     'skip_if_path': "",
 
+    # DB part
+    'db': {
+        'default_sqlite_db': DEFAULT_SQLITE_DB,
+        'engine': 'sqlite', # if sqlite is chosen: further info is not used
+        'host': 'localhost',
+        'port': 5432, # may be 5433
+        'user': 'postgres',
+        'password': '',
+        'dbname': 'tilde'
+    },
+
     # Server part
-    'debug_regime': False,
     'webport': 8070,
     'title': "Tilde GUI",
-    'log_dir': os.path.join(DATA_DIR, "logs")
+    'gui_url': "http://tilde-lab.github.io/berlinium"
 }
 repositories = []
 
