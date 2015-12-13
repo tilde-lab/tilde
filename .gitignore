@@ -5,15 +5,14 @@
 *DS_Store*
 pip-selfcheck.json
 pip-log.txt
-debug.log
 nohup.out
-tilde/core/_spglib.*
-tilde/core/build/
 /data
 /bin
 /include
 /lib
 /share
+/local
+/src
 /eggs
 /develop-eggs
 /parts

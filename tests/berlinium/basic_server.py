@@ -11,7 +11,7 @@ import set_path
 from tilde.core.settings import settings, connect_database
 from tilde.core.api import API
 import tilde.core.model as model
-from tilde.berlinium.async_impl import Connection
+from tilde.berlinium import Connection, add_redirection
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -91,8 +91,9 @@ class TildeGUIProvider:
 if __name__ == "__main__":
     Connection.GUIProvider = TildeGUIProvider
     DuplexRouter = SockJSRouter(Connection)
+
     application = web.Application(
-        DuplexRouter.urls,
+        add_redirection(DuplexRouter.urls, settings['gui_url']),
         debug = True if logging.getLogger().getEffectiveLevel()==logging.DEBUG or settings['debug_regime'] else False
     )
     application.listen(settings['webport'], address='0.0.0.0')
