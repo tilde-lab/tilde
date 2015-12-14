@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import json
+import time
 import logging
 
 from sqlalchemy import text
@@ -14,23 +15,35 @@ from tilde.berlinium.async_impl import Connection
 
 
 Tilde = API()
-settings['db']['engine'] = 'postgresql'
-settings['debug_regime'] = False
 
+settings['debug_regime'] = False
 logging.basicConfig(level=logging.DEBUG)
 
 class SleepTester:
     @staticmethod
     def login(req, session_id):
+        Connection.Clients[session_id].authorized = True
+        Connection.Clients[session_id].db = connect_database(settings, default_actions=False, scoped=True)
+        return "OK", None
+
+    @staticmethod
+    def sleep(req, session_id):
         result, error = '', None
         try: req = float(req)
         except: return result, 'Not a number!'
 
-        Connection.Clients[session_id].db = connect_database(settings, default_actions=False, scoped=True)
         current_engine = Connection.Clients[session_id].db.get_bind()
-        current_engine.execute(text('SELECT pg_sleep(:i)'), **{'i': req})
-        result = Tilde.count(Connection.Clients[session_id].db)
 
+        if settings['db']['engine'] == 'postgresql':
+            current_engine.execute(text('SELECT pg_sleep(:i)'), **{'i': req})
+
+        elif settings['db']['engine'] == 'sqlite':
+            conn = current_engine.raw_connection()
+            conn.create_function("sq_sleep", 1, time.sleep)
+            c = conn.cursor()
+            c.execute('SELECT sq_sleep(%s)' % req)
+
+        result = Tilde.count(Connection.Clients[session_id].db)
         return result, error
 
 if __name__ == "__main__":

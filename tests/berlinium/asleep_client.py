@@ -14,16 +14,19 @@ class RespHandler(object):
     @classmethod
     def on_open(self, ws):
         logging.debug("Client connected")
-        to_send = {'act': 'login', 'req': 4}
+        to_send = {'act': 'login'}
         ws.send(json.dumps(to_send))
 
     @classmethod
     def on_message(self, ws, message):
         logging.debug("Client got: %s" % message)
         message = json.loads(message)
-        logging.debug(message)
-        logging.info("Client done in: %1.2f sc" % (time.time() - START_TIME))
-        ws.close()
+        if message['act'] == 'login':
+            to_send = {'act': 'sleep', 'req': 4}
+            ws.send(json.dumps(to_send))
+        else:
+            logging.info("Client done in: %1.2f sc" % (time.time() - START_TIME))
+            ws.close()
 
     @classmethod
     def on_error(self, ws, error):
