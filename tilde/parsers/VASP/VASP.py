@@ -312,12 +312,12 @@ class XML_Output(Output):
                 "kpoints", "actual_kpoints", "structures",
                 "actual_kpoints_weights", "dos_energies",
                 "eigvals", "tdos", "pdos", "e_last",
-                "ionic_steps", "dos_error",
+                "tresholds", "dos_error",
                 "dynmat", "finished"]:
             setattr(self, k, getattr(self._handler, k))
 
-        try: self.info['energy'] = self.ionic_steps[-1]["electronic_steps"][-1]["e_wo_entrp"]/Hartree # Final energy from the vasp run (note: e_fr_energy vs. e_0_energy)
-        except KeyError: pass # for unphysical cases
+        try: self.info['energy'] = self.tresholds[-1][-1] # NB: e_fr_energy vs. e_0_energy
+        except IndexError: pass # for unphysical cases
 
         self.info['framework'] = 'VASP'
         self.info['prog'] = 'VASP ' + self.vasp_version
@@ -473,11 +473,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         #self.idos = {}
         self.pdos = {}
         self.e_last = None
-        self.ionic_steps = []  # should be a list of dict
+        #self.ionic_steps = [] # should be a list of dict
+        self.tresholds = []
         self.structures = []
         #self.lattice_rec = []
-        self.forces = []
-        self.stress = []
+        #self.forces = []
+        #self.stress = []
 
         self.input_read = False
         self.read_structure = False
@@ -702,7 +703,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         #    self.stress.shape = (3, 3)
         #    self.read_positions = False
         elif name == "calculation":
-            self.ionic_steps.append({"electronic_steps": self.scdata, "structure": self.structures[-1], "forces": self.forces,  "stress": self.stress})
+            #self.ionic_steps.append({"electronic_steps": self.scdata, "structure": self.structures[-1], "forces": self.forces, "stress": self.stress})
+            try: # for unphysical cases
+                final_e = self.scdata[-1]["e_wo_entrp"]/Hartree
+                self.tresholds.append([0, 0, 0, 0, final_e]) # NB final value
+            except:
+                pass
             self.read_calculation = False
 
     def _read_structure(self, name):

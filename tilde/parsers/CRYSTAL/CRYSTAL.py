@@ -1109,11 +1109,11 @@ class CRYSTOUT(Output):
                 criteria[2].append(criteria[2][-1])
                 criteria[3].insert(0, 0)
                 criteria[3].append(criteria[3][-1])
-            if len(criteria[0]) - len(energies) == 1: # WTF?
+            if len(criteria[0]) - len(energies) == 1: # ??
                 self.warning( 'Energy was not printed at intermediate step, so the correspondence is partly lost (tried to fix)!' )
                 energies.insert(0, energies[0])
                 ncycles.insert(0, ncycles[0])
-            if len(criteria[1]) - len(criteria[2]) > 1: # WTF???
+            if len(criteria[1]) - len(criteria[2]) > 1: # ??
                 raise RuntimeError( 'Number of tresholds during optimization is inconsistent!' )
             for i in range(0, len(criteria[0])):
                 tresholds.append([ criteria[0][i], criteria[1][i], criteria[2][i], criteria[3][i], energies[i] ])
