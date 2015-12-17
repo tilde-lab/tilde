@@ -17,7 +17,7 @@ import tilde.core.model as model
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '5.00'
+DB_SCHEMA_VERSION = '5.01'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 
@@ -91,7 +91,7 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
             session.add(p)
         else:
             if p.content != DB_SCHEMA_VERSION:
-                sys.exit('Sorry, database '+connstring+' is incompatible.')
+                sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, p.content))
 
         session.commit()
         session.close()
@@ -129,6 +129,8 @@ def read_hierarchy():
     doc = tree.getroot()
 
     for elem in doc.findall('entity'):
+        if 'has_facet' in elem.attrib and not 'creates_topic' in elem.attrib: sys.exit('Fatal error: "has_facet" implies "creates_topic" in ' + HIERARCHY_FILE)
+
         hierarchy.append( elem.attrib )
         # type corrections
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
