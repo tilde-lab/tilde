@@ -27,7 +27,7 @@ class RespHandler(object):
 
     @classmethod
     def on_message(self, ws, message):
-        logging.info("Received: %s" % message)
+        logging.info("Received: %s" % message[:100])
         message = json.loads(message)
     
         if message['act'] == 'login':

@@ -14,7 +14,7 @@ import tilde.core.model as model
 from tilde.berlinium import Connection, add_redirection
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 Tilde = API()
 USER, PASS = 'test', 'test'
@@ -54,7 +54,7 @@ class TildeGUIProvider:
                 try: match = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
                 except IndexError: return None, 'Schema and data do not match: different versions of code and database?'
 
-                if not 'has_label' in match or not match['has_label']: continue
+                if not match.get('has_facet'): continue
 
                 sort = 1000 if not 'sort' in match else match['sort']
 

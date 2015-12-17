@@ -11,7 +11,7 @@ from sockjs.tornado import SockJSRouter
 import set_path
 from tilde.core.settings import settings, connect_database
 from tilde.core.api import API
-from tilde.berlinium.async_impl import Connection
+from tilde.berlinium.block_impl import Connection
 
 
 Tilde = API()
