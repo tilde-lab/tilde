@@ -13,6 +13,8 @@ from tilde.core.settings import settings
 from ase.data import chemical_symbols
 
 
+HASH_LENGTH = 47
+
 class Output:
     def __init__(self, filename="", calcset=False):
 

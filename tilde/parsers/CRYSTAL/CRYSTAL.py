@@ -197,7 +197,7 @@ class CRYSTOUT(Output):
         '''
         e, crit_1, crit_2, crit_3 = None, False, False, False
         f = open(filename, 'r')
-        while 1:
+        while True:
             str = f.readline()
             if not str: break
 

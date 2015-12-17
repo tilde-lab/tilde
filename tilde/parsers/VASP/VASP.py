@@ -407,7 +407,7 @@ class XML_Output(Output):
                 repr = '%s/%s' % (round(us[i], 1), round(js[i], 1))
                 if self.potcar_sequence[i] in atom_hubbard and atom_hubbard[ self.potcar_sequence[i] ] != repr:
                     n = 1
-                    while 1:
+                    while True:
                         try: atom_hubbard[ self.potcar_sequence[i] + str(n) ]
                         except KeyError:
                             atom_hubbard[ self.potcar_sequence[i] + str(n) ] = repr
