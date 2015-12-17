@@ -1,12 +1,7 @@
 
-# implementation of thread pool for async websocket connections
+# blocking implementation of websocket connections
 
 import logging
-import threading
-import multiprocessing
-from functools import partial
-
-from concurrent.futures import ThreadPoolExecutor
 
 from tornado import ioloop
 from sockjs.tornado import SockJSConnection
@@ -14,8 +9,6 @@ from sockjs.tornado import SockJSConnection
 try: import ujson as json
 except ImportError: import json
 
-
-thread_pool = ThreadPoolExecutor(max_workers=5*multiprocessing.cpu_count())
 
 class GUIProviderMockup:
     pass
@@ -55,18 +48,8 @@ class Connection(SockJSConnection):
             frame['error'] = 'No server handler for action: %s' % frame['act']
             return self.respond(frame)
 
-        def worker(frame):
-            frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['session'] )
-            return frame
-
-        def callback(future):
-            self.respond(future.result())
-
-        thread_pool.submit( partial(worker, frame) ).add_done_callback( \
-            lambda future: ioloop.IOLoop.instance().add_callback( \
-                partial(callback, future)
-            )
-        )
+        frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['session'] )
+        self.respond(frame)
 
     def respond(self, output):
         del output['session']
