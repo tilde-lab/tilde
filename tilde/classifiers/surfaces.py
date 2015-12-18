@@ -2,7 +2,9 @@
 # Classifies slabs by their structure: determines layers count and adsorption
 # Author: Evgeny Blokhin
 
-import os, sys, math, fractions
+import os, sys
+import math
+import fractions
 
 
 # hierarchy API: __order__ to apply classifier
