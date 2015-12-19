@@ -1058,7 +1058,7 @@ class CRYSTOUT(Output):
     def get_convergence(self):
         if self.info['input'] is not None and "ONELOG" in self.info['input']:
             self.warning("ONELOG keyword is not supported!")
-            return None, None, None
+            return [], [], []
         convergdata = []
         ncycles = []
         energies = []
