@@ -15,21 +15,21 @@ TODO2 distinguish sorting
 
     <!-- TODO: APPS -->
 
-    <entity cid="1" category="chemical formula"         source="standard" sort="10" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1" is_chem_formula="1"/>
-    <entity cid="2" category="containing elements"      source="elements" multiple="1" sort="20" has_summary_contrb="1" has_facet="1" creates_topic="1" has_mendeleev_table="1"/>
+    <entity cid="1" category="chemical formula"         source="standard" sort="1" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1" is_chem_formula="1"/>
+    <entity cid="2" category="containing elements"      source="elements" multiple="1" sort="2" has_summary_contrb="1" has_facet="1" creates_topic="1" has_mendeleev_table="1"/>
     <entity cid="3" category="number of elements"       source="nelem" sort="30" has_summary_contrb="1" creates_topic="1" plottable="1"/>
     <entity cid="4" category="formula units"            source="expanded" sort="40" has_summary_contrb="1" has_column="1" plottable="1"/>
 
-    <entity cid="1501" category="lattice a"             source="lata" sort="1" has_slider="Lattice.a" has_column="1" plottable="1"/>
-    <entity cid="1502" category="lattice b"             source="latb" sort="2" has_slider="Lattice.b" has_column="1" plottable="1"/>
-    <entity cid="1503" category="lattice c"             source="latc" sort="3" has_slider="Lattice.c" has_column="1" plottable="1"/>
-    <entity cid="1504" category="lattice alpha"         source="latalpha" sort="4" has_column="1" plottable="1"/>
-    <entity cid="1505" category="lattice beta"          source="latbeta" sort="5" has_column="1" plottable="1"/>
-    <entity cid="1506" category="lattice gamma"         source="latgamma" sort="6" has_column="1" plottable="1"/>
+    <entity cid="1501" category="lattice a"             source="lata" sort="4" has_slider="Lattice.a" has_column="1" plottable="1"/>
+    <entity cid="1502" category="lattice b"             source="latb" sort="5" has_slider="Lattice.b" has_column="1" plottable="1"/>
+    <entity cid="1503" category="lattice c"             source="latc" sort="6" has_slider="Lattice.c" has_column="1" plottable="1"/>
+    <entity cid="1504" category="lattice alpha"         source="latalpha" sort="7" has_column="1" plottable="1"/>
+    <entity cid="1505" category="lattice beta"          source="latbeta" sort="8" has_column="1" plottable="1"/>
+    <entity cid="1506" category="lattice gamma"         source="latgamma" sort="9" has_column="1" plottable="1"/>
 
     <entity cid="1001" category="number of atoms"       source="natom" has_summary_contrb="1" html="N,,atoms__" sort="50" has_column="1" plottable="1"/>
 
-    <entity cid="5" category="periodic translations"    source="periodicity" has_column="1" has_facet="1" creates_topic="1" sort="130"/>
+    <entity cid="5" category="PBC"                      source="periodicity" has_column="1" has_facet="1" creates_topic="1" sort="130" descr="Periodic Boundary Conditions"/>
     <entity cid="9" category="crystal system"           source="symmetry" sort="140" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1"/>
     <entity cid="10" category="point group"             source="pg" sort="150" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1" descr="Result point group"/>
     <entity cid="11" category="space group (schoen.)"   source="sg" sort="160" has_summary_contrb="1" has_column="1" creates_topic="1" descr="Result space group (Schoenflis notation)"/>
@@ -37,7 +37,7 @@ TODO2 distinguish sorting
     <entity cid="13" category="layer group (intl.)"     source="dg" optional="1" sort="180" descr="Result layer group (international notation)"/>
     <entity cid="50" category="space group"             source="spg" sort="181" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1" descr="Result space group (both international and Schoenflis notations)"/>
 
-    <entity cid="8" category="system type"              source="tags" optional="1" multiple="1" has_facet="1" creates_topic="1" sort="60"/>
+    <entity cid="8" category="system type"              source="tags" sort="60" optional="1" multiple="1" has_facet="1" creates_topic="1"/>
     <entity cid="6" category="calculation type"         source="calctypes" multiple="1" sort="270" has_summary_contrb="1" has_facet="1" creates_topic="1"/>
     <entity cid="7" category="xc treatment"             source="H" optional="1" sort="190" has_summary_contrb="1" has_column="1" creates_topic="1"/>
     <entity cid="75" category="xc treatment type"       source="H_types" multiple="1" sort="195" has_facet="1" creates_topic="1"/>
@@ -67,7 +67,7 @@ TODO2 distinguish sorting
     <entity cid="80"  category="basis set type"         source="ansatz" has_column="1" has_facet="1" creates_topic="1" sort="185"/>
 
     <entity cid="1002" category="total energy"          source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="310" has_summary_contrb="1" has_column="1" plottable="1"/>
-    <entity cid="1003" category="cell volume"           source="dims" html="Cell, A^^3**" sort="120" has_slider="Struct_ratios.dimensions" has_summary_contrb="1" has_column="1" plottable="1"/>
+    <entity cid="1003" category="cell volume"           source="dims" html="Cell, A^^3**" sort="10" has_slider="Struct_ratios.dimensions" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="1005" category="source file"           source="location" sort="360"/>
     <entity cid="1006" category="finished"              source="finished" html="Finished?" sort="370" has_summary_contrb="1" has_column="1"/>
 
