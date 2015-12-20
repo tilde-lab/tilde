@@ -48,14 +48,17 @@ class SymmetryFinder:
             self.refinedcell.periodicity = sum(self.refinedcell.get_pbc())
             self.refinedcell.dims = abs(det(tilde_obj['structures'][-1].cell))
 
-'''
+"""
 # Dummy class for testing purposes
-class SymmetryHandler(SymmetryFinder):
+class SymmetryFinder:
+    accuracy = 1e-04
     def __init__(self, tilde_obj, accuracy=None):
-        SymmetryFinder.__init__(self)
+        self.error = None
+        self.accuracy=accuracy if accuracy else SymmetryFinder.accuracy
+    def get_spacegroup(self, tilde_obj):
         self.n = 1
         self.i = 'P1'
-'''
+"""
 
 class SymmetryHandler(SymmetryFinder):
     def __init__(self, tilde_obj, accuracy=None):
@@ -127,7 +130,7 @@ class SymmetryHandler(SymmetryFinder):
             try: self.dg = DIPERIODIC_MAPPING[self.n]
             except KeyError: tilde_obj.warning('No diperiodical group found because rotational axes inconsistent with 2d translations!')
             else:
-                if   65 <= self.dg <= 80: self.symmetry = 'hexagonal'
-                elif 49 <= self.dg <= 64: self.symmetry = 'square'
-                elif 8  <= self.dg <= 48: self.symmetry = 'rectangular'
-                elif 1  <= self.dg <= 7:  self.symmetry = 'oblique'
+                if   65 <= self.dg <= 80: self.symmetry = '2d-hexagonal'
+                elif 49 <= self.dg <= 64: self.symmetry = '2d-square'
+                elif 8  <= self.dg <= 48: self.symmetry = '2d-rectangular'
+                elif 1  <= self.dg <= 7:  self.symmetry = '2d-oblique'

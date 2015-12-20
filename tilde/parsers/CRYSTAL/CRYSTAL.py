@@ -2,12 +2,14 @@
 # CRYSTAL cryst.out parser
 # Author: Evgeny Blokhin
 
-import os, sys, math, re
+import os, sys
+import math
+import re
 import time
 import copy
 from fractions import Fraction
 
-from numpy import dot, array, cross, append
+from numpy import dot, array, cross
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.lattice.spacegroup.cell import cellpar_to_cell
@@ -197,7 +199,7 @@ class CRYSTOUT(Output):
         '''
         e, crit_1, crit_2, crit_3 = None, False, False, False
         f = open(filename, 'r')
-        while 1:
+        while True:
             str = f.readline()
             if not str: break
 
@@ -1058,7 +1060,7 @@ class CRYSTOUT(Output):
     def get_convergence(self):
         if self.info['input'] is not None and "ONELOG" in self.info['input']:
             self.warning("ONELOG keyword is not supported!")
-            return None, None, None
+            return [], [], []
         convergdata = []
         ncycles = []
         energies = []
@@ -1109,11 +1111,11 @@ class CRYSTOUT(Output):
                 criteria[2].append(criteria[2][-1])
                 criteria[3].insert(0, 0)
                 criteria[3].append(criteria[3][-1])
-            if len(criteria[0]) - len(energies) == 1: # WTF?
+            if len(criteria[0]) - len(energies) == 1: # ??
                 self.warning( 'Energy was not printed at intermediate step, so the correspondence is partly lost (tried to fix)!' )
                 energies.insert(0, energies[0])
                 ncycles.insert(0, ncycles[0])
-            if len(criteria[1]) - len(criteria[2]) > 1: # WTF???
+            if len(criteria[1]) - len(criteria[2]) > 1: # ??
                 raise RuntimeError( 'Number of tresholds during optimization is inconsistent!' )
             for i in range(0, len(criteria[0])):
                 tresholds.append([ criteria[0][i], criteria[1][i], criteria[2][i], criteria[3][i], energies[i] ])

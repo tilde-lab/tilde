@@ -4,9 +4,7 @@
 # Author: Evgeny Blokhin
 
 import os, sys
-import httplib2
 import bcrypt
-from urllib import urlencode
 
 
 class UniqueMixin(object):
@@ -116,49 +114,3 @@ def _append_topics(session, model, calc_id, cid, new_topics):
                 logger.critical("The pair (%s, %s) is already present in the tags table!" % (checksum, new_term.tid))
                 session.rollback()
     session.commit()
-
-def syncdb(slugs, model_scope=globals(), sync_setup={}):
-    '''
-    Sends all the given ORM items to the master,
-    where they are saved, augmented with the IDs and sent back.
-    @returns synced ORM items, error
-    '''
-    to_do, ready = [], []
-    for slug in slugs:
-        if isinstance(slug.__class__, DeclarativeMeta):
-            ready.append(slug)
-        elif isinstance(slug, dict):
-            to_do.append(slug)
-        else:
-            logger.critical("Wrong ORM data format provided!")
-            return None, "Wrong ORM data format provided!"
-
-    if not to_do: return ready, None
-
-    if isinstance(sync_setup['password'], unicode): sync_setup['password'] = sync_setup['password'].encode("ascii")
-
-    pwhash = bcrypt.hashpw(sync_setup['password'], bcrypt.gensalt())
-    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'X-hash': pwhash.encode('utf-8')}
-    body = urlencode({'to_sync': json.dumps(to_do)})
-
-    h = httplib2.Http()
-    try: resp, content = h.request(sync_setup['url'], "POST", body, headers=headers)
-    except:
-        logger.critical("Network error while requesting %s" % sync_setup['url'])
-        return None, "Network error while requesting %s" % sync_setup['url']
-
-    if resp.status != 200:
-        logger.critical(str(content))
-        return None, str(content)
-
-    try: done = json.loads(content)
-    except:
-        logger.critical("Invalid sync data received!")
-        return None, "Invalid sync data received!"
-
-    for ormrepr in done:
-        clsname = ormrepr['__cls__']
-        ormrepr.pop('__cls__')
-        ready.append(getattr(model_scope, clsname)(**ormrepr))
-
-    return ready, None

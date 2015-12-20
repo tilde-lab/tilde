@@ -13,12 +13,14 @@ from tilde.core.settings import settings
 from ase.data import chemical_symbols
 
 
+HASH_LENGTH = 47
+
 class Output:
-    def __init__(self, filename="", calcset=False):
+    def __init__(self, filename='', calcset=False):
 
         self._filename = filename # for quick and cheap checksums (NB never generate checksum from entire calc file, which may be huge!)
-        self.data = ''          # file contents holder; may be empty for some parsers!
-        self._checksum = None   # NB do not use directly
+        self.data = ''            # file contents holder; may be empty for some parsers!
+        self._checksum = None     # NB do not use directly
         self._calcset = calcset
         self._nested_depth = 0
 
@@ -38,7 +40,7 @@ class Output:
 
         self.electrons = {
             'type':            None,
-            'rgkmax':          None,
+            #'rgkmax':          None,
             'basis_set':       None, # format depends on type (TODO)
                                      # gaussians: {'bs': {}, 'ps': {}}
                                      # plane waves and LAPW: [atom1, ...]
@@ -90,6 +92,10 @@ class Output:
             'expanded':   False,
             'tags':       [],
 
+            'etype':      'no info',
+            'bandgap':    None, # in eV
+            'bandgaptype':'no info',
+
             'optgeom':    False,
             'calctypes':  [],
             'H':          None,
@@ -118,8 +124,7 @@ class Output:
         ''' in-place modifying '''
         return setattr(self, key, value)
 
-    def __str__(self):
-        ''' debug dumping '''
+    def __repr__(self):
         out = ''
         for repr in dir(self):
             if not hasattr(getattr(self, repr), '__call__') and repr != '__doc__':

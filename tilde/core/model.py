@@ -7,7 +7,7 @@ import logging
 import datetime
 from collections import namedtuple
 
-from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics, syncdb
+from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics
 
 from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, LargeBinary, ForeignKey
 from sqlalchemy.orm import relationship
@@ -15,8 +15,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.expression import insert, delete
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 class NullHandler(logging.Handler): # for Python 2.6
@@ -81,7 +80,7 @@ class Calculation(Base):
     spacegroup = relationship("Spacegroup", uselist=False)
     struct_ratios = relationship("Struct_ratios", uselist=False)
     struct_optimisation = relationship("Struct_optimisation", uselist=False)
-    main_metadata = relationship("Metadata", uselist=False)
+    meta_data = relationship("Metadata", uselist=False)
     basis = relationship("Basis", uselist=False)
     recipinteg = relationship("Recipinteg", uselist=False)
     energy = relationship("Energy", uselist=False)

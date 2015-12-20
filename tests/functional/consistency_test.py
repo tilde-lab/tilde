@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 class Test_Consistency(TestLayerDB):
     __test_calcs_dir__ = EXAMPLE_DIR
     example_calc_count = 6
-    expected_performance = 5
+    expected_performance = 6
     expected_checksums = ["HKQI3PNB4SJKFKVKEZG4QMKOYPWF7N6N4H2ZWM3KGRY5QCI", "DIJZ5IMV3OXIISTLIOAHCWZG6T5ANWRWFP75MNCDDCSGUCI", "V3MYGXYORMRSAYFR4WN4MSX3L6JI2DE7E3QRC4KYTXMDGCI", "HYO6KU4ZBQWJJIGLO3DFO44DBO2LVZGYEHTPEIDEK2WGMCI", "2IW5NGDADU5OOPBG2GMYKRJ7UR567QAKK6P53DAJB3UGICI", "VRJEXXLLDTSSIQEV3KJWDERFCXZBDDIH7VT2C7TGFU2U4CI"]
 
     @classmethod
@@ -35,7 +35,7 @@ class Test_Consistency(TestLayerDB):
 
     def test_perf(self):
         try: self.assertTrue(self.perf < self.expected_performance,
-            "Repo building takes unexpectedly too much time!")
+            "Repo building takes unexpectedly too much time: %s sec against %s sec expected" % (self.perf, self.expected_performance))
         except:
             TestLayerDB.failed = True
             raise

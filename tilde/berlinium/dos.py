@@ -1,11 +1,11 @@
 
 # Phonon and electron DOS plotter
-# Based mainly on DOS implementation by A.Togo in Phonopy 0.7 code (dos.py)
-# http://phonopy.sf.net
 # Author: Evgeny Blokhin
+#
+# Based mainly on DOS implementation by A.Togo in Phonopy 0.7 code (dos.py)
+# http://phonopy.sf.net/
 
-import os
-import sys
+import os, sys
 import numpy as np
 
 

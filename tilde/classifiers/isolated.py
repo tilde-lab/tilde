@@ -2,13 +2,11 @@
 # Try to determine reference atomic calculation in vacuum (an artificial 3-periodic box case)
 # Author: Evgeny Blokhin
 
-import os
-import sys
+import os, sys
 
 from numpy.linalg import det
 
-from ase.data import chemical_symbols
-from ase.data import covalent_radii
+from ase.data import chemical_symbols, covalent_radii
 
 
 # hierarchy API: __order__ to apply classifier
@@ -28,5 +26,6 @@ def classify(tilde_obj):
         # atomic radius should be REL times less than cell dimensions
         #tilde_obj.info['tags'].append('atom')
         tilde_obj.info['periodicity'] = -1
+        tilde_obj.structures[-1].periodicity = -1
 
     return tilde_obj

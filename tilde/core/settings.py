@@ -3,21 +3,21 @@
 # Author: Evgeny Blokhin
 
 import os, sys
-import logging
-import tempfile
 import json # using native driver due to indent
 
-import tilde.core.model as model
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.pool import QueuePool, NullPool
+
+import pg8000
+
+import tilde.core.model as model
 
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '5.00'
+DB_SCHEMA_VERSION = '5.01'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 
@@ -30,33 +30,29 @@ TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
 
 DEFAULT_SETUP = {
-    # DB part
-    'db':{
-    'default_sqlite_db': DEFAULT_SQLITE_DB,
-    'engine': 'sqlite', # if sqlite is chosen: further info is not used
-    'host': 'localhost',
-    'port': 5432, # may be 5433
-    'user': 'postgres',
-    'password': '',
-    'dbname': 'tilde'},
-    'add_default_values': False,
 
-    # DB replication part
-    'syncdb':{
-    'mode': None, # None, MASTER or SLAVE
-    'port': 9999,
-    'password': '',
-    'url': ''}, # only for SLAVE
-
-    # API (parsing) part
+    # General part
+    'debug_regime': False, # TODO
+    'log_dir': os.path.join(DATA_DIR, "logs"), # TODO
     'skip_unfinished': False,
+    'skip_notenergy': False,
     'skip_if_path': "",
 
+    # DB part
+    'db': {
+        'default_sqlite_db': DEFAULT_SQLITE_DB,
+        'engine': 'sqlite', # if sqlite is chosen: further info is not used
+        'host': 'localhost',
+        'port': 5432, # may be 5433
+        'user': 'postgres',
+        'password': '',
+        'dbname': 'tilde'
+    },
+
     # Server part
-    'debug_regime': False,
-    'webport': 8888,
+    'webport': 8070,
     'title': "Tilde GUI",
-    'log_dir': os.path.join(DATA_DIR, "logs")
+    'gui_url': "http://tilde-lab.github.io/berlinium"
 }
 repositories = []
 
@@ -68,27 +64,14 @@ def connect_url(settings, named=None):
         if not named:       named = settings['db']['default_sqlite_db']
         if os.sep in named: named = os.path.realpath(os.path.abspath(named))
         else:               named = os.path.join(DATA_DIR, named)
-        try:
-            import sqlite3
-        except ImportError:
-            raise Exception('SQLite driver is not available!')
-
         return settings['db']['engine'] + ':///' + named
 
     elif settings['db']['engine'] == 'postgresql':
-        try:
-            import psycopg2
-            postgres_driver = 'psycopg2'
-        except ImportError:
-            print '\nFast psycopg2 postgres driver not available, falling back to a slower pure-Python version!\n'
-            import pg8000
-            postgres_driver = 'pg8000'
-
-        return settings['db']['engine'] + '+' + postgres_driver + '://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
+        return settings['db']['engine'] + '+pg8000://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
 
     else: raise Exception('Unsupported DB type: %s!\n' % settings['db']['engine'])
 
-def connect_database(settings, named=None, no_pooling=False, schema_creation=True):
+def connect_database(settings, named=None, no_pooling=False, default_actions=True, scoped=False):
     '''
     @returns session factory on success
     @returns False on failure
@@ -97,26 +80,25 @@ def connect_database(settings, named=None, no_pooling=False, schema_creation=Tru
     poolclass = NullPool if no_pooling else QueuePool
     engine = create_engine(connstring, echo=settings['debug_regime'], poolclass=poolclass)
     Session = sessionmaker(bind=engine, autoflush=False)
-    if schema_creation:
+
+    if default_actions:
         model.Base.metadata.create_all(engine)
 
-    # default actions below
-    session = Session()
+        session = Session()
 
-    try: p = session.query(model.Pragma.content).one()
-    except NoResultFound:
-        p = model.Pragma(content = DB_SCHEMA_VERSION)
-        session.add(p)
-    else:
-        if p.content != DB_SCHEMA_VERSION:
-            sys.exit('Sorry, database '+connstring+' is incompatible.')
+        try: p = session.query(model.Pragma.content).one()
+        except NoResultFound:
+            p = model.Pragma(content = DB_SCHEMA_VERSION)
+            session.add(p)
+        else:
+            if p.content != DB_SCHEMA_VERSION:
+                sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, p.content))
 
-    '''if settings['add_default_values']:
-        pass'''
+        session.commit()
+        session.close()
 
-    session.commit()
-    session.close()
-    return Session
+    if scoped: return scoped_session(Session)
+    else:      return Session()
 
 def write_settings(settings):
     '''
@@ -148,6 +130,9 @@ def read_hierarchy():
     doc = tree.getroot()
 
     for elem in doc.findall('entity'):
+        if 'has_facet' in elem.attrib and not 'creates_topic' in elem.attrib: sys.exit('Fatal error: "has_facet" implies "creates_topic" in ' + HIERARCHY_FILE)
+        if 'has_slider' in elem.attrib and not '.' in elem.attrib['has_slider']: sys.exit('Fatal error: "has_slider" implies table fields set in ' + HIERARCHY_FILE)
+
         hierarchy.append( elem.attrib )
         # type corrections
         hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
@@ -199,9 +184,3 @@ if not 'engine' in settings['db'] or settings['db']['engine'] not in ['sqlite', 
 
 if not 'default_sqlite_db' in settings['db']:
     sys.exit('Note that the settings.json format has been changed with the respect to the default sqlite DB.')
-if settings['syncdb']['mode'] and not settings['syncdb']['password']:
-    sys.exit('Please, specify security password in order to allow replication')
-if settings['syncdb']['mode'] == 'SLAVE' and not settings['syncdb']['url']:
-    sys.exit('Please, specify master syncdb daemon URL')
-if settings['syncdb']['mode'] == 'MASTER' and settings['db']['engine'] != 'postgresql':
-    sys.exit('Only Postgres DB can be master!')

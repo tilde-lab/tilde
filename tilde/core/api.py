@@ -2,7 +2,7 @@
 # Functionality exposed into an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.7.0"
+__version__ = "0.7.5"
 
 import os, sys
 import time, math, random
@@ -27,8 +27,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 from sqlalchemy import exists, func
 from sqlalchemy.orm.exc import NoResultFound
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 class API:
@@ -306,7 +305,8 @@ class API:
             except: pass
 
         # applying filter: todo
-        if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
+        if (calc.info['finished'] < 0 and self.settings['skip_unfinished']) or \
+           (not calc.info['energy'] and self.settings['skip_notenergy']):
             return None, 'data do not satisfy the active filter'
 
         # naive elements extraction
@@ -336,7 +336,7 @@ class API:
         calc.info['natom'] = len(symbols)
 
         # periodicity
-        p_map = {-1: 'atom', 0: '0D', 1: '1D', 2: '2D', 3: '3D'}
+        p_map = {-1: 'isolated atom', 0: '0d', 1: '1d', 2: '2d', 3: '3d'}
         calc.info['periodicity'] = p_map[calc.info['periodicity']]
 
         # general calculation type reasoning
@@ -345,13 +345,14 @@ class API:
         if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
         if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
         if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only!
-        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['calctypes'].append('geometry optimization')
+        if len(calc.tresholds) > 1:
+            calc.info['calctypes'].append('geometry optimization')
+            calc.info['optgeom'] = True
         if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append('electron structure')
         if calc.info['energy']: calc.info['calctypes'].append('total energy')
+        calc.info['spin'] = 'yes' if calc.info['spin'] else 'no'
 
-        if calc.tresholds or len( getattr(calc, 'ionic_steps', []) ) > 1: calc.info['optgeom'] = True
-
-        # TODO: standardize computational materials science methods
+        # TODO: standardize
         if 'vac' in calc.info:
             if 'X' in symbols: calc.info['techs'].append('vacancy defect: ghost')
             else: calc.info['techs'].append('vacancy defect: void space')
@@ -370,6 +371,7 @@ class API:
         calc.info['sg'] = found.i
         calc.info['ng'] = found.n
         calc.info['symmetry'] = found.symmetry
+        calc.info['spg'] = "%s &mdash; %s" % (found.n, found.i)
         calc.info['pg'] = found.pg
         calc.info['dg'] = found.dg
 
@@ -380,7 +382,8 @@ class API:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
 
         calc.info['ansatz'] = calc.electrons['type']
-        calc.info['rgkmax'] = calc.electrons['rgkmax'] # LAPW
+        #calc.info['rgkmax'] = calc.electrons['rgkmax'] # LAPW
+
         # electronic properties reasoning by bands
         if calc.electrons['bands']:
             if calc.electrons['bands'].is_conductor():
@@ -410,7 +413,11 @@ class API:
                     if gap: calc.info['etype'] = 'insulator' # semiconductor?
                     else: calc.info['etype'] = 'conductor'
 
-        # TODO: check and adopt negative_tagging here (beware to add something new to an existing item!)
+        # TODO: beware to add something new to an existing item!
+        # TODO2: unknown or absent?
+        for entity in self.hierarchy:
+            if entity.get('creates_topic') and not entity.get('optional') and not calc.info.get(entity['source']):
+                calc.info[ entity['source'] ] = ['none'] if 'multiple' in entity else 'none'
 
         calc.benchmark() # this call must be at the very end of parsing
 
@@ -437,8 +444,8 @@ class API:
                     else:
                         scope_prop = appclass['apptarget'][key]
 
-                    if key in calc.info: # note sharp-signed multiple tag containers in Tilde hierarchy : todo simplify
-                        # operator *in* permits non-strict comparison, e.g. "CRYSTAL" matches CRYSTAL09 v2.0
+                    if key in calc.info:
+                        # non-strict comparison ("CRYSTAL" matches "CRYSTAL09 v2.0")
                         if (str(scope_prop) in str(calc.info[key]) or scope_prop == calc.info[key]) != negative: # true if only one, but not both
                             run_permitted = True
                         else:
@@ -471,8 +478,6 @@ class API:
         NB: this is the PUBLIC method
         @returns checksum, error
         '''
-        if calc._calcset and self.settings['syncdb']['mode'] == 'SLAVE': return None, 'This action is only allowed at the main repo!'
-
         checksum = calc.get_checksum()
 
         try: existing_calc = session.query(model.Calculation).filter(model.Calculation.checksum == checksum).one()
@@ -488,7 +493,7 @@ class API:
         ormcalc = model.Calculation(checksum = checksum)
 
         if calc._calcset:
-            ormcalc.main_metadata = model.Metadata(chemical_formula = calc.info['standard'], download_size = calc.download_size)
+            ormcalc.meta_data = model.Metadata(chemical_formula = calc.info['standard'], download_size = calc.download_size)
 
             for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(calc._calcset)).all():
                 ormcalc.children.append(child)
@@ -541,25 +546,15 @@ class API:
 
             # construct ORM for other props
             calc.related_files = map(get_virtual_path, calc.related_files)
-            ormcalc.main_metadata = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
+            ormcalc.meta_data = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
+            codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
 
-            if self.settings['syncdb']['mode'] == 'SLAVE':
-                results, error = model.syncdb( [model.Codeversion.as_unique_todict(session, content = calc.info['prog'])], model, self.settings['syncdb'] )
-                if error: return None, "DB item cannot be synced: %s" % error
-                codeversion = results[0]
-            else: codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
-
-            codeversion.instances.append( ormcalc.main_metadata )
+            codeversion.instances.append( ormcalc.meta_data )
             codefamily.versions.append( codeversion )
 
-            if self.settings['syncdb']['mode'] == 'SLAVE':
-                results, error = model.syncdb( [model.Pottype.as_unique_todict(session, name = calc.info['H'])], model, self.settings['syncdb'] )
-                if error: return None, "DB item cannot be synced: %s" % error
-                pot = results[0]
-            else: pot = model.Pottype.as_unique(session, name = calc.info['H'])
-
+            pot = model.Pottype.as_unique(session, name = calc.info['H'])
             pot.instances.append(ormcalc)
             ormcalc.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
             ormcalc.basis = model.Basis(kind = calc.electrons['type'], content = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
@@ -567,7 +562,8 @@ class API:
 
             ormcalc.spacegroup = model.Spacegroup(n=calc.info['ng'])
             ormcalc.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'], dimensions=calc.info['dims'])
-            if calc.tresholds or calc.ncycles: ormcalc.struct_optimisation = model.Struct_optimisation(tresholds=json.dumps(calc.tresholds), ncycles=json.dumps(calc.ncycles))
+            if len(calc.tresholds) > 1: ormcalc.struct_optimisation = model.Struct_optimisation(tresholds=json.dumps(calc.tresholds), ncycles=json.dumps(calc.ncycles))
+
             for n, ase_repr in enumerate(calc.structures):
                 is_final = True if n == len(calc.structures)-1 else False
                 struct = model.Structure(step = n, final = is_final)
@@ -575,11 +571,11 @@ class API:
                 s = cell_to_cellpar(ase_repr.cell)
                 struct.lattice = model.Lattice(a=s[0], b=s[1], c=s[2], alpha=s[3], beta=s[4], gamma=s[5], a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1], a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0], a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2], a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1], a33=ase_repr.cell[2][2])
 
-                rmts =      ase_repr.get_array('rmts') if 'rmts' in ase_repr.arrays else [None for j in range(len(ase_repr))]
+                #rmts =      ase_repr.get_array('rmts') if 'rmts' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 charges =   ase_repr.get_array('charges') if 'charges' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 magmoms =   ase_repr.get_array('magmoms') if 'magmoms' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 for n, i in enumerate(ase_repr):
-                    struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, rmt=rmts[n], charge=charges[n], magmom=magmoms[n] ) )
+                    struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, charge=charges[n], magmom=magmoms[n] ) )
 
                 ormcalc.structures.append(struct)
             # TODO Forces
@@ -590,7 +586,7 @@ class API:
         uitopics = []
         for entity in self.hierarchy:
 
-            if not 'has_label' in entity: continue
+            if not 'creates_topic' in entity: continue
 
             if 'multiple' in entity or calc._calcset:
                 for item in calc.info.get( entity['source'], [] ):
@@ -599,11 +595,7 @@ class API:
                 topic = calc.info.get(entity['source'])
                 if topic: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
-        if self.settings['syncdb']['mode'] == 'SLAVE':
-            uitopics, error = model.syncdb( map(lambda x: model.uiTopic.as_unique_todict(session, cid=x.cid, topic=x.topic), uitopics), model, self.settings['syncdb'] )
-            if error: return None, "DB items cannot be synced: %s" % error
-        else:
-            uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
+        uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
 
         ormcalc.uitopics.extend(uitopics)
 
@@ -621,13 +613,11 @@ class API:
         NB: this is the PUBLIC method
         @returns error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return 'This action is only allowed at the main repo!'
-
         C = session.query(model.Calculation).get(checksum)
 
         if not C: return 'Calculation does not exist!'
 
-        # dataset deletion includes editing the whole dataset hierarchy tree (if any)
+        # dataset deletion includes editing the whole dataset hierarchical tree (if any)
         if C.siblings_count:
             C_meta = session.query(model.Metadata).get(checksum)
             higher_lookup = {}
@@ -649,7 +639,7 @@ class API:
                     if not i.siblings_count:
                         return 'The parent dataset contains only one (current) item, please, delete parent dataset first!'
 
-                    i.main_metadata.download_size -= C_meta.download_size
+                    i.meta_data.download_size -= C_meta.download_size
                     session.add(i)
         # low-level entry deletion deals with additional tables
         else:
@@ -698,8 +688,6 @@ class API:
         NB: this is the PUBLIC method
         @returns DATASET, error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return None, 'This action is only allowed at the main repo!'
-
         calc = Output(calcset=checksums)
 
         cur_depth = 0
@@ -737,8 +725,6 @@ class API:
         NB: this is the PUBLIC method
         @returns error
         '''
-        if self.settings['syncdb']['mode'] == 'SLAVE': return 'This action is only allowed at the main repo!'
-
         parent_calc = session.query(model.Calculation).get(parent)
         if not parent_calc or not parent_calc.siblings_count: return 'Dataset is erroneously selected!'
 
@@ -798,7 +784,7 @@ class API:
         # tags ORM
         for entity in self.hierarchy:
 
-            if not 'has_label' in entity: continue
+            if not 'creates_topic' in entity: continue
 
             for item in info_obj.get( entity['source'], [] ):
                 parent_calc.uitopics.append( model.uiTopic.as_unique(session, cid=entity['cid'], topic="%s" % item) )
@@ -812,7 +798,7 @@ class API:
                 d = parent_calc.nested_depth - i.nested_depth + distance
                 if d > 0:
                     i.nested_depth += d
-                i.main_metadata.download_size += parent_meta.download_size # fixme
+                i.meta_data.download_size += parent_meta.download_size # fixme
                 session.add(i)
 
         session.add_all([parent_calc, parent_meta, parent_grid])

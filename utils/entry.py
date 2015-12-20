@@ -2,11 +2,13 @@
 #
 # Entry junction
 # Author: Evgeny Blokhin
-"""
-Welcome to Tilde,
-Open-Source Materials Informatics Framework
-"""
-import os, sys, time
+'''
+Tilde is general-purpose materials informatics framework
+for intelligent organizers of the scientific modeling data.
+More info: https://tilde.pro
+'''
+import os, sys
+import time
 import logging
 
 if (2, 6) > sys.version_info > (2, 7): raise NotImplementedError
@@ -46,7 +48,7 @@ args = parser.parse_args()
 session = None
 
 if not args.path and not args.service and not args.targetlist:
-    print __doc__
+    #print __doc__
     sys.exit(parser.print_help())
 
 # -a option
@@ -54,7 +56,7 @@ if args.add or args.service:
     if settings['db']['engine'] == 'sqlite':        user_choice = args.add
     elif settings['db']['engine'] == 'postgresql':  user_choice = None
 
-    session = connect_database(settings, named=user_choice)()
+    session = connect_database(settings, named=user_choice)
     if user_choice: print "The database selected:", user_choice
 
 # path(s)
@@ -106,14 +108,15 @@ for target in target_source:
             # -i option
             if args.info:
                 found_topics = []
-                skip_topics = ['location', 'element#', 'nelem', 'natom', ]
-                for n, i in enumerate(Tilde.hierarchy):
-                    if i['cid'] > 1999 or i['source'] in skip_topics: continue # apps hierarchy
-                    if 'multiple' in i:
-                        try: found_topics.append( [  i['category']  ] + calc.info[ i['source'] ] )
+                skip_topics = ['location', 'elements', 'nelem', 'natom', 'spg']
+                for n, entity in enumerate(Tilde.hierarchy):
+                    if entity['cid'] > 1999 or entity['source'] in skip_topics: continue # apps hierarchy
+
+                    if 'multiple' in entity:
+                        try: found_topics.append( [  entity['category']  ] + calc.info[ entity['source'] ] )
                         except KeyError: pass
                     else:
-                        try: found_topics.append( [  i['category'], calc.info[ i['source'] ]  ] )
+                        try: found_topics.append( [  entity['category'], calc.info[ entity['source'] ]  ] )
                         except KeyError: pass
 
                 j, out = 0, ''

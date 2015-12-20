@@ -23,8 +23,6 @@ DELETE_TEST_DB = False
 
 class Setup_DB:
     def __init__(self, dbname='test'):
-        global settings
-        settings['add_default_values'] = True
         self.dbname = '%s__%s_%s_db' % ( dbname, time.strftime("%m%d_%H%M%S"), "".join( random.choice("0123456789abcdef") for i in range(4) ) )
         self.session = None
 
@@ -40,13 +38,10 @@ class Setup_DB:
                 with open(TEST_DBS_REF_FILE, "a") as refsave:
                     refsave.write(self.dbname + "\n")
 
-    '''def add_user(self):
-        pass'''
-
 class Setup_FileDB(Setup_DB):
     def create(self):
         self.dbtype = settings['db']['engine'] = 'sqlite'
-        self.session = connect_database(settings, named=self.dbname)()
+        self.session = connect_database(settings, named=self.dbname)
         logger.warning( '%s created' % self.dbname )
 
         if not DELETE_TEST_DB:
@@ -83,7 +78,7 @@ class Setup_ServerDB(Setup_DB):
                 tmpsave.write(self.dbname + "\n")
 
         settings['db']['dbname'] = self.dbname
-        self.session = connect_database(settings, no_pooling=True)()
+        self.session = connect_database(settings, no_pooling=True)
 
     def __del__(self):
         if self.session:
