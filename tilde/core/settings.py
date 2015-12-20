@@ -130,6 +130,7 @@ def read_hierarchy():
 
     for elem in doc.findall('entity'):
         if 'has_facet' in elem.attrib and not 'creates_topic' in elem.attrib: sys.exit('Fatal error: "has_facet" implies "creates_topic" in ' + HIERARCHY_FILE)
+        if 'has_slider' in elem.attrib and not '.' in elem.attrib['has_slider']: sys.exit('Fatal error: "has_slider" implies table fields set in ' + HIERARCHY_FILE)
 
         hierarchy.append( elem.attrib )
         # type corrections

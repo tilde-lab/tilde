@@ -10,8 +10,7 @@ from numpy import dot, array, matrix
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 class ModuleError(Exception):

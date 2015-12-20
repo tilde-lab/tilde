@@ -48,14 +48,17 @@ class SymmetryFinder:
             self.refinedcell.periodicity = sum(self.refinedcell.get_pbc())
             self.refinedcell.dims = abs(det(tilde_obj['structures'][-1].cell))
 
-'''
+"""
 # Dummy class for testing purposes
-class SymmetryHandler(SymmetryFinder):
+class SymmetryFinder:
+    accuracy = 1e-04
     def __init__(self, tilde_obj, accuracy=None):
-        SymmetryFinder.__init__(self)
+        self.error = None
+        self.accuracy=accuracy if accuracy else SymmetryFinder.accuracy
+    def get_spacegroup(self, tilde_obj):
         self.n = 1
         self.i = 'P1'
-'''
+"""
 
 class SymmetryHandler(SymmetryFinder):
     def __init__(self, tilde_obj, accuracy=None):

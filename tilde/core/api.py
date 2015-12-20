@@ -27,8 +27,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 from sqlalchemy import exists, func
 from sqlalchemy.orm.exc import NoResultFound
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 class API:
@@ -350,6 +349,7 @@ class API:
             calc.info['optgeom'] = True
         if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append('electron structure')
         if calc.info['energy']: calc.info['calctypes'].append('total energy')
+        calc.info['spin'] = 'yes' if calc.info['spin'] else 'no'
 
         # TODO: standardize
         if 'vac' in calc.info:

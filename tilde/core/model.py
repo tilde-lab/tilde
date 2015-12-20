@@ -15,8 +15,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.expression import insert, delete
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 class NullHandler(logging.Handler): # for Python 2.6
