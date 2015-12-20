@@ -23,7 +23,7 @@ def wrap_cell(xml_tag, json_obj, table_view=False):
 
     elif xml_tag['source'] == 'bandgap':
         html_class = ' class=_g'
-        out = json_obj.get('bandgap')
+        out = json_obj.get('bandgap') or '&mdash;'
 
     # pseudo-source (dynamic determination)
     elif xml_tag['source'] == 'e':
@@ -40,7 +40,7 @@ def wrap_cell(xml_tag, json_obj, table_view=False):
         elif f < 0: out = 'no'
 
     else:
-        out = json_obj.get(xml_tag['source'], '&mdash;')
+        out = json_obj.get(xml_tag['source']) or '&mdash;'
 
     if table_view:
         return '<td rel=' + str(xml_tag['cid']) + html_class + '>' + str(out) + '</td>'

@@ -2,12 +2,14 @@
 # CRYSTAL cryst.out parser
 # Author: Evgeny Blokhin
 
-import os, sys, math, re
+import os, sys
+import math
+import re
 import time
 import copy
 from fractions import Fraction
 
-from numpy import dot, array, cross, append
+from numpy import dot, array, cross
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.lattice.spacegroup.cell import cellpar_to_cell
