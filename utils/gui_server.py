@@ -26,8 +26,7 @@ import tilde.core.model as model
 from tilde.berlinium import add_redirection, eplotter, wrap_cell
 from tilde.berlinium.block_impl import Connection
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -50,10 +49,10 @@ class BerliniumGUIProvider:
         Connection.Clients[session_id].db = connect_database(settings, default_actions=False, scoped=True)
 
         # *client-side* settings
-        if req['settings']['colnum'] not in [50, 100, 500]: req['settings']['colnum'] = 100
-        if type(req['settings']['cols']) is not list or not 1 <= len(req['settings']['cols']) <= 25: return (None, 'Invalid settings!')
+        if req['settings']['colnum'] not in [50, 100, 250]: req['settings']['colnum'] = 100
+        if type(req['settings']['cols']) is not list or not 1 <= len(req['settings']['cols']) <= 40: return (None, 'Invalid settings!')
 
-        for i in ['cols', 'colnum', 'objects_expand']:
+        for i in ['cols', 'colnum']:
             Connection.Clients[session_id].usettings[i] = req['settings'][i]
 
         # all available columns are compiled here and sent to user for him to select between them
@@ -73,95 +72,108 @@ class BerliniumGUIProvider:
 
     @staticmethod
     def browse(req, session_id):
-        data, error = None, None
-        startn = 0 # TODO (pagination?) not user-editable actually
+        data = {'html': '', 'count': 0, 'msg': None}
+        error = None
 
-        if 'hashes' in req:
-            if not req['hashes'] or not isinstance(req['hashes'], list) or len(req['hashes'][0]) != HASH_LENGTH: return (data, 'Invalid request!')
+        try: start, sortby = int(req.get('start', 0)), int(req.get('sortby', 0))
+        except ValueError: return (data, 'Sorry, unknown parameters in request')
+        start *= Connection.Clients[session_id].usettings['colnum']
+        stop = start + Connection.Clients[session_id].usettings['colnum']
+        if sortby   == 0: sortby = model.Metadata.chemical_formula
+        elif sortby == 1: sortby = model.Metadata.location
+        else: return (data, 'Unknown sorting requested!')
+
+        if req.get('hashes'):
+            if not isinstance(req['hashes'], list) or len(req['hashes'][0]) != HASH_LENGTH: return (data, 'Invalid request!')
             proposition = req['hashes']
+            data['count'] = len(proposition)
+            proposition = proposition[start:stop]
 
-        else: # TODO
-            pre_proposition = []
-            if 'condition' in req:
-                join_exception = None
-                clauses = []
-                for c in req['condition']:
-                    if not 'cid' in c or not 'min' in c or not 'max' in c: return (data, 'Invalid request!')
-                    try: entity = [x for x in Tilde.hierarchy if x['cid'] == int(c['cid'])][0]
-                    except IndexError: return (data, 'Invalid request!')
+        clauses = []
+        if req.get('conditions'):
+            join_exception = None
+            for c in req['conditions']:
+                if not 'cid' in c or not 'min' in c or not 'max' in c: return (data, 'Invalid request!')
+                try: entity = [x for x in Tilde.hierarchy if x['cid'] == int(c['cid'])][0]
+                except IndexError: return (data, 'Invalid category choice!')
 
-                    cls, attr = entity['has_slider'].split('.')
-                    orm_inst = getattr(getattr(model, cls), attr)
-                    clauses.append(orm_inst.between(c['min'], c['max']))
-                    if cls == 'Lattice': join_exception = cls
-                    else: clauses.append(getattr(getattr(model, cls), 'id') == model.Calculation.checksum)
+                cls, attr = entity['has_slider'].split('.')
+                orm_inst = getattr(getattr(model, cls), attr)
+                clauses.append(orm_inst.between(c['min'], c['max']))
+                if cls == 'Lattice': join_exception = cls
+                else: clauses.append(getattr(getattr(model, cls), 'checksum') == model.Calculation.checksum)
 
-                if join_exception == 'Lattice':
-                    # Lattice objects require special join clause:
-                    clauses.extend([model.Lattice.struct_id == model.Structure.struct_id, model.Structure.final == True, model.Structure.checksum == model.Calculation.checksum])
+            if join_exception == 'Lattice':
+                # Lattice objects require special join clause:
+                clauses.extend([model.Lattice.struct_id == model.Structure.struct_id, model.Structure.final == True, model.Structure.checksum == model.Calculation.checksum])
 
-                for i in Connection.Clients[session_id].db.query(model.Calculation.checksum) \
-                .filter(and_(*clauses)).all():
-                    pre_proposition += list(i) # TODO high-load reliability
+        if req.get('tids'):
+            for x in req['tids']:
+                try: int(x)
+                except: return (data, 'Invalid request!')
 
-            if 'tids' in req and len(req['tids']):
-                for x in req['tids']:
-                    try: int(x)
-                    except: return (data, 'Invalid request!')
-                proposition = []
-                for i in Connection.Clients[session_id].db.query(model.Calculation.checksum) \
-                    .join(model.Calculation.uitopics) \
-                    .filter(model.uiTopic.tid.in_(req['tids'])) \
-                    .group_by(model.Calculation.checksum) \
-                    .having(func.count(model.uiTopic.tid) == len(req['tids'])).all():
-                    proposition += list(i)
-                if pre_proposition:
-                    proposition = [x for x in proposition if x in pre_proposition] # TODO in ORM
-                    if not len(proposition): return (data, 'Nothing found &mdash; change search conditions.')
+            proposition = []
+            for i, _ in Connection.Clients[session_id].db.query(model.Calculation.checksum, sortby) \
+                .join(model.Calculation.main_metadata) \
+                .join(model.Calculation.uitopics) \
+                .filter(model.uiTopic.tid.in_(req['tids'])) \
+                .group_by(model.Calculation.checksum, sortby) \
+                .having(func.count(model.uiTopic.tid) == len(req['tids'])) \
+                .filter(and_(*clauses)) \
+                .order_by(sortby) \
+                .slice(start, stop).all():
+                proposition.append(i)
 
-            else:
-                if pre_proposition: proposition = pre_proposition
-                else: return (data, 'Nothing found &mdash; change search conditions.')
+            if not proposition: return ({'msg': 'Nothing found'}, error)
 
-        rlen = len(proposition)
-        proposition = proposition[ startn : Connection.Clients[session_id].usettings['colnum']+1 ]
+            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).join(model.Calculation.uitopics).filter(model.uiTopic.tid.in_(req['tids'])).group_by(model.Calculation.checksum).having(func.count(model.uiTopic.tid) == len(req['tids'])).filter(and_(*clauses)).count()
 
-        rescount = 0
-        data = '<thead><tr><th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
+        elif clauses:
+            proposition = []
+            for i in Connection.Clients[session_id].db.query(model.Calculation.checksum).filter(and_(*clauses)).slice(start, stop).all():
+                proposition += list(i)
+            if not proposition: return ({'msg': 'Nothing found &mdash; change slider limits'}, error)
 
+            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).filter(and_(*clauses)).count()
+
+        if not proposition: return (data, 'Invalid request!')
+
+        html_output, res_count = '', 0
+        html_output = '<thead><tr><th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
         for entity in Tilde.hierarchy:
             if 'has_column' in entity and entity['cid'] in Connection.Clients[session_id].usettings['cols']:
                 catname = str2html(entity['html']) if 'html' in entity else entity['category'][0].upper() + entity['category'][1:]
 
                 plottable = '<input class=sc type=checkbox />' if 'plottable' in entity else ''
 
-                data += '<th rel=' + str(entity['cid']) + '><span>' + catname + '</span>' + plottable + '</th>'
+                html_output += '<th rel=' + str(entity['cid']) + '><span>' + catname + '</span>' + plottable + '</th>'
+        #if Connection.Clients[session_id].usettings['objects_expand']: html_output += '<th class="not-sortable">More...</th>'
+        html_output += '</tr></thead><tbody>'
 
-        if Connection.Clients[session_id].usettings['objects_expand']: data += '<th class="not-sortable">More...</th>'
-        data += '</tr></thead><tbody>'
+        for row, checksum in Connection.Clients[session_id].db.query(model.uiGrid.info, model.Metadata.checksum) \
+            .filter(model.uiGrid.checksum == model.Metadata.checksum) \
+            .filter(model.uiGrid.checksum.in_(proposition)) \
+            .order_by(sortby).all():
 
-        for row, checksum in Connection.Clients[session_id].db.query(model.uiGrid.info, model.uiGrid.checksum) \
-            .filter(model.uiGrid.checksum.in_(proposition)).all():
-
-            rescount += 1
+            res_count += 1
             data_obj = json.loads(row)
 
-            data += '<tr id=i_' + checksum + '>'
-            data += '<td><input type=checkbox id=d_cb_'+ checksum + ' class=SHFT_cb></td>'
+            html_output += '<tr id=i_' + checksum + '>'
+            html_output += '<td><input type=checkbox id=d_cb_'+ checksum + ' class=SHFT_cb></td>'
 
             for entity in Tilde.hierarchy:
                 if not 'has_column' in entity: continue
                 if not entity['cid'] in Connection.Clients[session_id].usettings['cols']: continue
 
-                data += wrap_cell(entity, data_obj, table_view=True)
+                html_output += wrap_cell(entity, data_obj, table_view=True)
 
-            if Connection.Clients[session_id].usettings['objects_expand']: data += "<td class=objects_expand><strong>click by row</strong></td>"
-            data += '</tr>'
-        data += '</tbody>'
-        if not rescount: error = 'No objects match!'
-        data += '||||' + str(rlen)
-        if rescount > Connection.Clients[session_id].usettings['colnum']: data += ' (%s shown)' % Connection.Clients[session_id].usettings['colnum']
+            #if Connection.Clients[session_id].usettings['objects_expand']: html_output += "<td class=objects_expand><strong>click by row</strong></td>"
+            html_output += '</tr>'
+        html_output += '</tbody>'
 
+        if not res_count: return ({'msg': 'No objects found.'}, error)
+
+        data['html'] = html_output
         return (data, error)
 
     @staticmethod
@@ -304,7 +316,7 @@ class BerliniumGUIProvider:
 
         # *server + client-side* settings
         if req['area'] == 'cols':
-            for i in ['cols', 'colnum', 'objects_expand']:
+            for i in ['cols', 'colnum']:
                 Connection.Clients[session_id].usettings[i] = req['settings'][i]
 
         else: error = 'Unknown settings context area!'
