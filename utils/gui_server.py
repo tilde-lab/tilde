@@ -96,6 +96,7 @@ class BerliniumGUIProvider:
                 if not 'cid' in c or not 'min' in c or not 'max' in c: return (data, 'Invalid request!')
                 try: entity = [x for x in Tilde.hierarchy if x['cid'] == int(c['cid'])][0]
                 except IndexError: return (data, 'Invalid category choice!')
+                if not 'has_slider' in entity: return (data, 'Invalid category choice!')
 
                 cls, attr = entity['has_slider'].split('.')
                 orm_inst = getattr(getattr(model, cls), attr)
@@ -114,7 +115,7 @@ class BerliniumGUIProvider:
 
             proposition = []
             for i, _ in Connection.Clients[session_id].db.query(model.Calculation.checksum, sortby) \
-                .join(model.Calculation.main_metadata) \
+                .join(model.Calculation.meta_data) \
                 .join(model.Calculation.uitopics) \
                 .filter(model.uiTopic.tid.in_(req['tids'])) \
                 .group_by(model.Calculation.checksum, sortby) \

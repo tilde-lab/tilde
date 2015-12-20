@@ -2,7 +2,7 @@
 # Functionality exposed into an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.7.1"
+__version__ = "0.7.5"
 
 import os, sys
 import time, math, random
@@ -305,7 +305,8 @@ class API:
             except: pass
 
         # applying filter: todo
-        if calc.info['finished'] < 0 and self.settings['skip_unfinished']:
+        if (calc.info['finished'] < 0 and self.settings['skip_unfinished']) or \
+           (not calc.info['energy'] and self.settings['skip_notenergy']):
             return None, 'data do not satisfy the active filter'
 
         # naive elements extraction
@@ -492,7 +493,7 @@ class API:
         ormcalc = model.Calculation(checksum = checksum)
 
         if calc._calcset:
-            ormcalc.main_metadata = model.Metadata(chemical_formula = calc.info['standard'], download_size = calc.download_size)
+            ormcalc.meta_data = model.Metadata(chemical_formula = calc.info['standard'], download_size = calc.download_size)
 
             for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(calc._calcset)).all():
                 ormcalc.children.append(child)
@@ -545,12 +546,12 @@ class API:
 
             # construct ORM for other props
             calc.related_files = map(get_virtual_path, calc.related_files)
-            ormcalc.main_metadata = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
+            ormcalc.meta_data = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
             codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
 
-            codeversion.instances.append( ormcalc.main_metadata )
+            codeversion.instances.append( ormcalc.meta_data )
             codefamily.versions.append( codeversion )
 
             pot = model.Pottype.as_unique(session, name = calc.info['H'])
@@ -638,7 +639,7 @@ class API:
                     if not i.siblings_count:
                         return 'The parent dataset contains only one (current) item, please, delete parent dataset first!'
 
-                    i.main_metadata.download_size -= C_meta.download_size
+                    i.meta_data.download_size -= C_meta.download_size
                     session.add(i)
         # low-level entry deletion deals with additional tables
         else:
@@ -797,7 +798,7 @@ class API:
                 d = parent_calc.nested_depth - i.nested_depth + distance
                 if d > 0:
                     i.nested_depth += d
-                i.main_metadata.download_size += parent_meta.download_size # fixme
+                i.meta_data.download_size += parent_meta.download_size # fixme
                 session.add(i)
 
         session.add_all([parent_calc, parent_meta, parent_grid])

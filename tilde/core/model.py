@@ -80,7 +80,7 @@ class Calculation(Base):
     spacegroup = relationship("Spacegroup", uselist=False)
     struct_ratios = relationship("Struct_ratios", uselist=False)
     struct_optimisation = relationship("Struct_optimisation", uselist=False)
-    main_metadata = relationship("Metadata", uselist=False)
+    meta_data = relationship("Metadata", uselist=False)
     basis = relationship("Basis", uselist=False)
     recipinteg = relationship("Recipinteg", uselist=False)
     energy = relationship("Energy", uselist=False)
