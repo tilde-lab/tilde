@@ -20,9 +20,9 @@ TODO2 distinguish sorting
     <entity cid="3" category="number of elements"       source="nelem" sort="30" has_summary_contrb="1" creates_topic="1" plottable="1"/>
     <entity cid="4" category="formula units"            source="expanded" sort="40" has_summary_contrb="1" has_column="1" plottable="1"/>
 
-    <entity cid="1501" category="lattice a"             source="lata" sort="4" has_slider="Lattice.a" has_column="1" plottable="1"/>
-    <entity cid="1502" category="lattice b"             source="latb" sort="5" has_slider="Lattice.b" has_column="1" plottable="1"/>
-    <entity cid="1503" category="lattice c"             source="latc" sort="6" has_slider="Lattice.c" has_column="1" plottable="1"/>
+    <entity cid="1501" category="lattice a, &#8491;"    source="lata" sort="4" has_slider="Lattice.a" has_column="1" plottable="1"/>
+    <entity cid="1502" category="lattice b, &#8491;"    source="latb" sort="5" has_slider="Lattice.b" has_column="1" plottable="1"/>
+    <entity cid="1503" category="lattice c, &#8491;"    source="latc" sort="6" has_slider="Lattice.c" has_column="1" plottable="1"/>
     <entity cid="1504" category="lattice alpha"         source="latalpha" sort="7" has_column="1" plottable="1"/>
     <entity cid="1505" category="lattice beta"          source="latbeta" sort="8" has_column="1" plottable="1"/>
     <entity cid="1506" category="lattice gamma"         source="latgamma" sort="9" has_column="1" plottable="1"/>
@@ -67,7 +67,7 @@ TODO2 distinguish sorting
     <entity cid="80"  category="basis set type"         source="ansatz" has_column="1" has_facet="1" creates_topic="1" sort="185"/>
 
     <entity cid="1002" category="total energy"          source="e" html="E,,el.tot__/cell, {{units-energy}}" sort="310" has_summary_contrb="1" has_column="1" plottable="1"/>
-    <entity cid="1003" category="cell volume"           source="dims" html="Cell, A^^3**" sort="10" has_slider="Struct_ratios.dimensions" has_summary_contrb="1" has_column="1" plottable="1"/>
+    <entity cid="1003" category="cell volume"           source="dims" html="Cell, A^^3**" sort="10" has_summary_contrb="1" has_column="1" plottable="1"/>
     <entity cid="1005" category="source file"           source="location" sort="360"/>
     <entity cid="1006" category="finished"              source="finished" html="Finished?" sort="370" has_summary_contrb="1" has_column="1"/>
 
