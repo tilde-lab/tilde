@@ -28,19 +28,18 @@ def u(obj, encoding='utf-8'):
         return unicode(obj, encoding)
     else: return obj
 
-def str2html(i):
-    # TODO
-    tokens = { \
-    '{{units-energy}}': '<span class=units-energy></span>',
+def str2html(s, units=True):
+    tokens = {
     ',,': '<sub>',
     '__': '</sub>',
     '^^': '<sup>',
     '**': '</sup>',
+    '{{units-energy}}': ''
     }
-    i = str(i)
+    if units: tokens['{{units-energy}}'] = ', <span class=units-energy></span>'
     for k, v in tokens.iteritems():
-        i = i.replace(k, v)
-    return i
+        s = s.replace(k, v)
+    return s
 
 def html_formula(string):
     sub, html_formula = False, ''

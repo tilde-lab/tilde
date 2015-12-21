@@ -202,13 +202,13 @@ class BerliniumGUIProvider:
                     kind = 'mendeleev'
 
                 for n, tag in enumerate(ui_controls):
-                    if tag['category'] == entity['category']:
+                    if tag['cid'] == entity['cid']:
                         ui_controls[n]['content'].append( topic_dict )
                         break
                 else: ui_controls.append({
                             'type': kind,
                             'cid': entity['cid'],
-                            'category': entity['category'],
+                            'category': str2html(entity['html'], False) if 'html' in entity else entity['category'],
                             'sort': entity.get('sort', 1000),
                             'content': [ topic_dict ]
                 })
@@ -222,7 +222,7 @@ class BerliniumGUIProvider:
                         ui_controls.append({
                             'type': 'slider',
                             'cid': entity['cid'],
-                            'category': entity['category'],
+                            'category': str2html(entity['html'], False) if 'html' in entity else entity['category'],
                             'sort': entity.get('sort', 1000),
                             'min': math.floor(minimum*100)/100,
                             'max': math.ceil(maximum*100)/100

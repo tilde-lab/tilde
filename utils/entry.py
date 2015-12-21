@@ -61,9 +61,10 @@ if args.add or args.service:
 
 # path(s)
 if args.path or args.targetlist:
-    if settings['skip_unfinished']: finalized = 'YES'
-    else: finalized = 'NO'
-    print "Only finalized:", finalized, "and skip paths if they start/end with any of:", settings['skip_if_path']
+    finalized = 'YES' if settings['skip_unfinished'] else 'NO'
+    notests = 'YES' if settings['skip_notenergy'] else 'NO'
+    print "Only finalized: %s; only with total energy: %s; skip paths if they start/end with any of: %s" % (finalized, notests, settings['skip_if_path'])
+
     if args.path and args.targetlist:
         args.targetlist = None
     if args.path:
