@@ -229,6 +229,8 @@ class QuantumESPRESSO(Output):
             if eigs_spin_warning:
                 self.warning('Attention! Spin states are currently not supported! Only spin down projection is considered.') # FIXME
                 tot_k /= 2
+            self.info['k'] = str(tot_k) + ' pts/BZ'
+
             if e_last is None:
                 self.warning('Warning: highest occupied state not found!')
             else:
@@ -245,7 +247,6 @@ class QuantumESPRESSO(Output):
                         band_obj['abscissa'].append(d)
                     band_obj['stripes'] = (transpose(eigs_columns) - e_last).tolist()
                     self.electrons['bands'] = Ebands(band_obj)
-                    self.info['k'] = str(tot_k) + ' pts/BZ'
 
                 else: self.warning('Error: incorrect bands data!')
 

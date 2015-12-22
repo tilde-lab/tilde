@@ -427,7 +427,7 @@ class XML_Output(Output):
             elif screening == 0.2:
                 self.info['H'] = "HSE06"
             else:
-                self.info['H'] = "HSE06 %f" % round(screening, 2)
+                self.info['H'] = "HSE06 %.2f" % screening
 
             self.info['H_types'].extend(['GGA', 'hybrid'])
 
