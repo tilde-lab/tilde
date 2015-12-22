@@ -12,7 +12,7 @@ from numpy.linalg import det
 from ase.atoms import Atoms
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 
-from pyspglib import spglib as spg
+import spglib as spg
 
 
 class SymmetryFinder:
