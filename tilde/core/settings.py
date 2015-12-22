@@ -17,7 +17,7 @@ import tilde.core.model as model
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '5.01'
+DB_SCHEMA_VERSION = '5.02'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 

@@ -143,7 +143,7 @@ class Energy(Base):
     total = Column(Float, default=None)
 
 class Basis(Base):
-    __tablename__ = 'basis_sets'
+    __tablename__ = 'basissets'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     kind = Column(String, nullable=False)
     content = Column(LargeBinary, default=None)
