@@ -2,7 +2,9 @@
 # Generic parser schema
 # Author: Evgeny Blokhin
 
-import os, sys, re, time
+import os, sys
+import re
+import time
 import random
 
 from numpy import array
@@ -156,7 +158,7 @@ class Output:
             struc_repr += "%3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f " % tuple(map(abs, [ase_repr.cell[0][0], ase_repr.cell[0][1], ase_repr.cell[0][2], ase_repr.cell[1][0], ase_repr.cell[1][1], ase_repr.cell[1][2], ase_repr.cell[2][0], ase_repr.cell[2][1], ase_repr.cell[2][2]])) # NB beware of length & minus zeros
             for atom in ase_repr:
                 struc_repr += "%s %3.6f %3.6f %3.6f " % tuple(map(abs, [chemical_symbols.index(atom.symbol), atom.x, atom.y, atom.z])) # NB beware of length & minus zeros
-        calc_checksum.update(struc_repr + str(self.info['energy']) + " " + self.info['prog'] + " " + str(os.stat(self._filename).st_size))
+        calc_checksum.update(struc_repr + str(self.info['energy']) + " " + self.info['prog'] + " " + str(int(round(os.stat(self._filename).st_size/2000.)*2000)))
         result = base64.b32encode(calc_checksum.digest())
         result = result[:result.index('=')] + 'CI'
         return result
