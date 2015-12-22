@@ -4,10 +4,10 @@
     etot_conv_thr = 1.d-4
     forc_conv_thr = 1.d-3
     prefix = 'aiida'
-    pseudo_dir = '../../pseudo'
+    pseudo_dir = './pseudo'
     restart_mode = 'from_scratch'
     verbosity = 'low'
-    disk_io = 'none' 
+    wf_collect = .true.
     etot_conv_thr = 1.d-7
     forc_conv_thr = 1.d-5
 /
@@ -18,6 +18,7 @@
     ntyp = 3
     input_dft = 'pbesol'
     celldm = 6.614
+    nbnd = 25
 /
 &ELECTRONS
     conv_thr = 1.d-7

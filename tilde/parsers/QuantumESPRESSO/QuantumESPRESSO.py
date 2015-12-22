@@ -6,9 +6,10 @@
 import os, sys
 import datetime, time
 
-from numpy import array
+from numpy import dot, array, transpose, linalg
 
 from tilde.parsers import Output
+from tilde.core.electron_structure import Ebands
 
 from ase import Atoms
 from ase.data import chemical_symbols
@@ -72,6 +73,8 @@ class QuantumESPRESSO(Output):
 
         self.data = open(filename).readlines()
         atomic_data, cell_data, pos_data, symbol_data, alat = None, [], [], [], 0
+        e_last = None
+        kpts, eigs_columns, tot_k = [], [], 0
 
         for n in range(len(self.data)):
             cur_line = self.data[n]
@@ -166,15 +169,85 @@ class QuantumESPRESSO(Output):
 
             elif "PWSCF        :" in cur_line:
                 if "WALL" in cur_line or "wall" in cur_line:
-                    fmt = "%S.%fs"
                     d = cur_line.split("CPU")[-1].replace("time", "").replace(",", "")
-                    d = d[ : d.find("s") + 1 ].strip().replace(" ", "")
+                    if d.find("s") > 0: d = d[ : d.find("s") + 1 ]
+                    elif d.find("m") > 0: d = d[ : d.find("m") + 1 ]
+                    elif d.find("h") > 0: d = d[ : d.find("h") + 1 ]
+                    d = d.strip().replace(" ", "")
+                    fmt = ""
+                    if 's' in d: fmt = "%S.%fs"
                     if 'm' in d: fmt = "%Mm" + fmt
                     if 'h' in d: fmt = "%Hh" + fmt
+                    if 'd' in d: fmt = "%dd" + fmt # FIXME for months!
                     d = time.strptime(d, fmt)
-                    # TODO: days?
-                    self.info['duration'] = "%2.2f" % (  datetime.timedelta(hours=d.tm_hour, minutes=d.tm_min, seconds=d.tm_sec).total_seconds()/3600  )
+                    self.info['duration'] = "%2.2f" % (  datetime.timedelta(days=d.tm_mday, hours=d.tm_hour, minutes=d.tm_min, seconds=d.tm_sec).total_seconds()/3600  )
                     self.info['finished'] = 1
+
+            elif "End of self-consistent calculation" in cur_line or "End of band structure calculation" in cur_line:
+                e_last = None
+                kpts, eigs_columns, tot_k = [], [], 0
+                eigs_collect, eigs_failed = False, False
+                eigs_spin_warning = False
+                if not atomic_data: eigs_failed = True
+
+                while not eigs_failed:
+                    n += 1
+                    next_line = self.data[n]
+                    if eigs_collect:
+                        next_line = next_line.split()
+                        if next_line:
+                            try: eigs_columns[-1] += map(float, next_line)
+                            except ValueError: eigs_failed = True
+                        else: eigs_collect = False
+                        continue
+
+                    if "Ry" in next_line or "CPU" in next_line:
+                        eigs_failed = True
+                    elif "    k =" in next_line:
+                        tot_k += 1
+                        coords = next_line.strip().replace("k =", "")[:21]
+                        try: kpts.append(map(float, [coords[0:7], coords[7:14], coords[14:21]]))
+                        except ValueError: eigs_failed = True
+                        eigs_collect = True
+                        eigs_columns.append([])
+                        n += 1
+                    elif "highest occupied level" in next_line:
+                        e_last = float(next_line.split()[-1])
+                        break
+                    elif "highest occupied, lowest unoccupied" in next_line:
+                        e_last = float(next_line.split()[-2])
+                        break
+                    elif "Fermi energy" in next_line:
+                        e_last = float(next_line.split()[-2])
+                        break
+                    elif " SPIN UP " in next_line or " SPIN DOWN " in next_line:
+                        self.info['spin'] = True
+                        eigs_spin_warning = True
+
+        # Only the last set is taken
+        if kpts and eigs_columns:
+            if eigs_spin_warning:
+                self.warning('Attention! Spin states are currently not supported! Only spin down projection is considered.') # FIXME
+                tot_k /= 2
+            if e_last is None:
+                self.warning('Warning: highest occupied state not found!')
+            else:
+                if not eigs_failed:
+                    band_obj = {'ticks': [], 'abscissa': [], 'stripes': []}
+                    d = 0.0
+                    bz_vec_ref = [0, 0, 0]
+                    k_shape = linalg.inv( atomic_data.cell ).transpose()
+                    for k in kpts:
+                        bz_vec_cur = dot( k, k_shape )
+                        bz_vec_dir = map(sum, zip(bz_vec_cur, bz_vec_ref))
+                        bz_vec_ref = bz_vec_cur
+                        d += linalg.norm( bz_vec_dir )
+                        band_obj['abscissa'].append(d)
+                    band_obj['stripes'] = (transpose(eigs_columns) - e_last).tolist()
+                    self.electrons['bands'] = Ebands(band_obj)
+                    self.info['k'] = str(tot_k) + ' pts/BZ'
+
+                else: self.warning('Error: incorrect bands data!')
 
         if atomic_data: self.structures.append(atomic_data)
 

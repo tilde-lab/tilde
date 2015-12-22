@@ -3,10 +3,7 @@
 # Author: Evgeny Blokhin
 # spin account : TODO
 
-import os, sys
-
-
-BAND_GAP_BOUNDARY = 50
+BAND_GAP_BOUNDARY = 50 # all values are in eV
 
 class ElectronStructureError(Exception):
     def __init__(self, value):

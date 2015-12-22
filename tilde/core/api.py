@@ -389,6 +389,7 @@ class API:
             if calc.electrons['bands'].is_conductor():
                 calc.info['etype'] = 'conductor'
                 calc.info['bandgap'] = 0.0
+                calc.info['bandgaptype'] = None
             else:
                 try: gap, is_direct = calc.electrons['bands'].get_bandgap()
                 except ElectronStructureError as e:
@@ -411,7 +412,9 @@ class API:
                 else:
                     calc.info['bandgap'] = gap
                     if gap: calc.info['etype'] = 'insulator' # semiconductor?
-                    else: calc.info['etype'] = 'conductor'
+                    else:
+                        calc.info['etype'] = 'conductor'
+                        calc.info['bandgaptype'] = None
 
         # TODO: beware to add something new to an existing item!
         # TODO2: unknown or absent?
