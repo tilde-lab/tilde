@@ -6,7 +6,7 @@ pg8000
 sqlalchemy
 argparse
 ase
--e "git+https://github.com/atztogo/spglib.git#egg=pyspglib&subdirectory=python/ase"
+-e "git+https://github.com/atztogo/spglib.git#egg=spglib&subdirectory=python"
 tornado
 sockjs-tornado
 websocket-client
