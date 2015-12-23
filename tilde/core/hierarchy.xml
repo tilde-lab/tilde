@@ -37,7 +37,7 @@ TODO2 distinguish sorting
     <entity cid="13" category="layer group (int)"     source="dg" optional="1" sort="180" descr="Result layer group (international notation)"/>
     <entity cid="50" category="space group"             source="spg" sort="181" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1" descr="Result space group (both international and Schoenflis notations)"/>
 
-    <entity cid="8" category="system type"              source="tags" sort="60" optional="1" multiple="1" has_facet="1" creates_topic="1"/>
+    <entity cid="8" category="system type"              source="tags" sort="60" optional="1" has_summary_contrb="1" multiple="1" has_facet="1" creates_topic="1"/>
     <entity cid="6" category="calculation type"         source="calctypes" multiple="1" sort="270" has_summary_contrb="1" has_facet="1" creates_topic="1"/>
     <entity cid="7" category="xc treatment"             source="H" optional="1" sort="190" has_summary_contrb="1" has_column="1" creates_topic="1" html="XC treatment"/>
     <entity cid="75" category="xc treatment type"       source="H_types" multiple="1" sort="195" has_facet="1" creates_topic="1" html="XC treatment type"/>
@@ -55,13 +55,13 @@ TODO2 distinguish sorting
 
     <entity cid="26" category="conductor or insulator"  source="etype" optional="1" sort="280" has_summary_contrb="1" has_column="1" has_facet="1" creates_topic="1"/>
     <entity cid="27" category="min.band gap"            source="bandgap" html="Min.band gap{{units-energy}}" sort="290" has_slider="Electrons.gap" has_summary_contrb="1" has_column="1" plottable="1"/>
-    <entity cid="28" category="band gap type"           source="bandgaptype" optional="1" sort="300" creates_topic="1"/>
+    <entity cid="28" category="band gap type"           source="bandgaptype" has_summary_contrb="1" optional="1" sort="300" creates_topic="1"/>
 
-    <entity cid="510" category="vacancy content"        source="vac" sort="70" plottable="1" creates_topic="1"/>
-    <entity cid="511" category="impurity"               source="impurities" multiple="1" sort="80" creates_topic="1" is_chem_formula="1"/>
-    <entity cid="520" category="planes number"          source="layers" optional="1" sort="90" plottable="1" has_column="1"/>
-    <entity cid="521" category="adsorbent"              source="adsorbent" optional="1" sort="100" is_chem_formula="1" has_column="1"/>
-    <entity cid="522" category="surface termination"    source="termination" optional="1" sort="110" is_chem_formula="1" has_column="1"/>
+    <entity cid="510" category="vacancy content"        source="vac" sort="70" has_summary_contrb="1" plottable="1" creates_topic="1"/>
+    <entity cid="511" category="impurity"               source="impurities" has_summary_contrb="1" multiple="1" sort="80" creates_topic="1" is_chem_formula="1"/>
+    <entity cid="520" category="planes number"          source="layers" has_summary_contrb="1" optional="1" sort="90" plottable="1" has_column="1"/>
+    <entity cid="521" category="adsorbent"              source="adsorbent" has_summary_contrb="1" optional="1" sort="100" is_chem_formula="1" has_column="1"/>
+    <entity cid="522" category="surface termination"    source="termination" has_summary_contrb="1" optional="1" sort="110" is_chem_formula="1" has_column="1"/>
 
     <entity cid="501" category="basis set"              source="bs" optional="1" multiple="1" has_summary_contrb="1" sort="260"/>
     <entity cid="80"  category="basis set type"         source="ansatz" has_column="1" has_facet="1" creates_topic="1" sort="185"/>
