@@ -296,7 +296,6 @@ class XML_Output(Output):
                             (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
                             (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
                             (0x10FFFE, 0x10FFFF) ]
-
         illegal_ranges = ["%s-%s" % (unichr(low), unichr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
         illegal_xml_re = re.compile(u'[%s]' % u''.join(illegal_ranges))
         filestring = illegal_xml_re.sub('', filestring)
@@ -319,8 +318,8 @@ class XML_Output(Output):
         try: self.info['energy'] = self.tresholds[-1][-1] # NB: e_fr_energy vs. e_0_energy
         except IndexError: pass # for unphysical cases
 
-        self.info['framework'] = 'VASP'
-        self.info['prog'] = 'VASP ' + self.vasp_version
+        self.info['framework'] = 0x2
+        self.info['prog'] = self.vasp_version
         self.info['finished'] = self.finished
         self.info['input'] = str(self.incar)
 
@@ -340,7 +339,7 @@ class XML_Output(Output):
                 self.phonons['dfp_magnitude'] = 0.02 # Standard phonon displacement in VASP for DFP method
 
         # electronic properties
-        self.electrons['type'] = 'plane waves'
+        self.info['ansatz'] = 0x2
 
         if self.e_last is None:
             self.warning('Electronic properties are not found!')

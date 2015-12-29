@@ -23,9 +23,9 @@ class QuantumESPRESSO(Output):
         cur_folder = os.path.dirname(filename)
         self.related_files.append(filename)
 
-        self.info['framework'] = 'Quantum ESPRESSO'
+        self.info['framework'] = 0x4
         self.info['finished'] = -1
-        self.electrons['type'] = 'plane waves'
+        self.info['ansatz'] = 0x2
 
         # taken from trunk/Modules/funct.f90
         xc_internal_map = {
@@ -86,7 +86,7 @@ class QuantumESPRESSO(Output):
                 ver_str = cur_line.strip().replace('Program PWSCF', '')
                 ver_str = ver_str[ : ver_str.find(' starts ') ].strip()
                 if ver_str.startswith("v."): ver_str = ver_str[2:]
-                self.info['prog'] = self.info['framework'] + " " + ver_str
+                self.info['prog'] = ver_str
 
             elif cur_line.startswith("     celldm"):
                 if not alat:

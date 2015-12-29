@@ -43,12 +43,20 @@ tags = Table('tags', Base.metadata,
 
 tag = namedtuple('tag', ['checksum', 'tid'])
 topic = namedtuple('topic', ['cid', 'topic'])
+dfenum = namedtuple('dfenum', ['cid', 'num', 'name'])
+
+class uiEnum(Base):
+    __tablename__ = 'definitions'
+    enumid = Column(Integer, primary_key=True)
+    cid = Column(Integer, nullable=False)
+    num = Column(Integer, nullable=False)
+    name = Column(String, nullable=False)
 
 class uiTopic(UniqueMixin, Base):
     __tablename__ = 'topics'
     tid = Column(Integer, primary_key=True)
     cid = Column(Integer, nullable=False)
-    topic = Column(String)
+    topic = Column(String) # int for enumerated topics
 
     @classmethod
     def unique_filter(cls, query, cid, topic):

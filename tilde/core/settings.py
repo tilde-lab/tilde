@@ -17,7 +17,7 @@ import tilde.core.model as model
 from xml.etree import ElementTree as ET
 
 
-DB_SCHEMA_VERSION = '5.03'
+DB_SCHEMA_VERSION = '5.10'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 
@@ -52,7 +52,7 @@ DEFAULT_SETUP = {
     # Server part
     'webport': 8070,
     'title': "Tilde GUI",
-    'gui_url': "http://tilde-lab.github.io/berlinium"
+    'gui_url': "http://tilde-lab.github.io/berlinium/?https://db.tilde.pro"
 }
 repositories = []
 
@@ -93,6 +93,9 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
         else:
             if p.content != DB_SCHEMA_VERSION:
                 sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, p.content))
+
+        try: enum = session.query(model.uiEnum.name).one()
+        except NoResultFound: pass #model.uiEnum.define_enums(session)
 
         session.commit()
         session.close()

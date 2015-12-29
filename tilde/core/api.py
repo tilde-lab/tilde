@@ -2,7 +2,7 @@
 # Functionality exposed into an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 import os, sys
 import time, math, random
@@ -261,10 +261,9 @@ class API:
             yield None, 'was read (binary data)...'
             return
         f.seek(0)
-        i = 0
-        detected = False
-        while True:
-            if i>700 or detected: break # criterion: parser must detect its working format in first N lines of output
+        i, detected = 0, False
+        while not detected:
+            if i>700: break # criterion: parser must detect its working format in first N lines of output
             fingerprint = f.readline()
             if not fingerprint: break
             for name, Parser in self.Parsers.iteritems():
@@ -281,14 +280,13 @@ class API:
                             if not calc.info['H']: error = 'XC potential is not present!'
 
                         yield calc, error
-                    if detected:
-                        break
+
+                    if detected: break
             i += 1
         f.close()
 
         # unsupported data occured
-        if not detected:
-            yield None, 'was read...'
+        if not detected: yield None, 'was read...'
 
     def classify(self, calc, symprec=None):
         '''
@@ -333,24 +331,25 @@ class API:
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
         if not calc.info['expanded']: del calc.info['expanded']
         calc.info['nelem'] = len(calc.info['elements'])
+        if calc.info['nelem'] > 13: calc.info['nelem'] = 13
         calc.info['natom'] = len(symbols)
 
         # periodicity
-        p_map = {-1: 'isolated atom', 0: '0d', 1: '1d', 2: '2d', 3: '3d'}
-        calc.info['periodicity'] = p_map[calc.info['periodicity']]
+        if calc.info['periodicity'] == 0: calc.info['periodicity'] = 0x4
+        elif calc.info['periodicity'] == -1: calc.info['periodicity'] = 0x5
 
         # general calculation type reasoning
-        if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append('charges') # numpy count_nonzero implementation
-        if (calc.structures[-1].get_initial_magnetic_moments() != 0).sum(): calc.info['calctypes'].append('magnetic moments')
-        if calc.phonons['modes']: calc.info['calctypes'].append('phonons')
-        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append('phonon dispersion')
-        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append('static dielectric const') # CRYSTAL-only!
+        if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append(0x4) # numpy count_nonzero implementation
+        if (calc.structures[-1].get_initial_magnetic_moments() != 0).sum(): calc.info['calctypes'].append(0x5)
+        if calc.phonons['modes']: calc.info['calctypes'].append(0x6)
+        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append(0x7)
+        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append(0x8) # CRYSTAL-only!
         if len(calc.tresholds) > 1:
-            calc.info['calctypes'].append('geometry optimization')
+            calc.info['calctypes'].append(0x3)
             calc.info['optgeom'] = True
-        if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append('electron structure')
-        if calc.info['energy']: calc.info['calctypes'].append('total energy')
-        calc.info['spin'] = 'yes' if calc.info['spin'] else 'no'
+        if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append(0x2)
+        if calc.info['energy']: calc.info['calctypes'].append(0x1)
+        calc.info['spin'] = 0x2 if calc.info['spin'] else 0x1
 
         # TODO: standardize
         if 'vac' in calc.info:
@@ -381,13 +380,12 @@ class API:
         if calc.phonons['modes']:
             calc.info['n_ph_k'] = len(calc.phonons['ph_k_degeneracy']) if calc.phonons['ph_k_degeneracy'] else 1
 
-        calc.info['ansatz'] = calc.electrons['type']
         #calc.info['rgkmax'] = calc.electrons['rgkmax'] # LAPW
 
         # electronic properties reasoning by bands
         if calc.electrons['bands']:
             if calc.electrons['bands'].is_conductor():
-                calc.info['etype'] = 'conductor'
+                calc.info['etype'] = 0x2
                 calc.info['bandgap'] = 0.0
                 calc.info['bandgaptype'] = None
             else:
@@ -396,9 +394,9 @@ class API:
                     calc.electrons['bands'] = None
                     calc.warning(e.value)
                 else:
-                    calc.info['etype'] = 'insulator' # semiconductor?
+                    calc.info['etype'] = 0x3 # semiconductor?
                     calc.info['bandgap'] = round(gap, 2)
-                    calc.info['bandgaptype'] = 'direct' if is_direct else 'indirect'
+                    calc.info['bandgaptype'] = 0x2 if is_direct else 0x3
 
         # electronic properties reasoning by DOS
         if calc.electrons['dos']:
@@ -411,16 +409,19 @@ class API:
                     if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Bans gaps in DOS and bands data differ considerably! The latter will be considered.')
                 else:
                     calc.info['bandgap'] = gap
-                    if gap: calc.info['etype'] = 'insulator' # semiconductor?
+                    if gap: calc.info['etype'] = 0x3 # semiconductor?
                     else:
-                        calc.info['etype'] = 'conductor'
+                        calc.info['etype'] = 0x2
                         calc.info['bandgaptype'] = None
 
         # TODO: beware to add something new to an existing item!
         # TODO2: unknown or absent?
         for entity in self.hierarchy:
             if entity.get('creates_topic') and not entity.get('optional') and not calc.info.get(entity['source']):
-                calc.info[ entity['source'] ] = ['none'] if 'multiple' in entity else 'none'
+                if entity.get('enumerated'):
+                    calc.info[ entity['source'] ] = [0x0] if 'multiple' in entity else 0x0
+                else:
+                    calc.info[ entity['source'] ] = ['none'] if 'multiple' in entity else 'none'
 
         calc.benchmark() # this call must be at the very end of parsing
 
@@ -560,7 +561,7 @@ class API:
             pot = model.Pottype.as_unique(session, name = calc.info['H'])
             pot.instances.append(ormcalc)
             ormcalc.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
-            ormcalc.basis = model.Basis(kind = calc.electrons['type'], content = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
+            ormcalc.basis = model.Basis(kind = calc.info['ansatz'], content = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
             ormcalc.energy = model.Energy(convergence = json.dumps(calc.convergence), total = calc.info['energy'])
 
             ormcalc.spacegroup = model.Spacegroup(n=calc.info['ng'])

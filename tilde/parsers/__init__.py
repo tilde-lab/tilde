@@ -1,5 +1,6 @@
 
 # Generic parser schema
+# with the default values
 # Author: Evgeny Blokhin
 
 import os, sys
@@ -41,11 +42,10 @@ class Output:
         self.ncycles =     [] # number of cycles at each optimisation step
 
         self.electrons = {
-            'type':            None,
             #'rgkmax':          None,
-            'basis_set':       None, # format depends on type (TODO)
-                                     # gaussians: {'bs': {}, 'ps': {}}
-                                     # plane waves and LAPW: [atom1, ...]
+            'basis_set':       None, # format depends on ansatz:
+                                     # LCAO Gaussians: {'bs': {}, 'ps': {}}
+                                     # PWs and LAPW: [atom1, ...]
             'eigvals':         {}, # raw eigenvalues {k:{alpha:[], beta:[]},}
             'projected':       [], # raw eigenvalues [..., ...] for total DOS smearing
             'dos':             {}, # in advance pre-computed DOS
@@ -74,8 +74,8 @@ class Output:
         # NB API call *classify* extends it with the new items
         self.info = {
             'warns':      [],
-            'framework':  'unknown', # code name
-            'prog':       'unknown', # code version
+            'framework':  0x1, # code name
+            'prog':       'unknown version', # code version
             'perf':       None, # benchmarking
             'location':   filename,
             'finished':   0,  # -1 for not, 0 for n/a, +1 for yes
@@ -94,9 +94,9 @@ class Output:
             'expanded':   False,
             'tags':       [],
 
-            'etype':      'no info',
+            'etype':      0x1,
             'bandgap':    None, # in eV
-            'bandgaptype':'no info',
+            'bandgaptype':0x1,
 
             'optgeom':    False,
             'calctypes':  [],
@@ -110,7 +110,7 @@ class Output:
             'spin':       False,
             'lockstate':  None,
 
-            'ansatz':     None, # electrons type
+            'ansatz':     0x1,
             'techs':      [],
         }
 
@@ -158,7 +158,7 @@ class Output:
             struc_repr += "%3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f " % tuple(map(abs, [ase_repr.cell[0][0], ase_repr.cell[0][1], ase_repr.cell[0][2], ase_repr.cell[1][0], ase_repr.cell[1][1], ase_repr.cell[1][2], ase_repr.cell[2][0], ase_repr.cell[2][1], ase_repr.cell[2][2]])) # NB beware of length & minus zeros
             for atom in ase_repr:
                 struc_repr += "%s %3.6f %3.6f %3.6f " % tuple(map(abs, [chemical_symbols.index(atom.symbol), atom.x, atom.y, atom.z])) # NB beware of length & minus zeros
-        calc_checksum.update(struc_repr + str(self.info['energy']) + " " + self.info['prog'] + " " + str(int(round(os.stat(self._filename).st_size/2000.)*2000)))
+        calc_checksum.update(struc_repr + str(self.info['energy']) + " " + self.info['prog'] + " " + str(sum(map(lambda x: 2**x, self.info['calctypes']))))
         result = base64.b32encode(calc_checksum.digest())
         result = result[:result.index('=')] + 'CI'
         return result

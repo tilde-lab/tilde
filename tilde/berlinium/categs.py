@@ -16,14 +16,15 @@ def wrap_cell(xml_tag, json_obj, table_view=False):
     #else:
 
     if 'multiple' in xml_tag:
-        out = ", ".join(  json_obj.get(xml_tag['source'], [])  )
+        out = ", ".join(  map(str, json_obj.get(xml_tag['source'], []))  )
 
     elif 'is_chem_formula' in xml_tag:
         out = html_formula(json_obj[ xml_tag['source'] ]) if xml_tag['source'] in json_obj else '&mdash;'
 
     elif xml_tag['source'] == 'bandgap':
         html_class = ' class=_g'
-        out = json_obj.get('bandgap') or '&mdash;'
+        out = json_obj.get('bandgap')
+        if out is None: out = '&mdash;'
 
     # pseudo-source (dynamic determination)
     elif xml_tag['source'] == 'e':

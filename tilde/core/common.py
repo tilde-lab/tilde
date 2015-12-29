@@ -17,6 +17,14 @@ class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
 
+def binpow(x):
+    pos, powers = 0, []
+    while x > 0:
+        if x % 2==1: powers.append(pos)
+        x /= 2
+        pos += 1
+    return powers
+
 def metric(v):
     '''
     Get direction of vector

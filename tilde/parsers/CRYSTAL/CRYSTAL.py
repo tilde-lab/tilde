@@ -116,8 +116,8 @@ class CRYSTOUT(Output):
             self.info['duration'] = self.get_duration()
             self.info['finished'] = self.is_finished()
 
-            self.info['framework'] = 'CRYSTAL'
-            self.electrons['type'] = 'gaussians'
+            self.info['framework'] = 0x3
+            self.info['ansatz'] = 0x3
 
             self.comment, self.info['input'], self.info['prog'] = self.get_input_and_version(raw_data[ 0:parts_pointer[0] ])
             self.molecular_case = False if not ' MOLECULAR CALCULATION' in self.data else True
@@ -285,9 +285,9 @@ class CRYSTOUT(Output):
 
         for crystal_data in strucs:
             symbols, parameters, atoms = [], [], []
-            periodicity = [True, True, True]
+            pbc = [True, True, True]
 
-            if self.molecular_case: periodicity = False
+            if self.molecular_case: pbc = False
 
             crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
 
@@ -325,18 +325,18 @@ class CRYSTOUT(Output):
             if parameters and len(filter(lambda x: x > 0.75, parameters)) < 6: raise RuntimeError('Cell is collapsed!') # prevent cell collapses known in CRYSTAL RESTART outputs
 
             # check whether angstroms are used instead of fractions
-            if periodicity:
+            if pbc:
                 for i in range(0, 3):
                     if parameters[i] > self.PERIODIC_LIMIT:
                         parameters[i] = self.PERIODIC_LIMIT
-                        periodicity[i] = False
+                        pbc[i] = False
 
                         # TODO : account case with not direct angles
                         for j in range(0, len(atoms)):
                             atoms[j][i] /= self.PERIODIC_LIMIT
 
                 matrix = cellpar_to_cell(parameters, ab_normal, a_direction) # TODO : ab_normal, a_direction may in some cases belong to completely other structure!
-                structures.append( Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=periodicity) )
+                structures.append( Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=pbc) )
             else:
                 structures.append( Atoms(symbols=symbols, positions=atoms, pbc=False) )
 
@@ -558,18 +558,18 @@ class CRYSTOUT(Output):
 
     def get_input_and_version(self, inputdata):
         # get version
-        version = 'CRYSTAL'
+        version = ''
         v = self.patterns['version'].search(inputdata)
         if v:
             v = v.group().split("\n")
             major, minor = v[0], v[1]
             # beware of MPI inclusions!
-            if '*' in major: version = major.replace('*', '').strip()
+            if '*' in major: major = major.replace('*', '').strip()
             if '*' in minor:
                 minor = minor.replace('*', '').strip()
                 if ':' in minor: minor = minor.split(':')[1].split()[0]
                 else: minor = minor.split()[1]
-                version += ' ' + minor
+            version = major.replace('CRYSTAL', '') + ' ' + minor
 
         # get input data
         inputdata = inputdata.splitlines()

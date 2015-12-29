@@ -2,17 +2,15 @@
 # Compacted basis set labels as strings for GUI
 # Author: Evgeny Blokhin
 
-import os, sys
-
 
 # hierarchy API: __order__ to apply classifier
 __order__ = 5
 
 def classify(tilde_obj):
-    if not tilde_obj.electrons['basis_set'] or not tilde_obj.electrons['type']:
+    if not tilde_obj.electrons['basis_set'] or tilde_obj.info['ansatz'] == 0x1:
         return tilde_obj
 
-    if tilde_obj.electrons['type'] == 'plane waves':
+    if tilde_obj.info['ansatz'] == 0x2:
         if not 'bs' in tilde_obj.structures[-1].arrays:
             return tilde_obj
 
@@ -27,7 +25,7 @@ def classify(tilde_obj):
             tilde_obj.info['bs' + str(num)] = elem + ':' + i
             num += 1
 
-    elif tilde_obj.electrons['type'] == 'gaussians': # TODO
+    elif tilde_obj.info['ansatz'] == 0x3: # TODO
         ps = {}
         for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
             ps[k] = ''
@@ -62,45 +60,5 @@ def classify(tilde_obj):
                 tilde_obj.info['bs' + str(i)] = k + ':' + pseudopotential + bs_str
 
             i+=1
-
-    elif tilde_obj.electrons['type'] == 'LAPW':
-        if not 'bs' in tilde_obj.structures[-1].arrays:
-            return tilde_obj
-
-        seq = tilde_obj.structures[-1].get_array('bs').tolist()
-        symbols = tilde_obj.structures[-1].get_chemical_symbols()
-
-        for n, i in enumerate(tilde_obj.electrons['basis_set']):
-            elem = symbols[ seq.index(n) ]
-
-            nok_states = [] # kappa must be ignored
-            for st in i['states']:
-                if st['is_core']:
-                    for j in range(len(nok_states)):
-                        if st['n'] == nok_states[j]['n'] and st['l'] == nok_states[j]['l']:
-                            nok_states[j]['occ'] += st['occ']
-                            break
-                    else: nok_states.append(st)
-
-            pseudopotential = ''
-            for st in nok_states:
-                pseudopotential += "%s%s<sup>%s</sup>" % (st['n'], st['l'], st['occ'])
-            if pseudopotential: pseudopotential = '[' + pseudopotential + ']'
-
-            bs_repr, repeats = [], []
-            for c in i['custom']: # custom are always distinctive
-                bs_repr.append(c['l'])
-                repeats.append(1)
-            for lo in i.get('lo', []):
-                if lo[0] in bs_repr: repeats[ bs_repr.index(lo[0]) ] += 1
-                else:
-                    bs_repr.append(lo[0])
-                    repeats.append(1)
-
-            bs_str = '<i>'
-            for j in range(len(bs_repr)):
-                bs_str += '%s%s' % (repeats[j], bs_repr[j])
-
-            tilde_obj.info['bs' + str(n)] = elem + ':' + pseudopotential + bs_str + '</i>'
 
     return tilde_obj
