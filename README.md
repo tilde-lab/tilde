@@ -47,7 +47,13 @@ Other example: for the perovskite structures, extract the distortion of the MO6-
 
 ## GUI
 
-In progress
+Experimental GUI server is started as follows:
+
+```shell
+python utils/gui_server.py
+```
+
+GUI client is the separate project called [Berlinium](https://github.com/tilde-lab/berlinium).
 
 ## Testing
 
