@@ -17,13 +17,8 @@ class ModuleError(Exception):
     def __init__(self, value):
         self.value = value
 
-def binpow(x):
-    pos, powers = 0, []
-    while x > 0:
-        if x % 2==1: powers.append(pos)
-        x /= 2
-        pos += 1
-    return powers
+def num2name(target, rules, mapping):
+    return mapping[rules['cid']][int(target)] if rules['enumerated'] else target
 
 def metric(v):
     '''

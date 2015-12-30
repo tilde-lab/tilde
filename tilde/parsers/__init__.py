@@ -74,11 +74,11 @@ class Output:
         # NB API call *classify* extends it with the new items
         self.info = {
             'warns':      [],
-            'framework':  0x1, # code name
+            'framework':  0x0, # code name
             'prog':       'unknown version', # code version
             'perf':       None, # benchmarking
             'location':   filename,
-            'finished':   0,  # -1 for not, 0 for n/a, +1 for yes
+            'finished':   0x0,
             'duration':   None,
             'input':      None,
 
@@ -94,9 +94,9 @@ class Output:
             'expanded':   False,
             'tags':       [],
 
-            'etype':      0x1,
+            'etype':      0x0,
             'bandgap':    None, # in eV
-            'bandgaptype':0x1,
+            'bandgaptype':0x0,
 
             'optgeom':    False,
             'calctypes':  [],
@@ -110,7 +110,7 @@ class Output:
             'spin':       False,
             'lockstate':  None,
 
-            'ansatz':     0x1,
+            'ansatz':     0x0,
             'techs':      [],
         }
 

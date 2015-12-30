@@ -595,8 +595,8 @@ class CRYSTOUT(Output):
         return comment, keywords, version
 
     def is_finished(self):
-        if self.info['duration'] and not 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ERR' in self.data: return 1
-        else: return -1
+        if self.info['duration'] and not 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ERR' in self.data: return 0x2
+        else: return 0x1
 
     def get_ph_sym_disps(self):
         symdisps = self.patterns['symdisps'].search(self.data)

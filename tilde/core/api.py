@@ -1,13 +1,12 @@
 
-# Functionality exposed into an API
+# Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.7.6"
+__version__ = "0.8.0"
 
 import os, sys
-import time, math, random
 import re
-import fractions
+from fractions import gcd
 import inspect
 import traceback
 import datetime
@@ -17,7 +16,7 @@ from numpy import dot, array
 
 from tilde.core.common import u, is_binary_string, generate_cif, html_formula, hrsize
 from tilde.core.symmetry import SymmetryHandler
-from tilde.core.settings import DEFAULT_SETUP, BASE_DIR, get_virtual_path, read_hierarchy
+from tilde.core.settings import BASE_DIR, settings, virtualize_path, get_hierarchy
 from tilde.core.electron_structure import ElectronStructureError
 from tilde.parsers import Output
 import tilde.core.model as model
@@ -35,9 +34,9 @@ class API:
     __shared_state = {}
     formula_sequence = ['Fr','Cs','Rb','K','Na','Li',  'Be','Mg','Ca','Sr','Ba','Ra',  'Sc','Y','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb',  'Ac','Th','Pa','U','Np','Pu',  'Ti','Zr','Hf',  'V','Nb','Ta',  'Cr','Mo','W',  'Fe','Ru','Os',  'Co','Rh','Ir',  'Mn','Tc','Re',  'Ni','Pd','Pt',  'Cu','Ag','Au',  'Zn','Cd','Hg',  'B','Al','Ga','In','Tl',  'Pb','Sn','Ge','Si','C',   'N','P','As','Sb','Bi',   'H',   'Po','Te','Se','S','O',  'At','I','Br','Cl','F',  'He','Ne','Ar','Kr','Xe','Rn']
 
-    def __init__(self, settings = DEFAULT_SETUP):
+    def __init__(self, settings=settings):
         self.settings = settings
-        self.hierarchy, self.supercategories = read_hierarchy()
+        self.hierarchy, self.hierarchy_groups, self.hierarchy_values = get_hierarchy(settings)
 
         # *parser API*
         # Subfolder "parsers" contains directories with parsers.
@@ -79,6 +78,7 @@ class API:
         self.Apps = {}
         n = 1
         for appname in os.listdir( os.path.realpath(BASE_DIR + '/../apps') ):
+            if self.settings.get('no_parse'): continue
             if os.path.isfile( os.path.realpath(BASE_DIR + '/../apps') + '/' + appname + '/manifest.json' ):
                 try: appmanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../apps') + '/' + appname + '/manifest.json' ).read() )
                 except: raise RuntimeError('Module API Error: Module manifest for ' + appname + ' has corrupted format!')
@@ -113,6 +113,7 @@ class API:
         # This is used for classification
         self.Classifiers = []
         for classifier in os.listdir( os.path.realpath(BASE_DIR + '/../classifiers') ):
+            if self.settings.get('no_parse'): continue
             if classifier.endswith('.py') and classifier != '__init__.py':
                 classifier = classifier[0:-3]
                 obj = importlib.import_module('tilde.classifiers.' + classifier) # this means: from foo import Foo
@@ -275,7 +276,7 @@ class API:
 
                             if not len(calc.structures) or not len(calc.structures[-1]): error = 'Valid structure is not present!'
 
-                            if calc.info['finished'] < 0: calc.warning( 'This calculation is not correctly finished!' )
+                            if calc.info['finished'] == 0x1: calc.warning( 'This calculation is not correctly finished!' )
 
                             if not calc.info['H']: error = 'XC potential is not present!'
 
@@ -303,7 +304,7 @@ class API:
             except: pass
 
         # applying filter: todo
-        if (calc.info['finished'] < 0 and self.settings['skip_unfinished']) or \
+        if (calc.info['finished'] == 0x1 and self.settings['skip_unfinished']) or \
            (not calc.info['energy'] and self.settings['skip_notenergy']):
             return None, 'data do not satisfy the active filter'
 
@@ -325,7 +326,7 @@ class API:
         # chemical ratios
         if not len(calc.info['standard']):
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
-            if not calc.info['expanded']: calc.info['expanded'] = reduce(fractions.gcd, calc.info['contents'])
+            if not calc.info['expanded']: calc.info['expanded'] = reduce(gcd, calc.info['contents'])
             for n, i in enumerate(map(lambda x: x/calc.info['expanded'], calc.info['contents'])):
                 if i==1: calc.info['standard'] += calc.info['elements'][n]
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
@@ -387,14 +388,14 @@ class API:
             if calc.electrons['bands'].is_conductor():
                 calc.info['etype'] = 0x2
                 calc.info['bandgap'] = 0.0
-                calc.info['bandgaptype'] = None
+                calc.info['bandgaptype'] = 0x1
             else:
                 try: gap, is_direct = calc.electrons['bands'].get_bandgap()
                 except ElectronStructureError as e:
                     calc.electrons['bands'] = None
                     calc.warning(e.value)
                 else:
-                    calc.info['etype'] = 0x3 # semiconductor?
+                    calc.info['etype'] = 0x1
                     calc.info['bandgap'] = round(gap, 2)
                     calc.info['bandgaptype'] = 0x2 if is_direct else 0x3
 
@@ -409,19 +410,19 @@ class API:
                     if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Bans gaps in DOS and bands data differ considerably! The latter will be considered.')
                 else:
                     calc.info['bandgap'] = gap
-                    if gap: calc.info['etype'] = 0x3 # semiconductor?
+                    if gap: calc.info['etype'] = 0x1
                     else:
                         calc.info['etype'] = 0x2
-                        calc.info['bandgaptype'] = None
+                        calc.info['bandgaptype'] = 0x1
 
         # TODO: beware to add something new to an existing item!
         # TODO2: unknown or absent?
         for entity in self.hierarchy:
-            if entity.get('creates_topic') and not entity.get('optional') and not calc.info.get(entity['source']):
-                if entity.get('enumerated'):
-                    calc.info[ entity['source'] ] = [0x0] if 'multiple' in entity else 0x0
+            if entity['creates_topic'] and not entity['optional'] and not calc.info.get(entity['source']):
+                if entity['enumerated']:
+                    calc.info[ entity['source'] ] = [0x0] if entity['multiple'] else 0x0
                 else:
-                    calc.info[ entity['source'] ] = ['none'] if 'multiple' in entity else 'none'
+                    calc.info[ entity['source'] ] = ['none'] if entity['multiple'] else 'none'
 
         calc.benchmark() # this call must be at the very end of parsing
 
@@ -549,7 +550,7 @@ class API:
                 )
 
             # construct ORM for other props
-            calc.related_files = map(get_virtual_path, calc.related_files)
+            calc.related_files = map(virtualize_path, calc.related_files)
             ormcalc.meta_data = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
@@ -584,22 +585,22 @@ class API:
                 ormcalc.structures.append(struct)
             # TODO Forces
 
-        ormcalc.uigrid = model.uiGrid(info=json.dumps(calc.info))
+        ormcalc.uigrid = model.Grid(info=json.dumps(calc.info))
 
         # tags ORM
         uitopics = []
         for entity in self.hierarchy:
 
-            if not 'creates_topic' in entity: continue
+            if not entity['creates_topic']: continue
 
-            if 'multiple' in entity or calc._calcset:
+            if entity['multiple'] or calc._calcset:
                 for item in calc.info.get( entity['source'], [] ):
                     uitopics.append( model.topic(cid=entity['cid'], topic=item) )
             else:
                 topic = calc.info.get(entity['source'])
                 if topic: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
-        uitopics = map(lambda x: model.uiTopic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
+        uitopics = map(lambda x: model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
 
         ormcalc.uitopics.extend(uitopics)
 
@@ -676,7 +677,7 @@ class API:
         # TODO rewrite with cascading
         session.execute( model.delete( model.Metadata ).where( model.Metadata.checksum == checksum ) )
 
-        session.execute( model.delete( model.uiGrid ).where( model.uiGrid.checksum == checksum ) )
+        session.execute( model.delete( model.Grid ).where( model.Grid.checksum == checksum ) )
         session.execute( model.delete( model.tags ).where( model.tags.c.checksum == checksum ) )
 
         session.execute( model.delete( model.calcsets ).where( model.calcsets.c.children_checksum == checksum ) )
@@ -696,7 +697,7 @@ class API:
 
         cur_depth = 0
 
-        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.uiGrid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.uiGrid.checksum, model.uiGrid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(checksums)).all():
+        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.Grid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.Grid.checksum, model.Grid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(checksums)).all():
 
             if nested_depth > cur_depth: cur_depth = nested_depth
 
@@ -757,10 +758,10 @@ class API:
                 if i.checksum in filtered_addendum: return 'A parent dataset cannot be added to its children dataset.'
 
         parent_meta = session.query(model.Metadata).get(parent)
-        parent_grid = session.query(model.uiGrid).get(parent)
+        parent_grid = session.query(model.Grid).get(parent)
         info_obj = json.loads(parent_grid.info)
 
-        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.uiGrid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.uiGrid.checksum, model.uiGrid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(filtered_addendum)).all():
+        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.Grid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.Grid.checksum, model.Grid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(filtered_addendum)).all():
 
             if nested_depth >= parent_calc.nested_depth: parent_calc.nested_depth = nested_depth + 1
 
@@ -788,10 +789,10 @@ class API:
         # tags ORM
         for entity in self.hierarchy:
 
-            if not 'creates_topic' in entity: continue
+            if not entity['creates_topic']: continue
 
             for item in info_obj.get( entity['source'], [] ):
-                parent_calc.uitopics.append( model.uiTopic.as_unique(session, cid=entity['cid'], topic="%s" % item) )
+                parent_calc.uitopics.append( model.Topic.as_unique(session, cid=entity['cid'], topic="%s" % item) )
 
         for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(filtered_addendum)).all():
             parent_calc.children.append(child)

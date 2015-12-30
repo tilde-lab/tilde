@@ -24,7 +24,7 @@ class QuantumESPRESSO(Output):
         self.related_files.append(filename)
 
         self.info['framework'] = 0x4
-        self.info['finished'] = -1
+        self.info['finished'] = 0x1
         self.info['ansatz'] = 0x2
 
         # taken from trunk/Modules/funct.f90
@@ -80,7 +80,7 @@ class QuantumESPRESSO(Output):
             cur_line = self.data[n]
 
             if "This run was terminated on" in cur_line:
-                self.info['finished'] = 1
+                self.info['finished'] = 0x2
 
             elif "     Program PWSCF" in cur_line and " starts " in cur_line:
                 ver_str = cur_line.strip().replace('Program PWSCF', '')
@@ -181,7 +181,7 @@ class QuantumESPRESSO(Output):
                     if 'd' in d: fmt = "%dd" + fmt # FIXME for months!
                     d = time.strptime(d, fmt)
                     self.info['duration'] = "%2.2f" % (  datetime.timedelta(days=d.tm_mday, hours=d.tm_hour, minutes=d.tm_min, seconds=d.tm_sec).total_seconds()/3600  )
-                    self.info['finished'] = 1
+                    self.info['finished'] = 0x2
 
             elif "End of self-consistent calculation" in cur_line or "End of band structure calculation" in cur_line:
                 e_last = None

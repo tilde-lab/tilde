@@ -32,7 +32,7 @@ class Connection(SockJSConnection):
 
     def on_open(self, info):
         self.Clients[ getattr(self.session, 'session_id', self.session.__hash__()) ] = Client()
-        logging.debug("Server connected")
+        logging.info("Server connected %s-th client" % len(self.Clients))
 
     def on_message(self, message):
         logging.debug("Server got: %s" % message)
@@ -78,7 +78,8 @@ class Connection(SockJSConnection):
         #self.close() # TODO?
 
     def on_close(self):
+        logging.info("Server will close connection with %s-th client" % (len(self.Clients)+1))
         session_id = getattr(self.session, 'session_id', self.session.__hash__())
         if self.Clients[session_id].db: self.Clients[session_id].db.close()
         del self.Clients[session_id]
-        logging.debug("Server closed connection")
+

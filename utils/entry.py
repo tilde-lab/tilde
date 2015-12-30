@@ -18,8 +18,8 @@ from numpy import array
 from numpy.linalg import det
 
 import set_path
-from tilde.core.settings import settings, connect_database, DATA_DIR
-from tilde.core.common import write_cif
+from tilde.core.settings import settings, connect_database, DATA_DIR, DB_SCHEMA_VERSION
+from tilde.core.common import write_cif, num2name
 from tilde.core.symmetry import SymmetryFinder
 from tilde.core.api import API
 
@@ -29,7 +29,12 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 starttime = time.time()
 Tilde = API(settings)
 
-parser = argparse.ArgumentParser(prog="[this_script]", usage="%(prog)s [positional / optional arguments]", epilog="Version: "+API.version+" (" + settings['db']['engine'] + " backend)", argument_default=argparse.SUPPRESS)
+parser = argparse.ArgumentParser(
+    prog="[this_script]",
+    usage="%(prog)s [positional / optional arguments]",
+    epilog="API v%s, DB schema v%s (%s backend)" % (API.version, DB_SCHEMA_VERSION, settings['db']['engine']),
+    argument_default=argparse.SUPPRESS
+)
 parser.add_argument("path",     action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
 parser.add_argument("-y",       dest="symprec", action="store", help="symmetry detecting tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="float", nargs='?', const=None, default=None)
 parser.add_argument("-r",       dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -113,11 +118,16 @@ for target in target_source:
                 for n, entity in enumerate(Tilde.hierarchy):
                     if entity['cid'] > 1999 or entity['source'] in skip_topics: continue # apps hierarchy
 
-                    if 'multiple' in entity:
-                        try: found_topics.append( [  entity['category']  ] + calc.info[ entity['source'] ] )
+                    if entity['multiple']:
+                        try: found_topics.append(
+                            [  entity['category']  ] + map(
+                                lambda x: num2name(x, entity, Tilde.hierarchy_values),
+                                calc.info[ entity['source'] ]
+                            )
+                        )
                         except KeyError: pass
                     else:
-                        try: found_topics.append( [  entity['category'], calc.info[ entity['source'] ]  ] )
+                        try: found_topics.append( [  entity['category'], num2name(calc.info.get(entity['source']), entity, Tilde.hierarchy_values)  ] )
                         except KeyError: pass
 
                 j, out = 0, ''

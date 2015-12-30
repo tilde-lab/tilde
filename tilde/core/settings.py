@@ -14,18 +14,15 @@ import pg8000
 
 import tilde.core.model as model
 
-from xml.etree import ElementTree as ET
-
 
 DB_SCHEMA_VERSION = '5.10'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
-
 BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
-HIERARCHY_FILE = os.path.join(BASE_DIR, 'hierarchy.xml')
 ROOT_DIR = os.path.normpath(BASE_DIR + '/../../')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
-EXAMPLE_DIR = os.path.join(ROOT_DIR, 'tests/examples')
+EXAMPLE_DIR = os.path.join(ROOT_DIR, 'tests/data')
+INIT_DATA = os.path.join(ROOT_DIR, 'init-data.sql')
 TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
 
@@ -56,7 +53,7 @@ DEFAULT_SETUP = {
 }
 repositories = []
 
-def get_virtual_path(item):
+def virtualize_path(item):
     return item
 
 def connect_url(settings, named=None):
@@ -69,7 +66,7 @@ def connect_url(settings, named=None):
     elif settings['db']['engine'] == 'postgresql':
         return settings['db']['engine'] + '+pg8000://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
 
-    else: raise Exception('Unsupported DB type: %s!\n' % settings['db']['engine'])
+    else: sys.exit('Unsupported DB type: %s!\n' % settings['db']['engine'])
 
 def connect_database(settings, named=None, no_pooling=False, default_actions=True, scoped=False):
     '''
@@ -82,20 +79,27 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
     Session = sessionmaker(bind=engine, autoflush=False)
 
     if default_actions:
+        # 1.
         model.Base.metadata.create_all(engine)
 
         session = Session()
-
-        try: p = session.query(model.Pragma.content).one()
+        # 2.
+        try: pragma = session.query(model.Pragma.content).one()
         except NoResultFound:
-            p = model.Pragma(content = DB_SCHEMA_VERSION)
-            session.add(p)
+            pragma = model.Pragma(content = DB_SCHEMA_VERSION)
+            session.add(pragma)
         else:
-            if p.content != DB_SCHEMA_VERSION:
+            if pragma.content != DB_SCHEMA_VERSION:
                 sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, p.content))
-
-        try: enum = session.query(model.uiEnum.name).one()
-        except NoResultFound: pass #model.uiEnum.define_enums(session)
+        # 3.
+        chk = session.query(model.Hierarchy_value).first()
+        if not chk:
+            if not os.path.exists(INIT_DATA): sys.exit(INIT_DATA + ' not found!')
+            with open(INIT_DATA) as f:
+                while True:
+                    sql = f.readline().strip()
+                    if not sql: break
+                    engine.execute(sql)
 
         session.commit()
         session.close()
@@ -120,43 +124,60 @@ def write_settings(settings):
     else:
         return True
 
-def read_hierarchy():
+def get_hierarchy(settings):
     '''
-    Reads main mapping source according to what a data classification is made
-    Also reads the supercategories (only for GUI)
+    Gets main mapping source according to what a data classification is made
+    Gets the hierarchy groups (only for GUI)
+    Gets the hierarchy values
     '''
-    try: tree = ET.parse(HIERARCHY_FILE)
-    except: sys.exit('Fatal error: invalid file ' + HIERARCHY_FILE)
-
-    hierarchy, supercategories = [], []
-
-    doc = tree.getroot()
-
-    for elem in doc.findall('entity'):
-        if 'has_facet' in elem.attrib and not 'creates_topic' in elem.attrib: sys.exit('Fatal error: "has_facet" implies "creates_topic" in ' + HIERARCHY_FILE)
-        if 'has_slider' in elem.attrib and not '.' in elem.attrib['has_slider']: sys.exit('Fatal error: "has_slider" implies table fields set in ' + HIERARCHY_FILE)
-
-        hierarchy.append( elem.attrib )
-        # type corrections
-        hierarchy[-1]['cid'] = int(hierarchy[-1]['cid'])
-        hierarchy[-1]['sort'] = int(hierarchy[-1]['sort'])
-
-    for elem in doc.findall('superentity'):
-        supercategories.append({
-            'id': elem.attrib['id'],
-            'category': elem.attrib['category'],
-            'includes': map(int, elem.attrib['includes'].split(',')),
-            'html_pocket': '',
-            'landing_group': elem.attrib.get('landing_group'),
-            'settings_group': elem.attrib.get('settings_group'),
-            'toggling': elem.attrib.get('toggling')
+    hierarchy, hierarchy_groups, hierarchy_values = [], [], {}
+    hgroup_ids, enumerated_vals = {}, set()
+    session = connect_database(settings)
+    for item in session.query(model.Hierarchy_value).all():
+        try:
+            hierarchy_values[item.cid].update({item.num: item.name})
+        except KeyError:
+            hierarchy_values[item.cid] = {item.num: item.name}
+        enumerated_vals.add(item.cid)
+    try:
+        for item in session.query(model.Hierarchy).all():
+            if item.has_facet and not item.has_topic: raise RuntimeError('Fatal error: "has_facet" implies "has_topic"')
+            if item.slider and not '.' in item.slider: raise RuntimeError('Fatal error: "has_slider" must have a reference to some table field')
+            hierarchy.append({
+                'cid':item.cid,
+                'category':item.name,
+                'source':item.source,
+                'html':item.html,
+                'has_slider':item.slider,
+                'sort':item.sort,
+                'multiple':item.multiple,
+                'optional':item.optional,
+                'has_summary_contrb':item.has_summary_contrb,
+                'has_column':item.has_column,
+                'has_facet':item.has_facet,
+                'creates_topic':item.has_topic,
+                'is_chem_formula':item.chem_formula,
+                'plottable':item.plottable,
+                'enumerated':True if item.cid in enumerated_vals else False
+            })
+            try: hgroup_ids[item.hgroup_id].append(item.cid)
+            except KeyError: hgroup_ids[item.hgroup_id] = [item.cid]
+    except RuntimeError, e:
+        session.close()
+        sys.exit(e)
+    for item in session.query(model.Hierarchy_group).all():
+        hierarchy_groups.append({
+            'id': item.hgroup_id,
+            'category': item.name,
+            'html_pocket': '', # specially for JavaScript client
+            'landing_group': item.landing_group,
+            'settings_group': item.settings_group,
+            'includes': hgroup_ids[item.hgroup_id]
         })
-
-    return hierarchy, supercategories
-
+    session.close()
+    return hierarchy, hierarchy_groups, hierarchy_values
 
 # DEFAULT ACTIONS: LOAD/SAVE SETTINGS
-
 if not os.path.exists( os.path.abspath( DATA_DIR + os.sep + SETTINGS_FILE ) ):
     settings = DEFAULT_SETUP
     if not os.path.exists(DATA_DIR):
@@ -172,13 +193,6 @@ except NameError:
     settings = DEFAULT_SETUP
 
 # DEFAULT ACTIONS: CHECK SETTINGS COMBINATIONS & RESTRICTIONS
-
-'''if not settings['local_dir'].endswith(os.sep):
-    settings['local_dir'] += os.sep'''
-
-'''if (not settings['local_dir']) or ('win' in sys.platform and settings['local_dir'].startswith('/')) or ('linux' in sys.platform and not settings['local_dir'].startswith('/')):
-    settings['local_dir'] = EXAMPLE_DIR'''
-
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3:
     sys.exit('Path skipping directive must not contain more than 3 symbols due to memory limits!')
 

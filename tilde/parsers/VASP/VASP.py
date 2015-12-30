@@ -452,7 +452,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
 
         # variables to be filled
         self.vasp_version = None
-        self.finished = 1 # if we are here, we are always correct
+        self.finished = 0x2 # if we are here, we are always correct
         self.incar = Incar()
         self.parameters = Incar()
         self.bsseq = []

@@ -17,19 +17,18 @@ from ase.atoms import Atoms
 from tornado import web, ioloop
 from sockjs.tornado import SockJSRouter
 
+import ujson as json
+
 import set_path
 from tilde.core.settings import settings, connect_database
 from tilde.core.api import API
 from tilde.parsers import HASH_LENGTH
-from tilde.core.common import html_formula, extract_chemical_symbols, str2html, generate_cif
+from tilde.core.common import html_formula, extract_chemical_symbols, str2html, num2name, generate_cif
 import tilde.core.model as model
-from tilde.berlinium import add_redirection, eplotter, wrap_cell
-from tilde.berlinium.block_impl import Connection
-
-import ujson as json
+from tilde.berlinium import Block_Connection as Connection, add_redirection, eplotter, wrap_cell
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 
 CURRENT_TITLE = settings['title'] if settings['title'] else 'API version ' + API.version
 DB_TITLE = settings['db']['default_sqlite_db'] if settings['db']['engine'] == 'sqlite' else settings['db']['dbname']
@@ -42,24 +41,26 @@ class BerliniumGUIProvider:
         data = {
             'title': CURRENT_TITLE,
             'debug_regime': settings['debug_regime'],
-            'version': API.version,
-            'cats': Tilde.supercategories
+            'version': Tilde.version,
+            'cats': Tilde.hierarchy_groups
         }
         Connection.Clients[session_id].authorized = True
-        Connection.Clients[session_id].db = connect_database(settings, default_actions=False, scoped=True)
+        Connection.Clients[session_id].db = connect_database(settings, no_pooling=True, default_actions=False, scoped=True)
+
+        if not req.get('settings'): req['settings'] = {}
 
         # *client-side* settings
-        if req['settings']['colnum'] not in [50, 100, 250]: req['settings']['colnum'] = 100
-        if type(req['settings']['cols']) is not list or not 1 <= len(req['settings']['cols']) <= 40: return (None, 'Invalid settings!')
+        if req['settings'].get('colnum') not in [50, 100, 250]: req['settings']['colnum'] = 100
+        if type(req['settings'].get('cols')) is not list or not 1 <= len(req['settings'].get('cols')) <= 40: return (None, 'Invalid settings!')
 
         for i in ['cols', 'colnum']:
-            Connection.Clients[session_id].usettings[i] = req['settings'][i]
+            Connection.Clients[session_id].usettings[i] = req['settings'].get(i)
 
-        # all available columns are compiled here and sent to user for him to select between them
+        # all available columns are compiled here and sent to user to select between them
         avcols = []
         for entity in Tilde.hierarchy:
 
-            if 'has_column' in entity:
+            if entity['has_column']:
                 enabled = True if entity['cid'] in req['settings']['cols'] else False
                 avcols.append({ 'cid': entity['cid'], 'category': entity['category'], 'sort': entity.get('sort', 1000), 'enabled': enabled })
 
@@ -96,7 +97,7 @@ class BerliniumGUIProvider:
                 if not 'cid' in c or not 'min' in c or not 'max' in c: return (data, 'Invalid request!')
                 try: entity = [x for x in Tilde.hierarchy if x['cid'] == int(c['cid'])][0]
                 except IndexError: return (data, 'Invalid category choice!')
-                if not 'has_slider' in entity: return (data, 'Invalid category choice!')
+                if not entity['has_slider']: return (data, 'Invalid category choice!')
 
                 cls, attr = entity['has_slider'].split('.')
                 orm_inst = getattr(getattr(model, cls), attr)
@@ -117,9 +118,9 @@ class BerliniumGUIProvider:
             for i, _ in Connection.Clients[session_id].db.query(model.Calculation.checksum, sortby) \
                 .join(model.Calculation.meta_data) \
                 .join(model.Calculation.uitopics) \
-                .filter(model.uiTopic.tid.in_(req['tids'])) \
+                .filter(model.Topic.tid.in_(req['tids'])) \
                 .group_by(model.Calculation.checksum, sortby) \
-                .having(func.count(model.uiTopic.tid) == len(req['tids'])) \
+                .having(func.count(model.Topic.tid) == len(req['tids'])) \
                 .filter(and_(*clauses)) \
                 .order_by(sortby) \
                 .slice(start, stop).all():
@@ -127,7 +128,7 @@ class BerliniumGUIProvider:
 
             if not proposition: return ({'msg': 'Nothing found'}, error)
 
-            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).join(model.Calculation.uitopics).filter(model.uiTopic.tid.in_(req['tids'])).group_by(model.Calculation.checksum).having(func.count(model.uiTopic.tid) == len(req['tids'])).filter(and_(*clauses)).count()
+            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).join(model.Calculation.uitopics).filter(model.Topic.tid.in_(req['tids'])).group_by(model.Calculation.checksum).having(func.count(model.Topic.tid) == len(req['tids'])).filter(and_(*clauses)).count()
 
         elif clauses:
             proposition = []
@@ -142,18 +143,18 @@ class BerliniumGUIProvider:
         html_output, res_count = '', 0
         html_output = '<thead><tr><th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
         for entity in Tilde.hierarchy:
-            if 'has_column' in entity and entity['cid'] in Connection.Clients[session_id].usettings['cols']:
-                catname = str2html(entity['html']) if 'html' in entity else entity['category'][0].upper() + entity['category'][1:]
+            if entity['has_column'] and entity['cid'] in Connection.Clients[session_id].usettings['cols']:
+                catname = str2html(entity['html']) if entity['html'] else entity['category'][0].upper() + entity['category'][1:]
 
-                plottable = '<input class=sc type=checkbox />' if 'plottable' in entity else ''
+                plottable = '<input class=sc type=checkbox />' if entity['plottable'] else ''
 
                 html_output += '<th rel=' + str(entity['cid']) + '><span>' + catname + '</span>' + plottable + '</th>'
         #if Connection.Clients[session_id].usettings['objects_expand']: html_output += '<th class="not-sortable">More...</th>'
         html_output += '</tr></thead><tbody>'
 
-        for row, checksum in Connection.Clients[session_id].db.query(model.uiGrid.info, model.Metadata.checksum) \
-            .filter(model.uiGrid.checksum == model.Metadata.checksum) \
-            .filter(model.uiGrid.checksum.in_(proposition)) \
+        for row, checksum in Connection.Clients[session_id].db.query(model.Grid.info, model.Metadata.checksum) \
+            .filter(model.Grid.checksum == model.Metadata.checksum) \
+            .filter(model.Grid.checksum.in_(proposition)) \
             .order_by(sortby).all():
 
             res_count += 1
@@ -163,10 +164,10 @@ class BerliniumGUIProvider:
             html_output += '<td><input type=checkbox id=d_cb_'+ checksum + ' class=SHFT_cb></td>'
 
             for entity in Tilde.hierarchy:
-                if not 'has_column' in entity: continue
+                if not entity['has_column']: continue
                 if not entity['cid'] in Connection.Clients[session_id].usettings['cols']: continue
 
-                html_output += wrap_cell(entity, data_obj, table_view=True)
+                html_output += wrap_cell(entity, data_obj, Tilde.hierarchy_values, table_view=True)
 
             #if Connection.Clients[session_id].usettings['objects_expand']: html_output += "<td class=objects_expand><strong>click by row</strong></td>"
             html_output += '</tr>'
@@ -184,7 +185,7 @@ class BerliniumGUIProvider:
         else: tids = req['tids']
 
         if not tids:
-            for tid, cid, topic in Connection.Clients[session_id].db.query(model.uiTopic.tid, model.uiTopic.cid, model.uiTopic.topic).all():
+            for tid, cid, topic in Connection.Clients[session_id].db.query(model.Topic.tid, model.Topic.cid, model.Topic.topic).all():
                 # TODO assure there are checksums on such tid!!!
 
                 try: entity = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
@@ -192,7 +193,7 @@ class BerliniumGUIProvider:
 
                 if not entity.get('has_facet'): continue
 
-                ready_topic = html_formula(topic) if entity.get('is_chem_formula') else topic
+                ready_topic = html_formula(topic) if entity.get('is_chem_formula') else num2name(topic, entity, Tilde.hierarchy_values)
 
                 topic_dict = {'tid': tid, 'topic': ready_topic}
                 kind = 'tag'
@@ -208,13 +209,13 @@ class BerliniumGUIProvider:
                 else: ui_controls.append({
                             'type': kind,
                             'cid': entity['cid'],
-                            'category': str2html(entity['html'], False) if 'html' in entity else entity['category'],
+                            'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
                             'sort': entity.get('sort', 1000),
                             'content': [ topic_dict ]
                 })
 
             for entity in Tilde.hierarchy:
-                if 'has_slider' in entity:
+                if entity['has_slider']:
                     cls, attr = entity['has_slider'].split('.')
                     orm_inst = getattr(getattr(model, cls), attr)
                     minimum, maximum = Connection.Clients[session_id].db.query(func.min(orm_inst), func.max(orm_inst)).one() # TODO: optimize
@@ -222,14 +223,14 @@ class BerliniumGUIProvider:
                         ui_controls.append({
                             'type': 'slider',
                             'cid': entity['cid'],
-                            'category': str2html(entity['html'], False) if 'html' in entity else entity['category'],
+                            'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
                             'sort': entity.get('sort', 1000),
                             'min': math.floor(minimum*100)/100,
                             'max': math.ceil(maximum*100)/100
                         })
 
             ui_controls.sort(key=lambda x: x['sort'])
-            ui_controls = {'blocks': ui_controls, 'cats': Tilde.supercategories}
+            ui_controls = {'blocks': ui_controls, 'cats': Tilde.hierarchy_groups}
 
         else:
             params = {}
@@ -264,18 +265,18 @@ class BerliniumGUIProvider:
             positions.append([x, y, z])
         cif = generate_cif(Atoms(symbols=symbols, cell=cell, positions=positions, pbc=True)) # TODO
 
-        info = Connection.Clients[session_id].db.query(model.uiGrid.info) \
-            .filter(model.uiGrid.checksum == req['datahash']).one()
+        info = Connection.Clients[session_id].db.query(model.Grid.info) \
+            .filter(model.Grid.checksum == req['datahash']).one()
 
         summary = []
         info = json.loads(info[0])
 
         for entity in Tilde.hierarchy:
-            if not 'has_summary_contrb' in entity: continue # additional control to avoid redundancy
+            if not entity['has_summary_contrb']: continue # additional control to avoid redundancy
             #if entity['cid'] > 2000: # TODO apps
 
-            catname = str2html(entity['html']) if 'html' in entity else entity['category'].capitalize()
-            summary.append( {'category': catname, 'sort': entity.get('sort', 1000), 'content': wrap_cell(entity, info)} )
+            catname = str2html(entity['html']) if entity['html'] else entity['category'].capitalize()
+            summary.append( {'category': catname, 'sort': entity.get('sort', 1000), 'content': wrap_cell(entity, info, Tilde.hierarchy_values)} )
 
         summary.sort(key=lambda x: x['sort'])
 
@@ -329,6 +330,7 @@ if __name__ == "__main__":
     test_session = connect_database(settings)
     test_session.close()
 
+    #Connection = Block_Connection if settings['db']['engine'] == 'sqlite' else Async_Connection
     Connection.GUIProvider = BerliniumGUIProvider
     DuplexRouter = SockJSRouter(Connection)
 

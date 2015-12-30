@@ -34,6 +34,58 @@ class Pragma(Base):
     __tablename__ = 'pragma'
     content = Column(String, primary_key=True)
 
+class Hierarchy(Base):
+    __tablename__ = 'hierarchy'
+    cid = Column(Integer, nullable=False, primary_key=True)
+    name = Column(String, nullable=False)
+    source = Column(String, nullable=False)
+    legend = Column(String, default="")
+    html = Column(String, default="")
+    slider = Column(String, default="")
+    sort = Column(Integer, default=0)
+
+    # mimic bool
+    multiple = Column(Integer, default=0)
+    optional = Column(Integer, default=0)
+    has_summary_contrb = Column(Integer, default=0)
+    has_column = Column(Integer, default=0)
+    has_facet = Column(Integer, default=0)
+    has_topic = Column(Integer, default=0)
+    chem_formula = Column(Integer, default=0)
+    plottable = Column(Integer, default=0)
+
+    values = relationship("Hierarchy_value")
+    hgroup_id = Column(Integer, ForeignKey('hierarchy_groups.hgroup_id'), default=None)
+
+class Hierarchy_group(Base):
+    __tablename__ = 'hierarchy_groups'
+    hgroup_id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+
+    # mimic bool
+    landing_group = Column(Integer, default=0)
+    settings_group = Column(Integer, default=0)
+
+    includes = relationship("Hierarchy")
+
+class Hierarchy_value(Base):
+    __tablename__ = 'hierarchy_values'
+    cid = Column(Integer, ForeignKey('hierarchy.cid'), primary_key=True)
+    num = Column(Integer, nullable=False, primary_key=True)
+    name = Column(String, nullable=False)
+
+class Topic(UniqueMixin, Base):
+    __tablename__ = 'topics'
+    tid = Column(Integer, primary_key=True)
+    cid = Column(Integer, nullable=False)
+    topic = Column(String) # int for enumerated topics
+
+    @classmethod
+    def unique_filter(cls, query, cid, topic):
+        return query.filter(Topic.cid == cid, Topic.topic == topic)
+
+topic = namedtuple('topic', ['cid', 'topic'])
+
 tags = Table('tags', Base.metadata,
     Column('checksum', String, ForeignKey('calculations.checksum')),
     Column('tid', Integer, ForeignKey('topics.tid')),
@@ -42,27 +94,8 @@ tags = Table('tags', Base.metadata,
 )
 
 tag = namedtuple('tag', ['checksum', 'tid'])
-topic = namedtuple('topic', ['cid', 'topic'])
-dfenum = namedtuple('dfenum', ['cid', 'num', 'name'])
 
-class uiEnum(Base):
-    __tablename__ = 'definitions'
-    enumid = Column(Integer, primary_key=True)
-    cid = Column(Integer, nullable=False)
-    num = Column(Integer, nullable=False)
-    name = Column(String, nullable=False)
-
-class uiTopic(UniqueMixin, Base):
-    __tablename__ = 'topics'
-    tid = Column(Integer, primary_key=True)
-    cid = Column(Integer, nullable=False)
-    topic = Column(String) # int for enumerated topics
-
-    @classmethod
-    def unique_filter(cls, query, cid, topic):
-        return query.filter(uiTopic.cid == cid, uiTopic.topic == topic)
-
-class uiGrid(Base):
+class Grid(Base):
     __tablename__ = 'grid'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     info = Column(LargeBinary, default=None)
@@ -95,8 +128,8 @@ class Calculation(Base):
     electrons = relationship("Electrons", uselist=False)
     phonons = relationship("Phonons", uselist=False)
     forces = relationship("Forces", uselist=False)
-    uigrid = relationship("uiGrid", uselist=False)
-    uitopics = relationship("uiTopic", backref="calculations", secondary=tags)
+    uigrid = relationship("Grid", uselist=False)
+    uitopics = relationship("Topic", backref="calculations", secondary=tags)
     references = relationship("Reference", backref="calculations", secondary="metadata_references")
 
 class Metadata(Base):
@@ -137,7 +170,7 @@ class Codeversion(UniqueMixin, Base):
 class Codefamily(UniqueMixin, Base):
     __tablename__ = 'codefamilies'
     family_id = Column(Integer, primary_key=True)
-    content = Column(String, nullable=False, unique=True)
+    content = Column(Integer, nullable=False, unique=True)
     versions = relationship("Codeversion")
 
     @classmethod
