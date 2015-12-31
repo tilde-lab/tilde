@@ -598,7 +598,7 @@ class API:
                     uitopics.append( model.topic(cid=entity['cid'], topic=item) )
             else:
                 topic = calc.info.get(entity['source'])
-                if topic: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
+                if topic or not entity['optional']: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
         uitopics = map(lambda x: model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
 
