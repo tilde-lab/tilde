@@ -4,7 +4,7 @@ INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VA
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (4, 'modeling precision', 0, 1);
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (5, 'modeling package', 1, 1);
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (9, 'all the rest', 0, 0);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1, 'chemical formula', 'standard', '', '', '', 2, 0, 0, 1, 1, 1, 1, 1, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1, 'chemical formula', 'standard', '', '', '', 2, 0, 0, 1, 1, 0, 1, 1, 0, 2);
 INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (2, 'elements', 'elements', '', '', '', 1, 1, 0, 1, 0, 1, 1, 0, 0, 2);
 INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (3, 'compound', 'nelem', '', '', '', 30, 0, 0, 1, 1, 1, 1, 0, 1, 2);
 INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (4, 'formula units', 'expanded', '', '', '', 40, 0, 0, 0, 0, 0, 0, 0, 1, 2);
