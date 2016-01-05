@@ -15,7 +15,7 @@ import pg8000
 import tilde.core.model as model
 
 
-DB_SCHEMA_VERSION = '5.10'
+DB_SCHEMA_VERSION = '5.11'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
@@ -90,7 +90,7 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
             session.add(pragma)
         else:
             if pragma.content != DB_SCHEMA_VERSION:
-                sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, p.content))
+                sys.exit('Database %s is incompatible: expected schema version %s, found %s' % (connstring.split('/')[-1], DB_SCHEMA_VERSION, pragma.content))
         # 3.
         chk = session.query(model.Hierarchy_value).first()
         if not chk:
