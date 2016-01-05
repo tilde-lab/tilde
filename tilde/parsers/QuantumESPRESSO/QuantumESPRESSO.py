@@ -252,8 +252,21 @@ class QuantumESPRESSO(Output):
 
         if atomic_data: self.structures.append(atomic_data)
 
-        for check in [  filename.replace('.' + filename.split('.')[-1], '') + '.in'  ]: # NB no guarantee this file fits!
-            if os.path.exists(os.path.join(cur_folder, check)): self.related_files.append(os.path.join(cur_folder, check))
+        # NB we have absolutely no guarantee this input fits --- is there a better solution?
+        first_check = os.path.join(cur_folder, filename.replace('.' + filename.split('.')[-1], '') + '.in')
+        if os.path.exists(first_check):
+            self.related_files.append(first_check)
+            self.info['input'] = open(first_check).read()
+        else:
+            candidates = []
+            for i in os.listdir(cur_folder):
+                if i.endswith(".in") or i.endswith(".inp") or i.endswith(".input"):
+                    candidates.append(i)
+            if not candidates: self.warning('No input found!')
+            elif len(candidates) > 1: self.warning('Ambiguous inputs found: %s' % (", ".join(candidates)))
+            else:
+                self.related_files.append(os.path.join(cur_folder, candidates[0]))
+                self.info['input'] = open(os.path.join(cur_folder, candidates[0])).read()
 
     @staticmethod
     def fingerprints(test_string):
