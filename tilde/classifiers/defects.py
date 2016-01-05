@@ -48,7 +48,7 @@ def classify(tilde_obj):
                 if i==1: tilde_obj.info['standard'] += '1-d'
                 else: tilde_obj.info['standard'] += '-d'
                 tilde_obj.info['vac'] = round(c, 2)
-        tilde_obj.info['tags'].append('vacancy defect')
+        tilde_obj.info['tags'].append(0x2)
 
     return tilde_obj
 

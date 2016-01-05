@@ -2,9 +2,6 @@
 # Example classifier: tries to determine whatever you want...
 # Author: Evgeny Blokhin
 
-import os, sys
-
-
 # hierarchy API: __order__ to apply classifier
 __order__ = 1000
 

@@ -14,7 +14,7 @@ def classify(tilde_obj):
         return tilde_obj
     elif tilde_obj.structures[-1].periodicity in [2, 3]:
         return tilde_obj
-    tilde_obj.info['tags'].append('organic')
+    tilde_obj.info['tags'].append(0x1)
     tilde_obj.info['expanded'] = 1 # this means formula reduce is prohibited
 
     return tilde_obj

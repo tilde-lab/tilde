@@ -121,7 +121,7 @@ def classify(tilde_obj):
         tilde_obj.info['layers'] = len(content_by_layer)
 
         if len(adsorbate):
-            tilde_obj.info['tags'].append('adsorption')
+            tilde_obj.info['tags'].append(0x3)
             adsorbent_formula = ''
             r = reduce(fractions.gcd, adsorbate.values())
 

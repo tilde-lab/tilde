@@ -32,7 +32,7 @@ def classify(tilde_obj):
 
     # 2-component pseudo-perovskites
     if tilde_obj.info['elements'][0] in ['W', 'Re'] and len(tilde_obj.info['elements']) == 2:
-        if round(D) == 3: tilde_obj.info['tags'].append('perovskite')
+        if round(D) == 3: tilde_obj.info['tags'].append(0x4)
         return tilde_obj
     # all other 2-component systems are not perovskites
     if not A_site or not B_site: return tilde_obj
@@ -56,7 +56,7 @@ def classify(tilde_obj):
                 else:
                     if not 0.71 <= (rA + rC) / (math.sqrt(2) * (rB + rC)) <= 1.07: return tilde_obj
 
-    tilde_obj.info['tags'].append('perovskite')
+    tilde_obj.info['tags'].append(0x4)
 
     if tilde_obj.structures[-1].periodicity != 3: return tilde_obj # all below is for 3d case : TODO
 
