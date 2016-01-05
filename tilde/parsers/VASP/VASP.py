@@ -417,7 +417,7 @@ class XML_Output(Output):
             for atom in sorted(atom_hubbard.keys()):
                 self.info['H'] += ' %s:%s' % (atom, atom_hubbard[atom])
 
-            self.info['H_types'].append('+U')
+            self.info['H_types'].append(0x6)
 
         # Hamiltonians: HF admixing
         elif self.parameters.get("LHFCALC", False):
@@ -428,12 +428,12 @@ class XML_Output(Output):
             else:
                 self.info['H'] = "HSE06 %.2f" % screening
 
-            self.info['H_types'].extend(['GGA', 'hybrid'])
+            self.info['H_types'].extend([0x2, 0x4])
 
         # Hamiltonians: GGA
         else:
             self.info['H'] = "PBE" # TODO GGA options
-            self.info['H_types'].append('GGA')
+            self.info['H_types'].append(0x2)
 
         # tolerances
         self.info['tol'] = 'cutoff %seV' % int(self.parameters['ENMAX'])

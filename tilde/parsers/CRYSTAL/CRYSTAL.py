@@ -885,26 +885,26 @@ class CRYSTOUT(Output):
 
         # Hamiltonian part
         hamiltonian_parts = { # TODO CRYSTAL14
-        'DIRAC-SLATER LDA': {'name': 'LDA', 'type': 'LDA'},
-        'PERDEW-ZUNGER': {'name': 'PZ_LDA', 'type': 'LDA'},
-        'VOSKO-WILK-NUSAIR': {'name': 'WVN_LDA', 'type': 'LDA'},
-        'PERDEW-WANG LSD': {'name': 'PW_LDA', 'type': 'LDA'},
-        'VON BARTH-HEDIN': {'name': 'VBH_LDA', 'type': 'LDA'},
+        'DIRAC-SLATER LDA':         {'name': 'LDA',             'type': 0x1},
+        'PERDEW-ZUNGER':            {'name': 'PZ_LDA',          'type': 0x1},
+        'VOSKO-WILK-NUSAIR':        {'name': 'WVN_LDA',         'type': 0x1},
+        'PERDEW-WANG LSD':          {'name': 'PW_LDA',          'type': 0x1},
+        'VON BARTH-HEDIN':          {'name': 'VBH_LDA',         'type': 0x1},
 
-        'PERDEW-WANG GGA': {'name': 'PW_GGA', 'type': 'GGA'},
-        'BECKE': {'name': 'B_GGA', 'type': 'GGA'},
-        'LEE-YANG-PARR': {'name': 'LYP_GGA', 'type': 'GGA'},
-        'PERDEW-BURKE-ERNZERHOF': {'name': 'PBE_GGA', 'type': 'GGA'},
-        'SOGGA': {'name': 'SOGGA', 'type': 'GGA'},
-        'PERDEW86': {'name': 'P86_GGA', 'type': 'GGA'},
-        'PBEsol': {'name': 'PBESOL_GGA', 'type': 'GGA'},
-        'WILSON-LEVY': {'name': 'WL_GGA', 'type': 'GGA'},
-        'WU-COHEN GGA': {'name': 'WC_GGA', 'type': 'GGA'},
+        'PERDEW-WANG GGA':          {'name': 'PW_GGA',          'type': 0x2},
+        'BECKE':                    {'name': 'B_GGA',           'type': 0x2},
+        'LEE-YANG-PARR':            {'name': 'LYP_GGA',         'type': 0x2},
+        'PERDEW-BURKE-ERNZERHOF':   {'name': 'PBE_GGA',         'type': 0x2},
+        'SOGGA':                    {'name': 'SOGGA',           'type': 0x2},
+        'PERDEW86':                 {'name': 'P86_GGA',         'type': 0x2},
+        'PBEsol':                   {'name': 'PBESOL_GGA',      'type': 0x2},
+        'WILSON-LEVY':              {'name': 'WL_GGA',          'type': 0x2},
+        'WU-COHEN GGA':             {'name': 'WC_GGA',          'type': 0x2},
         }
 
         if ' HARTREE-FOCK HAMILTONIAN\n' in self.data:
             self.info['H'] = 'Hartree-Fock'
-            self.info['H_types'].append('HF')
+            self.info['H_types'].append(0x5)
 
         elif ' (EXCHANGE)[CORRELATION] FUNCTIONAL:' in self.data:
             ex, corr = self.data.split(' (EXCHANGE)[CORRELATION] FUNCTIONAL:', 1)[-1].split("\n", 1)[0].split(')[')
@@ -931,7 +931,7 @@ class CRYSTOUT(Output):
             corr = self.data.split('\n THE CORRELATION FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
             try:
                 corr = hamiltonian_parts[corr]['name']
-                self.info['H_types'].extend([ hamiltonian_parts[corr]['type'], 'HF' ]) # is it correct? TODO check
+                self.info['H_types'].append(hamiltonian_parts[corr]['type'])
             except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
             self.info['H'] = "Hartree-Fock/%s" % corr
 
@@ -944,7 +944,7 @@ class CRYSTOUT(Output):
             self.info['H'] = "pure %s" % ex
 
         if '\n HYBRID EXCHANGE ' in self.data:
-            self.info['H_types'].append('hybrid')
+            self.info['H_types'].append(0x4)
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))
 

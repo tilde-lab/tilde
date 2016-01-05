@@ -6,16 +6,13 @@
 
 __order__ = 4
 
-xc_types = [
-    'HF', '+U', 'vdW',                          # Hartree-Fock and empiric corrections
-    'LDA', 'GGA', 'meta-GGA', 'hybrid',         # Jacob's ladder http://dx.doi.org/10.1063/1.1904565
-    'MP', 'CC', 'CI', 'GW'                      # post-Hartree-Fock
+xc_types = [                    # see hierarchy values in the file init-data.sql
+    0x1, 0x2, 0x3, 0x4,         # main types of the Jacob's ladder, http://dx.doi.org/10.1063/1.1904565
+    0x5, 0x6, 0x7,              # Hartree-Fock, +U, vdW
 ]
 
 def classify(tilde_obj):
     for i in tilde_obj.info['H_types']:
         if not i in xc_types: raise RuntimeError("Unknown xc type: %s (maybe typo?)" % i)
-
-    if not tilde_obj.info['H_types']: tilde_obj.info['H_types'] = ['unknown']
 
     return tilde_obj
