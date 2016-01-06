@@ -289,7 +289,7 @@ class CRYSTOUT(Output):
 
             if self.molecular_case: pbc = False
 
-            crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data!
+            crystal_data = re.sub( ' PROCESS(.{32})WORKING\n', '', crystal_data) # warning! MPI statuses may spoil valuable data
 
             # this is to account correct cart->frac atomic coords conversion using cellpar_to_cell ASE routine
             # 3x3 cell is used only here to obtain ab_normal and a_direction
@@ -338,7 +338,7 @@ class CRYSTOUT(Output):
                 matrix = cellpar_to_cell(parameters, ab_normal, a_direction) # TODO : ab_normal, a_direction may in some cases belong to completely other structure!
                 structures.append( Atoms(symbols=symbols, cell=matrix, scaled_positions=atoms, pbc=pbc) )
             else:
-                structures.append( Atoms(symbols=symbols, positions=atoms, pbc=False) )
+                structures.append( Atoms(symbols=symbols, cell=[self.PERIODIC_LIMIT, self.PERIODIC_LIMIT, self.PERIODIC_LIMIT], positions=atoms, pbc=False) )
 
         return structures
 
@@ -559,6 +559,7 @@ class CRYSTOUT(Output):
     def get_input_and_version(self, inputdata):
         # get version
         version = ''
+        inputdata = re.sub( ' PROCESS(.{32})WORKING\n', '', inputdata) # warning! MPI statuses may spoil valuable data
         v = self.patterns['version'].search(inputdata)
         if v:
             v = v.group().split("\n")
@@ -635,7 +636,7 @@ class CRYSTOUT(Output):
         if len(bs) == 1:
             return self.get_bs_input() # Basis set is absent in output, input may be not enough!
         bs = bs[-1].split("*******************************************************************************\n", 1)[-1] # NO BASE FIXINDEX IMPLEMENTED!
-        bs = re.sub( ' PROCESS(.{32})WORKING\n', '', bs) # warning! MPI statuses may spoil valuable data!
+        bs = re.sub( ' PROCESS(.{32})WORKING\n', '', bs) # warning! MPI statuses may spoil valuable data
         bs = bs.splitlines()
 
         atom_order = []
@@ -901,63 +902,69 @@ class CRYSTOUT(Output):
         'WILSON-LEVY':              {'name': 'WL_GGA',          'type': 0x2},
         'WU-COHEN GGA':             {'name': 'WC_GGA',          'type': 0x2},
         }
+        exch, corr = '', ''
 
         if ' HARTREE-FOCK HAMILTONIAN\n' in self.data:
             self.info['H'] = 'Hartree-Fock'
             self.info['H_types'].append(0x5)
 
         elif ' (EXCHANGE)[CORRELATION] FUNCTIONAL:' in self.data:
-            ex, corr = self.data.split(' (EXCHANGE)[CORRELATION] FUNCTIONAL:', 1)[-1].split("\n", 1)[0].split(')[')
-            ex = ex.replace("(", "")
+            exch, corr = self.data.split(' (EXCHANGE)[CORRELATION] FUNCTIONAL:', 1)[-1].split("\n", 1)[0].split(')[')
+            exch = exch.replace("(", "")
             corr = corr.replace("]", "")
             try:
-                self.info['H_types'].append(hamiltonian_parts[ex]['type'])
-                ex = hamiltonian_parts[ex]['name']
-            except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
+                self.info['H_types'].append(hamiltonian_parts[exch]['type'])
+                exch = hamiltonian_parts[exch]['name']
+            except KeyError: self.warning( 'Unknown potential: %s' % exch )
             try:
                 if not hamiltonian_parts[corr]['type'] in self.info['H_types']:
                     self.info['H_types'].append(hamiltonian_parts[corr]['type'])
                 corr = hamiltonian_parts[corr]['name']
-            except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
+            except KeyError: self.warning( 'Unknown potential: %s' % corr )
 
-            if ex == 'PBE_GGA' and corr == 'PBE_GGA':
+            if exch == 'PBE_GGA' and corr == 'PBE_GGA':
                 self.info['H'] = 'PBE'
-            elif ex == 'PBESOL_GGA' and corr == 'PBESOL_GGA':
+            elif exch == 'PBESOL_GGA' and corr == 'PBESOL_GGA':
                 self.info['H'] = 'PBEsol'
             else:
-                self.info['H'] = "%s/%s" % (ex, corr)
+                self.info['H'] = "%s/%s" % (exch, corr)
 
         elif '\n THE CORRELATION FUNCTIONAL ' in self.data:
             corr = self.data.split('\n THE CORRELATION FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
+            name = corr
             try:
-                corr = hamiltonian_parts[corr]['name']
+                name = hamiltonian_parts[corr]['name']
                 self.info['H_types'].append(hamiltonian_parts[corr]['type'])
-            except KeyError: self.warning( 'Unknown Hamiltonian %s' % corr )
-            self.info['H'] = "Hartree-Fock/%s" % corr
+            except KeyError: self.warning( 'Unknown potential: %s' % corr )
+            self.info['H'] = "%s (pure corr.)" % name
 
         elif '\n THE EXCHANGE FUNCTIONAL ' in self.data:
-            ex = self.data.split('\n THE EXCHANGE FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
+            exch = self.data.split('\n THE EXCHANGE FUNCTIONAL ', 1)[-1].split("\n", 1)[0].replace("IS ACTIVE", "").strip()
+            name = exch
             try:
-                ex = hamiltonian_parts[ex]['name']
-                self.info['H_types'].append(hamiltonian_parts[ex]['type'])
-            except KeyError: self.warning( 'Unknown Hamiltonian %s' % ex )
-            self.info['H'] = "pure %s" % ex
+                name = hamiltonian_parts[exch]['name']
+                self.info['H_types'].append(hamiltonian_parts[exch]['type'])
+            except KeyError: self.warning( 'Unknown potential: %s' % exch )
+            self.info['H'] = "%s (pure exch.)" % name
 
         if '\n HYBRID EXCHANGE ' in self.data:
             self.info['H_types'].append(0x4)
             hyb = self.data.split('\n HYBRID EXCHANGE ', 1)[-1].split("\n", 1)[0].split()[-1]
             hyb = int(math.ceil(float(hyb)))
 
-            # TODO combinations
             if hyb == 25 and self.info['H'] == 'PBE':
                 self.info['H'] = 'PBE0'
+            elif hyb == 20 and exch == 'B_GGA' and corr == 'LYP_GGA':
+                self.info['H'] = 'B3LYP'
+            elif hyb == 20 and exch == 'B_GGA' and corr == 'PW_GGA':
+                self.info['H'] = 'B3PW'
             else:
                 h = self.info['H'].split('/')
                 h[0] += " (+" + str(hyb) + "%HF)"
                 self.info['H'] = '/'.join( h )
 
         if not self.info['H']:
-            self.warning( 'Hamiltonian not found!' )
+            self.warning( 'Potential not found!' )
             self.info['H'] = "unknown"
 
         # Spin part
