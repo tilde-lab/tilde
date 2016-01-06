@@ -160,7 +160,7 @@ class Codeversion(UniqueMixin, Base):
     __tablename__ = 'codeversions'
     version_id = Column(Integer, primary_key=True)
     family_id = Column(Integer, ForeignKey('codefamilies.family_id'))
-    content = Column(String, nullable=False, unique=True)
+    content = Column(Integer, nullable=False, unique=True)
     instances = relationship("Metadata")
 
     @classmethod
@@ -186,7 +186,7 @@ class Energy(Base):
 class Basis(Base):
     __tablename__ = 'basissets'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
-    kind = Column(String, nullable=False)
+    kind = Column(Integer, nullable=False)
     content = Column(LargeBinary, default=None)
 
 class Recipinteg(Base):

@@ -36,6 +36,9 @@ class API:
 
     def __init__(self, settings=settings):
         self.settings = settings
+
+        # Default hierarchy is set in the file init-data.sql
+        # Conventionally, the hierarchy values are set by hexadecimal numbers (with leading 0x)
         self.hierarchy, self.hierarchy_groups, self.hierarchy_values = get_hierarchy(settings)
 
         # *parser API*
@@ -247,7 +250,8 @@ class API:
         yield None, error
 
     def parse(self, parsable):
-        ''' High-level parsing:
+        '''
+        High-level parsing:
         determines the data format
         and combines parent-children outputs
         NB: this is the PUBLIC method

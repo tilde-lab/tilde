@@ -323,14 +323,14 @@ libxc_functionals = {
 
 for k, v in libxc_functionals.iteritems():
     if v['name'].startswith('XC_LDA'):
-        libxc_functionals[k].update({'type': ['LDA']})
+        libxc_functionals[k].update({'type': [0x1]})
     elif v['name'].startswith('XC_GGA'):
-        libxc_functionals[k].update({'type': ['GGA']})
+        libxc_functionals[k].update({'type': [0x2]})
     elif v['name'].startswith('XC_MGGA'):
-        libxc_functionals[k].update({'type': ['meta-GGA']})
+        libxc_functionals[k].update({'type': [0x3]})
     elif v['name'].startswith('XC_HYB_GGA'):
-        libxc_functionals[k].update({'type': ['GGA', 'hybrid']})
+        libxc_functionals[k].update({'type': [0x2, 0x4]})
     elif v['name'].startswith('XC_HYB_MGGA'):
-        libxc_functionals[k].update({'type': ['meta-GGA', 'hybrid']})
+        libxc_functionals[k].update({'type': [0x3, 0x4]})
     else:
         raise RuntimeError("Classification of libxc_functionals failed! Unknown type in name: %s" % v['name'])

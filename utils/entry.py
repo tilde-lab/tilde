@@ -27,7 +27,7 @@ from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 
 starttime = time.time()
-Tilde = API(settings)
+Tilde = API()
 
 parser = argparse.ArgumentParser(
     prog="[this_script]",
