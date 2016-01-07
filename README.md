@@ -6,7 +6,7 @@ Tilde is an intelligent data organizer and Python framework for computational (*
 
 ## Installation
 
-System packages ```build-essential python-dev libffi-dev``` (-dev or -devel) should be present. Also, Python package ```python-numpy``` should be present. [Set up Python virtualenv](https://virtualenv.readthedocs.org) inside the Tilde folder (note ```--system-site-packages``` option to access ```python-numpy```):
+System packages ```build-essential python-dev libffi-dev``` (-dev or -devel) must be present. Also, Python package ```python-numpy``` should be present. [Set up Python virtualenv](https://virtualenv.readthedocs.org) inside the Tilde folder (note ```--system-site-packages``` option to access ```python-numpy```):
 
 ```shell
 virtualenv --system-site-packages tilde

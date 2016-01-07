@@ -283,7 +283,7 @@ class Struct_ratios(Base):
     __tablename__ = 'struct_ratios'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     chemical_formula = Column(String, nullable=False)
-    is_primitive = Column(Boolean, default=False)
+    is_primitive = Column(Boolean, default=False) # not filled in, FIXME
     formula_units = Column(Integer, nullable=False)
     nelem = Column(Integer, nullable=False)
     dimensions = Column(Float, default=None)
