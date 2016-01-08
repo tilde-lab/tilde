@@ -2,6 +2,7 @@
 .directory
 .env
 .installed.cfg
+*.csv
 *DS_Store*
 pip-selfcheck.json
 pip-log.txt
