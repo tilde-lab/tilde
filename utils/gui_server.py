@@ -180,38 +180,42 @@ class BerliniumGUIProvider:
 
     @staticmethod
     def tags(req, session_id):
-        ui_controls = []
+        categs = []
         if not 'tids' in req: tids = None # standardize nulls
         else: tids = req['tids']
 
         if not tids:
-            for tid, cid, topic in Connection.Clients[session_id].db.query(model.Topic.tid, model.Topic.cid, model.Topic.topic).all():
-                # TODO assure there are checksums on such tid!!!
-
+            searchables = []
+            for tid, cid, topic in Connection.Clients[session_id].db.query(model.Topic.tid, model.Topic.cid, model.Topic.topic).order_by(model.Topic.topic).all(): # FIXME assure there are checksums on such tid!
                 try: entity = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
                 except IndexError: return (None, 'Schema and data do not match: different versions of code and database?')
 
+                if not entity.get('creates_topic'): continue # FIXME rewrite in SQL
+
+                topic = num2name(topic, entity, Tilde.hierarchy_values)
+                searchables.append((tid, topic))
+
                 if not entity.get('has_facet'): continue
 
-                ready_topic = html_formula(topic) if entity.get('is_chem_formula') else num2name(topic, entity, Tilde.hierarchy_values)
+                topic = html_formula(topic) if entity.get('is_chem_formula') else topic
 
-                topic_dict = {'tid': tid, 'topic': ready_topic}
+                topic_dict = {'tid': tid, 'topic': topic}
                 kind = 'tag'
 
                 if entity['cid'] == 2: # FIXME
                     topic_dict['symbols'] = extract_chemical_symbols(topic)
                     kind = 'mendeleev'
 
-                for n, tag in enumerate(ui_controls):
+                for n, tag in enumerate(categs):
                     if tag['cid'] == entity['cid']:
-                        ui_controls[n]['content'].append( topic_dict )
+                        categs[n]['content'].append( topic_dict )
                         break
-                else: ui_controls.append({
-                            'type': kind,
-                            'cid': entity['cid'],
-                            'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
-                            'sort': entity.get('sort', 1000),
-                            'content': [ topic_dict ]
+                else: categs.append({
+                    'type': kind,
+                    'cid': entity['cid'],
+                    'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
+                    'sort': entity.get('sort', 1000),
+                    'content': [ topic_dict ]
                 })
 
             for entity in Tilde.hierarchy:
@@ -220,7 +224,7 @@ class BerliniumGUIProvider:
                     orm_inst = getattr(getattr(model, cls), attr)
                     minimum, maximum = Connection.Clients[session_id].db.query(func.min(orm_inst), func.max(orm_inst)).one() # TODO: optimize
                     if minimum is not None and maximum is not None:
-                        ui_controls.append({
+                        categs.append({
                             'type': 'slider',
                             'cid': entity['cid'],
                             'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
@@ -229,8 +233,8 @@ class BerliniumGUIProvider:
                             'max': math.ceil(maximum*100)/100
                         })
 
-            ui_controls.sort(key=lambda x: x['sort'])
-            ui_controls = {'blocks': ui_controls, 'cats': Tilde.hierarchy_groups}
+            categs.sort(key=lambda x: x['sort'])
+            categs = {'blocks': categs, 'cats': Tilde.hierarchy_groups, 'searchables': searchables}
 
         else:
             params = {}
@@ -241,9 +245,9 @@ class BerliniumGUIProvider:
                     baseq += ' INNER JOIN tags t%s ON t%s.checksum = t%s.checksum AND t%s.tid = :param%s' % ( (n+1), n, (n+1), (n+1), n ) # FIXME self-joins in ORM
             current_engine = Connection.Clients[session_id].db.get_bind()
             for i in current_engine.execute(text(baseq), **params).fetchall():
-                ui_controls += list(i)
+                categs += list(i)
 
-        return (ui_controls, None)
+        return (categs, None)
 
     @staticmethod
     def summary(req, session_id):

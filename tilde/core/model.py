@@ -160,7 +160,7 @@ class Codeversion(UniqueMixin, Base):
     __tablename__ = 'codeversions'
     version_id = Column(Integer, primary_key=True)
     family_id = Column(Integer, ForeignKey('codefamilies.family_id'))
-    content = Column(Integer, nullable=False, unique=True)
+    content = Column(String, nullable=False)
     instances = relationship("Metadata")
 
     @classmethod
