@@ -1,4 +1,4 @@
-# Based on code from pymatgen.core.periodic_table
+# Based on the code from pymatgen.core.periodic_table
 
 def get_element_group(el_num):
     if el_num == 1: return 1

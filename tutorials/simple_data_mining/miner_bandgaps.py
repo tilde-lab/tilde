@@ -23,7 +23,7 @@ if settings['db']['engine'] == 'sqlite':
 settings['debug_regime'] = False
 session = connect_database(settings, db_choice)
 
-print "Formula (per cell)  band gap, eV  tfile"
+print "Formula (per cell)    Band gap, eV    File"
 
 emin_query = session.query(
     func.min(model.Energy.total).label('emin'),
@@ -33,8 +33,7 @@ emin_query = session.query(
 .group_by(model.Struct_ratios.chemical_formula, model.Struct_ratios.formula_units) \
 .subquery()
 
-for checksum, e, formula, cell_units, gap, fname in session.query(
-    model.Energy.checksum,
+for e, formula, cell_units, gap, filename in session.query(
     model.Energy.total,
     model.Struct_ratios.chemical_formula,
     model.Struct_ratios.formula_units,
@@ -51,6 +50,6 @@ for checksum, e, formula, cell_units, gap, fname in session.query(
     .filter(model.Electrons.gap > 0) \
     .order_by(model.Electrons.gap) \
     .all():
-    print "%s(%s)    %s    %s" % (formula, cell_units, gap, fname)
+    print "%s(%s)    %s    %s" % (formula, cell_units, gap, filename)
 
 print "Done in %1.2f sc" % (time.time() - starttime)

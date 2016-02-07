@@ -1,5 +1,5 @@
 # Pure-Python multidimensional k-means
-# not so bad compared to sklearn.cluster
+# results similar to sklearn.cluster
 
 import math
 import random
@@ -83,10 +83,10 @@ def make_random_point(n, lower, upper):
 
 if __name__ == "__main__":
     num_points, n, lower, upper = 30, 2, -10, 10
-    k = k_from_n(num_points)
     points = []
-    for i in range(num_points): points.append(make_random_point(n, lower, upper))
-    clusters = kmeans(points, k)
+    for i in range(num_points):
+        points.append(make_random_point(n, lower, upper))
+    clusters = kmeans(points, k_from_n(num_points))
 
     for p in points:
         print p

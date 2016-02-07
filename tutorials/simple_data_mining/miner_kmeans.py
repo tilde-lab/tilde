@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Example of data-mining on
-band gaps vs. periodic table element groups
+band gaps vs. periodic groups
 for binary compounds, using k-means clustering
 """
 import sys, os
@@ -15,6 +15,9 @@ from set_path import VIS_PATH
 from tilde.core.settings import settings, connect_database
 from tilde.core import model
 
+
+points_file = os.path.join(VIS_PATH, "points.csv")
+cluster_file = os.path.join(VIS_PATH, "clusters.csv")
 
 starttime = time.time()
 db_choice = None
@@ -32,7 +35,7 @@ emin_query = session.query(
 .group_by(model.Struct_ratios.chemical_formula, model.Struct_ratios.formula_units) \
 .subquery()
 
-data, ref = [], []
+data = []
 i, collected = 0, []
 for elnum, gap, formula, e in session.query(func.distinct(model.Atom.number), model.Electrons.gap, model.Struct_ratios.chemical_formula, model.Energy.total) \
     .join(model.Structure, model.Atom.struct_id == model.Structure.struct_id) \
@@ -50,27 +53,23 @@ for elnum, gap, formula, e in session.query(func.distinct(model.Atom.number), mo
     collected.append(get_element_group(elnum))
     if not i % 2:
         collected.sort()
-        data.append(Point(collected + [gap]))
-        ref.append(collected + [gap, formula])
+        data.append(Point(collected + [gap], reference=formula))
         collected = []
-
-clusters = kmeans(data, k_from_n(len(data)))
-
-points_file = os.path.join(VIS_PATH, "points.csv")
-cluster_file = os.path.join(VIS_PATH, "clusters.csv")
 
 with open(points_file, "w") as s:
     s.write("x,y,z,label\n")
-    for n, i in enumerate(ref):
-        s.write(",".join(map(str, i)) + "\n")
+    for n, pnt in enumerate(data):
+        s.write(",".join(map(str, pnt.coords) + [pnt.reference]) + "\n")
+
+clusters = kmeans(data, k_from_n(len(data)))
+
 with open(cluster_file, "w") as s:
-    s.write("x,y,z\n")
-    for n, c in enumerate(clusters, 1):
-        for p in c.points:
-            s.write(",".join(map(str, p.coords)) + "\n")
-        s.write("-,-,-\n")
+    s.write("x,y,z,label\n")
+    for n, cluster in enumerate(clusters, 1):
+        for pnt in cluster.points:
+            s.write(",".join(map(str, pnt.coords) + [pnt.reference]) + "\n")
+        s.write("-,-,-,-\n")
 
 print points_file
 print cluster_file
-
 print "\nDone in %1.2f sc" % (time.time() - starttime)
