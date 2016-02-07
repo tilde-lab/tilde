@@ -143,7 +143,9 @@ for target in target_source:
                     output_lines += str(calc.convergence) + "\n"
                 if calc.tresholds:
                     for i in range(len(calc.tresholds)):
-                        output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % calc.ncycles[i] + "\n"
+                        try: ncycles = calc.ncycles[i]
+                        except IndexError: ncycles = ""
+                        output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % ncycles + "\n"
 
             # -s option
             if args.structures:
