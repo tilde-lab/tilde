@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+<title>K-means clustering visualization for ab initio materials data</title>
 <meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 <style>
 body{margin:0;padding:0;overflow:hidden;}
 html, body{height:100%;}
@@ -103,14 +105,19 @@ var layout = {
         }
         },
         xaxis: {
+        title: 'Group',
+        dtick: 1.0,
         type: 'linear',
         zeroline: false
         },
         yaxis: {
+        title: 'Group',
+        dtick: 1.0,
         type: 'linear',
         zeroline: false
         },
         zaxis: {
+        title: 'Band gap, eV',
         type: 'linear',
         zeroline: false
         }
