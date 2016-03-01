@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys
-import logging
+import os
 
 import set_path
 import tilde.core.model as model
@@ -9,119 +8,120 @@ from tilde.core.settings import EXAMPLE_DIR
 from . import TestLayerDB
 
 
-logger = logging.getLogger('tilde')
-logger.setLevel(logging.INFO)
-
 class Test_Topics(TestLayerDB):
     __test_calcs_dir__ = os.path.join(EXAMPLE_DIR, 'VASP')
     expected_topics_before = {
-        "V3MYGXYORMRSAYFR4WN4MSX3L6JI2DE7E3QRC4KYTXMDGCI": [
+        "QZAKBZE26UUMBYJBDDG7XBNYN5IZJJAAW3VI5OJ2CJPXCCI": [
             {'topic': u'SrTiO3',                         'cid': 1},
             {'topic': u'Sr',                             'cid': 2},
             {'topic': u'Ti',                             'cid': 2},
             {'topic': u'O',                              'cid': 2},
             {'topic': u'3',                              'cid': 3},
-            {'topic': u'3d',                             'cid': 5},
-            {'topic': u'total energy',                   'cid': 6},
-            {'topic': u'electron structure',             'cid': 6},
+            {'topic': u'3',                              'cid': 5},
+            {'topic': u'1',                              'cid': 6},
+            {'topic': u'2',                              'cid': 6},
             {'topic': u'PBE',                            'cid': 7},
             {'topic': u'O<sub>h</sub>',                  'cid': 10},
             {'topic': u'Pm-3m',                          'cid': 11},
             {'topic': u'8x8x8',                          'cid': 17},
-            {'topic': u'VASP',                           'cid': 22},
-            {'topic': u'plane waves',                    'cid': 80},
-            {'topic': u'GGA',                            'cid': 75},
-            {'topic': u'perovskite',                     'cid': 8},
-            {'topic': u'insulator',                      'cid': 26},
+            {'topic': u'2',                              'cid': 22},
+            {'topic': u'2',                              'cid': 80},
+            {'topic': u'2',                              'cid': 75},
+            {'topic': u'4',                              'cid': 8},
+            {'topic': u'1',                              'cid': 26},
             {'topic': u'cubic',                          'cid': 9},
             {'topic': u'none',                           'cid': 510},
             {'topic': u'none',                           'cid': 511},
             {'topic': u'none',                           'cid': 150},
-            {'topic': u'no',                             'cid': 15},
-            {'topic': u'no info',                        'cid': 28},
-            {'topic': u'221 &mdash; Pm-3m',              'cid': 50}
+            {'topic': u'1',                              'cid': 15},
+            {'topic': u'0',                              'cid': 28},
+            {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
+            {'topic': u'2',                              'cid': 1006}
         ],
-        "HYO6KU4ZBQWJJIGLO3DFO44DBO2LVZGYEHTPEIDEK2WGMCI": [
+        "R6BFJTRJUQ3C5QVGQCSGGZC7FHKAPAFHU7GIAT23AEMIMCI": [
             {'topic': u'Si16',                           'cid': 1},
             {'topic': u'Si',                             'cid': 2},
             {'topic': u'1',                              'cid': 3},
-            {'topic': u'3d',                             'cid': 5},
-            {'topic': u'total energy',                   'cid': 6},
+            {'topic': u'3',                              'cid': 5},
+            {'topic': u'1',                              'cid': 6},
             {'topic': u'PBE',                            'cid': 7},
             {'topic': u'C<sub>s</sub>',                  'cid': 10},
             {'topic': u'Cm',                             'cid': 11},
             {'topic': u'4x4x4',                          'cid': 17},
-            {'topic': u'VASP',                           'cid': 22},
-            {'topic': u'plane waves',                    'cid': 80},
-            {'topic': u'GGA',                            'cid': 75},
+            {'topic': u'2',                              'cid': 22},
+            {'topic': u'2',                              'cid': 80},
+            {'topic': u'2',                              'cid': 75},
             {'topic': u'monoclinic',                     'cid': 9},
             {'topic': u'none',                           'cid': 510},
             {'topic': u'none',                           'cid': 511},
             {'topic': u'none',                           'cid': 150},
-            {'topic': u'no',                             'cid': 15},
-            {'topic': u'no info',                        'cid': 26},
-            {'topic': u'no info',                        'cid': 28},
-            {'topic': u'8 &mdash; Cm',                   'cid': 50}
+            {'topic': u'1',                              'cid': 15},
+            {'topic': u'0',                              'cid': 26},
+            {'topic': u'0',                              'cid': 28},
+            {'topic': u'8 &mdash; Cm',                   'cid': 50},
+            {'topic': u'2',                              'cid': 1006}
         ]
     }
     expected_topics_after = {
-        "V3MYGXYORMRSAYFR4WN4MSX3L6JI2DE7E3QRC4KYTXMDGCI": [
+        "QZAKBZE26UUMBYJBDDG7XBNYN5IZJJAAW3VI5OJ2CJPXCCI": [
             {'topic': u'SrTiO3',                         'cid': 1},
             {'topic': u'Xx',                             'cid': 2},
             {'topic': u'Yy',                             'cid': 2},
             {'topic': u'Zz',                             'cid': 2},
             {'topic': u'Ww',                             'cid': 2},
             {'topic': u'3',                              'cid': 3},
-            {'topic': u'3d',                             'cid': 5},
-            {'topic': u'total energy',                   'cid': 6},
-            {'topic': u'electron structure',             'cid': 6},
+            {'topic': u'3',                              'cid': 5},
+            {'topic': u'1',                              'cid': 6},
+            {'topic': u'2',                              'cid': 6},
             {'topic': u'PBE',                            'cid': 7},
             {'topic': u'O<sub>h</sub>',                  'cid': 10},
             {'topic': u'Pm-3m',                          'cid': 11},
             {'topic': u'8x8x8',                          'cid': 17},
-            {'topic': u'PSAV',                           'cid': 22},
-            {'topic': u'plane waves',                    'cid': 80},
-            {'topic': u'GGA',                            'cid': 75},
-            {'topic': u'black magic',                    'cid': 75},
-            {'topic': u'white magic',                    'cid': 75},
-            {'topic': u'perovskite',                     'cid': 8},
-            {'topic': u'room-temperature superconductor','cid': 8},
-            {'topic': u'insulator',                      'cid': 26},
+            {'topic': u'5',                              'cid': 22},
+            {'topic': u'2',                              'cid': 80},
+            {'topic': u'2',                              'cid': 75},
+            {'topic': u'222',                            'cid': 75},
+            {'topic': u'240',                            'cid': 75},
+            {'topic': u'4',                              'cid': 8},
+            {'topic': u'165',                            'cid': 8},
+            {'topic': u'1',                              'cid': 26},
             {'topic': u'cubic',                          'cid': 9},
             {'topic': u'none',                           'cid': 510},
             {'topic': u'none',                           'cid': 511},
             {'topic': u'none',                           'cid': 150},
-            {'topic': u'no',                             'cid': 15},
-            {'topic': u'no info',                        'cid': 28},
-            {'topic': u'221 &mdash; Pm-3m',              'cid': 50}
+            {'topic': u'1',                              'cid': 15},
+            {'topic': u'0',                              'cid': 28},
+            {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
+            {'topic': u'2',                              'cid': 1006}
         ],
-        "HYO6KU4ZBQWJJIGLO3DFO44DBO2LVZGYEHTPEIDEK2WGMCI": [
+        "R6BFJTRJUQ3C5QVGQCSGGZC7FHKAPAFHU7GIAT23AEMIMCI": [
             {'topic': u'Si16',                           'cid': 1},
             {'topic': u'Xx',                             'cid': 2},
             {'topic': u'Yy',                             'cid': 2},
             {'topic': u'Zz',                             'cid': 2},
             {'topic': u'Ww',                             'cid': 2},
             {'topic': u'1',                              'cid': 3},
-            {'topic': u'3d',                             'cid': 5},
-            {'topic': u'total energy',                   'cid': 6},
+            {'topic': u'3',                              'cid': 5},
+            {'topic': u'1',                              'cid': 6},
             {'topic': u'PBE',                            'cid': 7},
             {'topic': u'C<sub>s</sub>',                  'cid': 10},
             {'topic': u'Cm',                             'cid': 11},
             {'topic': u'4x4x4',                          'cid': 17},
-            {'topic': u'PSAV',                           'cid': 22},
-            {'topic': u'plane waves',                    'cid': 80},
-            {'topic': u'GGA',                            'cid': 75},
-            {'topic': u'black magic',                    'cid': 75},
-            {'topic': u'white magic',                    'cid': 75},
-            {'topic': u'room-temperature superconductor','cid': 8},
+            {'topic': u'5',                              'cid': 22},
+            {'topic': u'2',                              'cid': 80},
+            {'topic': u'2',                              'cid': 75},
+            {'topic': u'222',                            'cid': 75},
+            {'topic': u'240',                            'cid': 75},
+            {'topic': u'165',                            'cid': 8},
             {'topic': u'monoclinic',                     'cid': 9},
             {'topic': u'none',                           'cid': 510},
             {'topic': u'none',                           'cid': 511},
             {'topic': u'none',                           'cid': 150},
-            {'topic': u'no',                             'cid': 15},
-            {'topic': u'no info',                        'cid': 26},
-            {'topic': u'no info',                        'cid': 28},
-            {'topic': u'8 &mdash; Cm',                   'cid': 50}
+            {'topic': u'1',                              'cid': 15},
+            {'topic': u'0',                              'cid': 26},
+            {'topic': u'0',                              'cid': 28},
+            {'topic': u'8 &mdash; Cm',                   'cid': 50},
+            {'topic': u'2',                              'cid': 1006}
         ]
     }
     checksums = expected_topics_before.keys()
@@ -133,7 +133,7 @@ class Test_Topics(TestLayerDB):
     def test_replaced_topics(self):
         obtained_topics_before = {}
         for checksum in self.checksums:
-            found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.uiTopic).join(model.tags, model.uiTopic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
+            found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
             obtained_topics_before[checksum] = found_topics
             obtained_topics_before[checksum].sort()
             self.expected_topics_before[checksum].sort()
@@ -144,14 +144,14 @@ class Test_Topics(TestLayerDB):
             TestLayerDB.failed = True
             raise
         else:
-            model.correct_topics(self.db.session, model, self.checksums, 22, 'PSAV', 'REPLACE', self.engine.hierarchy)
-            model.correct_topics(self.db.session, model, self.checksums, 2, ['Xx', 'Yy', 'Zz', 'Ww'], 'REPLACE', self.engine.hierarchy)
-            model.correct_topics(self.db.session, model, self.checksums, 75, ['black magic', 'white magic'], 'APPEND', self.engine.hierarchy)
-            model.correct_topics(self.db.session, model, self.checksums, 8, 'room-temperature superconductor', 'APPEND', self.engine.hierarchy)
+            model.correct_topics(self.db.session, model, self.checksums, 22,    '5',                         'REPLACE', self.engine.hierarchy)
+            model.correct_topics(self.db.session, model, self.checksums, 2,     ['Xx', 'Yy', 'Zz', 'Ww'],    'REPLACE', self.engine.hierarchy)
+            model.correct_topics(self.db.session, model, self.checksums, 75,    [str(0xDE), str(0xF0)],      'APPEND', self.engine.hierarchy)
+            model.correct_topics(self.db.session, model, self.checksums, 8,     str(0xA5),                   'APPEND', self.engine.hierarchy)
 
             obtained_topics_after = {}
             for checksum in self.checksums:
-                found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.uiTopic).join(model.tags, model.uiTopic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
+                found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
                 obtained_topics_after[checksum] = found_topics
                 obtained_topics_after[checksum].sort()
                 self.expected_topics_after[checksum].sort()

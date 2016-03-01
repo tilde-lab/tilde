@@ -16,8 +16,9 @@ from tilde.core.api import API
 from tilde.core.settings import settings, connect_database, DATA_DIR, EXAMPLE_DIR, TEST_DBS_FILE, TEST_DBS_REF_FILE
 
 
-logger = logging.getLogger('functests')
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 DELETE_TEST_DB = False
 
@@ -27,7 +28,7 @@ class Setup_DB:
         self.session = None
 
         if not os.path.exists(TEST_DBS_REF_FILE):
-            sys.stderr.write( '\nRef file with DB names not found, creating...\n' ) # fixme in a more elegant way
+            logger.warning( 'Ref file with DB names not found, creating...' )
             with open(TEST_DBS_REF_FILE, "w") as refsave:
                 refsave.write(self.dbname + "\n")
         else:
@@ -45,7 +46,6 @@ class Setup_FileDB(Setup_DB):
         logger.warning( '%s created' % self.dbname )
 
         if not DELETE_TEST_DB:
-            sys.stderr.write( '\n%s created\n' % self.dbname ) # fixme in a more elegant way
             with open(TEST_DBS_FILE, "a") as tmpsave:
                 tmpsave.write(self.dbname + "\n")
 
@@ -73,7 +73,6 @@ class Setup_ServerDB(Setup_DB):
         logger.warning( '%s created' % self.dbname )
 
         if not DELETE_TEST_DB:
-            sys.stderr.write( '\n%s created\n' % self.dbname ) # fixme in a more elegant way
             with open(TEST_DBS_FILE, "a") as tmpsave:
                 tmpsave.write(self.dbname + "\n")
 
@@ -102,6 +101,8 @@ class Setup_ServerDB(Setup_DB):
         logger.warning( "%s purged" % self.dbname )
 
 class TestLayerDB(unittest.TestCase):
+    report = logger
+
     @classmethod
     def setUpClass(cls, dbname='test', preferred_engine=None):
         cls.starttime = time.time()
@@ -121,30 +122,30 @@ class TestLayerDB(unittest.TestCase):
         cls.engine = API()
 
         expath = getattr(cls, '__test_calcs_dir__', os.path.join(EXAMPLE_DIR, 'VASP'))
-        logger.info("Path to consider: %s" % expath)
+        cls.report.info("Path to consider: %s" % expath)
 
         for task in cls.engine.savvyize(expath, recursive=True):
             filename = os.path.basename(task)
 
             for calc, error in cls.engine.parse(task):
                 if error:
-                    logger.info("%s %s" % (filename, error))
+                    cls.report.info("%s %s" % (filename, error))
                     continue
 
                 calc, error = cls.engine.classify(calc)
                 if error:
-                    logger.info("%s %s" % (filename, error))
+                    cls.report.info("%s %s" % (filename, error))
                     continue
 
                 checksum, error = cls.engine.save(calc, cls.db.session)
                 if error:
-                    logger.info("%s %s" % (filename, error))
+                    cls.report.info("%s %s" % (filename, error))
                     continue
 
-                logger.info(task + " successfully added")
+                cls.report.info(task + " successfully added")
 
         cls.perf = time.time() - cls.starttime
-        logger.info("test repository built in %1.2f sec" % cls.perf)
+        cls.report.info("test repository built in %1.2f sec" % cls.perf)
 
     @classmethod
     def tearDownClass(cls):

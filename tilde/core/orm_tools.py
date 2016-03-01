@@ -3,7 +3,6 @@
 # Idea by Fawzi Mohamed
 # Author: Evgeny Blokhin
 
-import os, sys
 import bcrypt
 
 
@@ -53,11 +52,11 @@ def get_or_create(cls, session, defaults=None, **kwds):
     result = session.query(cls).filter_by(**kwds).first()
     if result:
         return result, False
-    newVals=defaults
+    new_vals = defaults
     if defaults is None:
-        newVals={}
-    newVals.update(kwds)
-    result = cls(**newVals)
+        new_vals = {}
+    new_vals.update(kwds)
+    result = cls(**new_vals)
     session.add(result)
     session.flush()
     return result, True
@@ -88,12 +87,12 @@ def correct_topics(session, model, calc_id, cid, new_topics, mode, topics_hierar
 def _replace_topics(session, model, calc_id, cid, new_topics):
     new_terms = []
     for new_topic in new_topics:
-        new_term, created = model.get_or_create(model.uiTopic, session, cid=cid, topic=new_topic)
+        new_term, created = model.get_or_create(model.Topic, session, cid=cid, topic=new_topic)
         new_terms.append(new_term)
     session.commit()
 
     for checksum in calc_id:
-        for tid in session.query(model.tags.c.tid).join(model.uiTopic, model.tags.c.tid == model.uiTopic.tid).filter(model.uiTopic.cid == cid, model.tags.c.checksum == checksum).all():
+        for tid in session.query(model.tags.c.tid).join(model.Topic, model.tags.c.tid == model.Topic.tid).filter(model.Topic.cid == cid, model.tags.c.checksum == checksum).all():
              session.execute(model.delete(model.tags).where(model.and_(model.tags.c.checksum == checksum, model.tags.c.tid == tid[0])))
         session.commit()
 
@@ -104,7 +103,7 @@ def _replace_topics(session, model, calc_id, cid, new_topics):
 def _append_topics(session, model, calc_id, cid, new_topics):
     new_terms = []
     for new_topic in new_topics:
-        new_term, created = model.get_or_create(model.uiTopic, session, cid=cid, topic=new_topic)
+        new_term, created = model.get_or_create(model.Topic, session, cid=cid, topic=new_topic)
         new_terms.append(new_term)
     session.commit()
     for new_term in new_terms:
