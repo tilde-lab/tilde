@@ -170,7 +170,8 @@ def eplotter(task, data): # CRYSTAL, VASP, EXCITING
             fdata.append([n, i])
 
     for n in range(len(fdata)):
-        fdata[n][1] = "%10.5f" % fdata[n][1]
+        #fdata[n][1] = "%10.5f" % fdata[n][1]
+        fdata[n][1] = round(fdata[n][1], 5)
 
     results.append({'color': color, 'clickable:': clickable, 'data': fdata})
     return results
