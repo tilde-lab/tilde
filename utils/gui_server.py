@@ -20,15 +20,15 @@ from sockjs.tornado import SockJSRouter
 import ujson as json
 
 import set_path
-from tilde.core.settings import settings, connect_database
+from tilde.core.settings import settings
 from tilde.core.api import API
 from tilde.parsers import HASH_LENGTH
 from tilde.core.common import html_formula, extract_chemical_symbols, str2html, num2name, generate_cif
 import tilde.core.model as model
-from tilde.berlinium import Block_Connection as Connection, add_redirection, eplotter, wrap_cell
+from tilde.berlinium import Async_Connection, add_redirection, eplotter, wrap_cell
 
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.WARNING)
 
 CURRENT_TITLE = settings['title'] if settings['title'] else 'API version ' + API.version
 DB_TITLE = settings['db']['default_sqlite_db'] if settings['db']['engine'] == 'sqlite' else settings['db']['dbname']
@@ -37,15 +37,14 @@ Tilde = API(settings)
 
 class BerliniumGUIProvider:
     @staticmethod
-    def login(req, session_id):
+    def login(req, client_id, db_session):
         data = {
             'title': CURRENT_TITLE,
             'debug_regime': settings['debug_regime'],
             'version': Tilde.version,
             'cats': Tilde.hierarchy_groups
         }
-        Connection.Clients[session_id].authorized = True
-        Connection.Clients[session_id].db = connect_database(settings, no_pooling=True, default_actions=False, scoped=True)
+        Connection.Clients[client_id].authorized = True
 
         if not req.get('settings'): req['settings'] = {}
 
@@ -54,7 +53,7 @@ class BerliniumGUIProvider:
         if type(req['settings'].get('cols')) is not list or not 1 <= len(req['settings'].get('cols')) <= 40: return (None, 'Invalid settings!')
 
         for i in ['cols', 'colnum']:
-            Connection.Clients[session_id].usettings[i] = req['settings'].get(i)
+            Connection.Clients[client_id].usettings[i] = req['settings'].get(i)
 
         # all available columns are compiled here and sent to user to select between them
         avcols = []
@@ -72,14 +71,14 @@ class BerliniumGUIProvider:
         return (data, None)
 
     @staticmethod
-    def browse(req, session_id):
+    def browse(req, client_id, db_session):
         data = {'html': '', 'count': 0, 'msg': None}
         error = None
 
         try: start, sortby = int(req.get('start', 0)), int(req.get('sortby', 0))
         except ValueError: return (data, 'Sorry, unknown parameters in request')
-        start *= Connection.Clients[session_id].usettings['colnum']
-        stop = start + Connection.Clients[session_id].usettings['colnum']
+        start *= Connection.Clients[client_id].usettings['colnum']
+        stop = start + Connection.Clients[client_id].usettings['colnum']
         if sortby   == 0: sortby = model.Metadata.chemical_formula
         elif sortby == 1: sortby = model.Metadata.location
         else: return (data, 'Unknown sorting requested!')
@@ -115,7 +114,7 @@ class BerliniumGUIProvider:
                 except: return (data, 'Invalid request!')
 
             proposition = []
-            for i, _ in Connection.Clients[session_id].db.query(model.Calculation.checksum, sortby) \
+            for i, _ in db_session.query(model.Calculation.checksum, sortby) \
                 .join(model.Calculation.meta_data) \
                 .join(model.Calculation.uitopics) \
                 .filter(model.Topic.tid.in_(req['tids'])) \
@@ -128,31 +127,31 @@ class BerliniumGUIProvider:
 
             if not proposition: return ({'msg': 'Nothing found'}, error)
 
-            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).join(model.Calculation.uitopics).filter(model.Topic.tid.in_(req['tids'])).group_by(model.Calculation.checksum).having(func.count(model.Topic.tid) == len(req['tids'])).filter(and_(*clauses)).count()
+            data['count'] = db_session.query(model.Calculation.checksum).join(model.Calculation.uitopics).filter(model.Topic.tid.in_(req['tids'])).group_by(model.Calculation.checksum).having(func.count(model.Topic.tid) == len(req['tids'])).filter(and_(*clauses)).count()
 
         elif clauses:
             proposition = []
-            for i in Connection.Clients[session_id].db.query(model.Calculation.checksum).filter(and_(*clauses)).slice(start, stop).all():
+            for i in db_session.query(model.Calculation.checksum).filter(and_(*clauses)).slice(start, stop).all():
                 proposition += list(i)
             if not proposition: return ({'msg': 'Nothing found &mdash; change slider limits'}, error)
 
-            data['count'] = Connection.Clients[session_id].db.query(model.Calculation.checksum).filter(and_(*clauses)).count()
+            data['count'] = db_session.query(model.Calculation.checksum).filter(and_(*clauses)).count()
 
         if not proposition: return (data, 'Invalid request!')
 
         html_output, res_count = '', 0
         html_output = '<thead><tr><th class=not-sortable><input type="checkbox" id="d_cb_all"></th>'
         for entity in Tilde.hierarchy:
-            if entity['has_column'] and entity['cid'] in Connection.Clients[session_id].usettings['cols']:
+            if entity['has_column'] and entity['cid'] in Connection.Clients[client_id].usettings['cols']:
                 catname = str2html(entity['html']) if entity['html'] else entity['category'][0].upper() + entity['category'][1:]
 
                 plottable = '<input class=sc type=checkbox />' if entity['plottable'] else ''
 
                 html_output += '<th rel=' + str(entity['cid']) + '><span>' + catname + '</span>' + plottable + '</th>'
-        #if Connection.Clients[session_id].usettings['objects_expand']: html_output += '<th class="not-sortable">More...</th>'
+        #if Connection.Clients[client_id].usettings['objects_expand']: html_output += '<th class="not-sortable">More...</th>'
         html_output += '</tr></thead><tbody>'
 
-        for row, checksum in Connection.Clients[session_id].db.query(model.Grid.info, model.Metadata.checksum) \
+        for row, checksum in db_session.query(model.Grid.info, model.Metadata.checksum) \
             .filter(model.Grid.checksum == model.Metadata.checksum) \
             .filter(model.Grid.checksum.in_(proposition)) \
             .order_by(sortby).all():
@@ -165,11 +164,11 @@ class BerliniumGUIProvider:
 
             for entity in Tilde.hierarchy:
                 if not entity['has_column']: continue
-                if not entity['cid'] in Connection.Clients[session_id].usettings['cols']: continue
+                if not entity['cid'] in Connection.Clients[client_id].usettings['cols']: continue
 
                 html_output += wrap_cell(entity, data_obj, Tilde.hierarchy_values, table_view=True)
 
-            #if Connection.Clients[session_id].usettings['objects_expand']: html_output += "<td class=objects_expand><strong>click by row</strong></td>"
+            #if Connection.Clients[client_id].usettings['objects_expand']: html_output += "<td class=objects_expand><strong>click by row</strong></td>"
             html_output += '</tr>'
         html_output += '</tbody>'
 
@@ -179,14 +178,14 @@ class BerliniumGUIProvider:
         return (data, error)
 
     @staticmethod
-    def tags(req, session_id):
+    def tags(req, client_id, db_session):
         categs = []
         if not 'tids' in req: tids = None # standardize nulls
         else: tids = req['tids']
 
         if not tids:
             searchables = []
-            for tid, cid, topic in Connection.Clients[session_id].db.query(model.Topic.tid, model.Topic.cid, model.Topic.topic).order_by(model.Topic.topic).all(): # FIXME assure there are checksums on such tid!
+            for tid, cid, topic in db_session.query(model.Topic.tid, model.Topic.cid, model.Topic.topic).order_by(model.Topic.topic).all(): # FIXME assure there are checksums on such tid!
                 try: entity = [x for x in Tilde.hierarchy if x['cid'] == cid][0]
                 except IndexError: return (None, 'Schema and data do not match: different versions of code and database?')
 
@@ -222,7 +221,7 @@ class BerliniumGUIProvider:
                 if entity['has_slider']:
                     cls, attr = entity['has_slider'].split('.')
                     orm_inst = getattr(getattr(model, cls), attr)
-                    minimum, maximum = Connection.Clients[session_id].db.query(func.min(orm_inst), func.max(orm_inst)).one() # TODO: optimize
+                    minimum, maximum = db_session.query(func.min(orm_inst), func.max(orm_inst)).one() # TODO: optimize
                     if minimum is not None and maximum is not None:
                         categs.append({
                             'type': 'slider',
@@ -243,14 +242,14 @@ class BerliniumGUIProvider:
                 params["param" + str(n)] = list_item
                 if n > 1:
                     baseq += ' INNER JOIN tags t%s ON t%s.checksum = t%s.checksum AND t%s.tid = :param%s' % ( (n+1), n, (n+1), (n+1), n ) # FIXME self-joins in ORM
-            current_engine = Connection.Clients[session_id].db.get_bind()
+            current_engine = db_session.get_bind()
             for i in current_engine.execute(text(baseq), **params).fetchall():
                 categs += list(i)
 
         return (categs, None)
 
     @staticmethod
-    def summary(req, session_id):
+    def summary(req, client_id, db_session):
         if len(req['datahash']) != HASH_LENGTH: return (None, 'Invalid request!')
 
         step = -1
@@ -259,17 +258,17 @@ class BerliniumGUIProvider:
         if step != -1: clauses.append(model.Structure.step == step)
         else: clauses.append(model.Structure.final == True)
 
-        try: struct_id, a11, a12, a13, a21, a22, a23, a31, a32, a33 = Connection.Clients[session_id].db.query(model.Lattice.struct_id, model.Lattice.a11, model.Lattice.a12, model.Lattice.a13, model.Lattice.a21, model.Lattice.a22, model.Lattice.a23, model.Lattice.a31, model.Lattice.a32, model.Lattice.a33).filter(and_(*clauses)).one()
+        try: struct_id, a11, a12, a13, a21, a22, a23, a31, a32, a33 = db_session.query(model.Lattice.struct_id, model.Lattice.a11, model.Lattice.a12, model.Lattice.a13, model.Lattice.a21, model.Lattice.a22, model.Lattice.a23, model.Lattice.a31, model.Lattice.a32, model.Lattice.a33).filter(and_(*clauses)).one()
         except NoResultFound: return (None, 'Nothing found!')
 
         symbols, positions, is_final = [], [], False # TODO
         cell = [[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]]
-        for number, charge, magmom, x, y, z in Connection.Clients[session_id].db.query(model.Atom.number, model.Atom.charge, model.Atom.magmom, model.Atom.x, model.Atom.y, model.Atom.z).filter(model.Atom.struct_id == struct_id).all():
+        for number, charge, magmom, x, y, z in db_session.query(model.Atom.number, model.Atom.charge, model.Atom.magmom, model.Atom.x, model.Atom.y, model.Atom.z).filter(model.Atom.struct_id == struct_id).all():
             symbols.append(number)
             positions.append([x, y, z])
         cif = generate_cif(Atoms(symbols=symbols, cell=cell, positions=positions, pbc=True)) # TODO
 
-        info = Connection.Clients[session_id].db.query(model.Grid.info) \
+        info = db_session.query(model.Grid.info) \
             .filter(model.Grid.checksum == req['datahash']).one()
 
         summary = []
@@ -293,10 +292,10 @@ class BerliniumGUIProvider:
         }, None)
 
     @staticmethod
-    def optstory(req, session_id):
+    def optstory(req, client_id, db_session):
         data, error = None, None
 
-        try: tresholds = Connection.Clients[session_id].db.query(model.Struct_optimisation.tresholds) \
+        try: tresholds = db_session.query(model.Struct_optimisation.tresholds) \
             .filter(model.Struct_optimisation.checksum == req['datahash']).one()
         except NoResultFound: return (None, 'Nothing found!')
 
@@ -305,10 +304,10 @@ class BerliniumGUIProvider:
         return (data, error)
 
     @staticmethod
-    def estory(req, session_id):
+    def estory(req, client_id, db_session):
         data, error = None, None
 
-        try: convergence = Connection.Clients[session_id].db.query(model.Energy.convergence) \
+        try: convergence = db_session.query(model.Energy.convergence) \
             .filter(model.Energy.checksum == req['datahash']).one()
         except NoResultFound: return (None, 'Nothing found!')
 
@@ -317,13 +316,13 @@ class BerliniumGUIProvider:
         return (data, error)
 
     @staticmethod
-    def settings(req, session_id):
+    def settings(req, client_id, db_session):
         data, error = 1, None
 
         # *server + client-side* settings
         if req['area'] == 'cols':
             for i in ['cols', 'colnum']:
-                Connection.Clients[session_id].usettings[i] = req['settings'][i]
+                Connection.Clients[client_id].usettings[i] = req['settings'][i]
 
         else: error = 'Unknown settings context area!'
 
@@ -331,10 +330,7 @@ class BerliniumGUIProvider:
 
 
 if __name__ == "__main__":
-    test_session = connect_database(settings)
-    test_session.close()
-
-    #Connection = Block_Connection if settings['db']['engine'] == 'sqlite' else Async_Connection
+    Connection = Async_Connection
     Connection.GUIProvider = BerliniumGUIProvider
     DuplexRouter = SockJSRouter(Connection)
 
@@ -344,7 +340,9 @@ if __name__ == "__main__":
     )
     application.listen(settings['webport'], address='0.0.0.0')
 
-    logging.debug("%s (%s backend) is on the air on port %s\nPress Ctrl+C to quit\n" % (CURRENT_TITLE, settings['db']['engine'], settings['webport']))
+    logging.warning("%s (%s backend) is on the air on port %s" % (CURRENT_TITLE, settings['db']['engine'], settings['webport']))
+    logging.warning("Connections are %s" % Connection.Type)
+    logging.warning("Press Ctrl+C to quit")
 
     try: ioloop.IOLoop.instance().start()
     except KeyboardInterrupt: pass

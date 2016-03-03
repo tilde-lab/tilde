@@ -1,67 +1,69 @@
 
-# blocking implementation of websocket connections
+# implementation of blocking websocket connections
+# with (customly) pooled DB sessions
 
 import logging
 
 from tornado import ioloop
 from sockjs.tornado import SockJSConnection
 
-try: import ujson as json
-except ImportError: import json
+import ujson as json
 
+from impl import GUIProviderMockup, Client
+from tilde.core.settings import settings, connect_database
 
-class GUIProviderMockup:
-    pass
-
-class Client:
-    def __init__(self):
-        self.usettings = {}
-        self.authorized = False
-        self.db = None
 
 class Connection(SockJSConnection):
+    Type = 'blocking'
     Clients = {}
     GUIProvider = GUIProviderMockup
 
     def on_open(self, info):
         self.Clients[ getattr(self.session, 'session_id', self.session.__hash__()) ] = Client()
-        logging.debug("Server connected")
+        logging.info("Server connected %s-th client" % len(self.Clients))
 
     def on_message(self, message):
         logging.debug("Server got: %s" % message)
         try:
             message = json.loads(message)
             message.get('act')
-        except: return self.send(json.dumps({'error':'Not a valid JSON!'}))
+        except: return self.send(json.dumps({'act':'login', 'error':'Not a valid JSON!'}))
 
-        frame = { \
+        frame = {
+            'client_id': getattr(self.session, 'session_id', self.session.__hash__()),
             'act': message.get('act', 'unknown'),
             'req': message.get('req', ''),
             'error': '',
-            'result': '',
-            'session': getattr(self.session, 'session_id', self.session.__hash__())
+            'result': ''
         }
 
-        if not self.Clients[frame['session']].authorized and frame['act'] != 'login': return self.close()
+        # security check: a client must be authorized
+        if not self.Clients[frame['client_id']].authorized and frame['act'] != 'login': return self.close()
 
         if not hasattr(self.GUIProvider, frame['act']):
             frame['error'] = 'No server handler for action: %s' % frame['act']
             return self.respond(frame)
 
-        frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['session'] )
+        if not Connection.Clients[frame['client_id']].db: Connection.Clients[frame['client_id']].db = connect_database(settings, default_actions=False, no_pooling=True)
+
+        frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['client_id'], Connection.Clients[frame['client_id']].db )
         self.respond(frame)
 
     def respond(self, output):
-        del output['session']
+        del output['client_id']
         if not output['error'] and not output['result']:
             output['error'] = "Handler %s has returned an empty result!" % output['act']
 
         logging.debug("Server responds: %s" % output)
         self.send(json.dumps(output))
-        #self.close() # TODO?
 
     def on_close(self):
-        session_id = getattr(self.session, 'session_id', self.session.__hash__())
-        if self.Clients[session_id].db: self.Clients[session_id].db.close()
-        del self.Clients[session_id]
-        logging.debug("Server closed connection")
+        logging.info("Server will close connection with %s-th client" % len(self.Clients))
+        client_id = getattr(self.session, 'session_id', self.session.__hash__())
+
+        # must explicitly close db connection
+        try:
+            self.Clients[client_id].db.close()
+            self.Clients[client_id].db = None
+        except: pass
+        del self.Clients[client_id]

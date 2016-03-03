@@ -1,17 +1,25 @@
 #!/usr/bin/env python
+
 import os, sys
 import time
 import subprocess
 
-
 if __name__ == "__main__":
-    bd = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
-    dmn = subprocess.Popen([sys.executable, os.path.join(bd, 'basic_server.py')], env=os.environ.copy())
+    try:
+        prcnum = int(sys.argv[1])
+    except (IndexError, ValueError):
+        sys.exit("Usage: script #processes")
+
+    basedir = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+    daemon = subprocess.Popen([sys.executable, os.path.join(basedir, 'basic_server.py')])
     time.sleep(2) # wait for initialization
 
-    for i in range(5):
-        subprocess.Popen([sys.executable, os.path.join(bd, 'basic_client.py')], env=os.environ.copy())
-        time.sleep(0.5)
+    children = []
+    for i in range(prcnum):
+        children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'basic_client.py')]) )
 
-    time.sleep(7)
-    dmn.terminate()
+    time.sleep(prcnum + 2)
+    daemon.terminate()
+
+    for i in children:
+        assert i.poll() == 0

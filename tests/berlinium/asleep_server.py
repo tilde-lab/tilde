@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import json
+
 import time
 import logging
 
@@ -9,30 +9,29 @@ from tornado import web, ioloop
 from sockjs.tornado import SockJSRouter
 
 import set_path
-from tilde.core.settings import settings, connect_database
+from tilde.core.settings import settings
 from tilde.core.api import API
-from tilde.berlinium.block_impl import Connection
+from tilde.berlinium import Async_Connection
 
+
+logging.basicConfig(level=logging.INFO)
 
 Tilde = API()
-
 settings['debug_regime'] = False
-logging.basicConfig(level=logging.DEBUG)
 
 class SleepTester:
     @staticmethod
-    def login(req, session_id):
-        Connection.Clients[session_id].authorized = True
-        Connection.Clients[session_id].db = connect_database(settings, default_actions=False, scoped=True)
+    def login(req, client_id, db_session):
+        Connection.Clients[client_id].authorized = True
         return "OK", None
 
     @staticmethod
-    def sleep(req, session_id):
+    def sleep(req, client_id, db_session):
         result, error = '', None
         try: req = float(req)
         except: return result, 'Not a number!'
 
-        current_engine = Connection.Clients[session_id].db.get_bind()
+        current_engine = db_session.get_bind()
 
         if settings['db']['engine'] == 'postgresql':
             current_engine.execute(text('SELECT pg_sleep(:i)'), **{'i': req})
@@ -43,16 +42,18 @@ class SleepTester:
             c = conn.cursor()
             c.execute('SELECT sq_sleep(%s)' % req)
 
-        result = Tilde.count(Connection.Clients[session_id].db)
+        result = Tilde.count(db_session)
         return result, error
 
 if __name__ == "__main__":
+    Connection = Async_Connection
     Connection.GUIProvider = SleepTester
     DuplexRouter = SockJSRouter(Connection)
     application = web.Application(DuplexRouter.urls, debug=False)
     application.listen(settings['webport'], address='0.0.0.0')
 
-    logging.debug("Server started")
+    logging.info("DB is %s" % settings['db']['engine'])
+    logging.info("Connections are %s" % Connection.Type)
+    logging.info("Server started")
 
-    try: ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt: pass
+    ioloop.IOLoop.instance().start()

@@ -11,12 +11,12 @@ if __name__ == "__main__":
         sys.exit("Usage: script #processes")
 
     basedir = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
-    daemon = subprocess.Popen([sys.executable, os.path.join(basedir, 'asleep_server.py')])
+    daemon = subprocess.Popen([sys.executable, os.path.join(basedir, '../../utils/gui_server.py')])
     time.sleep(2) # wait for initialization
 
     children = []
     for i in range(prcnum):
-        children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'asleep_client.py')]) )
+        children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'gui_client.py')]) )
 
     time.sleep(prcnum + 2)
     daemon.terminate()
