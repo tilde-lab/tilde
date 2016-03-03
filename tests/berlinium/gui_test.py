@@ -3,23 +3,27 @@
 import os, sys
 import time
 import subprocess
+import unittest
 
-if __name__ == "__main__":
-    try:
-        prcnum = int(sys.argv[1])
-    except (IndexError, ValueError):
-        sys.exit("Usage: script #processes")
 
-    basedir = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
-    daemon = subprocess.Popen([sys.executable, os.path.join(basedir, '../../utils/gui_server.py')])
-    time.sleep(2) # wait for initialization
+basedir = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 
-    children = []
-    for i in range(prcnum):
-        children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'gui_client.py')]) )
+class Test_GUI_Server(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.daemon = subprocess.Popen([sys.executable, os.path.join(basedir, '../../utils/gui_server.py')])
+        time.sleep(2) # wait for initialization
 
-    time.sleep(prcnum + 2)
-    daemon.terminate()
+    def test_response(self):
+        prcnum = 10
+        children = []
+        for i in range(prcnum):
+            children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'gui_client.py')]) )
+        time.sleep(6)
 
-    for i in children:
-        assert i.poll() == 0
+        for i in children:
+            self.assertEqual(i.poll(), 0, "Server response is too slow")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.daemon.terminate()
