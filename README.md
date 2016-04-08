@@ -2,7 +2,7 @@ Tilde
 ==========
 [![DOI](https://zenodo.org/badge/18811/tilde-lab/tilde.svg)](https://zenodo.org/badge/latestdoi/18811/tilde-lab/tilde)
 
-Tilde is an intelligent data organizer and Python framework for computational (**ab initio**) materials science. Tilde creates systemized repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository. Repository GUI is coming.
+Tilde is an intelligent data organizer and Python framework for computational (**ab initio**) materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository. Web-based repository GUI is [available](https://github.com/tilde-lab/berlinium).
 
 ## Installation
 
@@ -27,6 +27,8 @@ Then test if the framework is ready:
 ./utils/tilde.sh -x
 ```
 
+Additionally, installation is covered in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc).
+
 ## Usage
 
 ```shell
@@ -39,10 +41,10 @@ For example, to scan folder(s) recursively (-r), with terse print (-t), showing 
 ./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
 ```
 
-Other example: for the perovskite structures, extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles) and detailed calculation info:
+Other example: for the perovskite structures (shipped with Tilde), extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles) and detailed calculation info:
 
 ```shell
-./utils/tilde.sh tilde/apps/perovskite_tilting/tests/outputs -m perovskite_tilting -i
+./utils/tilde.sh tilde/tests/apps/perovskite_tilting/outputs -m perovskite_tilting -i
 ```
 
 ## GUI
@@ -70,25 +72,26 @@ sh tests/run_tests.sh
 Other known similar initiatives are listed below:
 
 - Accelrys (BIOVIA) Pipeline Pilot and Materials Studio, http://accelrys.com/products
-- ADMIRAL framework: Advanced Data-Mining for Improved Research And Learning, Trinity College, Dublin
 - AFLOW framework and Aflowlib repository, http://www.aflowlib.org
 - AiiDA: Automated Infrastructure and Database for Ab-initio design, Bosch LLC (**Python**), http://aiida.net
 - Automated Topology Builder (ATB), http://compbio.biosci.uq.edu.au/atb
 - Blue Obelisk Data Repository (**XSLT, XML**), http://bodr.sourceforge.net
 - Catapp, http://www.slac.stanford.edu/~strabo/catapp
 - CCLib (**Python**), http://cclib.sf.net
-- CDF (**Python**), http://kitchingroup.cheme.cmu.edu/cdf
+- cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net
 - CEPDB: Harvard Clean Energy Project and distributed volunteer computing, http://cepdb.molecularspace.org
 - CMR (**Python**), https://wiki.fysik.dtu.dk/cmr
 - Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
-- cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net
+- Crystallography Open Database (including Theoretical Database
 - Delta project: Comparing Solid State DFT Codes, http://molmod.ugent.be/deltacodesdft
 - Electronic Structure Project, http://gurka.fysik.uu.se/ESP
 - ESTEST (**Python, XQuery**), http://estest.ucdavis.edu
+- Exabyte.io, Materials Discover Cloud, http://exabyte.io
 - J-ICE (based on **Jmol, Java**), http://j-ice.sourceforge.net
 - ioChem-BD (**Java**), http://www.iochem-bd.org
 - Materials Project (**Python**), http://www.materialsproject.org
-- MatNavi Materials Database, Materials Information Station, Tsukuba, http://caldb.nims.go.jp/CALDB/
+- MatNavi and AtomWork Materials Databases, Materials Information Station, Tsukuba, http://mits.nims.go.jp/matnavi/
+- MedeA Computational environment, http://www.materialsdesign.com/medea
 - MSE: Test Set for Materials Science and Engineering, http://mse.fhi-berlin.mpg.de
 - NoMaD: Novel Materials Discovery, http://nomad-repository.eu
 - NREL MatDB, http://materials.nrel.gov
@@ -99,7 +102,6 @@ Other known similar initiatives are listed below:
 - pyCMW (**Python**), a framework of Max Planck Institute for Iron Research GmbH
 - QMForge (**Python**), http://qmforge.sourceforge.net
 - Quixote, http://quixote.wikispot.org
-- Scipio (**Java**), currently inactive, https://scipio.iciq.es
 - WebMO: Web-based interface to computational chemistry packages (Java, Perl), http://webmo.net
 - WURM: database of computed physical properties of minerals, http://wurm.info
 

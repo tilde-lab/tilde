@@ -12,7 +12,7 @@ from . import TestLayerDB
 class Test_Consistency(TestLayerDB):
     __test_calcs_dir__ = EXAMPLE_DIR
     example_calc_count = 6
-    expected_performance = 6
+    expected_performance = 9
     expected_checksums = [
         "OLRUC4GMJKHKOFIEQIDNQBJDII4UH5WQCGQRO5MXD36GSCI",
         "YDRXN2CSNG5V7MWNEJL5ARYUJRULG7NHJUUGKI54GXSLACI",

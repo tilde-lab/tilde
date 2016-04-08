@@ -1,11 +1,11 @@
 
 # Vibrational thermodynamics module
-# this is to assure if we are able to avoid TD extraction
-# and obtain TD from phonons only
+# this is to assure if we are able to avoid thermodynamics extraction
+# from CRYSTAL outputs and calculate thermodynamics from phonons directly
+# UPD: an answer is not really, since the vibrational thermodynamics is
+# updated in CRYSTAL from version to version drastically.
 # Author: Evgeny Blokhin
 # partly uses Phonopy code written by Atsushi Togo
-
-import os, sys
 
 from tilde.core.common import ModuleError
 
@@ -15,10 +15,10 @@ class Vibtd():
         'ezpe': None,
         'zpe': None
         }
-        
+
         # actual for CRYSTAL code only
         if tilde_calc.phonons['zpe'] and tilde_calc.phonons['td']:
-            
-            # per cell or supercell? depends on CRYSTAL version!            
+
+            # per cell or supercell? depends on CRYSTAL version
             self.vibtd['zpe'] = tilde_calc.phonons['zpe']
             self.vibtd['td'] = tilde_calc.phonons['td']

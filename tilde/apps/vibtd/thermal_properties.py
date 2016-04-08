@@ -17,8 +17,7 @@
 
 import numpy as np
 
-# patched by jam31
-from core.constants import Constants
+from core.constants import Constants # patched by eb
 
 class ThermalPropertiesBase:
     def __init__(self, eigenvalues, weights=None):

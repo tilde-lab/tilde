@@ -10,7 +10,8 @@ Data for this test are published in:
 [4] PRB88, 241407 (2013), http://dx.doi.org/10.1103/PhysRevB.88.241407
 """
 
-import os, sys
+import os
+import unittest
 
 import set_path
 from tilde.core.api import API
@@ -54,26 +55,59 @@ test_data = {
     }
 }
 
-
-work = API()
-print 'Perovskite tilting module test:'
 for k, v in test_data.iteritems():
     if not os.path.exists(data_dir + os.sep + k):
         raise RuntimeError(k + ': missed file for test!')
-    for calc, error in work.parse(data_dir + os.sep + k):
-        if error:
-            raise RuntimeError(k + ': ' + error)
-        calc, error = work.classify(calc)
-        if error:
-            raise RuntimeError(k + ': ' + error)
-        calc = work.postprocess(calc)
-        if not 'perovskite_tilting' in calc.apps:
-            raise RuntimeError(k + ': invalid result!')
-        print "\nSource", v['comment'], "(" + k + ")"
-        for corner in v['data'].keys():
-            if not corner in calc.apps['perovskite_tilting']['data']:
+
+work = API()
+
+class Data_Perovskite_Tilting_Test(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+
+        cls.results = {}
+
+        for k, v in test_data.iteritems():
+            cls.results[k] = {}
+            for calc, error in work.parse(data_dir + os.sep + k):
+                if error:
+                    raise RuntimeError(k + ': ' + error)
+
+                calc, error = work.classify(calc)
+                if error:
+                    raise RuntimeError(k + ': ' + error)
+
+                calc = work.postprocess(calc)
+
+                cls.results[k] = [ v['data'], calc.apps['perovskite_tilting']['data'] ]
+
+    def test_all(self):
+        for k, v in self.results.iteritems():
+            centers = v[0].keys()
+            for center in centers:
+                self.assertEqual(v[0][center], v[1][center])
+
+
+if __name__ == "__main__":
+    for k, v in test_data.iteritems():
+        for calc, error in work.parse(data_dir + os.sep + k):
+            if error:
+                raise RuntimeError(k + ': ' + error)
+
+            calc, error = work.classify(calc)
+            if error:
+                raise RuntimeError(k + ': ' + error)
+
+            calc = work.postprocess(calc)
+            if not 'perovskite_tilting' in calc.apps:
                 raise RuntimeError(k + ': invalid result!')
-            print 'Octahedron N', corner
-            print 'expected:', v['data'][corner]
-            print 'got     :', calc.apps['perovskite_tilting']['data'][corner]
-print __doc__
+            print "\nSource", v['comment'], "(" + k + ")"
+
+            for center in v['data'].keys():
+                if not center in calc.apps['perovskite_tilting']['data']:
+                    raise RuntimeError(k + ': invalid result!')
+                print 'Octahedron N', center
+                print 'expected:', v['data'][center]
+                print 'got     :', calc.apps['perovskite_tilting']['data'][center]
+
+    print __doc__

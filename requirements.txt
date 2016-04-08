@@ -3,11 +3,11 @@ bcrypt
 nose
 importlib
 pg8000
-sqlalchemy
+sqlalchemy==1.0.12
 argparse
-ase
+ase==3.10.0
 -e "git+https://github.com/atztogo/spglib.git@91e8a317ab7e2da8e0d8546b31f40277e697b153#egg=spglib&subdirectory=python"
-tornado
+tornado==4.3.0
 sockjs-tornado
 websocket-client
 futures
