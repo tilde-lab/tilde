@@ -1,8 +1,8 @@
 
 # *SymmetryFinder*: platform-independent symmetry finder, wrapping Spglib code
-# *SymmetryHandler*: symmetry inferences for 0D, 1D, 2D and 3D-systems
+# *SymmetryHandler*: symmetry inferences for 0D-, 1D-, 2D- and 3D-systems
 # Author: Evgeny Blokhin
-# v021215
+# v080416
 
 import os, sys
 
@@ -71,20 +71,22 @@ class SymmetryHandler(SymmetryFinder):
         SymmetryFinder.__init__(self, accuracy)
         SymmetryFinder.get_spacegroup(self, tilde_obj)
 
-        # Tables from Bandura-Evarestov book
-        # "Non-emp calculations of crystals", 2004, ISBN 5-288-03401-X
+        # Data below are taken from Table 2.3 of the book
+        # Robert A. Evarestov, Quantum Chemistry of Solids,
+        # LCAO Treatment of Crystals and Nanostructures, 2nd Edition,
+        # Springer, 2012, http://dx.doi.org/10.1007/978-3-642-30356-2
+        # NB 7 crystal systems != 7 lattice systems
 
-        # space group 2 crystal system
-        # TODO: only for 3d systems
+        # space group to crystal system conversion
         if   195 <= self.n <= 230: self.symmetry = 'cubic'
         elif 168 <= self.n <= 194: self.symmetry = 'hexagonal'
-        elif 143 <= self.n <= 167: self.symmetry = 'rhombohedral'
+        elif 143 <= self.n <= 167: self.symmetry = 'trigonal'
         elif 75  <= self.n <= 142: self.symmetry = 'tetragonal'
         elif 16  <= self.n <= 74:  self.symmetry = 'orthorhombic'
         elif 3   <= self.n <= 15:  self.symmetry = 'monoclinic'
         elif 1   <= self.n <= 2:   self.symmetry = 'triclinic'
 
-        # space group 2 point group
+        # space group to point group conversion
         if   221 <= self.n <= 230: self.pg = 'O<sub>h</sub>'
         elif 215 <= self.n <= 220: self.pg = 'T<sub>d</sub>'
         elif 207 <= self.n <= 214: self.pg = 'O'
@@ -118,7 +120,7 @@ class SymmetryHandler(SymmetryFinder):
         elif self.n == 2:          self.pg = 'C<sub>i</sub>'
         elif self.n == 1:          self.pg = 'C<sub>1</sub>'
 
-        # space group 2 layer group
+        # space group to layer group conversion
         if tilde_obj.structures[-1].periodicity == 2:
             if self.n in [25, 26, 28, 51]:
                 tilde_obj.warning('Warning! Diperiodical group setting is undefined!')
