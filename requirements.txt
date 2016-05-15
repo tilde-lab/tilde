@@ -6,7 +6,7 @@ pg8000
 sqlalchemy==1.0.12
 argparse
 ase==3.10.0
--e "git+https://github.com/atztogo/spglib.git@91e8a317ab7e2da8e0d8546b31f40277e697b153#egg=spglib&subdirectory=python"
+spglib==1.9.4.2
 tornado==4.3.0
 sockjs-tornado
 websocket-client
