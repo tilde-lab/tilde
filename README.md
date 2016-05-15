@@ -27,22 +27,24 @@ Then test if the framework is ready:
 ./utils/tilde.sh -x
 ```
 
+Additionally, installation is covered in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc).
+
 ## Usage
 
 ```shell
 ./utils/tilde.sh --help
 ```
 
-For example, to scan folder(s) recursively (**-r**), with terse print (**-t**), showing information on calculation convergence (**-v**) and adding results to a database (**-a**):
+For example, to scan folder(s) recursively (**-r**), with terse print (**-t**), showing information on calculation metadata (**-i**) and convergence (**-v**) and adding results to a database (**-a**):
 
 ```shell
-./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a
+./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a -i
 ```
 
-Other example: for the perovskite structures (shipped with Tilde), extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles) and detailed calculation info. Here the **-i** switch shows additional details and the **-m** switch invokes **perovskite_tilting** module (see **apps** folder):
+Other example: for the perovskite structures (shipped with Tilde), extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles). Here the **-m** switch invokes **perovskite_tilting** module (see **apps** folder):
 
 ```shell
-./utils/tilde.sh tilde/tests/apps/perovskite_tilting/outputs -m perovskite_tilting -i
+./utils/tilde.sh tilde/tests/apps/perovskite_tilting/outputs -m perovskite_tilting
 ```
 
 ## GUI
