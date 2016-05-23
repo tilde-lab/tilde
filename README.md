@@ -2,11 +2,11 @@ Tilde
 ==========
 [![DOI](https://zenodo.org/badge/18811/tilde-lab/tilde.svg)](https://zenodo.org/badge/latestdoi/18811/tilde-lab/tilde)
 
-Tilde is an intelligent data organizer and Python framework for computational (**ab initio**) materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. The folders with the log files can be scanned and the results added into a repository. Web-based repository GUI is [separately available](https://github.com/tilde-lab/berlinium).
+Tilde is an intelligent data organizer and Python framework for computational _ab initio_ materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. Other data formats can be added relatively easily. The folders with the log files can be scanned and the results added into a repository. A simple usecase is described in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc). Web-based repository GUI is [separately available](https://github.com/tilde-lab/berlinium).
 
 ## Installation
 
-System packages ```build-essential python-dev python-numpy libffi-dev``` (**-dev** or **-devel**) must be present. [Set up Python virtualenv](https://virtualenv.readthedocs.org) inside the Tilde folder (mind ```--system-site-packages``` option to access ```python-numpy```):
+System packages ```build-essential python-dev python-numpy libffi-dev``` (**-dev** or **-devel**) must be present. Please, [set up Python virtualenv](https://virtualenv.readthedocs.org) inside the Tilde folder (and mind ```--system-site-packages``` option to access ```python-numpy```):
 
 ```shell
 virtualenv --system-site-packages tilde
@@ -20,8 +20,7 @@ Then activate virtualenv:
 
 Virtualenv should be always used while working with the codebase.
 Run ```pip install -r requirements.txt``` to install Python dependencies.
-Note, that **pip** manager should be minimum of version 7.1.
-Then test if the framework is ready:
+Finally, ensure if the framework is ready:
 
 ```shell
 ./utils/tilde.sh -x
