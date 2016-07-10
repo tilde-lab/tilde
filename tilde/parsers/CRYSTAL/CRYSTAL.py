@@ -12,7 +12,7 @@ from fractions import Fraction
 from numpy import dot, array, cross
 
 from ase.data import chemical_symbols, atomic_numbers
-from ase.lattice.spacegroup.cell import cellpar_to_cell
+from ase.geometry import cellpar_to_cell
 from ase.units import Hartree
 from ase import Atoms
 

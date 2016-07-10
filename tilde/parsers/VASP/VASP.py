@@ -12,7 +12,7 @@ from collections import defaultdict
 
 from numpy import dot, array, zeros
 
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 from ase.data import atomic_numbers, chemical_symbols
 from ase.atoms import Atoms
 from ase.units import Hartree

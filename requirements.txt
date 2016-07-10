@@ -5,7 +5,7 @@ importlib
 pg8000
 sqlalchemy==1.0.12
 argparse
-ase==3.10.0
+ase==3.11
 spglib==1.9.4.2
 tornado==4.3.0
 sockjs-tornado

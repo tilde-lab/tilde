@@ -18,7 +18,7 @@ import json
 from numpy.linalg import norm
 
 from ase import Atom, Atoms
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 
 from tilde.core.common import ModuleError #, generate_xyz
 from tilde.core.constants import Perovskite_Structure

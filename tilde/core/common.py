@@ -8,7 +8,7 @@ import math, datetime, re
 from numpy import dot, array, matrix
 
 from ase.atoms import Atoms
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 
 import ujson as json
 

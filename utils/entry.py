@@ -23,7 +23,7 @@ from tilde.core.common import write_cif, num2name
 from tilde.core.symmetry import SymmetryFinder
 from tilde.core.api import API
 
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 
 
 starttime = time.time()

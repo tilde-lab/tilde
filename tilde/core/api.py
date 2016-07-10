@@ -22,7 +22,7 @@ from tilde.parsers import Output
 import tilde.core.model as model
 
 from ase.data import chemical_symbols
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 from sqlalchemy import exists, func
 from sqlalchemy.orm.exc import NoResultFound
 
