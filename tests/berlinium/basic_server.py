@@ -65,7 +65,7 @@ if __name__ == "__main__":
     )
     application.listen(settings['webport'], address='0.0.0.0')
 
-    logging.info("DB is %s" % settings['db']['engine'])
+    logging.info("DB engine is %s" % settings['db']['engine'])
     logging.info("Connections are %s" % Connection.Type)
     logging.info("Server started")
 
