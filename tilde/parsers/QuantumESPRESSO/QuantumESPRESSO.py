@@ -3,6 +3,8 @@
 # Author: Evgeny Blokhin
 # TODO: check ibrav settings, parsing might be wrong
 
+from __future__ import division
+
 import os, sys
 import datetime, time
 
@@ -116,7 +118,7 @@ class QuantumESPRESSO(Output):
                     n += 1
                     next_line = self.data[n].split()
                     if not next_line: break
-                    cell_data[i][:] = map(float, next_line)
+                    cell_data[i][:] = list(map(float, next_line))
                 else:
                     mult = 1
                     if "bohr" in cur_line: mult = Bohr
@@ -128,7 +130,7 @@ class QuantumESPRESSO(Output):
                 for i in range(len(pos_data)):
                     n += 1
                     next_line = self.data[n].split()
-                    pos_data[i][:] = map(float, next_line[1:4])
+                    pos_data[i][:] = list(map(float, next_line[1:4]))
                 if not atomic_data: continue
 
                 if coord_flag=='alat)':
@@ -150,7 +152,7 @@ class QuantumESPRESSO(Output):
                 xc_parts = xc_str[ : xc_str.find("(") ].split()
                 if len(xc_parts) == 1: xc_parts = xc_parts[0].split('+')
                 if len(xc_parts) < 4: xc_parts = [ '+'.join(xc_parts) ]
-                xc_parts = map(lambda x: x.lower().strip("-'\""), xc_parts)
+                xc_parts = [x.lower().strip("-'\"") for x in xc_parts]
 
                 if len(xc_parts) == 1:
                     try:
@@ -160,7 +162,7 @@ class QuantumESPRESSO(Output):
                         self.info['H'] = xc_parts[0]
                 else:
                     xc_parts = '+'.join(xc_parts)
-                    match = [ i for i in xc_internal_map.values() if xc_parts in i['setup'] ]
+                    match = [ i for i in list(xc_internal_map.values()) if xc_parts in i['setup'] ]
                     if match:
                         self.info['H'] = match[0]['name']
                         self.info['H_types'].extend( match[0]['type'] )
@@ -196,7 +198,7 @@ class QuantumESPRESSO(Output):
                     if eigs_collect:
                         next_line = next_line.split()
                         if next_line:
-                            try: eigs_columns[-1] += map(float, next_line)
+                            try: eigs_columns[-1] += list(map(float, next_line))
                             except ValueError: eigs_failed = True
                         else: eigs_collect = False
                         continue
@@ -206,7 +208,7 @@ class QuantumESPRESSO(Output):
                     elif "    k =" in next_line:
                         tot_k += 1
                         coords = next_line.strip().replace("k =", "")[:21]
-                        try: kpts.append(map(float, [coords[0:7], coords[7:14], coords[14:21]]))
+                        try: kpts.append(list(map(float, [coords[0:7], coords[7:14], coords[14:21]])))
                         except ValueError: eigs_failed = True
                         eigs_collect = True
                         eigs_columns.append([])
@@ -241,7 +243,7 @@ class QuantumESPRESSO(Output):
                     k_shape = linalg.inv( atomic_data.cell ).transpose()
                     for k in kpts:
                         bz_vec_cur = dot( k, k_shape )
-                        bz_vec_dir = map(sum, zip(bz_vec_cur, bz_vec_ref))
+                        bz_vec_dir = list(map(sum, list(zip(bz_vec_cur, bz_vec_ref))))
                         bz_vec_ref = bz_vec_cur
                         d += linalg.norm( bz_vec_dir )
                         band_obj['abscissa'].append(d)

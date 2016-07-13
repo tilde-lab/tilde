@@ -164,7 +164,7 @@ class Output:
             str(self.info['energy']) + " " +
             self.info['prog'] + " " +
             str(self.info['input']) + " " +
-            str(sum(map(lambda x: 2**x, self.info['calctypes'])))
+            str(sum([2**x for x in self.info['calctypes']]))
         ) # this is fixed in DB schema 5.11 and should not be changed
 
         result = base64.b32encode(calc_checksum.digest())
