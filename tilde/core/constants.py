@@ -2,6 +2,7 @@
 # Data bank of various const values
 # Author: Evgeny Blokhin
 
+from __future__ import division
 from math import pi, sqrt
 
 

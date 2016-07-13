@@ -118,7 +118,7 @@ def write_settings(settings):
         f = open(DATA_DIR + os.sep + SETTINGS_FILE, 'w')
         f.writelines(json.dumps(settings, indent=0))
         f.close()
-        os.chmod(os.path.abspath(DATA_DIR + os.sep + SETTINGS_FILE), 0777) # to avoid (or create?) IO problems with multiple users
+        os.chmod(os.path.abspath(DATA_DIR + os.sep + SETTINGS_FILE), 0o777) # to avoid (or create?) IO problems with multiple users
     except IOError:
         return False
     else:
@@ -162,7 +162,7 @@ def get_hierarchy(settings):
             })
             try: hgroup_ids[item.hgroup_id].append(item.cid)
             except KeyError: hgroup_ids[item.hgroup_id] = [item.cid]
-    except RuntimeError, e:
+    except RuntimeError as e:
         session.close()
         sys.exit(e)
     for item in session.query(model.Hierarchy_group).all():

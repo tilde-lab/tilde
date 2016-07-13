@@ -24,11 +24,11 @@ def metric(v):
     '''
     Get direction of vector
     '''
-    return map(lambda x: int(math.copysign(1, x)) if x else 0, v)
+    return [int(math.copysign(1, x)) if x else 0 for x in v]
 
 def u(obj, encoding='utf-8'):
-    if not isinstance(obj, unicode):
-        return unicode(obj, encoding)
+    if not isinstance(obj, str):
+        return str(obj, encoding)
     else: return obj
 
 def str2html(s, units=True):
@@ -40,7 +40,7 @@ def str2html(s, units=True):
     '{{units-energy}}': ''
     }
     if units: tokens['{{units-energy}}'] = ', <span class=units-energy></span>'
-    for k, v in tokens.iteritems():
+    for k, v in tokens.items():
         s = s.replace(k, v)
     return s
 
@@ -77,7 +77,7 @@ def extract_chemical_symbols(string):
 
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
-    nontext = bytes.translate(''.join(map(chr, range(256))), ''.join(map(chr, [7,8,9,10,12,13,27] + range(0x20, 0x100)))) # all bytes and text bytes
+    nontext = bytes.translate(''.join(map(chr, list(range(256)))), ''.join(map(chr, [7,8,9,10,12,13,27] + list(range(0x20, 0x100))))) # all bytes and text bytes
     return bool(nontext)
 
 def hrsize(num):
@@ -89,7 +89,7 @@ def hrsize(num):
 
 def get_urlregex():
     # https://github.com/django/django/blob/master/django/core/validators.py
-    ul = '\u00a1-\uffff' # unicode letters range (must be a unicode string, not a raw string)
+    ul = '\\u00a1-\\uffff' # unicode letters range (must be a unicode string, not a raw string)
 
     # IP patterns
     ipv4_re = r'(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}'

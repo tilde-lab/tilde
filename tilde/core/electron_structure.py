@@ -45,7 +45,7 @@ class Edos():
         self.abscissa = obj['x']
         self.alldos = obj['total']
         self.properties = {}
-        for key in obj.keys():
+        for key in list(obj.keys()):
             if key not in ['x', 'total']: self.properties[key] = obj[key]
 
     def get_bandgap(self):
