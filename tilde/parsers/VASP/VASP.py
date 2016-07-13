@@ -9,8 +9,8 @@ import os, sys, re, math
 import itertools
 import traceback
 import xml.sax
-import io
 from collections import defaultdict
+import six
 
 from numpy import dot, array, zeros
 
@@ -150,9 +150,10 @@ class Kpoints():
         lengths = latt.abc
         ngrid = kppa // structure.num_sites
 
-        mult = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1. / 3.)
+        # FIXME: 1/3 == 0 in Python 2, hence mult is always equal to one. Possible bug?
+        mult = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
 
-        num_div = [int(round(1. / lengths[i] * mult)) for i in range(3)]
+        num_div = [int(round(1 / lengths[i] * mult)) for i in range(3)]
         #ensure that numDiv[i] > 0
         num_div = [i if i > 0 else 1 for i in num_div]
 
@@ -211,10 +212,10 @@ class Incar(dict):
         self.update(params)
 
     def __setitem__(self, key, val):
-        super(Incar, self).__setitem__(key.strip(), Incar.proc_val(key.strip(), val.strip()) if isinstance(val, str) else val)
+        super(Incar, self).__setitem__(key.strip(), Incar.proc_val(key.strip(), val.strip()) if isinstance(val, six.string_types) else val)
 
     def get_string(self, sort_keys=False, pretty=False):
-        keys = list(self.keys())
+        keys = self.keys()
         if sort_keys:
             keys = sorted(keys)
         lines = []
@@ -298,8 +299,8 @@ class XML_Output(Output):
                             (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
                             (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
                             (0x10FFFE, 0x10FFFF) ]
-        illegal_ranges = ["%s-%s" % (chr(low), chr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
-        illegal_xml_re = re.compile('[%s]' % ''.join(illegal_ranges))
+        illegal_ranges = ["%s-%s" % (six.unichr(low), six.unichr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
+        illegal_xml_re = re.compile(u'[%s]' % u''.join(illegal_ranges))
         filestring = illegal_xml_re.sub('', filestring)
 
         try: xml.sax.parseString(filestring, self._handler)
@@ -334,7 +335,7 @@ class XML_Output(Output):
         if self.dynmat['freqs']:
             self.phonons['modes'] = {'0 0 0': self.dynmat['freqs'] }
             self.phonons['ph_eigvecs'] = {'0 0 0': self.dynmat['eigvecs'] }
-            if len(self.phonons['ph_eigvecs']['0 0 0'])/3. != len(self.structures[-1]): raise RuntimeError('Number of frequencies is not equal to 3 * number of atoms!')
+            if len(self.phonons['ph_eigvecs']['0 0 0'])/3 != len(self.structures[-1]): raise RuntimeError('Number of frequencies is not equal to 3 * number of atoms!')
 
             self.phonons['dfp_magnitude'] = self.incar.get("POTIM", False)
             if not self.phonons['dfp_magnitude']:
@@ -352,7 +353,7 @@ class XML_Output(Output):
                 # spins are merged: TODO
                 alpha_beta = self.tdos[1]['alpha']
                 if 'beta' in self.tdos[1]: alpha_beta = [sum(s) for s in zip(alpha_beta, self.tdos[1]['beta'])]
-                self.electrons['dos'] = {'x': [round(x - self.e_last, 2) for x in self.tdos[0]], 'total': alpha_beta} # scaled: E - Ef
+                self.electrons['dos'] = {'x': list(map(lambda x: round(x - self.e_last, 2), self.tdos[0])), 'total': alpha_beta} # scaled: E - Ef
                 self.electrons['dos'].update(self.pdos)
                 self.electrons['dos'] = Edos(self.electrons['dos'])
 
@@ -549,12 +550,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self._init_calc(name, attributes)
 
         if self.read_val:
-            self.val = io.StringIO()
+            self.val = six.StringIO()
 
     def _init_input(self, name, attributes):
         if (name == "i" or name == "v") and (self.state["incar"] or self.state["parameters"]):
             self.incar_param = attributes["name"]
-            self.param_type = "float" if "type" not in attributes else attributes["type"]
+            self.param_type = "float" if not attributes.has_key("type") else attributes["type"]
             self.read_val = True
         elif name == "v" and self.state["kpoints"]:
             self.read_val = True
@@ -589,7 +590,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif self.read_dos:
                 if (name == "i" and self.state["i"] == "efermi") or (name == "r" and self.state["set"]):
                     self.read_val = True
-                elif name == "set" and "comment" in attributes:
+                elif name == "set" and attributes.has_key("comment"):
                     comment = attributes["comment"]
                     self.state["set"] = comment
                     if self.state["partial"]:
@@ -627,12 +628,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         elif name == "scstep":
             self.scstep = {}
         elif name == "structure":
-            self.latticestr = io.StringIO()
-            self.latticerec = io.StringIO()
-            self.posstr = io.StringIO()
+            self.latticestr = six.StringIO()
+            self.latticerec = six.StringIO()
+            self.posstr = six.StringIO()
             self.read_structure = True
         #elif name == "varray" and self.state["varray"] in ["forces", "stress"]:
-        #    self.posstr = StringIO.StringIO()
+        #    self.posstr = six.StringIO()
 
     def characters(self, data):
         if self.read_val:
@@ -657,7 +658,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self.incar_param = None
         elif name == "set":
             if self.state["array"] == "atoms":
-                self.bsseq = [int(x)-1 for x in self.atomic_symbols[1::2]]
+                self.bsseq = list(map(lambda x: int(x)-1, self.atomic_symbols[1::2]))
                 self.atomic_symbols = self.atomic_symbols[::2]
             elif self.state["array"] == "atomtypes":
                 self.potcar_sequence = self.potcar_symbols[1::5]
@@ -777,7 +778,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                     self.raw_data = []
             elif name == "partial":
                 atomic_pdos = {}
-                for k, v in self.pdos.items():
+                for k, v in six.iteritems(self.pdos):
                     atom = self.atomic_symbols[k[0]-1]
                     if not atom in atomic_pdos:
                         atomic_pdos[atom] = v
