@@ -303,10 +303,10 @@ class XML_Output(Output):
         illegal_xml_re = re.compile(u'[%s]' % u''.join(illegal_ranges))
         filestring = illegal_xml_re.sub('', filestring)
 
-        try: xml.sax.parseString(filestring, self._handler)
+        try: xml.sax.parseString(six.b(filestring), self._handler)
         except:
-            #exc_type, exc_value, exc_tb = sys.exc_info()
-            raise RuntimeError('VASP output corrupted or not correctly finalized!') # + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
+        #     #exc_type, exc_value, exc_tb = sys.exc_info()
+            raise RuntimeError('VASP output corrupted or not correctly finalized!')  #+ "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
 
         # TODO: reorganize
         for k in ["vasp_version", "incar",
@@ -555,7 +555,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
     def _init_input(self, name, attributes):
         if (name == "i" or name == "v") and (self.state["incar"] or self.state["parameters"]):
             self.incar_param = attributes["name"]
-            self.param_type = "float" if not attributes.has_key("type") else attributes["type"]
+            self.param_type = "float" if not "type" in attributes else attributes["type"]
             self.read_val = True
         elif name == "v" and self.state["kpoints"]:
             self.read_val = True
@@ -590,7 +590,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif self.read_dos:
                 if (name == "i" and self.state["i"] == "efermi") or (name == "r" and self.state["set"]):
                     self.read_val = True
-                elif name == "set" and attributes.has_key("comment"):
+                elif name == "set" and "comment" in attributes:
                     comment = attributes["comment"]
                     self.state["set"] = comment
                     if self.state["partial"]:
@@ -666,9 +666,9 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                 self.input_read = True
         elif name == "c":
             if self.state["array"] == "atoms":
-                self.atomic_symbols.append(self.val.getvalue().strip().encode('ascii'))
+                self.atomic_symbols.append(self.val.getvalue().strip())
             elif self.state["array"] == "atomtypes":
-                self.potcar_symbols.append(self.val.getvalue().strip().encode('ascii'))
+                self.potcar_symbols.append(self.val.getvalue().strip())
         elif name == "v":
             if self.state["incar"]:
                 self.incar[self.incar_param] = self.parse_v_parameters(self.param_type, self.val.getvalue().strip(), self.incar_param)

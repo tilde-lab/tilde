@@ -4,6 +4,7 @@
 
 import os, sys
 import math, datetime, re
+import six
 
 from numpy import dot, array, matrix
 
@@ -77,7 +78,10 @@ def extract_chemical_symbols(string):
 
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
-    nontext = bytes.translate(''.join(map(chr, list(range(256)))), ''.join(map(chr, [7,8,9,10,12,13,27] + list(range(0x20, 0x100))))) # all bytes and text bytes
+    if six.PY2:
+        nontext = bytes.translate(None, ''.join(map(chr, [7,8,9,10,12,13,27] + list(range(0x20, 0x100))))) # all bytes and text bytes
+    else:
+        nontext = bytes.translate({c: None for c in [7,8,9,10,12,13,27] + list(range(0x20, 0x100))})
     return bool(nontext)
 
 def hrsize(num):

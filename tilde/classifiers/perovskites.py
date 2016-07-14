@@ -3,6 +3,7 @@
 # Author: Evgeny Blokhin
 
 import os, sys, math
+import six
 
 from ase.data import chemical_symbols
 from ase.data import covalent_radii
@@ -90,7 +91,7 @@ def classify(tilde_obj):
 
     # A site or B site?
     num=0
-    for impurity_element, content in impurities.iteritems():
+    for impurity_element, content in six.iteritems(impurities):
         e = tilde_obj.info['elements'].index(impurity_element)
         tilde_obj.info['elements'].pop(e) # TODO
         tilde_obj.info['contents'].pop(e) # TODO
