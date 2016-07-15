@@ -6,14 +6,19 @@ import os, sys
 import logging
 import datetime
 from collections import namedtuple
+import six
 
 from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics
 
-from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, LargeBinary, ForeignKey
+from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, UnicodeText, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, UnicodeText, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.expression import insert, delete
+if six.PY3:
+    from sqlalchemy import UnicodeText as JSONString
+else:
+    from sqlalchemy import LargeBinary as JSONString
 
 import ujson as json
 
@@ -98,7 +103,7 @@ tag = namedtuple('tag', ['checksum', 'tid'])
 class Grid(Base):
     __tablename__ = 'grid'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
-    info = Column(LargeBinary, default=None)
+    info = Column(JSONString, default=None)
 
 calcsets = Table('calcsets', Base.metadata,
     Column('parent_checksum', String, ForeignKey('calculations.checksum'), primary_key=True),
@@ -143,7 +148,7 @@ class Metadata(Base):
     chemical_formula = Column(String, default=None)
     added = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     download_size = Column(BigInteger, default=None)
-    filenames = Column(LargeBinary, default=None)
+    filenames = Column(JSONString, default=None)
 
 class Reference(Base):
     __tablename__ = 'references'
@@ -180,14 +185,14 @@ class Codefamily(UniqueMixin, Base):
 class Energy(Base):
     __tablename__ = 'energies'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
-    convergence = Column(LargeBinary, default=None)
+    convergence = Column(JSONString, default=None)
     total = Column(Float, default=None)
 
 class Basis(Base):
     __tablename__ = 'basissets'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
     kind = Column(Integer, nullable=False)
-    content = Column(LargeBinary, default=None)
+    content = Column(JSONString, default=None)
 
 class Recipinteg(Base):
     __tablename__ = 'recipintegs'
@@ -223,15 +228,15 @@ class Spectra(Base):
     ELECTRON = 'ELECTRON'
     PHONON = 'PHONON'
     kind = Column(Enum(ELECTRON, PHONON, name='spectrum_kind_enum'), primary_key=True)
-    dos =           Column(LargeBinary, default=None)
-    bands =         Column(LargeBinary, default=None)
-    projected =     Column(LargeBinary, default=None)
-    eigenvalues =   Column(LargeBinary, default=None)
+    dos =           Column(JSONString, default=None)
+    bands =         Column(JSONString, default=None)
+    projected =     Column(JSONString, default=None)
+    eigenvalues =   Column(JSONString, default=None)
 
 class Forces(Base):
     __tablename__ = 'forces'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
-    content = Column(LargeBinary, nullable=False)
+    content = Column(JSONString, nullable=False)
 
 class Structure(Base):
     __tablename__ = 'structures'
@@ -291,5 +296,5 @@ class Struct_ratios(Base):
 class Struct_optimisation(Base):
     __tablename__ = 'struct_optimisation'
     checksum = Column(String, ForeignKey('calculations.checksum'), primary_key=True)
-    tresholds = Column(LargeBinary, default=None)
-    ncycles = Column(LargeBinary, default=None)
+    tresholds = Column(JSONString, default=None)
+    ncycles = Column(JSONString, default=None)
