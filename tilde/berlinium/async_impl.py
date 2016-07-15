@@ -13,7 +13,7 @@ from sockjs.tornado import SockJSConnection
 
 import ujson as json
 
-from impl import GUIProviderMockup, Client
+from tilde.berlinium.impl import GUIProviderMockup, Client
 from tilde.core.settings import settings, connect_database
 
 
