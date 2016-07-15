@@ -6,6 +6,7 @@
 import os, sys
 import re
 import time
+import math
 import random
 
 from numpy import array
@@ -161,7 +162,7 @@ class Output:
 
         calc_checksum.update(
             (struc_repr +
-            str(round(self.info['energy'], 11)) + " " +
+            str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy']))))) + " " +
             self.info['prog'] + " " +
             str(self.info['input']) + " " +
             str(sum([2**x for x in self.info['calctypes']]))).encode('ascii')
