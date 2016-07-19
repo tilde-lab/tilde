@@ -81,7 +81,7 @@ def is_binary_string(bytes):
     if six.PY2:
         nontext = bytes.translate(None, ''.join(map(chr, [7,8,9,10,12,13,27] + list(range(0x20, 0x100))))) # all bytes and text bytes
     else:
-        nontext = bytes.translate({c: None for c in [7,8,9,10,12,13,27] + list(range(0x20, 0x100))})
+        nontext = bytes.translate(dict([(c, None) for c in [7,8,9,10,12,13,27] + list(range(0x20, 0x100))]))
     return bool(nontext)
 
 def hrsize(num):

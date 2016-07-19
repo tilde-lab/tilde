@@ -182,7 +182,9 @@ class QuantumESPRESSO(Output):
                     if 'h' in d: fmt = "%Hh" + fmt
                     if 'd' in d: fmt = "%dd" + fmt # FIXME for months!
                     d = time.strptime(d, fmt)
-                    self.info['duration'] = "%2.2f" % (  datetime.timedelta(days=d.tm_mday, hours=d.tm_hour, minutes=d.tm_min, seconds=d.tm_sec).total_seconds()/3600  )
+                    # to comply with python 2.6
+                    td = datetime.timedelta(days=d.tm_mday, hours=d.tm_hour, minutes=d.tm_min, seconds=d.tm_sec)
+                    self.info['duration'] = "%2.2f" % ( (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 3.6e9 )
                     self.info['finished'] = 0x2
 
             elif "End of self-consistent calculation" in cur_line or "End of band structure calculation" in cur_line:
