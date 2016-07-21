@@ -10,7 +10,6 @@ import unittest
 
 import pg8000
 
-import set_path
 import tilde.core.model
 from tilde.core.api import API
 from tilde.core.settings import settings, connect_database, DATA_DIR, EXAMPLE_DIR, TEST_DBS_FILE, TEST_DBS_REF_FILE

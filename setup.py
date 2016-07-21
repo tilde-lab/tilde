@@ -77,7 +77,7 @@ setup(
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
         'Topic :: Scientific/Engineering :: Information Analysis',
-        'Topic :: Software Development :: Libraries :: Python Modules'
+        'Topic :: Software Development :: Libraries :: Python Modules',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
@@ -87,8 +87,9 @@ setup(
     packages=packages,
     install_requires=install_requires,
     tests_require= ['nose',],
+    test_suite='nose.collector',
     data_files=[
-        ('', ['CHANGELOG', 'LICENSE', 'README.md', 'blue_obelisk.gif', 'init-data.sql']),
+        ('', ['init-data.sql',]),
     ],
     package_data=package_data,
     scripts=[

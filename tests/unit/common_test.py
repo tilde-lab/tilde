@@ -3,7 +3,6 @@ import os, sys
 import unittest
 from numpy import inf
 
-import set_path
 import tilde.core.common as common
 
 

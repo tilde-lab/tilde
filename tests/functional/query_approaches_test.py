@@ -9,7 +9,6 @@ import sys
 import time
 import ujson as json
 
-import set_path
 from tilde.core import model
 from tilde.core.api import API
 from tilde.core.settings import EXAMPLE_DIR
