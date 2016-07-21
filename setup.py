@@ -91,7 +91,8 @@ setup(
         ('', ['CHANGELOG', 'LICENSE', 'README.md', 'blue_obelisk.gif', 'init-data.sql']),
     ],
     package_data=package_data,
-    scripts=["utils/tilde.sh",
-             "utils/entry.py",
-             "utils/set_path.py"]
+    scripts=[
+        "utils/tilde.sh",
+        "utils/entry.py"
+    ]
 )

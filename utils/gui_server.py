@@ -19,7 +19,6 @@ from sockjs.tornado import SockJSRouter
 
 import ujson as json
 
-import set_path
 from tilde.core.settings import settings
 from tilde.core.api import API
 from tilde.parsers import HASH_LENGTH
