@@ -35,10 +35,15 @@ if missing_packages:
     print("Installation will now exit.")
     sys.exit(1)
 
-here = os.path.abspath(os.path.dirname(__file__))
-
-with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+try:
+   import pypandoc
+   long_description = pypandoc.convert('README.md', 'rst')
+except (IOError, ImportError) as e:
+    if sys.argv[2] == "upload":
+        raise e.__class__("Warning: PyPI servers need reStructuredText as README! Please install pypandoc to convert markdown "
+                 "to rst")
+    else:
+        long_description = open('README.md').read()
 
 packages=find_packages(exclude=('tests', ))
 package_data = {}
