@@ -11,6 +11,7 @@ import inspect
 import traceback
 import datetime
 import importlib
+from functools import reduce
 
 from numpy import dot, array
 
@@ -27,7 +28,7 @@ from sqlalchemy import exists, func
 from sqlalchemy.orm.exc import NoResultFound
 
 import ujson as json
-from functools import reduce
+import six
 
 
 class API:
@@ -268,7 +269,7 @@ class API:
         except IOError:
             yield None, 'read error!'
             return
-        f = open(parsable, 'r')  # open the file once again with right mode
+        f = open(parsable, 'r', errors='surrogateescape') if six.PY3 else open(parsable, 'r') # open the file once again with right mode
         f.seek(0)
         i, detected = 0, False
         while not detected:
