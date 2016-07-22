@@ -259,13 +259,16 @@ class API:
         @returns tilde_obj, error
         '''
         calc, error = None, None
-        try: f = open(parsable, 'r')
+        try:
+            f = open(parsable, 'rb')
+            if is_binary_string(f.read(2048)):
+                yield None, 'was read (binary data)...'
+                return
+            f.close()
         except IOError:
             yield None, 'read error!'
             return
-        if is_binary_string(f.read(2048)):
-            yield None, 'was read (binary data)...'
-            return
+        f = open(parsable, 'r')  # open the file once again with right mode
         f.seek(0)
         i, detected = 0, False
         while not detected:
