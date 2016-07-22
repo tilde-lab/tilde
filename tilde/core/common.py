@@ -78,11 +78,11 @@ def extract_chemical_symbols(string):
 
 def is_binary_string(bytes):
     ''' Determine if a string is classified as binary rather than text '''
-    if six.PY2:
-        nontext = bytes.translate(None, ''.join(map(chr, [7,8,9,10,12,13,27] + list(range(0x20, 0x100))))) # all bytes and text bytes
-    else:
-        nontext = bytes.translate(dict([(c, None) for c in [7,8,9,10,12,13,27] + list(range(0x20, 0x100))]))
-    return bool(nontext)
+    try:
+        bytes.decode('ascii')
+    except UnicodeDecodeError:
+        return True
+    return False
 
 def hrsize(num):
     for x in ['bytes', 'KB', 'MB', 'GB']:
