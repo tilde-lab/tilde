@@ -193,7 +193,7 @@ def header_fields(h=None):
     """The order of the fields in the header."""
     hfields = ['Hostname', 'IP', 'Distro', 'DistroVersion', 'Kernel', 'Arch', 'CPU', 'MHz', 'Mem_MiB', 'Swap_MiB', 'Disk_GB', 'Graphics', 'MAC', 'Serial', 'System_manufacturer', 'System_product_name']
     if h != None:
-	if h.has_key('Date'):
+	if 'Date' in h:
 	    hfields.append('Date')
     return hfields
 
@@ -216,17 +216,17 @@ def agent(server="http://localhost:8000"):
     This gathers data, and sends it to a server given by the server argument.
 
     """
-    import xmlrpclib
-    sp = xmlrpclib.ServerProxy(server)
+    import xmlrpc.client
+    sp = xmlrpc.client.ServerProxy(server)
     hw = getallhwinfo()
     fields = header_fields()
     for f in fields:
         if not f in hw:
             hw[f] = ''
     try:
-        sp.puthwinfo(xmlrpclib.dumps((hw,)))
-    except xmlrpclib.Error, v:
-        print "ERROR occured: ", v
+        sp.puthwinfo(xmlrpc.client.dumps((hw,)))
+    except xmlrpc.client.Error as v:
+        print("ERROR occured: ", v)
 
 if __name__=="__main__":
     import pprint

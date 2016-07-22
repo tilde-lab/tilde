@@ -5,7 +5,8 @@
 import os, sys
 import math
 import fractions
-
+import six
+from functools import reduce
 
 # hierarchy API: __order__ to apply classifier
 __order__ = 40
@@ -60,7 +61,7 @@ def classify(tilde_obj):
 
                 # Check 1:
                 # by content
-                for atom, content in content_by_layer[i].iteritems():
+                for atom, content in six.iteritems(content_by_layer[i]):
                     #print 'content:', float(tilde_obj.info['contents'][ tilde_obj.info['elements'].index(atom) ]) / sum(tilde_obj.info['contents'])
                     if atom == 'H': content_ratio = 0.15 # less than 15%
                     else: content_ratio = 0.1 # less than 10%
@@ -99,7 +100,7 @@ def classify(tilde_obj):
                             break
                 else:
                     # happens if a cycle was not broken
-                    for atom, content in ref_layer.iteritems():
+                    for atom, content in six.iteritems(ref_layer):
                         if len(to_delete):
                             if to_delete[-1][0] == i and to_delete[-1][1] == atom: continue # this was already done on check 1
                         #print '->got', atom
@@ -117,7 +118,7 @@ def classify(tilde_obj):
 
         for i in to_delete:
             del content_by_layer[ i[0] ][ i[1] ]
-        content_by_layer = filter(None, content_by_layer)
+        content_by_layer = list(filter(None, content_by_layer))
         tilde_obj.info['layers'] = len(content_by_layer)
 
         if len(adsorbate):
@@ -148,7 +149,7 @@ def classify(tilde_obj):
     tilde_obj.info['expanded'] = 1 # this means formula reduce is prohibited
     slab_elements = []
     for y in content_by_layer:
-        for k, v in y.iteritems():
+        for k, v in six.iteritems(y):
             if not k in slab_elements:
                 slab_elements.append(k)
     # sort according to pre-defined element order in a full slab formula

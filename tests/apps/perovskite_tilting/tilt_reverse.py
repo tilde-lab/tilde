@@ -12,6 +12,7 @@
 import math
 import random
 import unittest
+import six
 
 from numpy import array
 
@@ -72,7 +73,7 @@ class Reverse_Perovskite_Tilting_Test(unittest.TestCase):
     def test_tilting(self):
         self.assertTrue(virtual_calc.apps.get('perovskite_tilting'))
         self.assertEqual(
-            virtual_calc.apps['perovskite_tilting']['data'].values()[0],
+            list(six.itervalues(virtual_calc.apps['perovskite_tilting']['data']))[0],
             [round(phi, 2), round(theta, 2), round(psi, 2)]
         )
 
@@ -82,10 +83,10 @@ class Reverse_Perovskite_Tilting_Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    print "Test object:", virtual_calc.info['standard']
-    print "Is perovskite?", is_perovskite
+    print("Test object:", virtual_calc.info['standard'])
+    print("Is perovskite?", is_perovskite)
 
     assert is_perovskite, "Sometimes not valid perovskites are generated, please, try to re-run"
 
-    print "Octahedra tilted on:", phi, theta, psi
-    print "Extracted tilting is:", virtual_calc.apps['perovskite_tilting']['data']
+    print("Octahedra tilted on:", phi, theta, psi)
+    print("Extracted tilting is:", virtual_calc.apps['perovskite_tilting']['data'])

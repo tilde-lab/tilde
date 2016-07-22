@@ -321,7 +321,7 @@ libxc_functionals = {
 530: {'comment': 'short-range recipe for exchange GGA functionals', 'name': 'XC_GGA_X_SFAT'},
 }
 
-for k, v in libxc_functionals.iteritems():
+for k, v in libxc_functionals.items():
     if v['name'].startswith('XC_LDA'):
         libxc_functionals[k].update({'type': [0x1]})
     elif v['name'].startswith('XC_GGA'):

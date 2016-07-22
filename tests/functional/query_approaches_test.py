@@ -5,11 +5,14 @@ using the relational and serialized query approaches.
 some property = space group
 some category = gaussian basis set type
 """
+from __future__ import print_function
+
 import sys
 import time
 import ujson as json
+import six
 
-import set_path
+from . import set_path
 from tilde.core import model
 from tilde.core.api import API
 from tilde.core.settings import EXAMPLE_DIR
@@ -22,10 +25,10 @@ class Hierarchy_Params(object):
     searched_category_num = None                # defined in hierarchy
     space_grp_topic_source = 'ng'               # defined in parsers and set in API.classify()
     categ_found = False
-    for cid, series in work.hierarchy_values.iteritems():
+    for cid, series in six.iteritems(work.hierarchy_values):
         if categ_found: break
         elif cid == searched_category[0]:
-            for num, name in series.iteritems():
+            for num, name in six.iteritems(series):
                 if name == searched_category[1]:
                     categ_found, searched_category_num = True, num
                     break
@@ -84,7 +87,7 @@ if __name__ == "__main__":
     from tilde.core.settings import settings, connect_database
 
     session = connect_database(settings, default_actions=False)
-    print "DB: %s" % (settings['db']['default_sqlite_db'] if settings['db']['engine'] == 'sqlite' else settings['db']['dbname'])
+    print("DB: %s" % (settings['db']['default_sqlite_db'] if settings['db']['engine'] == 'sqlite' else settings['db']['dbname']))
 
     tick1 = time.time()
     serialized_results = get_serialized_results(
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         Hierarchy_Params.space_grp_topic_source
     )
     tick2 = time.time()
-    print "Query in serialized approach (%s results) took %1.2f sc" % (len(serialized_results), tick2 - tick1)
+    print("Query in serialized approach (%s results) took %1.2f sc" % (len(serialized_results), tick2 - tick1))
 
     tick1 = time.time()
     relational_results = get_relational_results(
@@ -102,6 +105,6 @@ if __name__ == "__main__":
         Hierarchy_Params.searched_category_num
     )
     tick2 = time.time()
-    print "Query in relational approach (%s results) took %1.2f sc" % (len(relational_results), tick2 - tick1)
+    print("Query in relational approach (%s results) took %1.2f sc" % (len(relational_results), tick2 - tick1))
 
-    print "Results equal?", serialized_results==relational_results
+    print("Results equal?", serialized_results==relational_results)

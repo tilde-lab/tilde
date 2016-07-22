@@ -9,9 +9,11 @@ Data for this test are published in:
 [3] PRB83, 134108 (2011), http://dx.doi.org/10.1103/PhysRevB.83.134108
 [4] PRB88, 241407 (2013), http://dx.doi.org/10.1103/PhysRevB.88.241407
 """
+from __future__ import print_function
 
 import os
 import unittest
+import six
 
 import set_path
 from tilde.core.api import API
@@ -55,7 +57,7 @@ test_data = {
     }
 }
 
-for k, v in test_data.iteritems():
+for k, v in six.iteritems(test_data):
     if not os.path.exists(data_dir + os.sep + k):
         raise RuntimeError(k + ': missed file for test!')
 
@@ -67,7 +69,7 @@ class Data_Perovskite_Tilting_Test(unittest.TestCase):
 
         cls.results = {}
 
-        for k, v in test_data.iteritems():
+        for k, v in six.iteritems(test_data):
             cls.results[k] = {}
             for calc, error in work.parse(data_dir + os.sep + k):
                 if error:
@@ -82,7 +84,7 @@ class Data_Perovskite_Tilting_Test(unittest.TestCase):
                 cls.results[k] = [ v['data'], calc.apps['perovskite_tilting']['data'] ]
 
     def test_all(self):
-        for k, v in self.results.iteritems():
+        for k, v in six.iteritems(self.results):
             centers = v[0].keys()
             for center in centers:
                 self.assertEqual(v[0][center], v[1][center])
@@ -101,13 +103,13 @@ if __name__ == "__main__":
             calc = work.postprocess(calc)
             if not 'perovskite_tilting' in calc.apps:
                 raise RuntimeError(k + ': invalid result!')
-            print "\nSource", v['comment'], "(" + k + ")"
+            print("\nSource", v['comment'], "(" + k + ")")
 
             for center in v['data'].keys():
                 if not center in calc.apps['perovskite_tilting']['data']:
                     raise RuntimeError(k + ': invalid result!')
-                print 'Octahedron N', center
-                print 'expected:', v['data'][center]
-                print 'got     :', calc.apps['perovskite_tilting']['data'][center]
+                print('Octahedron N', center)
+                print('expected:', v['data'][center])
+                print('got     :', calc.apps['perovskite_tilting']['data'][center])
 
-    print __doc__
+    print(__doc__)

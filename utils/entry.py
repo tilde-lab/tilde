@@ -7,6 +7,8 @@ Tilde is general-purpose materials informatics framework
 for intelligent organizers of the scientific modeling data.
 More info: https://tilde.pro
 '''
+from __future__ import print_function
+
 import os, sys
 import time
 import logging
@@ -43,7 +45,7 @@ parser.add_argument("-a",       dest="add", action="store", help="add results to
 parser.add_argument("-v",       dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f",       dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i",       dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m",       dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=Tilde.Apps.keys())
+parser.add_argument("-m",       dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=list(Tilde.Apps.keys()))
 parser.add_argument("-s",       dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-c",       dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-x",       dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -62,13 +64,13 @@ if args.add or args.service:
     elif settings['db']['engine'] == 'postgresql':  user_choice = None
 
     session = connect_database(settings, named=user_choice)
-    if user_choice: print "The database selected:", user_choice
+    if user_choice: print("The database selected:", user_choice)
 
 # path(s)
 if args.path or args.targetlist:
     finalized = 'YES' if settings['skip_unfinished'] else 'NO'
     notests = 'YES' if settings['skip_notenergy'] else 'NO'
-    print "Only finalized: %s; only with total energy: %s; skip paths if they start/end with any of: %s" % (finalized, notests, settings['skip_if_path'])
+    print("Only finalized: %s; only with total energy: %s; skip paths if they start/end with any of: %s" % (finalized, notests, settings['skip_if_path']))
 
     if args.path and args.targetlist:
         args.targetlist = None
@@ -85,7 +87,7 @@ elif args.service:
 for target in target_source:
 
     if not os.path.exists(target):
-        print 'Target does not exist: ' + target
+        print('Target does not exist: ' + target)
         continue
 
     tasks = Tilde.savvyize(target, recursive=args.recursive, stemma=True)
@@ -98,13 +100,13 @@ for target in target_source:
 
             if error:
                 if args.terse and 'was read' in error: continue
-                print task, error
+                print(task, error)
                 logging.info("%s %s" % (task, error))
                 continue
 
             calc, error = Tilde.classify(calc, args.symprec)
             if error:
-                print task, error
+                print(task, error)
                 logging.info("%s %s" % (task, error))
                 continue
 
@@ -120,10 +122,7 @@ for target in target_source:
 
                     if entity['multiple']:
                         try: found_topics.append(
-                            [  entity['category']  ] + map(
-                                lambda x: num2name(x, entity, Tilde.hierarchy_values),
-                                calc.info[ entity['source'] ]
-                            )
+                            [  entity['category']  ] + [num2name(x, entity, Tilde.hierarchy_values) for x in calc.info[ entity['source'] ]]
                         )
                         except KeyError: pass
                     else:
@@ -189,7 +188,7 @@ for target in target_source:
                 if not calc.phonons['modes']:
                     output_lines += 'no phonons'
                 else:
-                    for bzpoint, frqset in calc.phonons['modes'].iteritems():
+                    for bzpoint, frqset in calc.phonons['modes'].items():
                         output_lines += "\tK-POINT: " + bzpoint + "\n"
                         compare = 0
                         for i in range(len(frqset)):
@@ -203,14 +202,14 @@ for target in target_source:
             if args.add:
                 checksum, error = Tilde.save(calc, session)
                 if error:
-                    print task, error
+                    print(task, error)
                     logging.info("%s %s" % (task, error))
                     continue
                 header_line += ' added'
                 detected = True
 
             if len(output_lines): output_lines = "\n" + output_lines
-            print header_line + add_msg + output_lines
+            print(header_line + add_msg + output_lines)
 
         if detected:
             logging.info(task + " successfully processed")
@@ -219,4 +218,4 @@ for target in target_source:
 if session:             session.close()
 if args.targetlist:     target_source.close()
 
-print "Done in %1.2f sc" % (time.time() - starttime)
+print("Done in %1.2f sc" % (time.time() - starttime))

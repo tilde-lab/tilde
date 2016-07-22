@@ -10,14 +10,14 @@ import unittest
 
 import pg8000
 
-import set_path
+from . import set_path
 import tilde.core.model
 from tilde.core.api import API
 from tilde.core.settings import settings, connect_database, DATA_DIR, EXAMPLE_DIR, TEST_DBS_FILE, TEST_DBS_REF_FILE
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 DELETE_TEST_DB = False

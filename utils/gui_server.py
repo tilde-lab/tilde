@@ -228,8 +228,8 @@ class BerliniumGUIProvider:
                             'cid': entity['cid'],
                             'category': str2html(entity['html'], False) if entity['html'] else entity['category'],
                             'sort': entity.get('sort', 1000),
-                            'min': math.floor(minimum*100)/100,
-                            'max': math.ceil(maximum*100)/100
+                            'min': math.floor(minimum*100)//100,
+                            'max': math.ceil(maximum*100)//100
                         })
 
             categs.sort(key=lambda x: x['sort'])

@@ -6,6 +6,7 @@
 import os, sys
 import re
 import time
+import math
 import random
 
 from numpy import array
@@ -159,15 +160,20 @@ class Output:
             for atom in ase_repr:
                 struc_repr += "%s %3.6f %3.6f %3.6f " % tuple(map(abs, [chemical_symbols.index(atom.symbol), atom.x, atom.y, atom.z])) # NB beware of length & minus zeros
 
+        if self.info["energy"] is None:
+            energy = str(None)
+        else:
+            energy = str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy'])))))
+
         calc_checksum.update(
-            struc_repr +
-            str(self.info['energy']) + " " +
+            (struc_repr +
+            energy + " " +
             self.info['prog'] + " " +
             str(self.info['input']) + " " +
-            str(sum(map(lambda x: 2**x, self.info['calctypes'])))
+            str(sum([2**x for x in self.info['calctypes']]))).encode('ascii')
         ) # this is fixed in DB schema 5.11 and should not be changed
 
-        result = base64.b32encode(calc_checksum.digest())
+        result = base64.b32encode(calc_checksum.digest()).decode('ascii')
         result = result[:result.index('=')] + 'CI'
         return result
 

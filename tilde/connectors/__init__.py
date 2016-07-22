@@ -1,7 +1,7 @@
 # Author: Evgeny Blokhin
 
 import os
-from htmlentitydefs import codepoint2name
+from six.moves.html_entities import codepoint2name
 
 
 def htmlentities(source):
