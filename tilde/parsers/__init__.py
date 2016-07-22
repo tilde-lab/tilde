@@ -160,9 +160,14 @@ class Output:
             for atom in ase_repr:
                 struc_repr += "%s %3.6f %3.6f %3.6f " % tuple(map(abs, [chemical_symbols.index(atom.symbol), atom.x, atom.y, atom.z])) # NB beware of length & minus zeros
 
+        if self.info["energy"] is None:
+            energy = str(None)
+        else:
+            energy = str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy'])))))
+
         calc_checksum.update(
             (struc_repr +
-            str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy']))))) + " " +
+            energy + " " +
             self.info['prog'] + " " +
             str(self.info['input']) + " " +
             str(sum([2**x for x in self.info['calctypes']]))).encode('ascii')
