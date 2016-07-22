@@ -4,7 +4,7 @@ import unittest
 
 import set_path
 from tilde.core.api import API
-from tilde.core.settings import BASE_DIR, EXAMPLE_DIR
+from tilde.core.settings import BASE_DIR, ROOT_DIR, EXAMPLE_DIR
 
 
 class Test_API(unittest.TestCase):
@@ -38,8 +38,8 @@ class Test_API(unittest.TestCase):
             "Unexpected number of files has been found in %s: %s. May be number of files has been changed since?" % (path, len(found)))
 
     def test_savvyize_stemma(self):
-        path = os.path.join(BASE_DIR, 'co')
+        path = os.path.join(ROOT_DIR, 'utils/bilbao')
         found = self.sample.savvyize(path, recursive=True, stemma=True)
-        self.assertEqual(len(found), 4,
+        self.assertEqual(len(found), 2,
             "Unexpected number of files has been found in %s: %s. May be number of files has been changed since?" % (path, len(found)))
 
