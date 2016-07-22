@@ -1,5 +1,6 @@
 Tilde
 ==========
+[![Build Status](https://travis-ci.org/tilde-lab/tilde.svg?branch=master)](https://travis-ci.org/tilde-lab/tilde)
 [![DOI](https://zenodo.org/badge/18811/tilde-lab/tilde.svg)](https://zenodo.org/badge/latestdoi/18811/tilde-lab/tilde)
 
 Tilde is an intelligent data organizer and Python framework for computational _ab initio_ materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. Other data formats can be added relatively easily. The folders with the log files can be scanned and the results added into a repository. A simple usecase is described in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc). Web-based repository GUI is [separately available](https://github.com/tilde-lab/berlinium).
