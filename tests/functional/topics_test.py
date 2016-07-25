@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from operator import itemgetter
 
 import tilde.core.model as model
 from tilde.core.settings import EXAMPLE_DIR
@@ -123,7 +124,7 @@ class Test_Topics(TestLayerDB):
             {'topic': u'2',                              'cid': 1006}
         ]
     }
-    checksums = expected_topics_before.keys()
+    checksums = list(expected_topics_before)
 
     @classmethod
     def setUpClass(cls):
@@ -132,10 +133,10 @@ class Test_Topics(TestLayerDB):
     def test_replaced_topics(self):
         obtained_topics_before = {}
         for checksum in self.checksums:
-            found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
+            found_topics = list(map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() ))
             obtained_topics_before[checksum] = found_topics
-            obtained_topics_before[checksum].sort()
-            self.expected_topics_before[checksum].sort()
+            obtained_topics_before[checksum].sort(key=itemgetter('cid', 'topic'))
+            self.expected_topics_before[checksum].sort(key=itemgetter('cid', 'topic'))
 
         try: self.assertEqual(self.expected_topics_before, obtained_topics_before,
             "Expected and found topics *before* correction differ,\n    expected:\n%s\n    found:\n%s\n" % (self.expected_topics_before, obtained_topics_before))
@@ -150,10 +151,10 @@ class Test_Topics(TestLayerDB):
 
             obtained_topics_after = {}
             for checksum in self.checksums:
-                found_topics = map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() )
+                found_topics = list(map( lambda x: {'cid': x.cid, 'topic': x.topic}, self.db.session.query(model.Topic).join(model.tags, model.Topic.tid == model.tags.c.tid).filter(model.tags.c.checksum == checksum).all() ))
                 obtained_topics_after[checksum] = found_topics
-                obtained_topics_after[checksum].sort()
-                self.expected_topics_after[checksum].sort()
+                obtained_topics_after[checksum].sort(key=itemgetter('cid', 'topic'))
+                self.expected_topics_after[checksum].sort(key=itemgetter('cid', 'topic'))
 
             try: self.assertEqual(self.expected_topics_after, obtained_topics_after,
                 "Expected and found topics *after* correction differ,\n  expected:\n%s\n  found:\n%s\n" % (self.expected_topics_after, obtained_topics_after))

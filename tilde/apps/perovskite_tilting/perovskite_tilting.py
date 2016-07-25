@@ -9,11 +9,13 @@
 # Even if the rotation is absent (i.e. pseudo-cubic structure),
 # an "artificial" rotation can be extracted
 # FIXME?
+from __future__ import division
 
 import os, sys
 import math
 import copy
 import json
+from functools import reduce
 
 from numpy.linalg import norm
 
@@ -40,7 +42,7 @@ class Perovskite_tilting():
             raise ModuleError("Cell refinement error: %s" % symm.error)
 
         # check if the longest axis is Z, rotate otherwise
-        lengths = map(norm, symm.refinedcell.cell)
+        lengths = list(map(norm, symm.refinedcell.cell))
         if not (lengths[2] - lengths[0] > 1E-6 and lengths[2] - lengths[1] > 1E-6):
             axnames = {0: 'x', 1: 'y'}
             principal_ax = axnames[ lengths.index(max(lengths[0], lengths[1])) ]
@@ -88,7 +90,7 @@ class Perovskite_tilting():
         u, todel = [], []
         for o in self.prec_angles:
             self.prec_angles[o] = reduce(lambda x, y: x if sum(x) <= sum(y) else y, self.prec_angles[o]) # only minimal angles are taken if tilting planes vary!
-            self.prec_angles[o] = map(lambda x: map(lambda y: round(y, 2), x), [self.prec_angles[o]])
+            self.prec_angles[o] = list(map(lambda x: list(map(lambda y: round(y, 2), x)), [self.prec_angles[o]]))
             for i in self.prec_angles[o]:
                 u.append([o] + i)
         u = sorted(u, key=lambda x:x[0])
@@ -224,10 +226,10 @@ class Perovskite_tilting():
             tilting_planes.append([ sequence[0], sorted_dist[4], sorted_first_plane[0], sorted_first_plane[1] ])
 
         # filter planes by Z according to octahedral spatial compound
-        filtered = filter(   lambda x: \
+        filtered = list(filter(   lambda x: \
             abs(self.virtual_atoms[ x[0] ].z - self.virtual_atoms[ x[1] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE and \
             abs(self.virtual_atoms[ x[1] ].z - self.virtual_atoms[ x[2] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE and \
-            abs(self.virtual_atoms[ x[2] ].z - self.virtual_atoms[ x[3] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE,   tilting_planes   )
+            abs(self.virtual_atoms[ x[2] ].z - self.virtual_atoms[ x[3] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE,   tilting_planes   ))
         if len(filtered): tilting_planes = filtered
 
         return tilting_planes

@@ -32,7 +32,7 @@ class TildeGUIProvider:
         pwhash = pwhash.encode('ascii')
 
         pass_match = False
-        try: pass_match = (pwhash == bcrypt.hashpw(PASS, pwhash))
+        try: pass_match = (pwhash == bcrypt.hashpw(PASS.encode('ascii'), pwhash))
         except: pass
 
         if user != USER or not pass_match:

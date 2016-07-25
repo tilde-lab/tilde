@@ -5,6 +5,7 @@
 import os
 import sys
 import fractions
+from functools import reduce
 
 
 # hierarchy API: __order__ to apply classifier

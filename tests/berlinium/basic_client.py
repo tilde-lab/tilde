@@ -34,7 +34,7 @@ class RespHandler(object):
     @classmethod
     def on_open(self, ws):
         logging.debug("Opened")
-        pwhash = bcrypt.hashpw(PASS, bcrypt.gensalt())
+        pwhash = bcrypt.hashpw(PASS.encode('ascii'), bcrypt.gensalt())
         ws.send(json.dumps({'act': 'login', 'req': {'user': USER, 'pass': pwhash}}))
 
     @classmethod

@@ -2,6 +2,8 @@
 An example of using Tilting module with ASE
 '''
 
+from __future__ import print_function
+
 import unittest
 
 from ase.lattice.spacegroup import crystal
@@ -48,11 +50,11 @@ class ASE_Perovskite_Tilting_Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    print "Object:", virtual_calc.info['standard']
-    print "Is perovskite?", is_perovskite
+    print("Object:", virtual_calc.info['standard'])
+    print("Is perovskite?", is_perovskite)
 
     assert is_perovskite
 
-    print virtual_calc.apps['perovskite_tilting']['data']
+    print(virtual_calc.apps['perovskite_tilting']['data'])
 
     assert virtual_calc.apps['perovskite_tilting']['data'] == {4: [0.0, 0.0, 1.15]}

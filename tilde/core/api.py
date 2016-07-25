@@ -27,6 +27,7 @@ from sqlalchemy import exists, func
 from sqlalchemy.orm.exc import NoResultFound
 
 import ujson as json
+from functools import reduce
 
 
 class API:
@@ -61,7 +62,7 @@ class API:
             All_parsers[parsername] = importlib.import_module('tilde.parsers.' + parsername + '.' + parsername) # all imported modules will be stored here
 
         # replace modules by classes and check *fingerprints* method
-        for parser, module in All_parsers.iteritems():
+        for parser, module in All_parsers.items():
             for name, cls in inspect.getmembers(module):
                 if inspect.isclass(cls):
                     if inspect.isclass(cls) and hasattr(cls, 'fingerprints'):
@@ -135,7 +136,7 @@ class API:
         NB: this is the PUBLIC method
         @procedure
         '''
-        for n, p in self.Parsers.items():
+        for n, p in list(self.Parsers.items()):
             if n != name:
                 del self.Parsers[n]
         if len(self.Parsers) != 1: raise RuntimeError('Parser cannot be assigned!')
@@ -157,7 +158,7 @@ class API:
                 y += 1
             else:
                 types[ labels[lbl] ].append(k+1)
-        atoms = labels.keys()
+        atoms = list(labels.keys())
         atoms = [x for x in self.formula_sequence if x in atoms] + [x for x in atoms if x not in self.formula_sequence] # accordingly
         formula = ''
         for atom in atoms:
@@ -258,20 +259,23 @@ class API:
         @returns tilde_obj, error
         '''
         calc, error = None, None
-        try: f = open(parsable, 'r')
+        try:
+            f = open(parsable, 'rb')
+            if is_binary_string(f.read(2048)):
+                yield None, 'was read (binary data)...'
+                return
+            f.close()
         except IOError:
             yield None, 'read error!'
             return
-        if is_binary_string(f.read(2048)):
-            yield None, 'was read (binary data)...'
-            return
+        f = open(parsable, 'r')  # open the file once again with right mode
         f.seek(0)
         i, detected = 0, False
         while not detected:
             if i>700: break # criterion: parser must detect its working format in first N lines of output
             fingerprint = f.readline()
             if not fingerprint: break
-            for name, Parser in self.Parsers.iteritems():
+            for name, Parser in self.Parsers.items():
                 if Parser.fingerprints(fingerprint):
                     for calc, error in self._parse(parsable, name):
                         detected = True
@@ -304,7 +308,7 @@ class API:
         calc.info['formula'] = self.formula(symbols)
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
         if calc.info['input']:
-            try: calc.info['input'] = unicode(calc.info['input'], errors='ignore')
+            try: calc.info['input'] = str(calc.info['input'], errors='ignore')
             except: pass
 
         # applying filter: todo
@@ -331,7 +335,7 @@ class API:
         if not len(calc.info['standard']):
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
             if not calc.info['expanded']: calc.info['expanded'] = reduce(gcd, calc.info['contents'])
-            for n, i in enumerate(map(lambda x: x/calc.info['expanded'], calc.info['contents'])):
+            for n, i in enumerate([x//calc.info['expanded'] for x in calc.info['contents']]):
                 if i==1: calc.info['standard'] += calc.info['elements'][n]
                 else: calc.info['standard'] += calc.info['elements'][n] + str(i)
         if not calc.info['expanded']: del calc.info['expanded']
@@ -438,7 +442,7 @@ class API:
         NB: this is the PUBLIC method
         @returns apps_dict
         '''
-        for appname, appclass in self.Apps.iteritems():
+        for appname, appclass in self.Apps.items():
             if with_module and with_module != appname: continue
 
             run_permitted = False
@@ -515,13 +519,13 @@ class API:
             if calc.phonons['modes']:
                 phonons_json = []
 
-                for bzpoint, frqset in calc.phonons['modes'].iteritems():
+                for bzpoint, frqset in calc.phonons['modes'].items():
                     # re-orientate eigenvectors
                     for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
-                        for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])/3):
+                        for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])//3):
                             eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
                             R = dot( eigv, calc.structures[-1].cell ).tolist()
-                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = map(lambda x: round(x, 3), R)
+                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = [round(x, 3) for x in R]
 
                     try: irreps = calc.phonons['irreps'][bzpoint]
                     except KeyError:
@@ -554,7 +558,7 @@ class API:
                 )
 
             # construct ORM for other props
-            calc.related_files = map(virtualize_path, calc.related_files)
+            calc.related_files = list(map(virtualize_path, calc.related_files))
             ormcalc.meta_data = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
@@ -604,7 +608,7 @@ class API:
                 topic = calc.info.get(entity['source'])
                 if topic or not entity['optional']: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
-        uitopics = map(lambda x: model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic), uitopics)
+        uitopics = [model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic) for x in uitopics]
 
         ormcalc.uitopics.extend(uitopics)
 
@@ -641,7 +645,7 @@ class API:
                     except KeyError: higher_lookup[distance] = set([i])
                     if i.parent:
                         more += i.parent
-            for distance, members in higher_lookup.iteritems():
+            for distance, members in higher_lookup.items():
                 for i in members:
                     if distance == 1:
                         i.siblings_count -= 1
@@ -757,7 +761,7 @@ class API:
                 except KeyError: higher_lookup[distance] = set([i])
                 if i.parent:
                     more += i.parent
-        for members in higher_lookup.values():
+        for members in list(higher_lookup.values()):
             for i in members:
                 if i.checksum in filtered_addendum: return 'A parent dataset cannot be added to its children dataset.'
 
@@ -802,7 +806,7 @@ class API:
             parent_calc.children.append(child)
         parent_calc.siblings_count = len(parent_calc.children)
 
-        for distance, members in higher_lookup.iteritems():
+        for distance, members in higher_lookup.items():
             for i in members:
                 d = parent_calc.nested_depth - i.nested_depth + distance
                 if d > 0:

@@ -3,12 +3,14 @@
 # based on pymatgen iovasp module (author: Shyue Ping Ong)
 # Author: Evgeny Blokhin
 
+from __future__ import division
+
 import os, sys, re, math
 import itertools
 import traceback
 import xml.sax
-import StringIO
 from collections import defaultdict
+import six
 
 from numpy import dot, array, zeros
 
@@ -146,20 +148,21 @@ class Kpoints():
     def automatic_density(structure, kppa):
         latt = structure.lattice
         lengths = latt.abc
-        ngrid = kppa / structure.num_sites
+        ngrid = kppa // structure.num_sites
 
+        # FIXME: 1/3 == 0 in Python 2, hence mult is always equal to one. Possible bug?
         mult = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
 
-        num_div = [int(round(1 / lengths[i] * mult)) for i in xrange(3)]
+        num_div = [int(round(1 / lengths[i] * mult)) for i in range(3)]
         #ensure that numDiv[i] > 0
         num_div = [i if i > 0 else 1 for i in num_div]
 
         angles = latt.angles
         hex_angle_tol = 5  # in degrees
         hex_length_tol = 0.01  # in angstroms
-        right_angles = [i for i in xrange(3)
+        right_angles = [i for i in range(3)
                         if abs(angles[i] - 90) < hex_angle_tol]
-        hex_angles = [i for i in xrange(3)
+        hex_angles = [i for i in range(3)
                       if abs(angles[i] - 60) < hex_angle_tol or
                       abs(angles[i] - 120) < hex_angle_tol]
 
@@ -182,7 +185,7 @@ class Kpoints():
         style = self.style.lower()[0]
         if style == "Line-mode":
             lines.append(self.coord_type)
-        for i in xrange(len(self.kpts)):
+        for i in range(len(self.kpts)):
             lines.append(" ".join([str(x) for x in self.kpts[i]]))
             if style == "l":
                 lines[-1] += " ! " + self.labels[i]
@@ -209,7 +212,7 @@ class Incar(dict):
         self.update(params)
 
     def __setitem__(self, key, val):
-        super(Incar, self).__setitem__(key.strip(), Incar.proc_val(key.strip(), val.strip()) if isinstance(val, basestring) else val)
+        super(Incar, self).__setitem__(key.strip(), Incar.proc_val(key.strip(), val.strip()) if isinstance(val, six.string_types) else val)
 
     def get_string(self, sort_keys=False, pretty=False):
         keys = self.keys()
@@ -296,14 +299,14 @@ class XML_Output(Output):
                             (0xAFFFE, 0xAFFFF), (0xBFFFE, 0xBFFFF), (0xCFFFE, 0xCFFFF),
                             (0xDFFFE, 0xDFFFF), (0xEFFFE, 0xEFFFF), (0xFFFFE, 0xFFFFF),
                             (0x10FFFE, 0x10FFFF) ]
-        illegal_ranges = ["%s-%s" % (unichr(low), unichr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
+        illegal_ranges = ["%s-%s" % (six.unichr(low), six.unichr(high)) for (low, high) in illegal_unichrs if low < sys.maxunicode]
         illegal_xml_re = re.compile(u'[%s]' % u''.join(illegal_ranges))
         filestring = illegal_xml_re.sub('', filestring)
 
-        try: xml.sax.parseString(filestring, self._handler)
+        try: xml.sax.parseString(six.b(filestring), self._handler)
         except:
-            #exc_type, exc_value, exc_tb = sys.exc_info()
-            raise RuntimeError('VASP output corrupted or not correctly finalized!') # + "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
+        #     #exc_type, exc_value, exc_tb = sys.exc_info()
+            raise RuntimeError('VASP output corrupted or not correctly finalized!')  #+ "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
 
         # TODO: reorganize
         for k in ["vasp_version", "incar",
@@ -350,7 +353,7 @@ class XML_Output(Output):
                 # spins are merged: TODO
                 alpha_beta = self.tdos[1]['alpha']
                 if 'beta' in self.tdos[1]: alpha_beta = [sum(s) for s in zip(alpha_beta, self.tdos[1]['beta'])]
-                self.electrons['dos'] = {'x': map(lambda x: round(x - self.e_last, 2), self.tdos[0]), 'total': alpha_beta} # scaled: E - Ef
+                self.electrons['dos'] = {'x': list(map(lambda x: round(x - self.e_last, 2), self.tdos[0])), 'total': alpha_beta} # scaled: E - Ef
                 self.electrons['dos'].update(self.pdos)
                 self.electrons['dos'] = Edos(self.electrons['dos'])
 
@@ -547,12 +550,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self._init_calc(name, attributes)
 
         if self.read_val:
-            self.val = StringIO.StringIO()
+            self.val = six.StringIO()
 
     def _init_input(self, name, attributes):
         if (name == "i" or name == "v") and (self.state["incar"] or self.state["parameters"]):
             self.incar_param = attributes["name"]
-            self.param_type = "float" if not attributes.has_key("type") else attributes["type"]
+            self.param_type = "float" if not "type" in attributes else attributes["type"]
             self.read_val = True
         elif name == "v" and self.state["kpoints"]:
             self.read_val = True
@@ -587,7 +590,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             elif self.read_dos:
                 if (name == "i" and self.state["i"] == "efermi") or (name == "r" and self.state["set"]):
                     self.read_val = True
-                elif name == "set" and attributes.has_key("comment"):
+                elif name == "set" and "comment" in attributes:
                     comment = attributes["comment"]
                     self.state["set"] = comment
                     if self.state["partial"]:
@@ -625,12 +628,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
         elif name == "scstep":
             self.scstep = {}
         elif name == "structure":
-            self.latticestr = StringIO.StringIO()
-            self.latticerec = StringIO.StringIO()
-            self.posstr = StringIO.StringIO()
+            self.latticestr = six.StringIO()
+            self.latticerec = six.StringIO()
+            self.posstr = six.StringIO()
             self.read_structure = True
         #elif name == "varray" and self.state["varray"] in ["forces", "stress"]:
-        #    self.posstr = StringIO.StringIO()
+        #    self.posstr = six.StringIO()
 
     def characters(self, data):
         if self.read_val:
@@ -655,7 +658,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
             self.incar_param = None
         elif name == "set":
             if self.state["array"] == "atoms":
-                self.bsseq = map(lambda x: int(x)-1, self.atomic_symbols[1::2])
+                self.bsseq = list(map(lambda x: int(x)-1, self.atomic_symbols[1::2]))
                 self.atomic_symbols = self.atomic_symbols[::2]
             elif self.state["array"] == "atomtypes":
                 self.potcar_sequence = self.potcar_symbols[1::5]
@@ -663,9 +666,9 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                 self.input_read = True
         elif name == "c":
             if self.state["array"] == "atoms":
-                self.atomic_symbols.append(self.val.getvalue().strip().encode('ascii'))
+                self.atomic_symbols.append(self.val.getvalue().strip())
             elif self.state["array"] == "atomtypes":
-                self.potcar_symbols.append(self.val.getvalue().strip().encode('ascii'))
+                self.potcar_symbols.append(self.val.getvalue().strip())
         elif name == "v":
             if self.state["incar"]:
                 self.incar[self.incar_param] = self.parse_v_parameters(self.param_type, self.val.getvalue().strip(), self.incar_param)
@@ -770,12 +773,12 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                 elif self.state["partial"] and str(self.state["set"]).startswith("spin"):
                     spin = 'alpha' if self.state["set"] == "spin 1" else 'beta'
                     self.norbitals = len(self.raw_data[0])
-                    for i in xrange(self.norbitals):
+                    for i in range(self.norbitals):
                         self.pdos[(self.pdos_ion, i, spin)] = [row[i] for row in self.raw_data]
                     self.raw_data = []
             elif name == "partial":
                 atomic_pdos = {}
-                for k, v in self.pdos.iteritems():
+                for k, v in six.iteritems(self.pdos):
                     atom = self.atomic_symbols[k[0]-1]
                     if not atom in atomic_pdos:
                         atomic_pdos[atom] = v
@@ -787,7 +790,7 @@ class VasprunHandler(xml.sax.handler.ContentHandler):
                 #self.idos = [self.e_last, self.dos_energies, self.idos]
             elif name == "dos":
                 self.read_dos = False
-        except Exception, ex:
+        except Exception as ex:
             self.dos_error = str(ex)
 
     '''def _read_eigen(self, name):

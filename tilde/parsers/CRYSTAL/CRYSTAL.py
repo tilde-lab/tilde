@@ -2,6 +2,8 @@
 # CRYSTAL cryst.out parser
 # Author: Evgeny Blokhin
 
+from __future__ import division
+
 import os, sys
 import math
 import re
@@ -147,7 +149,7 @@ class CRYSTOUT(Output):
             # format ph_k_degeneracy
             if self.phonons['ph_k_degeneracy']:
                 bz, d = [], []
-                for k, v in self.phonons['ph_k_degeneracy'].iteritems():
+                for k, v in self.phonons['ph_k_degeneracy'].items():
                     bz.append( self.phonons['ph_k_degeneracy'][k]['bzpoint'] )
                     d.append( self.phonons['ph_k_degeneracy'][k]['degeneracy'] )
                 self.phonons['ph_k_degeneracy'] = {}
@@ -322,7 +324,7 @@ class CRYSTOUT(Output):
                         atoms.append(atomdata)
 
             if len(atoms) == 0: raise RuntimeError('No atoms found, cell info is corrupted!')
-            if parameters and len(filter(lambda x: x > 0.75, parameters)) < 6: raise RuntimeError('Cell is collapsed!') # prevent cell collapses known in CRYSTAL RESTART outputs
+            if parameters and len([x for x in parameters if x > 0.75]) < 6: raise RuntimeError('Cell is collapsed!') # prevent cell collapses known in CRYSTAL RESTART outputs
 
             # check whether angstroms are used instead of fractions
             if pbc:
@@ -367,11 +369,11 @@ class CRYSTOUT(Output):
         freqsp = self.patterns['freqs'].findall(self.data)
         if freqsp:
             for i in freqsp:
-                freqdata.append( filter( None, i.strip().splitlines() ) )
+                freqdata.append( [_f for _f in i.strip().splitlines() if _f] )
         else:
             freqsp = self.patterns['gamma_freqs'].search(self.data)
             if freqsp is None: return None, None, None, None
-            else:   freqdata.append( filter( None, freqsp.group(1).strip().splitlines() ) )
+            else:   freqdata.append( [_f for _f in freqsp.group(1).strip().splitlines() if _f] )
         bz_modes, bz_irreps, kpoints = {}, {}, []
         ir_active, raman_active = [], []
         for set in freqdata:
@@ -386,7 +388,7 @@ class CRYSTOUT(Output):
                     if len(val) < 5: continue # filter lines with freqs: condition 2 from 3
                     try: float(val[2]) + float(val[3])
                     except ValueError: continue # filter lines with freqs: condition 3 from 3
-                    nmodes = filter(None, val[0].split("-"))
+                    nmodes = [_f for _f in val[0].split("-") if _f]
                     if len(nmodes) == 1: # silly CRYSTAL output with fixed place for numericals
                         mplr = int(val[1]) - int(val[0].replace("-", "")) + 1
                         for i in range( 0, mplr ):
@@ -432,12 +434,12 @@ class CRYSTOUT(Output):
                 eigvecdata.append( bzpoint.split("FREQ(CM**-1)") )
         else: return None
 
-        natseq = range(1, len(self.structures[-1])+1)
+        natseq = list(range(1, len(self.structures[-1])+1))
         bz_eigvecs, kpoints = {}, []
         for set in eigvecdata:
             ph_eigvecs = []
             for i in set:
-                rawdata = filter( None, i.strip().splitlines() )
+                rawdata = [_f for _f in i.strip().splitlines() if _f]
                 freqs_container = []
                 involved_atoms = []
                 for j in rawdata:
@@ -493,7 +495,7 @@ class CRYSTOUT(Output):
                 for j in k:
                     if j.isdigit(): shr_fact.append(int(j))
             else:
-                k = filter(None, n.split("   "))
+                k = [_f for _f in n.split("   ") if _f]
                 if len(k)==4:
                     orig_coord = k[2].strip().split()
                     orig_coords.append( " ".join(orig_coord) )
@@ -524,9 +526,9 @@ class CRYSTOUT(Output):
                 Z = int( iatomcharges[i][0].strip() )
                 P = float( iatomcharges[i][1].strip() )
             except: raise RuntimeError('Error in pseudopotential info: ' + sys.exc_info()[1] )
-            p_element = [key for key, value in pseudo_charges.iteritems() if value == Z]
+            p_element = [key for key, value in pseudo_charges.items() if value == Z]
             if len(p_element): pseudo_charges[p_element[0].capitalize()] = P
-        symbols = pseudo_charges.keys()
+        symbols = list(pseudo_charges.keys())
 
         if atomcharges is not None:
             parts = atomcharges.group().split("ATOM    Z CHARGE  SHELL POPULATION")
@@ -652,7 +654,7 @@ class CRYSTOUT(Output):
                         if not n % 10: gaussians.append(' ')
                         gaussians[-1] += s
                         n+=1
-                    gaussians = filter(lambda x: x != 0, map( float, gaussians ))
+                    gaussians = [x for x in map( float, gaussians ) if x != 0]
                     #for i in range(len(gaussians)-1, -1, -1):
                     #    if gaussians[i] == 0: gaussians.pop()
                     #    else: break
@@ -713,8 +715,8 @@ class CRYSTOUT(Output):
                         if 'TMS' in line:
                             gbasis['ps'][ atom_type ].append( [ lines[0] ] )
                             lines = lines[2:]
-                        lines = map(float, lines)
-                        for i in range(len(lines)/3):
+                        lines = list(map(float, lines))
+                        for i in range(len(lines)//3):
                             gbasis['ps'][ atom_type ][-1].append( tuple( [lines[0 + i*3], lines[1 + i*3], lines[2 + i*3]] ) )
 
         # sometimes ghost basis set is printed without exponents and we should determine what atom was replaced
@@ -757,7 +759,7 @@ class CRYSTOUT(Output):
 
             parts = line.split()
 
-            if len(parts) == 1 and parts[0].upper() in ps_keywords.keys():
+            if len(parts) == 1 and parts[0].upper() in list(ps_keywords.keys()):
                 # pseudo
                 try: gbasis['ps'][ atom_type ]
                 except KeyError: gbasis['ps'][ atom_type ] = []
@@ -773,7 +775,7 @@ class CRYSTOUT(Output):
             elif len(parts) == 0: continue
 
             else:
-                try: map(self.__float, line.split()) # sanitary check
+                try: list(map(self.__float, line.split())) # sanitary check
                 except ValueError:
                     read = False
                     continue
@@ -784,11 +786,11 @@ class CRYSTOUT(Output):
 
                 elif '.' in parts[0] or '.' in parts[1]:
                     # this is ---- ps exponent or bs exponent
-                    parts = map(self.__float, parts)
+                    parts = list(map(self.__float, parts))
 
                     if read_pseud:
                         # distribute exponents into ps-types according to counter, that we now calculate
-                        if distrib in ps_indeces_map.keys():
+                        if distrib in list(ps_indeces_map.keys()):
                             gbasis['ps'][ atom_type ].append( [ ps_indeces_map[distrib] ] )
                         gbasis['ps'][ atom_type ][-1].append( tuple( parts ) )
                         distrib += 1
@@ -814,13 +816,13 @@ class CRYSTOUT(Output):
             elif len(parts) == 5:
                 # this is ---- orbital
                 gbasis['bs'][ atom_type ].append( [ bs_sequence[ int(parts[1]) ] ] )
-                parts = map(int, parts[0:3])
+                parts = list(map(int, parts[0:3]))
                 if parts[0] == 0:
                     # insert from data given in input
                     read_pseud, read_bs = False, True
-                elif parts[0] in bs_type.keys(): # 1 = Pople standard STO-nG (Z=1-54); 2 = Pople standard 3(6)-21G (Z=1-54(18)) + standard polarization functions
+                elif parts[0] in list(bs_type.keys()): # 1 = Pople standard STO-nG (Z=1-54); 2 = Pople standard 3(6)-21G (Z=1-54(18)) + standard polarization functions
                     # pre-defined insert
-                    if parts[2] in bs_notation.keys():
+                    if parts[2] in list(bs_notation.keys()):
                         gbasis['bs'][ atom_type ][-1].append( bs_type[ parts[0] ] + bs_notation[ parts[2] ] )
                     else:
                         gbasis['bs'][ atom_type ][-1].append( bs_type[ parts[0] ] + 'n=' + str(parts[2]) )
@@ -828,7 +830,7 @@ class CRYSTOUT(Output):
             elif len(parts) in [6, 7]:
                 # this is ---- pseudo - INPUT
                 parts.pop(0)
-                ps_indeces = map(int, parts)
+                ps_indeces = list(map(int, parts))
                 ps_indeces_map = {}
                 accum = 1
                 for c, n in enumerate(ps_indeces):
@@ -850,7 +852,7 @@ class CRYSTOUT(Output):
         for atom in self.structures[-1].get_chemical_symbols():
             if not atom in atoms: atoms.append( atom )
 
-        for k, v in gbasis['bs'].iteritems():
+        for k, v in gbasis['bs'].items():
             # sometimes no BS for host atom is printed when it is replaced by Xx: account it
             if not len(v) and k != 'X' and 'X' in gbasis['bs']:
                 gbasis['bs'][k] = copy.deepcopy(gbasis['bs']['X'])

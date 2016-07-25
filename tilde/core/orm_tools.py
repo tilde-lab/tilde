@@ -71,10 +71,10 @@ def correct_topics(session, model, calc_id, cid, new_topics, mode, topics_hierar
             break
     assert found_entity, "Wrong topic identifier!"
 
-    if isinstance(calc_id, (str, unicode)):
+    if isinstance(calc_id, str):
          calc_id = [calc_id]
     assert isinstance(calc_id, list)
-    if isinstance(new_topics, (str, unicode)):
+    if isinstance(new_topics, str):
          new_topics = [new_topics]
     assert isinstance(new_topics, list)
 

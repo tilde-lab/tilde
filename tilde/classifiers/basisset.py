@@ -2,6 +2,8 @@
 # Compacted basis set labels as strings for GUI
 # Author: Evgeny Blokhin
 
+import six
+
 
 # hierarchy API: __order__ to apply classifier
 __order__ = 5
@@ -27,13 +29,13 @@ def classify(tilde_obj):
 
     elif tilde_obj.info['ansatz'] == 0x3: # TODO
         ps = {}
-        for k, v in tilde_obj.electrons['basis_set']['ps'].iteritems():
+        for k, v in six.iteritems(tilde_obj.electrons['basis_set']['ps']):
             ps[k] = ''
             for channel in v:
                 ps[k] += channel[0].lower() + '<sup>' + str(len(channel)-1) + '</sup>'
 
         i=0
-        for k, v in tilde_obj.electrons['basis_set']['bs'].iteritems():
+        for k, v in six.iteritems(tilde_obj.electrons['basis_set']['bs']):
             if k == 'X': continue
 
             chk = "".join([a for a in k if a.isdigit()])

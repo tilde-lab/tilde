@@ -26,7 +26,7 @@ class SymmetryFinder:
     def get_spacegroup(self, tilde_obj):
         try:
             symmetry = spg.get_spacegroup(tilde_obj['structures'][-1], symprec=self.accuracy, angle_tolerance=self.angle_tolerance)
-        except Exception, ex:
+        except Exception as ex:
             self.error = 'Symmetry finder error: %s' % ex
         else:
             symmetry = symmetry.split()
@@ -41,7 +41,7 @@ class SymmetryFinder:
         NB only used for perovskite_tilting app
         '''
         try: lattice, positions, numbers = spg.refine_cell(tilde_obj['structures'][-1], symprec=self.accuracy, angle_tolerance=self.angle_tolerance)
-        except Exception, ex:
+        except Exception as ex:
             self.error = 'Symmetry finder error: %s' % ex
         else:
             self.refinedcell = Atoms(numbers=numbers, cell=lattice, scaled_positions=positions, pbc=tilde_obj['structures'][-1].get_pbc())

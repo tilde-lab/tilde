@@ -7,8 +7,8 @@ import math
 
 from numpy import dot, array, linalg, arange
 
-from cubicspline import NaturalCubicSpline
-from dos import TotalDos, PartialDos
+from tilde.berlinium.cubicspline import NaturalCubicSpline
+from tilde.berlinium.dos import TotalDos, PartialDos
 
 from ase.data.colors import jmol_colors
 from ase.data import chemical_symbols
