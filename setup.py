@@ -35,13 +35,14 @@ if missing_packages:
     print("Installation will now exit.")
     sys.exit(1)
 
+# convert documentation to rst
 try:
    import pypandoc
    long_description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError, RuntimeError) as e:
     if len(sys.argv) > 2 and sys.argv[2] == "upload":
         raise e.__class__("PyPI servers need reStructuredText as README! Please install pypandoc to convert markdown "
-                 "to rst")
+                          "to rst")
     else:
         long_description = ''
 
@@ -53,11 +54,11 @@ install_requires = [
     'bcrypt',
     'importlib',
     'pg8000',
-    'sqlalchemy == 1.0.12',
+    'sqlalchemy >= 1.0.12',
     'argparse',
-    'ase == 3.11',
+    'ase >= 3.11',
     'spglib >= 1.9.1',
-    'tornado == 4.3.0',
+    'tornado >= 4.3.0',
     'sockjs-tornado',
     'websocket-client',
     'futures',
@@ -65,7 +66,7 @@ install_requires = [
 
 setup(
     name='tilde',
-    version='0.8.9',
+    version='0.8.1',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
@@ -82,7 +83,11 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5'
     ],
     keywords='CRYSTAL Quantum-ESPRESSO VASP ab-initio materials informatics first-principles',
     packages=packages,
