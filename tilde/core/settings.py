@@ -19,10 +19,10 @@ DB_SCHEMA_VERSION = '5.11'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
-ROOT_DIR = os.path.normpath(BASE_DIR + '/../../')
+ROOT_DIR = os.path.normpath(BASE_DIR + '/../')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
-EXAMPLE_DIR = os.path.join(ROOT_DIR, 'tests/data')
-INIT_DATA = os.path.join(ROOT_DIR, 'init-data.sql')
+EXAMPLE_DIR = os.path.join(ROOT_DIR, '../tests/data')
+INIT_DATA = os.path.join(DATA_DIR, 'sql/init-data.sql')
 TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
 

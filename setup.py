@@ -38,18 +38,14 @@ if missing_packages:
 try:
    import pypandoc
    long_description = pypandoc.convert('README.md', 'rst')
-except (IOError, ImportError) as e:
-    if sys.argv[2] == "upload":
-        raise e.__class__("Warning: PyPI servers need reStructuredText as README! Please install pypandoc to convert markdown "
+except (IOError, ImportError, RuntimeError) as e:
+    if len(sys.argv) > 2 and sys.argv[2] == "upload":
+        raise e.__class__("PyPI servers need reStructuredText as README! Please install pypandoc to convert markdown "
                  "to rst")
     else:
-        long_description = open('README.md').read()
+        long_description = ''
 
-packages=find_packages(exclude=('tests', ))
-package_data = {}
-for package in packages:
-    if os.path.isfile(os.path.join(*(package.split('.') + ['manifest.json',]))):
-        package_data[package] = ['manifest.json',]
+packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
     'numpy >= 1.9',
@@ -69,7 +65,7 @@ install_requires = [
 
 setup(
     name='tilde',
-    version='0.8.0',
+    version='0.8.9',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
@@ -90,13 +86,10 @@ setup(
     ],
     keywords='CRYSTAL Quantum-ESPRESSO VASP ab-initio materials informatics first-principles',
     packages=packages,
+    include_package_data=True,
     install_requires=install_requires,
     tests_require= ['nose',],
     test_suite='nose.collector',
-    data_files=[
-        ('', ['init-data.sql',]),
-    ],
-    package_data=package_data,
     scripts=[
         "utils/tilde.sh",
         "utils/entry.py"
