@@ -3,7 +3,6 @@
 import os
 from operator import itemgetter
 
-from . import set_path
 import tilde.core.model as model
 from tilde.core.settings import EXAMPLE_DIR
 from . import TestLayerDB

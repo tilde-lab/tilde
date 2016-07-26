@@ -2,7 +2,6 @@
 import os, sys
 import unittest
 
-import set_path
 from tilde.core.api import API
 from tilde.core.settings import BASE_DIR, ROOT_DIR, EXAMPLE_DIR
 

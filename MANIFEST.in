@@ -1,0 +1,3 @@
+recursive-exclude tests *
+recursive-include tilde manifest.json
+include tilde/data/sql/init-data.sql
