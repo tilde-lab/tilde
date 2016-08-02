@@ -1,5 +1,7 @@
+
 # Copyright Tilde Materials Informatics
 # Distributed under the MIT License
+
 from __future__ import print_function
 
 from setuptools import setup, find_packages
@@ -70,8 +72,6 @@ setup(
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
-    author='Evgeny Blokhin',
-    author_email='eb@tilde.pro',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
