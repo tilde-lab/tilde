@@ -51,7 +51,6 @@ DEFAULT_SETUP = {
     'title': "Tilde GUI",
     'gui_url': "http://tilde-lab.github.io/berlinium/?https://db.tilde.pro"
 }
-repositories = []
 
 def virtualize_path(item):
     return item
