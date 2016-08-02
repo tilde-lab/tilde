@@ -50,5 +50,5 @@ class Constants:
 
 class Perovskite_Structure:
     A = 'Li, Na, K, Rb, Cs, Fr, Mg, Ca, Sr, Ba, Ra, Sc, Sc, Y, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu, Ag, Pb, Bi, Th, In, Mn, Zn'.split(', ')
-    B = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re, Se, La, Pr'.split(', ')
-    C = 'O, F'.split(', ') # todo: add elements to C site
+    B = 'Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Hf, Ta, W, Re, Se, La, Pr, Pb'.split(', ')
+    C = 'H, O, F, Cl, Br, I'.split(', ')

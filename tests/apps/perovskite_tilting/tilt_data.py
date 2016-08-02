@@ -81,6 +81,9 @@ class Data_Perovskite_Tilting_Test(unittest.TestCase):
 
                 calc = work.postprocess(calc)
 
+                target_category_num = 4 # perovskite category, pre-defined in init-data.sql
+                assert target_category_num in calc.info['tags']
+
                 cls.results[k] = [ v['data'], calc.apps['perovskite_tilting']['data'] ]
 
     def test_all(self):
@@ -88,7 +91,6 @@ class Data_Perovskite_Tilting_Test(unittest.TestCase):
             centers = v[0].keys()
             for center in centers:
                 self.assertEqual(v[0][center], v[1][center])
-
 
 if __name__ == "__main__":
     for k, v in test_data.iteritems():
@@ -101,6 +103,10 @@ if __name__ == "__main__":
                 raise RuntimeError(k + ': ' + error)
 
             calc = work.postprocess(calc)
+
+            target_category_num = 4 # perovskite category, pre-defined in init-data.sql
+            assert target_category_num in calc.info['tags']
+
             if not 'perovskite_tilting' in calc.apps:
                 raise RuntimeError(k + ': invalid result!')
             print("\nSource", v['comment'], "(" + k + ")")
