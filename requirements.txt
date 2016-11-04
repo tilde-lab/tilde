@@ -8,7 +8,7 @@ pg8000
 sqlalchemy>=1.0.12
 argparse
 ase>=3.11
-spglib>=1.9.4.2
+spglib>=1.9.5
 tornado>=4.3.0
 sockjs-tornado
 websocket-client

@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import unittest
 
-from ase.lattice.spacegroup import crystal
+from ase.spacegroup import crystal
 
 import set_path
 from tilde.core.settings import settings

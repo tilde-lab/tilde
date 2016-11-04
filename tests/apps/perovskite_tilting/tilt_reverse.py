@@ -62,7 +62,7 @@ class Reverse_Perovskite_Tilting_Test(unittest.TestCase):
             list(six.itervalues(virtual_calc.apps['perovskite_tilting']['data']))[0],
             [phi, theta, psi]
         ):
-            self.assertAlmostEqual(pair[0], pair[1], delta=0.02)
+            self.assertLess(abs(pair[0]-pair[1]), 0.02)
 
     def test_errors(self):
         self.assertTrue(virtual_calc.apps.get('perovskite_tilting'))

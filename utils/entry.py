@@ -19,6 +19,8 @@ import argparse
 from numpy import array
 from numpy.linalg import det
 
+import chk_tilde_install
+
 from tilde.core.settings import settings, connect_database, DATA_DIR, DB_SCHEMA_VERSION
 from tilde.core.common import write_cif, num2name
 from tilde.core.symmetry import SymmetryFinder
