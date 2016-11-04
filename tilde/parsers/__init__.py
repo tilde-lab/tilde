@@ -166,11 +166,13 @@ class Output:
             energy = str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy'])))))
 
         calc_checksum.update(
-            (struc_repr +
+            (
+            struc_repr +
             energy + " " +
             self.info['prog'] + " " +
             str(self.info['input']) + " " +
-            str(sum([2**x for x in self.info['calctypes']]))).encode('ascii')
+            str(sum([2**x for x in self.info['calctypes']]))
+            ).encode('ascii')
         ) # this is fixed in DB schema 5.11 and should not be changed
 
         result = base64.b32encode(calc_checksum.digest()).decode('ascii')

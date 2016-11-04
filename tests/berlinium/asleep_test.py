@@ -19,7 +19,7 @@ class Test_Async_Sleep_Server(unittest.TestCase):
         children = []
         for i in range(prcnum):
             children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'asleep_client.py')]) )
-        time.sleep(8)
+        time.sleep(10)
 
         for i in children:
             self.assertEqual(i.poll(), 0, "Server response is too slow")

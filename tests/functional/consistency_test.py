@@ -46,8 +46,9 @@ class Test_Consistency(TestLayerDB):
             checksums.append(i[0])
         checksums.sort()
         self.expected_checksums.sort()
-        try: self.assertTrue(checksums == self.expected_checksums,
-            "Unexpected calculation checksums occured!")
+        try:
+            self.assertTrue(checksums == self.expected_checksums,
+            "Unexpected calculation checksums occured: %s" % str(checksums))
         except:
             TestLayerDB.failed = True
             raise
