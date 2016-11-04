@@ -27,7 +27,7 @@ test_data = {
     'check_last_point.cryst.out': {
         'comment': '[1], Table 1, calculated, Euler notation',
         'data': {
-            7: [0.04, 12.26, 7.93], # corner number can be 5 or 7 FIXME
+            7: [0.04, 12.26, 7.93], # the 1st test: corner number can be 5 or 7 FIXME
             }
     },
     'y4h4srhfo3_62_pbe0_9hf_cis_go.cryst.out': {
@@ -90,7 +90,7 @@ class Data_Perovskite_Tilting_Test(unittest.TestCase):
         for k, v in six.iteritems(self.results):
             centers = v[0].keys()
             for center in centers:
-                self.assertEqual(v[0][center], v[1][center])
+                self.assertEqual(v[0][center], v[1][center]) # the 1st test: corner number can be 5 or 7 FIXME
 
 if __name__ == "__main__":
     for k, v in test_data.iteritems():
