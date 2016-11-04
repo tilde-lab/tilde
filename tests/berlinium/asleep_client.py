@@ -36,8 +36,7 @@ class RespHandler(object):
 
     @classmethod
     def on_error(self, ws, error):
-        logging.debug(error)
-        sys.exit(1)
+        logging.error(error)
 
     @classmethod
     def on_close(self, ws):

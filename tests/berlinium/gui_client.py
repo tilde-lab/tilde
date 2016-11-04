@@ -19,7 +19,6 @@ class RespHandler(object):
     @classmethod
     def on_error(self, ws, error):
         logging.error(error)
-        sys.exit(1)
 
     @classmethod
     def on_close(self, ws):

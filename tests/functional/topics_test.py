@@ -11,7 +11,7 @@ from . import TestLayerDB
 class Test_Topics(TestLayerDB):
     __test_calcs_dir__ = os.path.join(EXAMPLE_DIR, 'VASP')
     expected_topics_before = {
-        "QZAKBZE26UUMBYJBDDG7XBNYN5IZJJAAW3VI5OJ2CJPXCCI": [
+        "CLRENNIUGMPCHF4A54A6PX2E5SAC7P7FUE4O3FJOXPMFECI": [
             {'topic': u'SrTiO3',                         'cid': 1},
             {'topic': u'Sr',                             'cid': 2},
             {'topic': u'Ti',                             'cid': 2},
@@ -38,7 +38,7 @@ class Test_Topics(TestLayerDB):
             {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
             {'topic': u'2',                              'cid': 1006}
         ],
-        "R6BFJTRJUQ3C5QVGQCSGGZC7FHKAPAFHU7GIAT23AEMIMCI": [
+        "4LDHSPLVQX6SVFFJBFU722BWLXX4BHNEYGS6NF6RJRZBSCI": [
             {'topic': u'Si16',                           'cid': 1},
             {'topic': u'Si',                             'cid': 2},
             {'topic': u'1',                              'cid': 3},
@@ -63,7 +63,7 @@ class Test_Topics(TestLayerDB):
         ]
     }
     expected_topics_after = {
-        "QZAKBZE26UUMBYJBDDG7XBNYN5IZJJAAW3VI5OJ2CJPXCCI": [
+        "CLRENNIUGMPCHF4A54A6PX2E5SAC7P7FUE4O3FJOXPMFECI": [
             {'topic': u'SrTiO3',                         'cid': 1},
             {'topic': u'Xx',                             'cid': 2},
             {'topic': u'Yy',                             'cid': 2},
@@ -94,7 +94,7 @@ class Test_Topics(TestLayerDB):
             {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
             {'topic': u'2',                              'cid': 1006}
         ],
-        "R6BFJTRJUQ3C5QVGQCSGGZC7FHKAPAFHU7GIAT23AEMIMCI": [
+        "4LDHSPLVQX6SVFFJBFU722BWLXX4BHNEYGS6NF6RJRZBSCI": [
             {'topic': u'Si16',                           'cid': 1},
             {'topic': u'Xx',                             'cid': 2},
             {'topic': u'Yy',                             'cid': 2},
