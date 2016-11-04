@@ -19,7 +19,7 @@ class Test_GUI_Server(unittest.TestCase):
         children = []
         for i in range(prcnum):
             children.append( subprocess.Popen([sys.executable, os.path.join(basedir, 'gui_client.py')]) )
-        time.sleep(6)
+        time.sleep(8)
 
         for i in children:
             self.assertEqual(i.poll(), 0, "Server response is too slow")

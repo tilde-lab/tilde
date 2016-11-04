@@ -18,7 +18,7 @@ from tilde.parsers import Output
 from tilde.classifiers.perovskites import generate_random_perovskite
 from tilde.apps.perovskite_tilting.perovskite_tilting import Perovskite_tilting
 
-from ase.lattice.spacegroup import crystal
+from ase.spacegroup import crystal
 
 
 # First, work with ASE

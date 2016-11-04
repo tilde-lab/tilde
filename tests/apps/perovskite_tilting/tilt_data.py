@@ -27,7 +27,7 @@ test_data = {
     'check_last_point.cryst.out': {
         'comment': '[1], Table 1, calculated, Euler notation',
         'data': {
-            5: [0.04, 12.26, 7.93], # corner number can be 7
+            7: [0.04, 12.26, 7.93], # corner number can be 5 or 7 FIXME
             }
     },
     'y4h4srhfo3_62_pbe0_9hf_cis_go.cryst.out': {

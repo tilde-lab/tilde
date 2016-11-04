@@ -40,7 +40,7 @@ DEFAULT_SETUP = {
         'default_sqlite_db': DEFAULT_SQLITE_DB,
         'engine': 'sqlite', # if sqlite is chosen: further info is not used
         'host': 'localhost',
-        'port': 5432, # may be 5433
+        'port': 5432,
         'user': 'postgres',
         'password': '',
         'dbname': 'tilde'
