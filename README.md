@@ -69,41 +69,7 @@ sh tests/run_tests.sh
 
 ## Similar projects
 
-Other known similar initiatives are listed below:
-
-- Accelrys (BIOVIA) Pipeline Pilot and Materials Studio, http://accelrys.com/products
-- AFLOW framework and Aflowlib repository, http://www.aflowlib.org
-- AiiDA: Automated Infrastructure and Database for Ab-initio design, Bosch LLC (**Python**), http://aiida.net
-- Automated Topology Builder (ATB), http://compbio.biosci.uq.edu.au/atb
-- Blue Obelisk Data Repository (**XSLT, XML**), http://bodr.sourceforge.net
-- Catapp, http://www.slac.stanford.edu/~strabo/catapp
-- CCLib (**Python**), http://cclib.sf.net
-- cctbx: Computational Crystallography Toolbox, http://cctbx.sourceforge.net
-- CEPDB: Harvard Clean Energy Project and distributed volunteer computing, http://cepdb.molecularspace.org
-- CMR (**Python**), https://wiki.fysik.dtu.dk/cmr
-- Computational Chemistry Comparison and Benchmark Database, http://cccbdb.nist.gov
-- Crystallography Open Database (including Theoretical Database
-- Delta project: Comparing Solid State DFT Codes, http://molmod.ugent.be/deltacodesdft
-- Electronic Structure Project, http://gurka.fysik.uu.se/ESP
-- ESTEST (**Python, XQuery**), http://estest.ucdavis.edu
-- Exabyte.io, Materials Discover Cloud, http://exabyte.io
-- J-ICE (based on **Jmol, Java**), http://j-ice.sourceforge.net
-- ioChem-BD (**Java**), http://www.iochem-bd.org
-- Materials Project (**Python**), http://www.materialsproject.org
-- MatNavi and AtomWork Materials Databases, Materials Information Station, Tsukuba, http://mits.nims.go.jp/matnavi/
-- MedeA Computational environment, http://www.materialsdesign.com/medea
-- MSE: Test Set for Materials Science and Engineering, http://mse.fhi-berlin.mpg.de
-- NoMaD: Novel Materials Discovery, http://nomad-repository.eu
-- NREL MatDB, http://materials.nrel.gov
-- Open Materials Database and High-Throughput Toolkit (**Python**), http://openmaterialsdb.se
-- OQMD and qmpy (**Python**), http://oqmd.org
-- Phonon database at Kyoto university, http://phonondb.mtl.kyoto-u.ac.jp
-- PAULING FILE, world largest database for inorganic compounds, http://paulingfile.com
-- pyCMW (**Python**), a framework of Max Planck Institute for Iron Research GmbH
-- QMForge (**Python**), http://qmforge.sourceforge.net
-- Quixote, http://quixote.wikispot.org
-- WebMO: Web-based interface to computational chemistry packages (Java, Perl), http://webmo.net
-- WURM: database of computed physical properties of minerals, http://wurm.info
+See this [curated list](https://github.com/tilde-lab/awesome-materials-informatics).
 
 ## Openness principle
 
