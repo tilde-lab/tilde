@@ -1,3 +1,4 @@
+
 from tilde.core.common import html_formula, num2name
 
 def wrap_cell(entity, json_obj, mapping, table_view=False):

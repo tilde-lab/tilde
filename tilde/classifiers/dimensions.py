@@ -7,9 +7,7 @@
 
 import math
 
-from numpy import cross
 from numpy.linalg import det
-from numpy.linalg import norm
 
 from ase.data import chemical_symbols, covalent_radii
 

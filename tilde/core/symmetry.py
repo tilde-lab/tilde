@@ -6,7 +6,6 @@
 
 import os, sys
 
-from numpy import array, zeros
 from numpy.linalg import det
 
 from ase.atoms import Atoms
