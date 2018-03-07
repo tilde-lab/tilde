@@ -61,8 +61,12 @@ class Setup_ServerDB(Setup_DB):
     def create(self):
         self.dbtype = settings['db']['engine'] = 'postgresql'
         settings['db']['dbname'] = 'postgres' # we can only be sure this DB exists!
-        try: db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
-        except: sys.exit('Cannot connect for test DB creation with these credentials: ' + str(settings['db']))
+
+        try:
+            db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
+        except:
+            sys.exit('Cannot connect for test DB creation with these credentials: ' + str(settings['db']))
+
         db.autocommit = True
         cursor = db.cursor()
         cursor.execute("CREATE DATABASE %s;" % self.dbname)
@@ -86,14 +90,19 @@ class Setup_ServerDB(Setup_DB):
             #logger.warning( "%s is kept" % self.dbname )
             return
 
-        if not self.dbname.startswith("test_"): sys.exit('Not allowed.')
+        if not self.dbname.startswith("test_"):
+            sys.exit('Not allowed.')
 
         settings['db']['dbname'] = 'postgres'
-        try: db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
-        except: sys.exit('Cannot connect for test DB cleaning with these credentials: ' + str(settings['db']))
+
+        try:
+            db = pg8000.connect(host = settings['db']['host'], port = int(settings['db']['port']), user = settings['db']['user'], password = settings['db']['password'], database = settings['db']['dbname'])
+        except:
+            sys.exit('Cannot connect for test DB cleaning with these credentials: ' + str(settings['db']))
+
         db.autocommit = True
         cursor = db.cursor()
-        cursor.execute("DROP DATABASE %s;" % self.dbname) # Warning, additional caution is required here!
+        cursor.execute("DROP DATABASE %s;" % self.dbname) # Warning!
         db.commit()
         cursor.close()
         db.close()

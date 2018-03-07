@@ -5,6 +5,7 @@ using the relational and serialized query approaches.
 some property = space group
 some category = gaussian basis set type
 """
+
 from __future__ import print_function
 
 import sys

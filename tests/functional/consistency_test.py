@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 # Repo basic consistency test
 # Author: Evgeny Blokhin
@@ -13,12 +12,12 @@ class Test_Consistency(TestLayerDB):
     example_calc_count = 6
     expected_performance = 9
     expected_checksums = [
-        '3NTUXI3NWTY2NPCQHWU72JNLES6M3ZSQYADFOGHRJTF3KCI',
-        '4LDHSPLVQX6SVFFJBFU722BWLXX4BHNEYGS6NF6RJRZBSCI',
-        'CLRENNIUGMPCHF4A54A6PX2E5SAC7P7FUE4O3FJOXPMFECI',
-        'FUYFQFNDQS76UGXIUC6PQCFOKRFDQNZ7XBUCN77VZUYCSCI',
-        'H6HUBXKHKNHDCRQVTTHLYV6UPLKARNRQ2C67EDN45N6SOCI',
-        'RX4B7JCMIALWZXSPVL4JQR37SJL2SZ44VKSSEQQ62X5U6CI'
+        'NPMJM53DWUEIKFSY66YC2ZJUF7L64KP2BS2JZGYLFDDTOCI',
+        'LZFH3UU7VAKOEBXM523CWFI6HCOXDJ4CQ7J7YGNR3BYZMCI',
+        '46AISOZQVLHNZZVZ53PPOTHRNHF3JRYYTECKNJ7QNMQXQCI',
+        'ECBBIXBU723RUXCLZBDINU2JGMF53ZWVAXZ2SV62IMIAACI',
+        'U6DLJBOGUN5JNT736TBXPCQVQPA4CPWCXWMVACMHLRDZGCI',
+        'EPVVPXXAWI6K2D746ETSOSMHE42TKFWRIQJ4SUASFAZAECI'
     ]
 
     @classmethod
@@ -42,13 +41,15 @@ class Test_Consistency(TestLayerDB):
 
     def test_checksums(self):
         checksums = []
-        for i in self.db.session.query(model.Calculation.checksum).all():
-            checksums.append(i[0])
+        for checksum in self.db.session.query(model.Calculation.checksum).all():
+            checksums.append(checksum[0])
         checksums.sort()
         self.expected_checksums.sort()
         try:
-            self.assertTrue(checksums == self.expected_checksums,
-            "Unexpected calculation checksums occured: %s" % str(checksums))
+            self.assertTrue(
+                checksums == self.expected_checksums,
+                "\nExpected:\n%s.\nObtained:\n%s." % ("\n".join(self.expected_checksums), "\n".join(checksums))
+            )
         except:
             TestLayerDB.failed = True
             raise
