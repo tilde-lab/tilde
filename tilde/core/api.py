@@ -51,14 +51,19 @@ class API:
         # (3) its filename repeats the name of parser folder
         All_parsers, self.Parsers = {}, {}
         for parsername in os.listdir( os.path.realpath(BASE_DIR + '/../parsers') ):
-            if self.settings.get('no_parse'): continue
-            if not os.path.isfile( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ): continue
+            if self.settings.get('no_parse'):
+                continue
+            if not os.path.isfile( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ):
+                continue
             if not os.path.isfile( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/' + parsername + '.py' ):
                 raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
-            try: parsermanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ).read() )
-            except: raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
+            try:
+                parsermanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ).read() )
+            except:
+                raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
 
-            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']: continue
+            if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']:
+                continue
 
             All_parsers[parsername] = importlib.import_module('tilde.parsers.' + parsername + '.' + parsername) # all imported modules will be stored here
 
@@ -83,23 +88,41 @@ class API:
         self.Apps = {}
         n = 1
         for appname in os.listdir( os.path.realpath(BASE_DIR + '/../apps') ):
-            if self.settings.get('no_parse'): continue
+            if self.settings.get('no_parse'):
+                continue
             if os.path.isfile( os.path.realpath(BASE_DIR + '/../apps') + '/' + appname + '/manifest.json' ):
-                try: appmanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../apps') + '/' + appname + '/manifest.json' ).read() )
-                except: raise RuntimeError('Module API Error: Module manifest for ' + appname + ' has corrupted format!')
+                try:
+                    appmanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../apps') + '/' + appname + '/manifest.json' ).read() )
+                except:
+                    raise RuntimeError('Module API Error: Module manifest for ' + appname + ' has corrupted format!')
 
                 # tags processing
-                if not 'appdata' in appmanifest: raise RuntimeError('Module API Error: no appdata tag for ' + appname + '!')
+                if not 'appdata' in appmanifest:
+                    raise RuntimeError('Module API Error: no appdata tag for ' + appname + '!')
                 if 'onprocess' in appmanifest:
-                    try: app = __import__('tilde.apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
+                    try:
+                        app = __import__('tilde.apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
                     except ImportError:
                         raise RuntimeError('Module API Error: module ' + appname + ' is invalid or not found!')
-                    self.Apps[appname] = {'appmodule': getattr(app, appname.capitalize()), 'appdata': appmanifest['appdata'], 'apptarget': appmanifest.get('apptarget', None), 'appcaption': appmanifest['appcaption'], 'on3d': appmanifest.get('on3d', 0)}
+                    self.Apps[appname] = {
+                        'appmodule': getattr(app, appname.capitalize()),
+                        'appdata': appmanifest['appdata'],
+                        'apptarget': appmanifest.get('apptarget', None),
+                        'appcaption': appmanifest['appcaption'],
+                        'on3d': appmanifest.get('on3d', 0)
+                    }
 
                     # compiling table columns:
                     if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
-                        self.hierarchy.append( {'cid': (2000+n), 'category': appmanifest['appcaption'], 'sort': (2000+n), 'has_column': True, 'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')}  )
-                        if appmanifest.get('plottable', False): self.hierarchy[-1].update({'plottable': 1})
+                        self.hierarchy.append({
+                            'cid': (2000+n),
+                            'category': appmanifest['appcaption'],
+                            'sort': (2000+n),
+                            'has_column': True,
+                            'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')
+                        })
+                        if appmanifest.get('plottable', False):
+                            self.hierarchy[-1].update({'plottable': 1})
                         n += 1
 
         self.hierarchy = sorted( self.hierarchy, key=lambda x: x['sort'] )
@@ -118,16 +141,19 @@ class API:
         # This is used for classification
         self.Classifiers = []
         for classifier in os.listdir( os.path.realpath(BASE_DIR + '/../classifiers') ):
-            if self.settings.get('no_parse'): continue
+            if self.settings.get('no_parse'):
+                continue
             if classifier.endswith('.py') and classifier != '__init__.py':
                 classifier = classifier[0:-3]
                 obj = importlib.import_module('tilde.classifiers.' + classifier) # this means: from foo import Foo
-                if getattr(obj, '__order__') is None: raise RuntimeError('Classifier %s has not defined an order to apply!' % classifier)
+                if getattr(obj, '__order__') is None:
+                    raise RuntimeError('Classifier %s has not defined an order to apply!' % classifier)
 
                 self.Classifiers.append({
                     'classify': getattr(obj, 'classify'),\
                     'order': getattr(obj, '__order__'),\
-                    'class': classifier})
+                    'class': classifier
+                })
                 self.Classifiers = sorted(self.Classifiers, key = lambda x: x['order'])
 
     def assign_parser(self, name):
@@ -140,7 +166,8 @@ class API:
         for n, p in list(self.Parsers.items()):
             if n != name:
                 del self.Parsers[n]
-        if len(self.Parsers) != 1: raise RuntimeError('Parser cannot be assigned!')
+        if len(self.Parsers) != 1:
+            raise RuntimeError('Parser cannot be assigned!')
 
     def formula(self, atom_sequence):
         '''
@@ -201,9 +228,12 @@ class API:
                         filename = u(filename)
                         if restricted:
                             for rs in restricted:
-                                if filename.startswith(rs) or filename.endswith(rs): break
-                            else: tasks.append(root + os.sep + filename)
-                        else: tasks.append(root + os.sep + filename)
+                                if filename.startswith(rs) or filename.endswith(rs):
+                                    break
+                            else:
+                                tasks.append(root + os.sep + filename)
+                        else:
+                            tasks.append(root + os.sep + filename)
             else:
                 for filename in os.listdir(input_string):
                     filename = u(filename)
@@ -211,9 +241,12 @@ class API:
                         # skip_if_path directive
                         if restricted:
                             for rs in restricted:
-                                if filename.startswith(rs) or filename.endswith(rs): break
-                            else: tasks.append(input_string + os.sep + filename)
-                        else: tasks.append(input_string + os.sep + filename)
+                                if filename.startswith(rs) or filename.endswith(rs):
+                                    break
+                            else:
+                                tasks.append(input_string + os.sep + filename)
+                        else:
+                            tasks.append(input_string + os.sep + filename)
 
         # given full filename
         elif os.path.isfile(input_string):
@@ -229,9 +262,12 @@ class API:
                         # skip_if_path directive
                         if restricted:
                             for rs in restricted:
-                                if filename.startswith(rs) or filename.endswith(rs): break
-                            else: tasks.append(parent + os.sep + filename)
-                        else: tasks.append(parent + os.sep + filename)
+                                if filename.startswith(rs) or filename.endswith(rs):
+                                    break
+                            else:
+                                tasks.append(parent + os.sep + filename)
+                        else:
+                            tasks.append(parent + os.sep + filename)
         return tasks
 
     def _parse(self, parsable, parser_name):
@@ -245,7 +281,8 @@ class API:
             for calc in self.Parsers[parser_name].iparse(parsable):
                 yield calc, None
             return
-        except RuntimeError as e: error = "routine %s parser error in %s: %s" % ( parser_name, parsable, e )
+        except RuntimeError as e:
+            error = "routine %s parser error in %s: %s" % ( parser_name, parsable, e )
         except:
             exc_type, exc_value, exc_tb = sys.exc_info()
             error = "unexpected %s parser error in %s:\n %s" % ( parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
@@ -269,13 +306,18 @@ class API:
         except IOError:
             yield None, 'read error!'
             return
+
         f = open(parsable, 'r', errors='surrogateescape') if six.PY3 else open(parsable, 'r') # open the file once again with right mode
         f.seek(0)
-        i, detected = 0, False
+        counter, detected = 0, False
+
         while not detected:
-            if i>700: break # criterion: parser must detect its working format in first N lines of output
+
+            if counter > 700: break # criterion: parser must detect its working format until here
+
             fingerprint = f.readline()
-            if not fingerprint: break
+            if not fingerprint:
+                break
             for name, Parser in self.Parsers.items():
                 if Parser.fingerprints(fingerprint):
                     for calc, error in self._parse(parsable, name):
@@ -283,20 +325,25 @@ class API:
                         # check if we parsed something reasonable
                         if not error and calc:
 
-                            if not len(calc.structures) or not len(calc.structures[-1]): error = 'Valid structure is not present!'
+                            if not len(calc.structures) or not len(calc.structures[-1]):
+                                error = 'Valid structure is not present!'
 
-                            if calc.info['finished'] == 0x1: calc.warning( 'This calculation is not correctly finished!' )
+                            if calc.info['finished'] == 0x1:
+                                calc.warning( 'This calculation is not correctly finished!' )
 
-                            if not calc.info['H']: error = 'XC potential is not present!'
+                            if not calc.info['H']:
+                                error = 'XC potential is not present!'
 
                         yield calc, error
 
-                    if detected: break
-            i += 1
+                    if detected:
+                        break
+            counter += 1
         f.close()
 
         # unsupported data occured
-        if not detected: yield None, 'was read...'
+        if not detected:
+            yield None, 'was read...'
 
     def classify(self, calc, symprec=None):
         '''
@@ -309,8 +356,10 @@ class API:
         calc.info['formula'] = self.formula(symbols)
         calc.info['cellpar'] = cell_to_cellpar(calc.structures[-1].cell).tolist()
         if calc.info['input']:
-            try: calc.info['input'] = str(calc.info['input'], errors='ignore')
-            except: pass
+            try:
+                calc.info['input'] = str(calc.info['input'], errors='ignore')
+            except:
+                pass
 
         # applying filter: todo
         if (calc.info['finished'] == 0x1 and self.settings['skip_unfinished']) or \
@@ -319,14 +368,16 @@ class API:
 
         # naive elements extraction
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
-        for i in fragments:
-            if i[0] == 'X': continue
-            calc.info['elements'].append(i[0])
-            calc.info['contents'].append(int(i[1])) if i[1] else calc.info['contents'].append(1)
+        for fragment in fragments:
+            if fragment[0] == 'X':
+                continue
+            calc.info['elements'].append(fragment[0])
+            calc.info['contents'].append(int(fragment[1])) if fragment[1] else calc.info['contents'].append(1)
 
         # extend hierarchy with modules
         for C_obj in self.Classifiers:
-            try: calc = C_obj['classify'](calc)
+            try:
+                calc = C_obj['classify'](calc)
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 error = "Fatal error during classification:\n %s" % "".join(traceback.format_exception( exc_type, exc_value, exc_tb ))
@@ -335,36 +386,53 @@ class API:
         # chemical ratios
         if not len(calc.info['standard']):
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
-            if not calc.info['expanded']: calc.info['expanded'] = reduce(gcd, calc.info['contents'])
+            if not calc.info['expanded']:
+                calc.info['expanded'] = reduce(gcd, calc.info['contents'])
             for n, i in enumerate([x//calc.info['expanded'] for x in calc.info['contents']]):
-                if i==1: calc.info['standard'] += calc.info['elements'][n]
-                else: calc.info['standard'] += calc.info['elements'][n] + str(i)
-        if not calc.info['expanded']: del calc.info['expanded']
+                if i == 1:
+                    calc.info['standard'] += calc.info['elements'][n]
+                else:
+                    calc.info['standard'] += calc.info['elements'][n] + str(i)
+        if not calc.info['expanded']:
+            del calc.info['expanded']
+
         calc.info['nelem'] = len(calc.info['elements'])
-        if calc.info['nelem'] > 13: calc.info['nelem'] = 13
+        if calc.info['nelem'] > 13:
+            calc.info['nelem'] = 13
         calc.info['natom'] = len(symbols)
 
         # periodicity
-        if calc.info['periodicity'] == 0: calc.info['periodicity'] = 0x4
-        elif calc.info['periodicity'] == -1: calc.info['periodicity'] = 0x5
+        if calc.info['periodicity'] == 0:
+            calc.info['periodicity'] = 0x4
+        elif calc.info['periodicity'] == -1:
+            calc.info['periodicity'] = 0x5
 
         # general calculation type reasoning
-        if (calc.structures[-1].get_initial_charges() != 0).sum(): calc.info['calctypes'].append(0x4) # numpy count_nonzero implementation
-        if (calc.structures[-1].get_initial_magnetic_moments() != 0).sum(): calc.info['calctypes'].append(0x5)
-        if calc.phonons['modes']: calc.info['calctypes'].append(0x6)
-        if calc.phonons['ph_k_degeneracy']: calc.info['calctypes'].append(0x7)
-        if calc.phonons['dielectric_tensor']: calc.info['calctypes'].append(0x8) # CRYSTAL-only!
+        if (calc.structures[-1].get_initial_charges() != 0).sum():
+            calc.info['calctypes'].append(0x4) # numpy count_nonzero implementation
+        if (calc.structures[-1].get_initial_magnetic_moments() != 0).sum():
+            calc.info['calctypes'].append(0x5)
+        if calc.phonons['modes']:
+            calc.info['calctypes'].append(0x6)
+        if calc.phonons['ph_k_degeneracy']:
+            calc.info['calctypes'].append(0x7)
+        if calc.phonons['dielectric_tensor']:
+            calc.info['calctypes'].append(0x8) # CRYSTAL-only!
         if len(calc.tresholds) > 1:
             calc.info['calctypes'].append(0x3)
             calc.info['optgeom'] = True
-        if calc.electrons['dos'] or calc.electrons['bands']: calc.info['calctypes'].append(0x2)
-        if calc.info['energy']: calc.info['calctypes'].append(0x1)
+        if calc.electrons['dos'] or calc.electrons['bands']:
+            calc.info['calctypes'].append(0x2)
+        if calc.info['energy']:
+            calc.info['calctypes'].append(0x1)
         calc.info['spin'] = 0x2 if calc.info['spin'] else 0x1
 
         # TODO: standardize
         if 'vac' in calc.info:
-            if 'X' in symbols: calc.info['techs'].append('vacancy defect: ghost')
-            else: calc.info['techs'].append('vacancy defect: void space')
+            if 'X' in symbols:
+                calc.info['techs'].append('vacancy defect: ghost')
+            else:
+                calc.info['techs'].append('vacancy defect: void space')
 
         calc.info['lata'] = round(calc.info['cellpar'][0], 3)
         calc.info['latb'] = round(calc.info['cellpar'][1], 3)
@@ -377,6 +445,7 @@ class API:
         found = SymmetryHandler(calc, symprec)
         if found.error:
             return None, found.error
+
         calc.info['sg'] = found.i
         calc.info['ng'] = found.n
         calc.info['symmetry'] = found.symmetry
@@ -399,7 +468,8 @@ class API:
                 calc.info['bandgap'] = 0.0
                 calc.info['bandgaptype'] = 0x1
             else:
-                try: gap, is_direct = calc.electrons['bands'].get_bandgap()
+                try:
+                    gap, is_direct = calc.electrons['bands'].get_bandgap()
                 except ElectronStructureError as e:
                     calc.electrons['bands'] = None
                     calc.warning(e.value)
@@ -416,10 +486,12 @@ class API:
                 calc.warning(e.value)
             else:
                 if calc.electrons['bands']: # check coincidence
-                    if abs(calc.info['bandgap'] - gap) > 0.2: calc.warning('Bans gaps in DOS and bands data differ considerably! The latter will be considered.')
+                    if abs(calc.info['bandgap'] - gap) > 0.2:
+                        calc.warning('Bans gaps in DOS and bands data differ considerably! The latter will be considered.')
                 else:
                     calc.info['bandgap'] = gap
-                    if gap: calc.info['etype'] = 0x1
+                    if gap:
+                        calc.info['etype'] = 0x1
                     else:
                         calc.info['etype'] = 0x2
                         calc.info['bandgaptype'] = 0x1
@@ -471,15 +543,18 @@ class API:
             # module code running
             if run_permitted:
                 calc.apps[appname] = {'error': None, 'data': None}
-                if dry_run: continue
-                try: AppInstance = appclass['appmodule'](calc)
+                if dry_run:
+                    continue
+                try:
+                    AppInstance = appclass['appmodule'](calc)
                 except:
                     exc_type, exc_value, exc_tb = sys.exc_info()
                     errmsg = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
                     calc.apps[appname]['error'] = errmsg
                     calc.warning( errmsg )
                 else:
-                    try: calc.apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
+                    try:
+                        calc.apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
                     except AttributeError:
                         errmsg = 'No appdata-defined property found for %s module!' % appname
                         calc.apps[appname]['error'] = errmsg
@@ -494,8 +569,10 @@ class API:
         '''
         checksum = calc.get_checksum()
 
-        try: existing_calc = session.query(model.Calculation).filter(model.Calculation.checksum == checksum).one()
-        except NoResultFound: pass
+        try:
+            existing_calc = session.query(model.Calculation).filter(model.Calculation.checksum == checksum).one()
+        except NoResultFound:
+            pass
         else:
             del calc
             return None, "This calculation already exists!"
@@ -531,8 +608,10 @@ class API:
                     try: irreps = calc.phonons['irreps'][bzpoint]
                     except KeyError:
                         empty = []
-                        for i in range(len(frqset)): empty.append('')
+                        for i in range(len(frqset)):
+                            empty.append('')
                         irreps = empty
+
                     phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]  })
                     if bzpoint == '0 0 0':
                         phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
@@ -544,19 +623,21 @@ class API:
                 ormcalc.spectra.append( model.Spectra(kind = model.Spectra.PHONON, eigenvalues = json.dumps(phonons_json)) )
 
             # prepare electron data for saving TODO re-structure this
-            for i in ['dos', 'bands']: # projected?
-                if calc.electrons[i]: calc.electrons[i] = calc.electrons[i].todict()
+            for task in ['dos', 'bands']: # projected?
+                if calc.electrons[task]:
+                    calc.electrons[task] = calc.electrons[task].todict()
 
             if calc.electrons['dos'] or calc.electrons['bands']:
                 ormcalc.electrons = model.Electrons(gap = calc.info['bandgap'])
-                if 'bandgaptype' in calc.info: ormcalc.electrons.is_direct = 1 if calc.info['bandgaptype'] == 'direct' else -1
+                if 'bandgaptype' in calc.info:
+                    ormcalc.electrons.is_direct = 1 if calc.info['bandgaptype'] == 'direct' else -1
                 ormcalc.spectra.append(model.Spectra(
                     kind = model.Spectra.ELECTRON,
                     dos = json.dumps(calc.electrons['dos']),
                     bands = json.dumps(calc.electrons['bands']),
                     projected = json.dumps(calc.electrons['projected']),
-                    eigenvalues = json.dumps(calc.electrons['eigvals']))
-                )
+                    eigenvalues = json.dumps(calc.electrons['eigvals'])
+                ))
 
             # construct ORM for other props
             calc.related_files = list(map(virtualize_path, calc.related_files))
@@ -576,7 +657,8 @@ class API:
 
             ormcalc.spacegroup = model.Spacegroup(n=calc.info['ng'])
             ormcalc.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'], dimensions=calc.info['dims'])
-            if len(calc.tresholds) > 1: ormcalc.struct_optimisation = model.Struct_optimisation(tresholds=json.dumps(calc.tresholds), ncycles=json.dumps(calc.ncycles))
+            if len(calc.tresholds) > 1:
+                ormcalc.struct_optimisation = model.Struct_optimisation(tresholds=json.dumps(calc.tresholds), ncycles=json.dumps(calc.ncycles))
 
             for n, ase_repr in enumerate(calc.structures):
                 is_final = True if n == len(calc.structures)-1 else False
@@ -600,21 +682,25 @@ class API:
         uitopics = []
         for entity in self.hierarchy:
 
-            if not entity['creates_topic']: continue
+            if not entity['creates_topic']:
+                continue
 
             if entity['multiple'] or calc._calcset:
                 for item in calc.info.get( entity['source'], [] ):
                     uitopics.append( model.topic(cid=entity['cid'], topic=item) )
             else:
                 topic = calc.info.get(entity['source'])
-                if topic or not entity['optional']: uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
+                if topic or not entity['optional']:
+                    uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
         uitopics = [model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic) for x in uitopics]
 
         ormcalc.uitopics.extend(uitopics)
 
-        if calc._calcset: session.add(ormcalc)
-        else: session.add_all([codefamily, codeversion, pot, ormcalc])
+        if calc._calcset:
+            session.add(ormcalc)
+        else:
+            session.add_all([codefamily, codeversion, pot, ormcalc])
 
         session.commit()
         del calc, ormcalc
@@ -629,7 +715,8 @@ class API:
         '''
         C = session.query(model.Calculation).get(checksum)
 
-        if not C: return 'Calculation does not exist!'
+        if not C:
+            return 'Calculation does not exist!'
 
         # dataset deletion includes editing the whole dataset hierarchical tree (if any)
         if C.siblings_count:
@@ -640,21 +727,25 @@ class API:
             while True:
                 distance += 1
                 higher, more = more, []
-                if not higher: break
-                for i in higher:
-                    try: higher_lookup[distance].add(i)
-                    except KeyError: higher_lookup[distance] = set([i])
-                    if i.parent:
-                        more += i.parent
+                if not higher:
+                    break
+                for item in higher:
+                    try:
+                        higher_lookup[distance].add(item)
+                    except KeyError:
+                        higher_lookup[distance] = set([item])
+                    if item.parent:
+                        more += item.parent
             for distance, members in higher_lookup.items():
-                for i in members:
+                for member in members:
                     if distance == 1:
-                        i.siblings_count -= 1
-                    if not i.siblings_count:
+                        member.siblings_count -= 1
+
+                    if not member.siblings_count:
                         return 'The parent dataset contains only one (current) item, please, delete parent dataset first!'
 
-                    i.meta_data.download_size -= C_meta.download_size
-                    session.add(i)
+                    member.meta_data.download_size -= C_meta.download_size
+                    session.add(member)
         # low-level entry deletion deals with additional tables
         else:
             session.execute( model.delete( model.Spectra ).where( model.Spectra.checksum == checksum) )
@@ -715,14 +806,18 @@ class API:
             for entity in self.hierarchy:
 
                 topic = grid_item.get(entity['source'])
-                if not topic: continue
+                if not topic:
+                    continue
 
-                if not isinstance(topic, list): topic = [ topic ]
+                if not isinstance(topic, list):
+                    topic = [ topic ]
+
                 calc.info[ entity['source'] ] = list(set( calc.info.get(entity['source'], []) + topic ))
 
             calc.download_size += download_size
 
-        if not calc.download_size: return None, 'Wrong parameters provided!'
+        if not calc.download_size:
+            return None, 'Wrong parameters provided!'
 
         calc._nested_depth = cur_depth + 1
 
@@ -740,15 +835,19 @@ class API:
         @returns error
         '''
         parent_calc = session.query(model.Calculation).get(parent)
-        if not parent_calc or not parent_calc.siblings_count: return 'Dataset is erroneously selected!'
+        if not parent_calc or not parent_calc.siblings_count:
+            return 'Dataset is erroneously selected!'
 
         existing_children, filtered_addendum = [child.checksum for child in parent_calc.children], []
 
         for child in addendum:
-            if not child in existing_children: filtered_addendum.append(child)
+            if not child in existing_children:
+                filtered_addendum.append(child)
 
-        if not filtered_addendum: return 'All these data are already present in this dataset.'
-        if parent_calc.checksum in filtered_addendum: return 'A dataset cannot be added into itself.'
+        if not filtered_addendum:
+            return 'All these data are already present in this dataset.'
+        if parent_calc.checksum in filtered_addendum:
+            return 'A dataset cannot be added into itself.'
 
         higher_lookup = {}
         more = parent_calc.parent
@@ -756,15 +855,20 @@ class API:
         while True:
             distance += 1
             higher, more = more, []
-            if not higher: break
-            for i in higher:
-                try: higher_lookup[distance].add(i)
-                except KeyError: higher_lookup[distance] = set([i])
-                if i.parent:
-                    more += i.parent
+            if not higher:
+                break
+            for item in higher:
+                try:
+                    higher_lookup[distance].add(item)
+                except KeyError:
+                    higher_lookup[distance] = set([item])
+                if item.parent:
+                    more += item.parent
+
         for members in list(higher_lookup.values()):
-            for i in members:
-                if i.checksum in filtered_addendum: return 'A parent dataset cannot be added to its children dataset.'
+            for member in members:
+                if member.checksum in filtered_addendum:
+                    return 'A parent dataset cannot be added to its children dataset.'
 
         parent_meta = session.query(model.Metadata).get(parent)
         parent_grid = session.query(model.Grid).get(parent)
@@ -772,21 +876,26 @@ class API:
 
         for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.Grid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.Grid.checksum, model.Grid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(filtered_addendum)).all():
 
-            if nested_depth >= parent_calc.nested_depth: parent_calc.nested_depth = nested_depth + 1
+            if nested_depth >= parent_calc.nested_depth:
+                parent_calc.nested_depth = nested_depth + 1
 
             grid_item = json.loads(grid_item)
 
             for entity in self.hierarchy:
 
                 topic = grid_item.get(entity['source'])
-                if not topic: continue
+                if not topic:
+                    continue
 
-                if entity['source'] == 'standard': topic = []
+                if entity['source'] == 'standard':
+                    topic = []
 
-                if not isinstance(topic, list): topic = [ topic ]
+                if not isinstance(topic, list):
+                    topic = [ topic ]
 
                 existing_term = info_obj.get(entity['source'], [])
-                if not isinstance(existing_term, list): existing_term = [ existing_term ] # TODO
+                if not isinstance(existing_term, list):
+                    existing_term = [ existing_term ] # TODO
 
                 info_obj[ entity['source'] ] = list(set( existing_term + topic ))
 
@@ -798,22 +907,25 @@ class API:
         # tags ORM
         for entity in self.hierarchy:
 
-            if not entity['creates_topic']: continue
+            if not entity['creates_topic']:
+                continue
 
             for item in info_obj.get( entity['source'], [] ):
                 parent_calc.uitopics.append( model.Topic.as_unique(session, cid=entity['cid'], topic="%s" % item) )
 
         for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(filtered_addendum)).all():
             parent_calc.children.append(child)
+
         parent_calc.siblings_count = len(parent_calc.children)
 
         for distance, members in higher_lookup.items():
-            for i in members:
-                d = parent_calc.nested_depth - i.nested_depth + distance
+            for member in members:
+                d = parent_calc.nested_depth - member.nested_depth + distance
                 if d > 0:
-                    i.nested_depth += d
-                i.meta_data.download_size += parent_meta.download_size # fixme
-                session.add(i)
+                    member.nested_depth += d
+
+                member.meta_data.download_size += parent_meta.download_size # FIXME
+                session.add(member)
 
         session.add_all([parent_calc, parent_meta, parent_grid])
         session.commit()

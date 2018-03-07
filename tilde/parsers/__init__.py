@@ -22,7 +22,7 @@ HASH_LENGTH = 47
 class Output:
     def __init__(self, filename='', calcset=False):
 
-        self._filename = filename # for quick and cheap checksums (NB never generate checksum from entire calc file, which may be huge!)
+        self._filename = filename # for quick and cheap checksums (NB never generate checksum from the entire calc file, which may be huge)
         self.data = ''            # file contents holder; may be empty for some parsers!
         self._checksum = None     # NB do not use directly
         self._calcset = calcset
@@ -120,11 +120,9 @@ class Output:
         return [cls(filename)]
 
     def __getitem__(self, key):
-        ''' get either by dict key or by attribute '''
         return getattr(self, key)
 
     def __setitem__(self, key, value):
-        ''' in-place modifying '''
         return setattr(self, key, value)
 
     def __repr__(self):
@@ -138,26 +136,32 @@ class Output:
                         out += repr + " -> " + str( getattr(self, repr)[-1] ) + "\n\n"
                 else:
                     str_repr = str( getattr(self, repr) )
-                    if len(str_repr) < 2000: out += repr + ' -> ' + str_repr + "\n\n"
-                    else: out += repr + ' -> ' + str_repr[:1000] + '...\n\n'
+                    if len(str_repr) < 2000:
+                        out += repr + ' -> ' + str_repr + "\n\n"
+                    else:
+                        out += repr + ' -> ' + str_repr[:1000] + '...\n\n'
         return out
 
     def warning(self, msg):
-        ''' store diagnostic messages '''
         self.info['warns'].append(msg)
 
     def get_checksum(self):
-        ''' retrieve unique hash in a cross-platform manner:
-        this is how unique identity is determined '''
-        if self._checksum: return self._checksum
+        '''
+        Retrieve unique hash in a cross-platform manner:
+        this is how calculation identity is determined
+        '''
+        if self._checksum:
+            return self._checksum
 
-        if not self._filename: raise RuntimeError('Source calc file is required in order to properly save the data!')
+        if not self._filename:
+            raise RuntimeError('Source calc file is required in order to properly save the data!')
 
         calc_checksum = hashlib.sha224()
         struc_repr = ""
-        for ase_repr in self.structures:
-            struc_repr += "%3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f " % tuple(map(abs, [ase_repr.cell[0][0], ase_repr.cell[0][1], ase_repr.cell[0][2], ase_repr.cell[1][0], ase_repr.cell[1][1], ase_repr.cell[1][2], ase_repr.cell[2][0], ase_repr.cell[2][1], ase_repr.cell[2][2]])) # NB beware of length & minus zeros
-            for atom in ase_repr:
+        for ase_obj in self.structures:
+            struc_repr += "%3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f %3.6f " % tuple(map(abs, [ase_obj.cell[0][0], ase_obj.cell[0][1], ase_obj.cell[0][2], ase_obj.cell[1][0], ase_obj.cell[1][1], ase_obj.cell[1][2], ase_obj.cell[2][0], ase_obj.cell[2][1], ase_obj.cell[2][2]])) # NB beware of length & minus zeros
+
+            for atom in ase_obj:
                 struc_repr += "%s %3.6f %3.6f %3.6f " % tuple(map(abs, [chemical_symbols.index(atom.symbol), atom.x, atom.y, atom.z])) # NB beware of length & minus zeros
 
         if self.info["energy"] is None:
@@ -165,20 +169,17 @@ class Output:
         else:
             energy = str(round(self.info['energy'], 11 - int(math.log10(math.fabs(self.info['energy'])))))
 
-        calc_checksum.update(
-            (
-            struc_repr +
-            energy + " " +
-            self.info['prog'] + " " +
-            str(self.info['input']) + " " +
+        calc_checksum.update((
+            struc_repr + "\n" +
+            energy + "\n" +
+            self.info['prog'] + "\n" +
+            str(self.info['input']) + "\n" +
             str(sum([2**x for x in self.info['calctypes']]))
-            ).encode('ascii')
-        ) # this is fixed in DB schema 5.11 and should not be changed
+        ).encode('ascii')) # NB this is fixed and should not be changed
 
         result = base64.b32encode(calc_checksum.digest()).decode('ascii')
         result = result[:result.index('=')] + 'CI'
         return result
 
     def benchmark(self):
-        ''' benchmarking '''
         self.info['perf'] = "%1.2f" % (time.time() - self._starttime)

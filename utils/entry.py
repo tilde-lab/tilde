@@ -8,12 +8,9 @@ for intelligent organizers of the scientific modeling data.
 More info: https://tilde.pro
 '''
 from __future__ import print_function
-
 import os, sys
 import time
 import logging
-
-if (2, 6) > sys.version_info > (2, 7): raise NotImplementedError
 
 import argparse
 from numpy import array

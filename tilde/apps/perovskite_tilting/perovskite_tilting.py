@@ -8,9 +8,8 @@
 # octahedra are not adjusted with the axes, and their distortion origin is unknown.
 # Even if the rotation is absent (i.e. pseudo-cubic structure),
 # an "artificial" rotation can be extracted
-# FIXME?
-from __future__ import division
 
+from __future__ import division
 import os, sys
 import math
 import copy
@@ -42,7 +41,7 @@ class Perovskite_tilting():
             raise ModuleError("Cell refinement error: %s" % symm.error)
 
         # check if the longest axis is Z, rotate otherwise
-        lengths = list(map(norm, symm.refinedcell.cell))
+        lengths = list(map(norm, symm.refinedcell.cell)) # Py3
         if not (lengths[2] - lengths[0] > 1E-6 and lengths[2] - lengths[1] > 1E-6):
             axnames = {0: 'x', 1: 'y'}
             principal_ax = axnames[ lengths.index(max(lengths[0], lengths[1])) ]
@@ -50,9 +49,8 @@ class Perovskite_tilting():
 
         self.virtual_atoms = symm.refinedcell.copy()
 
-        #f = open('tilting.xyz', 'w')
-        #f.write(generate_xyz(self.virtual_atoms))
-        #f.close()
+        #with open('tilting.xyz', 'w') as f:
+        #   f.write(generate_xyz(self.virtual_atoms))
 
         # translate atoms around octahedra in all directions
         shift_dirs = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (1, 1, 0), (1, -1, 0), (-1, -1, 0), (-1, 1, 0), (0, 0, 1), (0, 0, -1)]
@@ -82,6 +80,7 @@ class Perovskite_tilting():
                 t = self.get_tilting(oplane)
                 #print "result:", [i+1 for i in oplane], t
                 plane_tilting.append( t )
+
             self.prec_angles.update( { octahedron[0]: plane_tilting } )
 
         if not self.prec_angles: raise ModuleError("Cannot find any main tilting plane!")
@@ -90,9 +89,10 @@ class Perovskite_tilting():
         u, todel = [], []
         for o in self.prec_angles:
             self.prec_angles[o] = reduce(lambda x, y: x if sum(x) <= sum(y) else y, self.prec_angles[o]) # only minimal angles are taken if tilting planes vary!
-            self.prec_angles[o] = list(map(lambda x: list(map(lambda y: round(y, 2), x)), [self.prec_angles[o]]))
+            self.prec_angles[o] = list(map(lambda x: list(map(lambda y: round(y, 2), x)), [self.prec_angles[o]])) # Py3
             for i in self.prec_angles[o]:
                 u.append([o] + i)
+
         u = sorted(u, key=lambda x:x[0])
         u.reverse() # to make index of oct.centers minimal
         for i in u:
@@ -126,9 +126,9 @@ class Perovskite_tilting():
         n = self.virtual_atoms.get_distance(num_of_O, num_of_B)
 
         # bisector length
-        l = 2*m*n*math.cos(self.virtual_atoms.get_angle([num_of_A, num_of_O, num_of_B])/2) / (m+n)
-        v = math.sqrt(n*n - n*l*l/m)
-        u = m*v/n
+        l = 2 * m * n * math.cos(math.radians(self.virtual_atoms.get_angle(num_of_A, num_of_O, num_of_B) / 2)) / (m + n)
+        v = math.sqrt(n**2 - n * l**2 / m)
+        u = m * v / n
         A = yA*(zO - zB) + yO*(zB - zA) + yB*(zA - zO)
         B = zA*(xO - xB) + zO*(xB - xA) + zB*(xA - xO)
         C = xA*(yO - yB) + xO*(yB - yA) + xB*(yA - yO)
@@ -143,8 +143,9 @@ class Perovskite_tilting():
         return [x, y, z]
 
     def get_octahedra(self, atoms, periodicity=3):
-        ''' extract octahedra as lists of sequence numbers of corner atoms '''
-
+        '''
+        Extract octahedra as lists of sequence numbers of corner atoms
+        '''
         octahedra = []
         for n, i in enumerate(atoms):
             found = []
@@ -152,6 +153,7 @@ class Perovskite_tilting():
                 for m, j in enumerate(self.virtual_atoms):
                     if j.symbol in Perovskite_Structure.C and self.virtual_atoms.get_distance(n, m) <= self.OCTAHEDRON_BOND_LENGTH_LIMIT:
                         found.append(m)
+
             if (periodicity == 3 and len(found) == 6) or (periodicity == 2 and len(found) in [5, 6]):
                 octahedra.append([n, found])
 
@@ -159,7 +161,9 @@ class Perovskite_tilting():
         return octahedra
 
     def get_tiltplane(self, sequence):
-        ''' extract the main tilting plane basing on Z coordinate '''
+        '''
+        Extract the main tilting plane basing on Z coordinate
+        '''
         sequence = sorted(sequence, key=lambda x: self.virtual_atoms[ x ].z)
         in_plane = []
         for i in range(0, len(sequence)-4):
@@ -170,8 +174,9 @@ class Perovskite_tilting():
         return in_plane
 
     def get_tiltplanes(self, sequence):
-        ''' extract tilting planes basing on distance map '''
-
+        '''
+        Extract tilting planes basing on distance map
+        '''
         tilting_planes = []
         distance_map = []
 
@@ -226,17 +231,20 @@ class Perovskite_tilting():
             tilting_planes.append([ sequence[0], sorted_dist[4], sorted_first_plane[0], sorted_first_plane[1] ])
 
         # filter planes by Z according to octahedral spatial compound
-        filtered = list(filter(   lambda x: \
+        filtered = list(filter(lambda x:
             abs(self.virtual_atoms[ x[0] ].z - self.virtual_atoms[ x[1] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE and \
             abs(self.virtual_atoms[ x[1] ].z - self.virtual_atoms[ x[2] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE and \
-            abs(self.virtual_atoms[ x[2] ].z - self.virtual_atoms[ x[3] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE,   tilting_planes   ))
+            abs(self.virtual_atoms[ x[2] ].z - self.virtual_atoms[ x[3] ].z) < self.OCTAHEDRON_ATOMS_Z_DIFFERENCE,
+            tilting_planes
+        )) # Py3
         if len(filtered): tilting_planes = filtered
 
         return tilting_planes
 
     def get_tilting(self, oplane):
-        ''' main procedure '''
-
+        '''
+        Main procedure
+        '''
         surf_atom1, surf_atom2, surf_atom3, surf_atom4 = oplane
 
         # divide surface atoms into groups by distance between them
@@ -281,7 +289,8 @@ class Perovskite_tilting():
         sec_bisector = self.get_bisector_point(surf_atom_second, center, inversed_one, self.virtual_atoms)
 
         swap = True
-        if first_bisector[0] < 0 and sec_bisector[0] < 0: swap = False
+        if first_bisector[0] < 0 and sec_bisector[0] < 0:
+            swap = False
         if first_bisector[0] < 0:
             first_bisector[0] *= -1
             first_bisector[1] *= -1
@@ -290,19 +299,23 @@ class Perovskite_tilting():
             sec_bisector[0] *= -1
             sec_bisector[1] *= -1
             sec_bisector[2] *= -1
-        if swap: first_bisector, sec_bisector = sec_bisector, first_bisector
+        if swap:
+            first_bisector, sec_bisector = sec_bisector, first_bisector
+
         swap = False
         if first_bisector[0] < sec_bisector[0] and first_bisector[1] < 0:
             first_bisector[0] *= -1
             first_bisector[1] *= -1
             first_bisector[2] *= -1
             swap = True
-        if first_bisector[0] < sec_bisector[0] and first_bisector[1] > 0: swap = True
+        if first_bisector[0] < sec_bisector[0] and first_bisector[1] > 0:
+            swap = True
         if first_bisector[0] > sec_bisector[0] and sec_bisector[1] < 0:
             sec_bisector[0] *= -1
             sec_bisector[1] *= -1
             sec_bisector[2] *= -1
-        if swap: first_bisector, sec_bisector = sec_bisector, first_bisector
+        if swap:
+            first_bisector, sec_bisector = sec_bisector, first_bisector
 
         self.virtual_atoms.append(Atom('X', (first_bisector[0], first_bisector[1], first_bisector[2])))
         self.virtual_atoms.append(Atom('X', (sec_bisector[0], sec_bisector[1], sec_bisector[2])))
@@ -310,10 +323,11 @@ class Perovskite_tilting():
         sec_bisector = len(self.virtual_atoms)-1
 
         # use vector cross product to define normal which will play Z axis role
-        self.virtual_atoms.append(Atom('X', \
-           (self.virtual_atoms[first_bisector].y*self.virtual_atoms[sec_bisector].z - self.virtual_atoms[first_bisector].z*self.virtual_atoms[sec_bisector].y, \
-            self.virtual_atoms[first_bisector].z*self.virtual_atoms[sec_bisector].x - self.virtual_atoms[first_bisector].x*self.virtual_atoms[sec_bisector].z, \
-            self.virtual_atoms[first_bisector].x*self.virtual_atoms[sec_bisector].y - self.virtual_atoms[first_bisector].y*self.virtual_atoms[sec_bisector].x)))
+        self.virtual_atoms.append(Atom('X', (
+            self.virtual_atoms[first_bisector].y*self.virtual_atoms[sec_bisector].z - self.virtual_atoms[first_bisector].z*self.virtual_atoms[sec_bisector].y,
+            self.virtual_atoms[first_bisector].z*self.virtual_atoms[sec_bisector].x - self.virtual_atoms[first_bisector].x*self.virtual_atoms[sec_bisector].z,
+            self.virtual_atoms[first_bisector].x*self.virtual_atoms[sec_bisector].y - self.virtual_atoms[first_bisector].y*self.virtual_atoms[sec_bisector].x
+        )))
         tilt_z = len(self.virtual_atoms)-1
 
         # Euler angles ZYZ
@@ -329,6 +343,7 @@ class Perovskite_tilting():
             if tilting[i] in adjust_angles:
                 tilting[i] = 0.0
                 continue
+
             if tilting[i] > self.MAX_TILTING_DEGREE:
                 for checkpoint in adjust_angles:
                     if checkpoint - self.MAX_TILTING_DEGREE < tilting[i] < checkpoint + self.MAX_TILTING_DEGREE:
