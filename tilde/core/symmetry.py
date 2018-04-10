@@ -4,8 +4,6 @@
 # Author: Evgeny Blokhin
 # v080416
 
-import os, sys
-
 from numpy.linalg import det
 
 from ase.atoms import Atoms

@@ -5,7 +5,7 @@
 
 from __future__ import division
 
-import os, sys
+import os
 import datetime, time
 
 from numpy import dot, array, transpose, linalg

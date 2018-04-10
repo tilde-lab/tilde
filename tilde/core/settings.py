@@ -10,8 +10,6 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.pool import QueuePool, NullPool
 
-import pg8000
-
 import tilde.core.model as model
 
 

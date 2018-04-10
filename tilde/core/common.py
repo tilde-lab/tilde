@@ -2,16 +2,10 @@
 # Includable routines
 # Author: Evgeny Blokhin
 
-import os, sys
-import math, datetime, re
-import six
+import math
+import re
 
-from numpy import dot, array, matrix
-
-from ase.atoms import Atoms
 from ase.geometry import cell_to_cellpar
-
-import ujson as json
 
 
 class ModuleError(Exception):

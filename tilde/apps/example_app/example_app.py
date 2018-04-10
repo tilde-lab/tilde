@@ -3,8 +3,6 @@
 # calculates molecular weight for organic molecules
 # Author: Evgeny Blokhin
 
-import os, sys
-
 # deps third-party code and common routines
 # here are already available:
 from ase.data import chemical_symbols, atomic_masses

@@ -2,8 +2,6 @@
 # Try to find vacancy defects: detects vacant places of host atoms
 # Author: Evgeny Blokhin
 
-import os
-import sys
 import fractions
 from functools import reduce
 

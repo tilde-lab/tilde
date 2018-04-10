@@ -2,20 +2,19 @@
 # Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import os, sys
 import re
 from fractions import gcd
 import inspect
 import traceback
-import datetime
 import importlib
 from functools import reduce
 
 from numpy import dot, array
 
-from tilde.core.common import u, is_binary_string, generate_cif, html_formula, hrsize
+from tilde.core.common import u, is_binary_string, html_formula
 from tilde.core.symmetry import SymmetryHandler
 from tilde.core.settings import BASE_DIR, settings, virtualize_path, get_hierarchy
 from tilde.core.electron_structure import ElectronStructureError
@@ -24,7 +23,7 @@ import tilde.core.model as model
 
 from ase.data import chemical_symbols
 from ase.geometry import cell_to_cellpar
-from sqlalchemy import exists, func
+from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 
 import ujson as json

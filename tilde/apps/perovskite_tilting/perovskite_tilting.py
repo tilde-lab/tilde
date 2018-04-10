@@ -10,16 +10,12 @@
 # an "artificial" rotation can be extracted
 
 from __future__ import division
-import os, sys
 import math
-import copy
-import json
 from functools import reduce
 
 from numpy.linalg import norm
 
-from ase import Atom, Atoms
-from ase.geometry import cell_to_cellpar
+from ase import Atom
 
 from tilde.core.common import ModuleError #, generate_xyz
 from tilde.core.constants import Perovskite_Structure
@@ -57,8 +53,8 @@ class Perovskite_tilting():
 
         for k, i in enumerate(symm.refinedcell):
             if i.symbol in Perovskite_Structure.C:
-                for dir in shift_dirs:
-                    self.translate(k, symm.refinedcell.cell, dir, self.virtual_atoms)
+                for sdir in shift_dirs:
+                    self.translate(k, symm.refinedcell.cell, sdir, self.virtual_atoms)
 
         # extract octahedra and their main tilting planes
         for octahedron in self.get_octahedra(symm.refinedcell, symm.refinedcell.periodicity):

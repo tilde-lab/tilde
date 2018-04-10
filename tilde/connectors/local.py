@@ -1,6 +1,5 @@
-# Author: Evgeny Blokhin
 
-import os, sys
+import os
 
 from tilde.connectors import viewer_wrap
 

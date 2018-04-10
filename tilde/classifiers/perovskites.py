@@ -2,7 +2,7 @@
 # Determines perovskite structures: classifies by vacancy and substitutional defects (impurities)
 # Author: Evgeny Blokhin
 
-import os, sys, math
+import math
 import random
 import six
 

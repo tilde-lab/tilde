@@ -2,7 +2,6 @@
 # DB schema
 # Author: Evgeny Blokhin
 
-import os, sys
 import logging
 import datetime
 from collections import namedtuple
@@ -10,7 +9,7 @@ import six
 
 from tilde.core.orm_tools import UniqueMixin, get_or_create, correct_topics
 
-from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, UnicodeText, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, UnicodeText, ForeignKey
+from sqlalchemy import and_, or_, Index, UniqueConstraint, MetaData, String, UnicodeText, Table, Column, Boolean, Float, Integer, BigInteger, Enum, Text, Date, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base

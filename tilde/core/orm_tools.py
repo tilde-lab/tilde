@@ -3,9 +3,6 @@
 # Idea by Fawzi Mohamed
 # Author: Evgeny Blokhin
 
-import bcrypt
-
-
 class UniqueMixin(object):
     @classmethod
     def unique_filter(cls, query, *arg, **kw):
@@ -72,10 +69,10 @@ def correct_topics(session, model, calc_id, cid, new_topics, mode, topics_hierar
     assert found_entity, "Wrong topic identifier!"
 
     if isinstance(calc_id, str):
-         calc_id = [calc_id]
+        calc_id = [calc_id]
     assert isinstance(calc_id, list)
     if isinstance(new_topics, str):
-         new_topics = [new_topics]
+        new_topics = [new_topics]
     assert isinstance(new_topics, list)
 
     if mode == 'REPLACE':
@@ -93,7 +90,7 @@ def _replace_topics(session, model, calc_id, cid, new_topics):
 
     for checksum in calc_id:
         for tid in session.query(model.tags.c.tid).join(model.Topic, model.tags.c.tid == model.Topic.tid).filter(model.Topic.cid == cid, model.tags.c.checksum == checksum).all():
-             session.execute(model.delete(model.tags).where(model.and_(model.tags.c.checksum == checksum, model.tags.c.tid == tid[0])))
+            session.execute(model.delete(model.tags).where(model.and_(model.tags.c.checksum == checksum, model.tags.c.tid == tid[0])))
         session.commit()
 
         for new_term in new_terms:

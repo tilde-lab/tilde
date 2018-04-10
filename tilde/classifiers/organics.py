@@ -2,10 +2,6 @@
 # Determines organic molecules by content
 # Author: Evgeny Blokhin
 
-import os
-import sys
-
-
 # hierarchy API: __order__ to apply classifier
 __order__ = 30
 

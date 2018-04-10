@@ -2,10 +2,8 @@
 # Classifies slabs by their structure: determines layers count and adsorption
 # Author: Evgeny Blokhin
 
-import os, sys
 import math
 import fractions
-import six
 from functools import reduce
 
 # hierarchy API: __order__ to apply classifier
@@ -43,6 +41,7 @@ def classify(tilde_obj):
         # TODO
         # we have a very thin slab with an undefined adsorption case
         tilde_obj.info['layers'] = len(content_by_layer)
+
     else:
         # check adsorbants
         s = range(len(content_by_layer) - 1, int(math.floor( len(content_by_layer)/2 ) - 1), -1)
@@ -61,7 +60,7 @@ def classify(tilde_obj):
 
                 # Check 1:
                 # by content
-                for atom, content in six.iteritems(content_by_layer[i]):
+                for atom, content in content_by_layer[i].items():
                     #print 'content:', float(tilde_obj.info['contents'][ tilde_obj.info['elements'].index(atom) ]) / sum(tilde_obj.info['contents'])
                     if atom == 'H': content_ratio = 0.15 # less than 15%
                     else: content_ratio = 0.1 # less than 10%
@@ -100,7 +99,7 @@ def classify(tilde_obj):
                             break
                 else:
                     # happens if a cycle was not broken
-                    for atom, content in six.iteritems(ref_layer):
+                    for atom, content in ref_layer.items():
                         if len(to_delete):
                             if to_delete[-1][0] == i and to_delete[-1][1] == atom: continue # this was already done on check 1
                         #print '->got', atom
@@ -149,7 +148,7 @@ def classify(tilde_obj):
     tilde_obj.info['expanded'] = 1 # this means formula reduce is prohibited
     slab_elements = []
     for y in content_by_layer:
-        for k, v in six.iteritems(y):
+        for k in y.keys():
             if not k in slab_elements:
                 slab_elements.append(k)
     # sort according to pre-defined element order in a full slab formula

@@ -11,7 +11,7 @@ import time
 import copy
 from fractions import Fraction
 
-from numpy import dot, array, cross
+from numpy import cross
 
 from ase.data import chemical_symbols, atomic_numbers
 from ase.geometry import cellpar_to_cell

@@ -5,7 +5,6 @@
 # Based mainly on DOS implementation by A.Togo in Phonopy 0.7 code (dos.py)
 # http://phonopy.sf.net/
 
-import os, sys
 import numpy as np
 
 
@@ -80,8 +79,8 @@ class PartialDos(Dos):
         elif omega > self.eigenvalues[-1]:
             return self.impacts[-1]
         else:
-            for n, i in enumerate(self.eigenvalues):
-                if self.eigenvalues[n] < omega < self.eigenvalues[n+1]:
+            for n in range(len(self.eigenvalues)):
+                if n < len(self.eigenvalues) and self.eigenvalues[n] < omega < self.eigenvalues[n+1]:
                     result = (omega - self.eigenvalues[n])*(self.impacts[n+1] - self.impacts[n])/(self.eigenvalues[n+1] - self.eigenvalues[n]) + self.impacts[n]
                     return result
 
@@ -103,7 +102,7 @@ class PartialDos(Dos):
 
         for n, set_for_sum in enumerate(types):
             atom = [k for k, v in labels.iteritems() if v == n][0] # find k by v
-            
+
             multdos = 1
             #if atom != 'Fe': continue
             #else: multdos = 3

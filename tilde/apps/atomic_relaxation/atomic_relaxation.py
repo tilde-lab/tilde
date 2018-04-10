@@ -3,7 +3,6 @@
 # during atomic structure optimization
 # Author: Evgeny Blokhin
 
-import os, sys
 import math
 
 from tilde.core.common import ModuleError
