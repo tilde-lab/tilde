@@ -10,7 +10,7 @@ argparse==1.4.0
 ase >= 3.15
 spglib==1.10.4.11
 tornado >= 4.3.0
-sockjs-tornado
+sockjs-tornado==1.0.3
 websocket-client
 futures
 httplib2
