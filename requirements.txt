@@ -11,7 +11,7 @@ ase >= 3.15
 spglib==1.10.4.11
 tornado >= 4.3.0
 sockjs-tornado==1.0.3
-websocket-client
+websocket-client==0.50.0
 futures
 httplib2
 quantum_esperanto
