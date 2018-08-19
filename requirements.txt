@@ -12,6 +12,6 @@ spglib == 1.9.5
 tornado >= 4.3.0
 sockjs-tornado
 websocket-client
-futures
+futures==3.2.0
 httplib2
 quantum_esperanto
