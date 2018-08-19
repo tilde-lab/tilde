@@ -14,4 +14,4 @@ sockjs-tornado
 websocket-client
 futures
 httplib2
-quantum_esperanto
+quantum_esperanto==0.2
