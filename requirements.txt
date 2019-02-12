@@ -7,7 +7,7 @@ importlib; python_version < '2.7'
 pg8000==1.12.3
 sqlalchemy >= 1.0.12
 argparse
-ase==3.16.2
+ase==3.17.0
 spglib
 tornado >= 4.3.0
 sockjs-tornado
