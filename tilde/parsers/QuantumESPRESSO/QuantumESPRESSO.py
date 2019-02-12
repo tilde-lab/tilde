@@ -1,8 +1,8 @@
-
-# Quantum ESPRESSO basic parser
-# Author: Evgeny Blokhin
-# TODO: check ibrav settings, parsing might be wrong
-
+"""
+Quantum ESPRESSO basic parser
+Author: Evgeny Blokhin
+TODO: check ibrav settings, parsing might be wrong
+"""
 from __future__ import division
 
 import os

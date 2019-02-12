@@ -1,8 +1,8 @@
-
-# A new parser for VASP (Vienna Ab initio Simulation Package)
-# based on quantum_esperanto
-# Authors: Evgeny Blokhin and Andrey Sobolev
-
+"""
+A new parser for VASP (Vienna Ab initio Simulation Package)
+based on quantum_esperanto
+Authors: Evgeny Blokhin and Andrey Sobolev
+"""
 from ase.atoms import Atoms
 from ase.units import Hartree
 
