@@ -10,7 +10,7 @@ from tilde.parsers import Output
 
 
 class CRYSTOUT(Output):
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename):
         Output.__init__(self, filename)
 
         try:
@@ -45,4 +45,4 @@ class CRYSTOUT(Output):
 
     @staticmethod
     def fingerprints(test_string):
-        return _CRYSTOUT._fingerprints(test_string)
+        return _CRYSTOUT.detect(test_string)

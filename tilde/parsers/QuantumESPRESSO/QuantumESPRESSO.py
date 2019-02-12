@@ -19,7 +19,7 @@ from ase.units import Bohr, Rydberg
 
 
 class QuantumESPRESSO(Output):
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename):
         Output.__init__(self, filename)
 
         cur_folder = os.path.dirname(filename)
@@ -274,5 +274,6 @@ class QuantumESPRESSO(Output):
 
     @staticmethod
     def fingerprints(test_string):
-        if ("pwscf" in test_string or "PWSCF" in test_string) and "     Current dimensions of program " in test_string: return True
-        else: return False
+        if ("pwscf" in test_string or "PWSCF" in test_string) and "     Current dimensions of program " in test_string:
+            return True
+        return False

@@ -16,7 +16,7 @@ from tilde.parsers import Output
 current_parser = VaspParser(whitelist=['incar', 'generator', 'atominfo', 'parameters', 'energy', 'structure:finalpos'])
 
 class XML_Output(Output):
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename):
         Output.__init__(self, filename)
         self.related_files.append(filename)
 
@@ -55,8 +55,9 @@ class XML_Output(Output):
 
     @staticmethod
     def fingerprints(test_string):
-        if '<i name="program" type="string">vasp' in test_string: return True
-        else: return False
+        if '<i name="program" type="string">vasp' in test_string:
+            return True
+        return False
 
     def set_method(self):
         # Hamiltonians: Hubbard U method
