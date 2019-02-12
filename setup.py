@@ -59,17 +59,19 @@ install_requires = [
     'sqlalchemy >= 1.0.12',
     'argparse',
     'ase >= 3.15',
-    'spglib == 1.9.5',
+    'spglib',
     'tornado >= 4.3.0',
     'sockjs-tornado',
     'websocket-client',
     'futures',
     'httplib2',
-    'quantum_esperanto']
+    'quantum_esperanto',
+    'pycrystal'
+]
 
 setup(
     name='tilde',
-    version='0.9.0',
+    version='0.9.1',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',

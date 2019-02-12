@@ -8,10 +8,11 @@ pg8000
 sqlalchemy >= 1.0.12
 argparse
 ase >= 3.15
-spglib == 1.9.5
+spglib
 tornado >= 4.3.0
-sockjs-tornado
+sockjs-tornado >= 1.0.6
 websocket-client
 futures
 httplib2
 quantum_esperanto
+pycrystal
