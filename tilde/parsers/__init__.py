@@ -9,11 +9,8 @@ import time
 import math
 import random
 
-from numpy import array
-
 import hashlib
 import base64
-from tilde.core.settings import settings
 from ase.data import chemical_symbols
 
 
