@@ -24,7 +24,7 @@ def metric(v):
 def u(obj, encoding='utf-8'):
     if not isinstance(obj, str):
         return str(obj, encoding)
-    else: return obj
+    return obj
 
 def str2html(s, units=True):
     tokens = {
@@ -41,7 +41,7 @@ def str2html(s, units=True):
 
 def html_formula(string):
     sub, html_formula = False, ''
-    for n, i in enumerate(string):
+    for i in string:
         if i.isdigit() or i=='.' or i=='-':
             if not sub:
                 html_formula += '<sub>'

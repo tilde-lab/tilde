@@ -18,7 +18,7 @@ def frac2float(num):
     if '/' in str(num):
         fract = map(float, num.split('/'))
         return fract[0] / fract[1]
-    else: return float(num)
+    return float(num)
 
 def jmol_to_hex(ase_jmol):
     r, g, b = map(lambda x: x*255, ase_jmol)

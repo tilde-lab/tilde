@@ -42,5 +42,5 @@ def wrap_cell(entity, json_obj, mapping, table_view=False):
         return '<td rel=' + str(entity['cid']) + html_class + '>' + str(out) + '</td>'
     elif html_class:
         return '<span' + html_class + '>' + str(out) + '</span>'
-    else:
-        return str(out)
+
+    return str(out)

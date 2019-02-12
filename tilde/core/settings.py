@@ -101,8 +101,10 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
         session.commit()
         session.close()
 
-    if scoped: return scoped_session(Session)
-    else:      return Session()
+    if scoped:
+        return scoped_session(Session)
+
+    return Session()
 
 def write_settings(settings):
     '''
