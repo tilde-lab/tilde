@@ -13,6 +13,6 @@ tornado >= 4.3.0
 sockjs-tornado
 websocket-client
 futures
-httplib2==0.11.3
+httplib2==0.12.3
 quantum_esperanto
 pycrystal
