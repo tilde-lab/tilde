@@ -3,7 +3,6 @@ ujson
 bcrypt
 nose >= 1.3.4
 pypandoc
-importlib; python_version < '2.7'
 pg8000==1.12.3
 sqlalchemy >= 1.0.12
 argparse
@@ -11,7 +10,7 @@ ase==3.16.2
 spglib
 tornado >= 4.3.0
 sockjs-tornado
-websocket-client
+websocket-client==0.52.0
 futures
 httplib2==0.11.3
 quantum_esperanto
