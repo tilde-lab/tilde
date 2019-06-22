@@ -71,7 +71,7 @@ install_requires = [
 
 setup(
     name='tilde',
-    version='0.9.1',
+    version='0.9.2',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
