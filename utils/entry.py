@@ -1,24 +1,24 @@
 #!/usr/bin/env python
-#
-# Entry junction
-# Author: Evgeny Blokhin
 '''
-Tilde is general-purpose materials informatics framework
-for intelligent organizers of the scientific modeling data.
+Entry junction
+
+Tilde is a general-purpose materials informatics framework
+for intelligent organizers of the first-principles modeling data.
 More info: https://tilde.pro
+
+Author: Evgeny Blokhin
 '''
-from __future__ import print_function
 import os, sys
 import time
 import logging
-
 import argparse
+
 from numpy import array
 from numpy.linalg import det
 
 import chk_tilde_install
 
-from tilde.core.settings import settings, connect_database, DATA_DIR, DB_SCHEMA_VERSION
+from tilde.core.settings import settings, connect_database, DATA_DIR, SETTINGS_PATH, DB_SCHEMA_VERSION
 from tilde.core.common import write_cif, num2name
 from tilde.core.symmetry import SymmetryFinder
 from tilde.core.api import API
@@ -32,22 +32,22 @@ Tilde = API()
 parser = argparse.ArgumentParser(
     prog="[this_script]",
     usage="%(prog)s [positional / optional arguments]",
-    epilog="API v%s, DB schema v%s (%s backend)" % (API.version, DB_SCHEMA_VERSION, settings['db']['engine']),
+    epilog="API v%s, DB schema v%s (%s backend), settings from %s" % (API.version, DB_SCHEMA_VERSION, settings['db']['engine'], SETTINGS_PATH),
     argument_default=argparse.SUPPRESS
 )
-parser.add_argument("path",     action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
-parser.add_argument("-y",       dest="symprec", action="store", help="symmetry detecting tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="float", nargs='?', const=None, default=None)
-parser.add_argument("-r",       dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-t",       dest="terse", action="store", help="terse print during scan", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-a",       dest="add", action="store", help="add results to the database", type=str, metavar="N if sqlite", nargs='?', const=settings['db']['default_sqlite_db'], default=False)
-parser.add_argument("-v",       dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-f",       dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-i",       dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m",       dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=list(Tilde.Apps.keys()))
-parser.add_argument("-s",       dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-c",       dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
-parser.add_argument("-x",       dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-l",       dest="targetlist", action="store", help="file with scan targets", type=str, metavar="file", nargs='?', const=None, default=None)
+parser.add_argument("path", action="store", help="Scan file(s) / folder(s) / matching-filename(s), divide by space", metavar="PATH(S)/FILE(S)", nargs='*', default=False)
+parser.add_argument("-y",   dest="symprec", action="store", help="symmetry detecting tolerance (default %.01e)" % SymmetryFinder.accuracy, type=float, metavar="float", nargs='?', const=None, default=None)
+parser.add_argument("-r",   dest="recursive", action="store", help="scan recursively", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-t",   dest="terse", action="store", help="terse print during scan", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-a",   dest="add", action="store", help="add results to the database", type=str, metavar="N if sqlite", nargs='?', const=settings['db']['default_sqlite_db'], default=False)
+parser.add_argument("-v",   dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-f",   dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-i",   dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-m",   dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=list(Tilde.Apps.keys()))
+parser.add_argument("-s",   dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-c",   dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
+parser.add_argument("-x",   dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)
+parser.add_argument("-l",   dest="targetlist", action="store", help="file with scan targets", type=str, metavar="file", nargs='?', const=None, default=None)
 args = parser.parse_args()
 
 session = None

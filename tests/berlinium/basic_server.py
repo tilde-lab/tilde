@@ -9,7 +9,7 @@ from tornado import web, ioloop
 from sockjs.tornado import SockJSRouter
 
 import set_path
-from tilde.core.settings import settings
+from tilde.core.settings import settings, GUI_URL_TPL
 from tilde.core.api import API
 import tilde.core.model as model
 from tilde.berlinium import Async_Connection, add_redirection
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     DuplexRouter = SockJSRouter(Connection)
 
     application = web.Application(
-        add_redirection(DuplexRouter.urls, settings['gui_url']),
+        add_redirection(DuplexRouter.urls, GUI_URL_TPL % settings['webport']),
         debug = True if logging.getLogger().getEffectiveLevel()==logging.DEBUG or settings['debug_regime'] else False
     )
     application.listen(settings['webport'], address='0.0.0.0')

@@ -21,7 +21,7 @@ import ujson as json
 
 import chk_tilde_install
 
-from tilde.core.settings import settings
+from tilde.core.settings import settings, GUI_URL_TPL
 from tilde.core.api import API
 from tilde.parsers import HASH_LENGTH
 from tilde.core.common import html_formula, extract_chemical_symbols, str2html, num2name, generate_cif
@@ -336,12 +336,12 @@ if __name__ == "__main__":
     DuplexRouter = SockJSRouter(Connection)
 
     application = web.Application(
-        add_redirection(DuplexRouter.urls, settings['gui_url']),
+        add_redirection(DuplexRouter.urls, GUI_URL_TPL % settings['webport']),
         debug = True if logging.getLogger().getEffectiveLevel()==logging.DEBUG or settings['debug_regime'] else False
     )
     application.listen(settings['webport'], address='0.0.0.0')
 
-    logging.warning("%s (%s backend) is on the air on port %s" % (CURRENT_TITLE, settings['db']['engine'], settings['webport']))
+    logging.warning("%s (%s backend): http://127.0.0.1:%s" % (CURRENT_TITLE, settings['db']['engine'], settings['webport']))
     logging.warning("Connections are %s" % Connection.Type)
     logging.warning("Press Ctrl+C to quit")
 

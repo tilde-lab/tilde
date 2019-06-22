@@ -3,7 +3,7 @@
 # Author: Evgeny Blokhin
 
 import os, sys
-import json # using native driver due to indent
+import json
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -23,6 +23,8 @@ EXAMPLE_DIR = os.path.join(ROOT_DIR, '../tests/data')
 INIT_DATA = os.path.join(DATA_DIR, 'sql/init-data.sql')
 TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
+SETTINGS_PATH = DATA_DIR + os.sep + SETTINGS_FILE
+GUI_URL_TPL = 'http://tilde-lab.github.io/berlinium/?http://127.0.0.1:%s'
 
 DEFAULT_SETUP = {
 
@@ -46,8 +48,7 @@ DEFAULT_SETUP = {
 
     # Server part
     'webport': 8070,
-    'title': "Tilde GUI",
-    'gui_url': "http://tilde-lab.github.io/berlinium/?https://db.tilde.pro"
+    'title': "Tilde GUI"
 }
 
 def virtualize_path(item):
@@ -55,9 +56,13 @@ def virtualize_path(item):
 
 def connect_url(settings, named=None):
     if settings['db']['engine'] == 'sqlite':
-        if not named:       named = settings['db']['default_sqlite_db']
-        if os.sep in named: named = os.path.realpath(os.path.abspath(named))
-        else:               named = os.path.join(DATA_DIR, named)
+        if not named:
+            named = settings['db']['default_sqlite_db']
+        if os.sep in named:
+            named = os.path.realpath(os.path.abspath(named))
+        else:
+            named = os.path.join(DATA_DIR, named)
+
         return settings['db']['engine'] + ':///' + named
 
     elif settings['db']['engine'] == 'postgresql':
@@ -114,10 +119,10 @@ def write_settings(settings):
     '''
     if not os.access(DATA_DIR, os.W_OK): return False
     try:
-        f = open(DATA_DIR + os.sep + SETTINGS_FILE, 'w')
+        f = open(SETTINGS_PATH, 'w')
         f.writelines(json.dumps(settings, indent=0))
         f.close()
-        os.chmod(os.path.abspath(DATA_DIR + os.sep + SETTINGS_FILE), 0o777) # to avoid (or create?) IO problems with multiple users
+        os.chmod(os.path.abspath(SETTINGS_PATH), 0o777) # to avoid (or create?) IO problems with multiple users
     except IOError:
         return False
     else:
@@ -177,17 +182,25 @@ def get_hierarchy(settings):
     return hierarchy, hierarchy_groups, hierarchy_values
 
 # DEFAULT ACTIONS: LOAD/SAVE SETTINGS
-if not os.path.exists( os.path.abspath( DATA_DIR + os.sep + SETTINGS_FILE ) ):
+if not os.path.exists(os.path.abspath(SETTINGS_PATH)):
     settings = DEFAULT_SETUP
     if not os.path.exists(DATA_DIR):
-        try: os.makedirs(DATA_DIR)
-        except IOError: sys.exit('I/O error: failed write ' + DATA_DIR)
-    if not write_settings(settings): sys.exit('I/O error: failed to save settings in ' + DATA_DIR)
+        try:
+            os.makedirs(DATA_DIR)
+        except IOError:
+            sys.exit('I/O error: failed write ' + DATA_DIR)
+    if not write_settings(settings):
+        sys.exit('I/O error: failed to save settings in ' + DATA_DIR)
+
 try: settings
 except NameError:
-    try: settings = json.loads( open( DATA_DIR + os.sep + SETTINGS_FILE ).read() )
-    except ValueError: sys.exit('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' seems to be bad-formatted, please, pay attention to commas and quotes!')
-    except IOError: sys.exit('Your '+DATA_DIR + os.sep + SETTINGS_FILE+' is not accessible!')
+    try:
+        settings = json.loads(open(SETTINGS_PATH).read())
+    except ValueError:
+        sys.exit('Your ' + SETTINGS_PATH + ' seems to be bad-formatted, please, pay attention to commas and quotes!')
+    except IOError:
+        sys.exit('Your ' + SETTINGS_PATH + ' is not accessible!')
+
     DEFAULT_SETUP.update(settings)
     settings = DEFAULT_SETUP
 
