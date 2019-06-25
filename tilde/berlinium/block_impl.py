@@ -44,7 +44,13 @@ class Connection(SockJSConnection):
             frame['error'] = 'No server handler for action: %s' % frame['act']
             return self.respond(frame)
 
-        if not Connection.Clients[frame['client_id']].db: Connection.Clients[frame['client_id']].db = connect_database(settings, default_actions=False, no_pooling=True)
+        if not Connection.Clients[frame['client_id']].db:
+            Connection.Clients[frame['client_id']].db = connect_database(settings, default_actions=False, no_pooling=True)
+            logging.debug("New DB connection to %s" % (
+                settings['db']['default_sqlite_db']
+                if settings['db']['engine'] == 'sqlite'
+                else settings['db']['dbname'] + '@' + settings['db']['engine']
+            ))
 
         frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['client_id'], Connection.Clients[frame['client_id']].db )
         self.respond(frame)
@@ -65,5 +71,6 @@ class Connection(SockJSConnection):
         try:
             self.Clients[client_id].db.close()
             self.Clients[client_id].db = None
+            logging.debug("DB connection closed")
         except: pass
         del self.Clients[client_id]

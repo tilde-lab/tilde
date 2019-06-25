@@ -17,7 +17,7 @@ from tilde.berlinium.impl import GUIProviderMockup, Client
 from tilde.core.settings import settings, connect_database
 
 
-thread_pool = ThreadPoolExecutor(max_workers=5*multiprocessing.cpu_count())
+thread_pool = ThreadPoolExecutor(max_workers=4*multiprocessing.cpu_count())
 
 class Connection(SockJSConnection):
     Type = 'asynchronous'
@@ -52,12 +52,18 @@ class Connection(SockJSConnection):
 
         def worker(frame):
             db_session = connect_database(settings, default_actions=False, no_pooling=True)
+            logging.debug("New DB connection to %s" % (
+                settings['db']['default_sqlite_db']
+                if settings['db']['engine'] == 'sqlite'
+                else settings['db']['dbname'] + '@' + settings['db']['engine']
+            ))
 
             frame['result'], frame['error'] = getattr(self.GUIProvider, frame['act'])( frame['req'], frame['client_id'], db_session )
 
             # must explicitly close db connection inside a thread
             db_session.close()
             del db_session
+            logging.debug("DB connection closed")
 
             return frame
 

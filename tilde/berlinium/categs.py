@@ -1,5 +1,8 @@
 
+import os
+
 from tilde.core.common import html_formula, num2name
+
 
 def wrap_cell(entity, json_obj, mapping, table_view=False):
     '''
@@ -34,6 +37,9 @@ def wrap_cell(entity, json_obj, mapping, table_view=False):
 
     elif entity['source'] == 'dims':
         out = "%4.2f" % json_obj['dims'] if json_obj['periodicity'] in [2, 3] else '&mdash;'
+
+    elif entity['source'] == 'location':
+        out = json_obj['location'].split(os.sep)[-1]
 
     else:
         out = num2name(json_obj.get(entity['source']), entity, mapping) or '&mdash;'

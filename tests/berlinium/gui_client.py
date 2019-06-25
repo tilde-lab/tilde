@@ -12,7 +12,7 @@ import set_path
 from tilde.core.settings import settings
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 START_TIME = time.time()
 
 class RespHandler(object):
@@ -32,9 +32,9 @@ class RespHandler(object):
 
     @classmethod
     def on_message(self, ws, message):
-        logging.debug("Received: %s" % message[:100])
+        logging.debug("Received: %s" % message[:200])
         message = json.loads(message)
-    
+
         if message['act'] == 'login':
             ws.send(json.dumps({'act': 'tags', 'req': {}}))
 
@@ -42,10 +42,10 @@ class RespHandler(object):
             ws.send(json.dumps({'act': 'browse', 'req': {'tids': [2]}}))
 
         elif message['act'] == 'browse':
-            ws.send(json.dumps({'act': 'summary', 'req': {'datahash': 'QZAKBZE26UUMBYJBDDG7XBNYN5IZJJAAW3VI5OJ2CJPXCCI'}}))
+            ws.send(json.dumps({'act': 'summary', 'req': {'datahash': 'UwrPlqexHZjtgKjK4awu4KBxArdSJdwmPq5GShdF9qY7lQPzPDF'}}))
 
         elif message['act'] == 'summary':
-            ws.send(json.dumps({'act': 'estory', 'req': {'datahash': 'OLRUC4GMJKHKOFIEQIDNQBJDII4UH5WQCGQRO5MXD36GSCI'}}))
+            ws.send(json.dumps({'act': 'estory', 'req': {'datahash': '46AISOZQVLHNZZVZ53PPOTHRNHF3JRYYTECKNJ7QNMQXQCI'}}))
 
         elif message['act'] == 'estory':
             logging.info("Client done in: %1.2f sc" % (time.time() - START_TIME))
