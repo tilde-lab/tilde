@@ -8,7 +8,7 @@ sqlalchemy >= 1.0.12
 argparse
 ase==3.16.2
 spglib
-tornado==4.5.3
+tornado==6.0.3
 sockjs-tornado
 websocket-client==0.52.0
 futures
