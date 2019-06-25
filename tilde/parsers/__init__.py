@@ -14,8 +14,6 @@ import base64
 from ase.data import chemical_symbols
 
 
-HASH_LENGTH = 47
-
 class Output:
     def __init__(self, filename='', calcset=False):
 
@@ -84,7 +82,8 @@ class Output:
 
             'standard':   '',
             'formula':    '',
-            'dims':       False,
+            'dims':       False, # cell volume
+            'periodicity':0x0,
             'natom':      0,
             'elements':   [],
             'contents':   [],
@@ -105,11 +104,12 @@ class Output:
             'kshift':     None,
             'smear':      None, # in a.u.
             'smeartype':  None,
-            'spin':       False,
+            'spin':       0x0,
             'lockstate':  None,
 
             'ansatz':     0x0,
             'techs':      [],
+            'dtype':      0x0
         }
 
     @classmethod
