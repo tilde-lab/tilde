@@ -27,7 +27,7 @@ from ase.geometry import cell_to_cellpar
 
 
 starttime = time.time()
-Tilde = API()
+work = API()
 
 parser = argparse.ArgumentParser(
     prog="[this_script]",
@@ -43,7 +43,7 @@ parser.add_argument("-a",   dest="add", action="store", help="add results to the
 parser.add_argument("-v",   dest="convergence", action="store", help="print calculation convergence", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-f",   dest="freqs", action="store", help="print phonons", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-i",   dest="info", action="store", help="print tags", type=bool, metavar="", nargs='?', const=True, default=False)
-parser.add_argument("-m",   dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=list(Tilde.Apps.keys()))
+parser.add_argument("-m",   dest="module", action="store", help="invoke a module from the list", nargs='?', const=True, default=False, choices=list(work.Apps.keys()))
 parser.add_argument("-s",   dest="structures", action="store", help="print the final lattice and the final atomic structure", type=bool, metavar="", nargs='?', const=True, default=False)
 parser.add_argument("-c",   dest="cif", action="store", help="save i-th CIF structure in \"data\" folder", type=int, metavar="i", nargs='?', const=-1, default=False)
 parser.add_argument("-x",   dest="service", action="store", help="print total number of items (use to create schema)", type=bool, metavar="", nargs='?', const=True, default=False)
@@ -58,11 +58,14 @@ if not args.path and not args.service and not args.targetlist:
 
 # -a option
 if args.add or args.service:
-    if settings['db']['engine'] == 'sqlite':        user_choice = args.add
-    elif settings['db']['engine'] == 'postgresql':  user_choice = None
+    if settings['db']['engine'] == 'sqlite':
+        user_choice = args.add
+    elif settings['db']['engine'] == 'postgresql':
+        user_choice = None
 
     session = connect_database(settings, named=user_choice)
-    if user_choice: print("The database selected:", user_choice)
+    if user_choice:
+        print("The database selected:", user_choice)
 
 # path(s)
 if args.path or args.targetlist:
@@ -80,7 +83,7 @@ if args.path or args.targetlist:
 
 # -x option
 elif args.service:
-    sys.exit("Items in DB: %s" % Tilde.count(session))
+    sys.exit("Items in DB: %s" % work.count(session))
 
 for target in target_source:
 
@@ -88,12 +91,12 @@ for target in target_source:
         print('Target does not exist: ' + target)
         continue
 
-    tasks = Tilde.savvyize(target, recursive=args.recursive, stemma=True)
+    tasks = work.savvyize(target, recursive=args.recursive, stemma=True)
 
     for task in tasks:
 
         detected = False
-        for calc, error in Tilde.parse(task):
+        for calc, error in work.parse(task):
             output_lines, add_msg = '', ''
 
             if error:
@@ -102,7 +105,7 @@ for target in target_source:
                 logging.info("%s %s" % (task, error))
                 continue
 
-            calc, error = Tilde.classify(calc, args.symprec)
+            calc, error = work.classify(calc, args.symprec)
             if error:
                 print(task, error)
                 logging.info("%s %s" % (task, error))
@@ -115,22 +118,22 @@ for target in target_source:
             if args.info:
                 found_topics = []
                 skip_topics = ['location', 'elements', 'nelem', 'natom', 'spg']
-                for n, entity in enumerate(Tilde.hierarchy):
+                for n, entity in enumerate(work.hierarchy):
                     if entity['cid'] > 1999 or entity['source'] in skip_topics: continue # apps hierarchy
 
                     if entity['multiple']:
                         try: found_topics.append(
-                            [  entity['category']  ] + [num2name(x, entity, Tilde.hierarchy_values) for x in calc.info[ entity['source'] ]]
+                            [entity['category']] + [num2name(x, entity, work.hierarchy_values) for x in calc.info[ entity['source'] ]]
                         )
                         except KeyError: pass
                     else:
-                        try: found_topics.append( [  entity['category'], num2name(calc.info.get(entity['source']), entity, Tilde.hierarchy_values)  ] )
+                        try: found_topics.append( [entity['category'], num2name(calc.info.get(entity['source']), entity, work.hierarchy_values)] )
                         except KeyError: pass
 
                 j, out = 0, ''
                 for t in found_topics:
                     out += "\t" + t[0] + ': ' + ', '.join(map(str, t[1:]))
-                    out += "\t" if not j%2 else "\n"
+                    out += "\t" if not j % 2 else "\n"
                     j+=1
                 output_lines += out[:-1] + "\n"
 
@@ -160,7 +163,7 @@ for target in target_source:
                 try: calc.structures[ args.cif ]
                 except IndexError: output_lines += "Warning! Structure "+args.cif+" not found!" + "\n"
                 else:
-                    N = args.cif if args.cif>0 else len(calc.structures) + 1 + args.cif
+                    N = args.cif if args.cif > 0 else len(calc.structures) + 1 + args.cif
                     comment = calc.info['formula'] + " extracted from " + task + " (structure N " + str(N) + ")"
                     cif_file = os.path.realpath(os.path.abspath(DATA_DIR + os.sep + os.path.basename(task))) + '_' + str(args.cif) + '.cif'
                     if write_cif(cif_file, calc.structures[ args.cif ], comment):
@@ -171,10 +174,10 @@ for target in target_source:
             # -m option
             if args.module:
                 if args.module == True:
-                    calc = Tilde.postprocess(calc, dry_run=True)
+                    calc = work.postprocess(calc, dry_run=True)
                     output_lines += "Modules to be invoked: " + str([i for i in calc.apps]) + "\n"
                 else:
-                    calc = Tilde.postprocess(calc, args.module)
+                    calc = work.postprocess(calc, args.module)
                     if args.module not in calc.apps:
                         output_lines += "Module \"" + args.module + "\" is not suitable for this case (outside the scope defined in module manifest)!" + "\n"
                     else:
@@ -198,7 +201,7 @@ for target in target_source:
 
             # -a option
             if args.add:
-                checksum, error = Tilde.save(calc, session)
+                checksum, error = work.save(calc, session)
                 if error:
                     print(task, error)
                     logging.info("%s %s" % (task, error))
@@ -206,14 +209,18 @@ for target in target_source:
                 header_line += ' added'
                 detected = True
 
-            if len(output_lines): output_lines = "\n" + output_lines
+            if len(output_lines):
+                output_lines = "\n" + output_lines
+
             print(header_line + add_msg + output_lines)
 
         if detected:
             logging.info(task + " successfully processed")
-        # NB: from here the calc instance is not functional anymore!
+        # NB: from here the calc instance is not accessible anymore
 
-if session:             session.close()
-if args.targetlist:     target_source.close()
+if session:
+    session.close()
+if args.targetlist:
+    target_source.close()
 
 print("Done in %1.2f sc" % (time.time() - starttime))
