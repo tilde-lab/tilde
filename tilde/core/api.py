@@ -177,8 +177,8 @@ class API:
         labels = {}
         types = []
         y = 0
-        for k, atomi in enumerate(atom_sequence):
-            lbl = re.sub("[0-9]+", "", atomi).capitalize()
+        for k, atom_i in enumerate(atom_sequence):
+            lbl = re.sub("[0-9]+", "", atom_i).capitalize()
             if lbl not in labels:
                 labels[lbl] = y
                 types.append([k+1])
@@ -186,7 +186,7 @@ class API:
             else:
                 types[ labels[lbl] ].append(k+1)
         atoms = list(labels.keys())
-        atoms = [x for x in self.formula_sequence if x in atoms] + [x for x in atoms if x not in self.formula_sequence] # accordingly
+        atoms = [x for x in self.formula_sequence if x in atoms] + [x for x in atoms if x not in self.formula_sequence]
         formula = ''
         for atom in atoms:
             n = len(types[labels[atom]])
@@ -645,8 +645,8 @@ class API:
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
             codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
 
-            codeversion.instances.append( ormcalc.meta_data )
-            codefamily.versions.append( codeversion )
+            codeversion.instances.append(ormcalc.meta_data)
+            codefamily.versions.append(codeversion)
 
             pot = model.Pottype.as_unique(session, name = calc.info['H'])
             pot.instances.append(ormcalc)
@@ -692,7 +692,7 @@ class API:
                 if topic or not entity['optional']:
                     uitopics.append( model.topic(cid=entity['cid'], topic=topic) )
 
-        uitopics = [model.Topic.as_unique(session, cid=x.cid, topic="%s" % x.topic) for x in uitopics]
+        uitopics = [model.Topic.as_unique(session, cid=x.cid, topic=str(x.topic)) for x in uitopics]
 
         ormcalc.uitopics.extend(uitopics)
 

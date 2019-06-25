@@ -42,7 +42,7 @@ def str2html(s, units=True):
 def html_formula(string):
     sub, html_formula = False, ''
     for i in string:
-        if i.isdigit() or i=='.' or i=='-':
+        if i.isdigit() or i == '.' or i == '-':
             if not sub:
                 html_formula += '<sub>'
                 sub = True

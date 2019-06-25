@@ -4,6 +4,7 @@
 
 import os, sys
 import json
+import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -13,7 +14,7 @@ from sqlalchemy.pool import QueuePool, NullPool
 import tilde.core.model as model
 
 
-DB_SCHEMA_VERSION = '5.11'
+DB_SCHEMA_VERSION = '5.12'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
@@ -96,12 +97,19 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
         # 3.
         chk = session.query(model.Hierarchy_value).first()
         if not chk:
-            if not os.path.exists(INIT_DATA): sys.exit(INIT_DATA + ' not found!')
-            with open(INIT_DATA) as f:
-                while True:
-                    sql = f.readline().strip()
-                    if not sql: break
-                    engine.execute(sql)
+            if not os.path.exists(INIT_DATA):
+                sys.exit(INIT_DATA + ' not found!')
+
+            nlines = 0
+            f = open(INIT_DATA)
+            statements = filter(None, f.read().splitlines())
+            f.close()
+            for stmt in statements:
+                engine.execute(stmt)
+                nlines += 1
+
+            logging.warning("Applied DB model from file %s" % INIT_DATA)
+            logging.warning("SQL statements executed: %s" % nlines)
 
         session.commit()
         session.close()
@@ -120,7 +128,7 @@ def write_settings(settings):
     if not os.access(DATA_DIR, os.W_OK): return False
     try:
         f = open(SETTINGS_PATH, 'w')
-        f.writelines(json.dumps(settings, indent=0))
+        f.writelines(json.dumps(settings, indent=4))
         f.close()
         os.chmod(os.path.abspath(SETTINGS_PATH), 0o777) # to avoid (or create?) IO problems with multiple users
     except IOError:
@@ -136,7 +144,9 @@ def get_hierarchy(settings):
     '''
     hierarchy, hierarchy_groups, hierarchy_values = [], [], {}
     hgroup_ids, enumerated_vals = {}, set()
+
     session = connect_database(settings)
+
     for item in session.query(model.Hierarchy_value).all():
         try:
             hierarchy_values[item.cid].update({item.num: item.name})
@@ -145,27 +155,32 @@ def get_hierarchy(settings):
         enumerated_vals.add(item.cid)
     try:
         for item in session.query(model.Hierarchy).all():
-            if item.has_facet and not item.has_topic: raise RuntimeError('Fatal error: "has_facet" implies "has_topic"')
-            if item.slider and not '.' in item.slider: raise RuntimeError('Fatal error: "has_slider" must have a reference to some table field')
+            if item.has_facet and not item.has_topic:
+                raise RuntimeError('Fatal error: "has_facet" implies "has_topic"')
+            if item.slider and not '.' in item.slider:
+                raise RuntimeError('Fatal error: "has_slider" must have a reference to some table field')
+
             hierarchy.append({
-                'cid':item.cid,
-                'category':item.name,
-                'source':item.source,
-                'html':item.html,
-                'has_slider':item.slider,
-                'sort':item.sort,
-                'multiple':item.multiple,
-                'optional':item.optional,
-                'has_summary_contrb':item.has_summary_contrb,
-                'has_column':item.has_column,
-                'has_facet':item.has_facet,
-                'creates_topic':item.has_topic,
-                'is_chem_formula':item.chem_formula,
-                'plottable':item.plottable,
-                'enumerated':True if item.cid in enumerated_vals else False
+                'cid': item.cid,
+                'category': item.name,
+                'source': item.source,
+                'html': item.html,
+                'has_slider': item.slider,
+                'sort': item.sort,
+                'multiple': item.multiple,
+                'optional': item.optional,
+                'has_summary_contrb': item.has_summary_contrb,
+                'has_column': item.has_column,
+                'has_facet': item.has_facet,
+                'creates_topic': item.has_topic,
+                'is_chem_formula': item.chem_formula,
+                'plottable': item.plottable,
+                'enumerated': True if item.cid in enumerated_vals else False
             })
-            try: hgroup_ids[item.hgroup_id].append(item.cid)
-            except KeyError: hgroup_ids[item.hgroup_id] = [item.cid]
+            try:
+                hgroup_ids[item.hgroup_id].append(item.cid)
+            except KeyError:
+                hgroup_ids[item.hgroup_id] = [item.cid]
     except RuntimeError as e:
         session.close()
         sys.exit(e)
