@@ -2,7 +2,7 @@
 # Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.9"
+__version__ = "0.9.0"
 
 import os, sys
 import re

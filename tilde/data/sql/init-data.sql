@@ -7,59 +7,117 @@ INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VA
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (4, 'modeling precision', 0, 1);
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (5, 'modeling package', 1, 1);
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (6, 'other metadata', 0, 1);
+INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (7, 'journal articles', 0, 1);
 INSERT INTO hierarchy_groups (hgroup_id, name, landing_group, settings_group) VALUES (9, 'all the rest', 0, 0);
 
--- hierarchy (core)
+-- hierarchy (core) terms, enter hierarchy groups (as one-to-one)
 
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1, 'chemical formula', 'standard', '', '', '', 2, 0, 0, 1, 1, 0, 1, 1, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (2, 'elements', 'elements', '', '', '', 1, 1, 0, 1, 0, 1, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (3, 'compound', 'nelem', '', '', '', 30, 0, 0, 1, 1, 1, 1, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (4, 'formula units', 'expanded', '', '', '', 40, 0, 0, 0, 0, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1501, 'lattice a', 'lata', '', 'Lattice a, &#8491;', '', 4, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1502, 'lattice b', 'latb', '', 'Lattice b, &#8491;', '', 5, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1503, 'lattice c', 'latc', '', 'Lattice c, &#8491;', '', 6, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1504, 'lattice alpha', 'latalpha', '', '', '', 7, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1505, 'lattice beta', 'latbeta', '', '', '', 8, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1506, 'lattice gamma', 'latgamma', '', '', '', 9, 0, 0, 0, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1001, 'number of atoms', 'natom', '', 'N,,atoms__', '', 50, 0, 0, 1, 1, 0, 0, 0, 1, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (5, 'periodic boundary conditions', 'periodicity', '', '', '', 130, 0, 0, 0, 0, 1, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (9, 'crystal system', 'symmetry', '', '', '', 140, 0, 0, 1, 1, 1, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (10, 'point group', 'pg', 'Result point group', '', '', 150, 0, 0, 1, 1, 1, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (11, 'space group (Sch.)', 'sg', 'Result space group (Schoenflis notation)', '', '', 160, 0, 0, 1, 1, 0, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (12, 'space group (int)', 'ng', 'Result space group (international notation)', '', '', 170, 0, 0, 1, 1, 0, 0, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (13, 'layer group (int)', 'dg', 'Result layer group (international notation)', '', '', 180, 0, 1, 0, 0, 0, 0, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (50, 'space group', 'spg', 'Result space group (both international and Schoenflis notations)', '', '', 181, 0, 0, 1, 1, 0, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (8, 'system type', 'tags', '', '', '', 60, 1, 1, 1, 0, 1, 1, 0, 0, 2);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (106, 'data type', 'dtype', '', '', '',  269, 0, 0, 1, 0, 1, 1, 0, 0, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (6, 'property', 'calctypes', '', '', '', 270, 1, 0, 1, 0, 1, 1, 0, 0, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (7, 'xc treatment', 'H', '', 'XC treatment', '', 190, 0, 1, 1, 1, 0, 1, 0, 0, 3);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (75, 'xc treatment', 'H_types', '', 'XC treatment type', '', 195, 1, 0, 0, 0, 1, 1, 0, 0, 3);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (15, 'spin-polarized', 'spin', '', '', '', 210, 0, 0, 1, 1, 1, 1, 0, 0, 3);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (150, 'geometry optimization', 'optgeom', '', '', '', 209, 0, 0, 1, 1, 1, 1, 0, 0, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (17, 'k-grid', 'k', '', '', '', 220, 0, 1, 1, 1, 0, 1, 0, 1, 4);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (19, 'phonon magnitude', 'dfp_magnitude', '', '', '', 230, 0, 1, 0, 1, 0, 1, 0, 1, 4);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (20, 'phonon disp.number', 'dfp_disps', '', '', '', 240, 0, 1, 0, 1, 0, 0, 0, 1, 4);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (21, 'phonon k-grid', 'n_ph_k', '', '', '', 250, 0, 1, 0, 1, 0, 0, 0, 1, 4);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (22, 'code family', 'framework', '', '', '', 320, 0, 0, 1, 1, 1, 1, 0, 0, 5);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (23, 'code version', 'prog', '', '', '', 330, 0, 0, 1, 1, 0, 0, 0, 0, 5);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (24, 'modeling time, hr', 'duration', '', '', '', 340, 0, 1, 1, 1, 0, 0, 0, 1, 5);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (25, 'parsing time, sc', 'perf', '', '', '', 350, 0, 1, 1, 1, 0, 0, 0, 1, 5);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (26, 'conductivity', 'etype', '', '', '', 280, 0, 0, 1, 1, 1, 1, 0, 0, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (27, 'min.band gap', 'bandgap', '', 'Min.band gap{{units-energy}}', 'Electrons.gap', 290, 0, 0, 1, 1, 0, 0, 0, 1, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (28, 'band gap type', 'bandgaptype', '', '', '', 300, 0, 0, 1, 0, 0, 1, 0, 0, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (510, 'vacancy content', 'vac', '', '', '', 70, 0, 0, 1, 0, 0, 1, 0, 1, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (511, 'impurity', 'impurities', '', '', '', 80, 1, 0, 1, 0, 0, 1, 1, 0, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (520, 'planes number', 'layers', '', '', '', 90, 0, 1, 1, 1, 0, 0, 0, 1, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (521, 'adsorbent', 'adsorbent', '', '', '', 100, 0, 1, 1, 1, 0, 0, 1, 0, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (522, 'surface termination', 'termination', '', '', '', 110, 0, 1, 1, 1, 0, 0, 1, 0, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (501, 'basis set', 'bs', '', '', '', 260, 1, 1, 1, 0, 0, 0, 0, 0, 3);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (80, 'basis set', 'ansatz', '', '', '', 185, 0, 0, 0, 1, 1, 1, 0, 0, 3);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1002, 'total energy', 'energy', '', 'E,,el.tot__/cell{{units-energy}}', '', 310, 0, 0, 1, 1, 0, 0, 0, 1, 1);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1003, 'cell volume', 'dims', '', 'Cell, &#8491;^^3**', '', 10, 0, 0, 1, 1, 0, 0, 0, 1, 9);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1006, 'finished', 'finished', '', 'Finished?', '', 370, 0, 0, 1, 1, 0, 1, 0, 0, 5);
-INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES (1005, 'source file', 'location', '', '', '', 380, 0, 0, 0, 1, 0, 0, 0, 0, 6);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1, 'chemical formula', 'standard', '', '', '',                                                                                 2, 0, 0, 1, 1, 0, 1, 1, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (2, 'elements', 'elements', '', '', '',                                                                                         1, 1, 0, 1, 0, 1, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (3, 'compound', 'nelem', '', '', '',                                                                                           30, 0, 0, 1, 1, 1, 1, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (4, 'formula units', 'expanded', '', '', '',                                                                                   40, 0, 0, 0, 0, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1501, 'lattice a', 'lata', '', 'Lattice a, &#8491;', '',                                                                       4, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1502, 'lattice b', 'latb', '', 'Lattice b, &#8491;', '',                                                                       5, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1503, 'lattice c', 'latc', '', 'Lattice c, &#8491;', '',                                                                       6, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1504, 'lattice alpha', 'latalpha', '', '', '',                                                                                7, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1505, 'lattice beta', 'latbeta', '', '', '',                                                                                   8, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1506, 'lattice gamma', 'latgamma', '', '', '',                                                                                 9, 0, 0, 0, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1001, 'number of atoms', 'natom', '', 'N,,atoms__', '',                                                                       50, 0, 0, 1, 1, 0, 0, 0, 1, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (5, 'periodic boundary conditions', 'periodicity', '', '', '',                                                                130, 0, 0, 0, 0, 1, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (9, 'crystal system', 'symmetry', '', '', '',                                                                                 140, 0, 0, 1, 1, 1, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (10, 'point group', 'pg', 'Result point group', '', '',                                                                       150, 0, 0, 1, 1, 1, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (11, 'space group (Sch.)', 'sg', 'Result space group (Schoenflis notation)', '', '',                                          160, 0, 0, 1, 1, 0, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (12, 'space group (int)', 'ng', 'Result space group (international notation)', '', '',                                        170, 0, 0, 1, 1, 0, 0, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (13, 'layer group (int)', 'dg', 'Result layer group (international notation)', '', '',                                        180, 0, 1, 0, 0, 0, 0, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (50, 'space group', 'spg', 'Result space group (both international and Schoenflis notations)', '', '',                        181, 0, 0, 1, 1, 0, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (8, 'system type', 'tags', '', '', '',                                                                                         60, 1, 1, 1, 0, 1, 1, 0, 0, 2);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (106, 'data type', 'dtype', '', '', '',                                                                                       269, 0, 0, 1, 0, 1, 1, 0, 0, 1);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (6, 'property', 'calctypes', '', '', '',                                                                                      270, 1, 0, 1, 0, 1, 1, 0, 0, 1);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (7, 'xc treatment', 'H', '', 'XC treatment', '',                                                                              190, 0, 1, 1, 1, 0, 1, 0, 0, 3);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (75, 'xc treatment', 'H_types', '', 'XC treatment type', '',                                                                  195, 1, 0, 0, 0, 1, 1, 0, 0, 3);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (15, 'spin-polarized', 'spin', '', '', '',                                                                                    210, 0, 0, 1, 1, 1, 1, 0, 0, 3);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (150, 'geometry optimization', 'optgeom', '', '', '',                                                                         209, 0, 0, 1, 1, 1, 1, 0, 0, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (17, 'k-grid', 'k', '', '', '',                                                                                               220, 0, 1, 1, 1, 0, 1, 0, 1, 4);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (19, 'phonon magnitude', 'dfp_magnitude', '', '', '',                                                                         230, 0, 1, 0, 1, 0, 1, 0, 1, 4);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (20, 'phonon disp.number', 'dfp_disps', '', '', '',                                                                           240, 0, 1, 0, 1, 0, 0, 0, 1, 4);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (21, 'phonon k-grid', 'n_ph_k', '', '', '',                                                                                   250, 0, 1, 0, 1, 0, 0, 0, 1, 4);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (22, 'code family', 'framework', '', '', '',                                                                                  320, 0, 0, 1, 1, 1, 1, 0, 0, 5);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (23, 'code version', 'prog', '', '', '',                                                                                      330, 0, 0, 1, 1, 0, 0, 0, 0, 5);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (24, 'modeling time, hr', 'duration', '', '', '',                                                                             340, 0, 1, 1, 1, 0, 0, 0, 1, 5);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (25, 'parsing time, sc', 'perf', '', '', '',                                                                                  350, 0, 1, 1, 1, 0, 0, 0, 1, 5);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (26, 'conductivity', 'etype', '', '', '',                                                                                     280, 0, 0, 1, 1, 1, 1, 0, 0, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (27, 'min.band gap', 'bandgap', '', 'Min.band gap{{units-energy}}', 'Electrons.gap',                                          290, 0, 0, 1, 1, 0, 0, 0, 1, 1);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (28, 'band gap type', 'bandgaptype', '', '', '',                                                                              300, 0, 0, 1, 0, 0, 1, 0, 0, 1);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (510, 'vacancy content', 'vac', '', '', '',                                                                                    70, 0, 0, 1, 0, 0, 1, 0, 1, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (511, 'impurity', 'impurities', '', '', '',                                                                                    80, 1, 0, 1, 0, 0, 1, 1, 0, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (520, 'planes number', 'layers', '', '', '',                                                                                   90, 0, 1, 1, 1, 0, 0, 0, 1, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (521, 'adsorbent', 'adsorbent', '', '', '',                                                                                   100, 0, 1, 1, 1, 0, 0, 1, 0, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (522, 'surface termination', 'termination', '', '', '',                                                                       110, 0, 1, 1, 1, 0, 0, 1, 0, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (501, 'basis set', 'bs', '', '', '',                                                                                          260, 1, 1, 1, 0, 0, 0, 0, 0, 3);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (80, 'basis set', 'ansatz', '', '', '',                                                                                       185, 0, 0, 0, 1, 1, 1, 0, 0, 3);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1002, 'total energy', 'energy', '', 'E,,el.tot__/cell{{units-energy}}', '',                                                  310, 0, 0, 1, 1, 0, 0, 0, 1, 1);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1003, 'cell volume', 'dims', '', 'Cell, &#8491;^^3**', '',                                                                    10, 0, 0, 1, 1, 0, 0, 0, 1, 9);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1006, 'finished', 'finished', '', 'Finished?', '',                                                                           370, 0, 0, 1, 1, 0, 1, 0, 0, 5);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1005, 'source file', 'location', '', '', '',                                                                                 380, 0, 0, 0, 1, 0, 0, 0, 0, 6);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1701, 'authors', 'authors', '', '', '',                                                                                        1, 1, 1, 0, 1, 1, 1, 0, 0, 7);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1702, 'year', 'year', '', '', '',                                                                                              2, 0, 1, 0, 1, 1, 1, 0, 0, 7);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1703, 'article title', 'article_title', '', '', '',                                                                            3, 0, 1, 0, 1, 1, 1, 0, 0, 7);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1704, 'DOI', 'doi', '', '', '',                                                                                                4, 0, 1, 0, 1, 1, 1, 0, 0, 7);
+INSERT INTO hierarchy (cid, name, source, legend, html, slider, sort, multiple, optional, has_summary_contrb, has_column, has_facet, has_topic, chem_formula, plottable, hgroup_id) VALUES
+                      (1705, 'publication', 'pubdata', '', '', '',                                                                                    5, 0, 1, 0, 1, 1, 1, 0, 0, 7);
 
--- hierarchy_values
+-- hierarchy values, make hierarchy per se
 
 INSERT INTO hierarchy_values (cid, num, name) VALUES (3, 0, 'unknown');
 INSERT INTO hierarchy_values (cid, num, name) VALUES (3, 1, 'unary');

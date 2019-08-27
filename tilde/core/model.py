@@ -22,12 +22,9 @@ else:
 import ujson as json
 
 
-class NullHandler(logging.Handler): # for Python 2.6
-    def emit(self, record): pass
-
 logger = logging.getLogger('tilde')
 #handler = logging.StreamHandler(sys.stdout)
-handler = NullHandler()
+handler = logging.NullHandler()
 #handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s', datefmt="%d/%m %H:%M"))
 logger.setLevel(logging.CRITICAL)
 logger.addHandler(handler)

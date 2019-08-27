@@ -14,7 +14,7 @@ from sqlalchemy.pool import QueuePool, NullPool
 import tilde.core.model as model
 
 
-DB_SCHEMA_VERSION = '5.12'
+DB_SCHEMA_VERSION = '5.20'
 SETTINGS_FILE = 'settings.json'
 DEFAULT_SQLITE_DB = 'default.db'
 BASE_DIR = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
@@ -100,12 +100,24 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
             if not os.path.exists(INIT_DATA):
                 sys.exit(INIT_DATA + ' not found!')
 
-            nlines = 0
             f = open(INIT_DATA)
             statements = filter(None, f.read().splitlines())
             f.close()
-            for stmt in statements:
-                engine.execute(stmt)
+
+            nlines = 0
+            pocket = []
+            for n in range(len(statements)):
+                if statements[n].startswith('--'):
+                    continue
+                elif not statements[n].endswith(';'):
+                    pocket.append(statements[n])
+                    continue
+                else:
+                    if pocket:
+                        engine.execute( "".join(pocket) + statements[n] )
+                        pocket = []
+                    else:
+                        engine.execute(statements[n])
                 nlines += 1
 
             logging.warning("Applied DB model from file %s" % INIT_DATA)
