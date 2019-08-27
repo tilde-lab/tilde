@@ -20,7 +20,7 @@ def wrap_cell(entity, json_obj, mapping, table_view=False):
     #else:
 
     if entity['multiple']:
-        out = ", ".join(  map(lambda x: num2name(x, entity, mapping), json_obj.get(entity['source'], []))  )
+        out = ", ".join(  map(lambda x: num2name(x, entity, mapping), json_obj.get(entity['source'], ['&mdash;']))  )
 
     elif entity['is_chem_formula']:
         out = html_formula(json_obj[ entity['source'] ]) if entity['source'] in json_obj else '&mdash;'
