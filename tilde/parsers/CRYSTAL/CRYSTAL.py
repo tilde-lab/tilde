@@ -41,7 +41,8 @@ class CRYSTOUT(Output):
         elif filename.endswith('.out'):
             check_files = [filename.replace('.out', '') + '.d12', filename.replace('.out', '') + '.gui']
         for check in check_files:
-            if os.path.exists(os.path.join(cur_folder, check)): self.related_files.append(os.path.join(cur_folder, check))
+            if os.path.exists(os.path.join(cur_folder, check)):
+                self.related_files.append(os.path.join(cur_folder, check))
 
     @staticmethod
     def fingerprints(test_string):

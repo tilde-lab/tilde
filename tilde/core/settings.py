@@ -101,7 +101,7 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
                 sys.exit(INIT_DATA + ' not found!')
 
             f = open(INIT_DATA)
-            statements = filter(None, f.read().splitlines())
+            statements = list(filter(None, f.read().splitlines()))
             f.close()
 
             nlines = 0

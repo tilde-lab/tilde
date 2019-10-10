@@ -66,12 +66,12 @@ install_requires = [
     'futures',
     'httplib2',
     'quantum_esperanto',
-    'pycrystal'
+    'pycrystal >= 1.0.2'
 ]
 
 setup(
     name='tilde',
-    version='0.9.2',
+    version='0.9.3',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
@@ -87,10 +87,10 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ],
     keywords='CRYSTAL Quantum-ESPRESSO VASP ab-initio materials informatics first-principles',
     packages=packages,
@@ -99,7 +99,8 @@ setup(
     tests_require= ['nose',],
     test_suite='nose.collector',
     scripts=[
-        "utils/tilde.sh",
-        "utils/entry.py"
+        "utils/tilde",
+        "utils/entry.py",
+        "utils/gui_server.py"
     ]
 )

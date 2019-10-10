@@ -71,14 +71,17 @@ if args.add or args.service:
 if args.path or args.targetlist:
     finalized = 'YES' if settings['skip_unfinished'] else 'NO'
     notests = 'YES' if settings['skip_notenergy'] else 'NO'
-    print("Only finalized: %s; only with total energy: %s; skip paths if they start/end with any of: %s" % (finalized, notests, settings['skip_if_path']))
+    print("Only finalized: %s; only with total energy: %s; skip paths if they start/end with any of: %s" %
+        (finalized, notests, settings['skip_if_path'])
+    )
 
     if args.path and args.targetlist:
         args.targetlist = None
     if args.path:
         target_source = args.path
     if args.targetlist:
-        if not os.path.exists(args.targetlist): sys.exit("Incorrect file: %s" % args.targetlist)
+        if not os.path.exists(args.targetlist):
+            sys.exit("Incorrect file: %s" % args.targetlist)
         target_source = (ln.strip() for ln in open(args.targetlist))
 
 # -x option
@@ -100,7 +103,8 @@ for target in target_source:
             output_lines, add_msg = '', ''
 
             if error:
-                if args.terse and 'was read' in error: continue
+                if args.terse and 'was read' in error:
+                    continue
                 print(task, error)
                 logging.info("%s %s" % (task, error))
                 continue
@@ -119,16 +123,23 @@ for target in target_source:
                 found_topics = []
                 skip_topics = ['location', 'elements', 'nelem', 'natom', 'spg']
                 for n, entity in enumerate(work.hierarchy):
-                    if entity['cid'] > 1999 or entity['source'] in skip_topics: continue # apps hierarchy
+                    if entity['cid'] > 1999 or entity['source'] in skip_topics:
+                        continue # apps hierarchy
 
                     if entity['multiple']:
-                        try: found_topics.append(
-                            [entity['category']] + [num2name(x, entity, work.hierarchy_values) for x in calc.info[ entity['source'] ]]
-                        )
-                        except KeyError: pass
+                        try:
+                            found_topics.append(
+                                [entity['category']] + [num2name(x, entity, work.hierarchy_values) for x in calc.info[ entity['source'] ]]
+                            )
+                        except KeyError:
+                            pass
                     else:
-                        try: found_topics.append( [entity['category'], num2name(calc.info.get(entity['source']), entity, work.hierarchy_values)] )
-                        except KeyError: pass
+                        try:
+                            found_topics.append(
+                                [entity['category'], num2name(calc.info.get(entity['source']), entity, work.hierarchy_values)]
+                            )
+                        except KeyError:
+                            pass
 
                 j, out = 0, ''
                 for t in found_topics:
@@ -143,9 +154,16 @@ for target in target_source:
                     output_lines += str(calc.convergence) + "\n"
                 if calc.tresholds:
                     for i in range(len(calc.tresholds)):
-                        try: ncycles = calc.ncycles[i]
-                        except IndexError: ncycles = ""
-                        output_lines += "%1.2e" % calc.tresholds[i][0] + " "*2 + "%1.5f" % calc.tresholds[i][1] + " "*2 + "%1.4f" % calc.tresholds[i][2] + " "*2 + "%1.4f" % calc.tresholds[i][3] + " "*2 + "E=" + "%1.4f" % calc.tresholds[i][4] + " eV" + " "*2 + "(%s)" % ncycles + "\n"
+                        try:
+                            ncycles = calc.ncycles[i]
+                        except IndexError:
+                            ncycles = "^"
+                        output_lines += "%1.2e" % calc.tresholds[i][0] + " " * 2 + \
+                                        "%1.5f" % calc.tresholds[i][1] + " " * 2 + \
+                                        "%1.4f" % calc.tresholds[i][2] + " " * 2 + \
+                                        "%1.4f" % calc.tresholds[i][3] + " " * 2 + \
+                                        "E=" + ("%1.4f" % calc.tresholds[i][4] if calc.tresholds[i][4] else "^") + " eV" + " " * 2 + \
+                                        "(%s)" % ncycles + "\n"
 
             # -s option
             if args.structures:
@@ -160,8 +178,10 @@ for target in target_source:
 
             # -c option
             if args.cif:
-                try: calc.structures[ args.cif ]
-                except IndexError: output_lines += "Warning! Structure "+args.cif+" not found!" + "\n"
+                try:
+                    calc.structures[args.cif]
+                except IndexError:
+                    output_lines += "Warning! Structure " + args.cif + " not found!" + "\n"
                 else:
                     N = args.cif if args.cif > 0 else len(calc.structures) + 1 + args.cif
                     comment = calc.info['formula'] + " extracted from " + task + " (structure N " + str(N) + ")"
@@ -173,7 +193,7 @@ for target in target_source:
 
             # -m option
             if args.module:
-                if args.module == True:
+                if args.module is True:
                     calc = work.postprocess(calc, dry_run=True)
                     output_lines += "Modules to be invoked: " + str([i for i in calc.apps]) + "\n"
                 else:

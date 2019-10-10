@@ -117,6 +117,7 @@ def cmp_e_conv(vals):
 
 def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     parameters = cell_to_cellpar(structure.cell)
+
     cif_data = "# " + comment + "\n\n" if comment else ''
     cif_data += 'data_tilde_project\n'
     cif_data += '_cell_length_a    ' + "%2.6f" % parameters[0] + "\n"
@@ -125,19 +126,21 @@ def generate_cif(structure, comment=None, symops=['+x,+y,+z']):
     cif_data += '_cell_angle_alpha ' + "%2.6f" % parameters[3] + "\n"
     cif_data += '_cell_angle_beta  ' + "%2.6f" % parameters[4] + "\n"
     cif_data += '_cell_angle_gamma ' + "%2.6f" % parameters[5] + "\n"
-    cif_data += "_symmetry_space_group_name_H-M 'P1'" + "\n"
+    cif_data += "_symmetry_space_group_name_H-M 'P1'" + "\n\n"
     cif_data += 'loop_' + "\n"
     cif_data += '_symmetry_equiv_pos_as_xyz' + "\n"
     for i in symops:
         cif_data += i + "\n"
-    cif_data += 'loop_' + "\n"
+
+    cif_data += '\nloop_' + "\n"
+    cif_data += '_atom_site_label' + "\n"
     cif_data += '_atom_site_type_symbol' + "\n"
     cif_data += '_atom_site_fract_x' + "\n"
     cif_data += '_atom_site_fract_y' + "\n"
     cif_data += '_atom_site_fract_z' + "\n"
     pos = structure.get_scaled_positions()
     for n, i in enumerate(structure):
-        cif_data += "%s   % 1.8f   % 1.8f   % 1.8f\n" % (i.symbol, pos[n][0], pos[n][1], pos[n][2])
+        cif_data += "%s   %s   % 1.8f   % 1.8f   % 1.8f\n" % (i.symbol, i.symbol, pos[n][0], pos[n][1], pos[n][2])
     return cif_data
 
 def generate_xyz(atoms):

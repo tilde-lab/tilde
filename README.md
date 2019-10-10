@@ -25,7 +25,7 @@ Run ```pip install -r requirements.txt``` to install Python dependencies.
 Finally, ensure if the framework is ready:
 
 ```shell
-./utils/tilde.sh -x
+./utils/tilde -x
 ```
 
 Additionally, installation is covered in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc).
@@ -33,19 +33,19 @@ Additionally, installation is covered in [this blog post](https://blog.tilde.pro
 ## Usage
 
 ```shell
-./utils/tilde.sh --help
+./utils/tilde --help
 ```
 
 For example, to scan folder(s) recursively (**-r**), with terse print (**-t**), showing information on calculation metadata (**-i**) and convergence (**-v**) and adding results to a database (**-a**):
 
 ```shell
-./utils/tilde.sh /home/user/work1 /home/work2 -r -t -v -a -i
+./utils/tilde /home/user/work1 /home/work2 -r -t -v -a -i
 ```
 
 Other example: for the perovskite structures (shipped with Tilde), extract the distortion of the MO6-octahedra wrt cubic phase (in Euler angles). Here the **-m** switch invokes **perovskite_tilting** module (see **apps** folder):
 
 ```shell
-./utils/tilde.sh tilde/tests/apps/perovskite_tilting/outputs -m perovskite_tilting
+./utils/tilde tilde/tests/apps/perovskite_tilting/outputs -m perovskite_tilting
 ```
 
 ## GUI
