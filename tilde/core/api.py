@@ -2,7 +2,7 @@
 # Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import os, sys
 import re
@@ -26,6 +26,7 @@ from ase.geometry import cell_to_cellpar
 from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 
+import json as _json
 import ujson as json
 import six
 
@@ -114,9 +115,9 @@ class API:
                     # compiling table columns:
                     if hasattr(self.Apps[appname]['appmodule'], 'cell_wrapper'):
                         self.hierarchy.append({
-                            'cid': (2000+n),
+                            'cid': (2000 + n),
                             'category': appmanifest['appcaption'],
-                            'sort': (2000+n),
+                            'sort': (2000 + n),
                             'has_column': True,
                             'cell_wrapper': getattr(self.Apps[appname]['appmodule'], 'cell_wrapper')
                         })
@@ -190,7 +191,7 @@ class API:
         formula = ''
         for atom in atoms:
             n = len(types[labels[atom]])
-            if n==1: n = ''
+            if n == 1: n = ''
             else: n = str(n)
             formula += atom + n
         return formula
@@ -387,7 +388,7 @@ class API:
             if len(calc.info['elements']) == 1: calc.info['expanded'] = 1
             if not calc.info['expanded']:
                 calc.info['expanded'] = reduce(gcd, calc.info['contents'])
-            for n, i in enumerate([x//calc.info['expanded'] for x in calc.info['contents']]):
+            for n, i in enumerate([x // calc.info['expanded'] for x in calc.info['contents']]):
                 if i == 1:
                     calc.info['standard'] += calc.info['elements'][n]
                 else:
@@ -445,10 +446,10 @@ class API:
         if found.error:
             return None, found.error
 
-        calc.info['sg'] = found.i
-        calc.info['ng'] = found.n
-        calc.info['symmetry'] = found.symmetry
-        calc.info['spg'] = "%s &mdash; %s" % (found.n, found.i)
+        calc.info['sg'] = found.sg
+        calc.info['ng'] = found.ng
+        calc.info['spg'] = "%s &mdash; %s" % (found.ng, found.sg)
+        calc.info['symmetry'] = found.system
         calc.info['pg'] = found.pg
         calc.info['dg'] = found.dg
 
@@ -580,10 +581,10 @@ class API:
             for f in calc.related_files:
                 calc.download_size += os.stat(f).st_size
 
-        ormcalc = model.Calculation(checksum = checksum)
+        ormcalc = model.Calculation(checksum=checksum)
 
         if calc._calcset:
-            ormcalc.meta_data = model.Metadata(chemical_formula = calc.info['standard'], download_size = calc.download_size)
+            ormcalc.meta_data = model.Metadata(chemical_formula=calc.info['standard'], download_size=calc.download_size)
 
             for child in session.query(model.Calculation).filter(model.Calculation.checksum.in_(calc._calcset)).all():
                 ormcalc.children.append(child)
@@ -619,7 +620,7 @@ class API:
                         phonons_json[-1]['ph_k_degeneracy'] = calc.phonons['ph_k_degeneracy'][bzpoint]
 
                 ormcalc.phonons = model.Phonons()
-                ormcalc.spectra.append( model.Spectra(kind = model.Spectra.PHONON, eigenvalues = json.dumps(phonons_json)) )
+                ormcalc.spectra.append( model.Spectra(kind=model.Spectra.PHONON, eigenvalues=json.dumps(phonons_json)) )
 
             # prepare electron data for saving TODO re-structure this
             for task in ['dos', 'bands']: # projected?
@@ -627,32 +628,35 @@ class API:
                     calc.electrons[task] = calc.electrons[task].todict()
 
             if calc.electrons['dos'] or calc.electrons['bands']:
-                ormcalc.electrons = model.Electrons(gap = calc.info['bandgap'])
+                ormcalc.electrons = model.Electrons(gap=calc.info['bandgap'])
                 if 'bandgaptype' in calc.info:
                     ormcalc.electrons.is_direct = 1 if calc.info['bandgaptype'] == 'direct' else -1
                 ormcalc.spectra.append(model.Spectra(
-                    kind = model.Spectra.ELECTRON,
-                    dos = json.dumps(calc.electrons['dos']),
-                    bands = json.dumps(calc.electrons['bands']),
-                    projected = json.dumps(calc.electrons['projected']),
-                    eigenvalues = json.dumps(calc.electrons['eigvals'])
+                    kind=model.Spectra.ELECTRON,
+                    dos=json.dumps(calc.electrons['dos']),
+                    bands=json.dumps(calc.electrons['bands']),
+                    projected=json.dumps(calc.electrons['projected']),
+                    eigenvalues=json.dumps(calc.electrons['eigvals'])
                 ))
 
             # construct ORM for other props
             calc.related_files = list(map(virtualize_path, calc.related_files))
-            ormcalc.meta_data = model.Metadata(location = calc.info['location'], finished = calc.info['finished'], raw_input = calc.info['input'], modeling_time = calc.info['duration'], chemical_formula = html_formula(calc.info['standard']), download_size = calc.download_size, filenames = json.dumps(calc.related_files))
+            ormcalc.meta_data = model.Metadata(location=calc.info['location'], finished=calc.info['finished'], raw_input=calc.info['input'], modeling_time=calc.info['duration'], chemical_formula=html_formula(calc.info['standard']), download_size=calc.download_size, filenames=json.dumps(calc.related_files))
 
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
-            codeversion = model.Codeversion.as_unique(session, content = calc.info['prog'])
+            codeversion = model.Codeversion.as_unique(session, content=calc.info['prog'])
 
             codeversion.instances.append(ormcalc.meta_data)
             codefamily.versions.append(codeversion)
 
-            pot = model.Pottype.as_unique(session, name = calc.info['H'])
+            pot = model.Pottype.as_unique(session, name=calc.info['H'])
             pot.instances.append(ormcalc)
-            ormcalc.recipinteg = model.Recipinteg(kgrid = calc.info['k'], kshift = calc.info['kshift'], smearing = calc.info['smear'], smeartype = calc.info['smeartype'])
-            ormcalc.basis = model.Basis(kind = calc.info['ansatz'], content = json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None)
-            ormcalc.energy = model.Energy(convergence = json.dumps(calc.convergence), total = calc.info['energy'])
+            ormcalc.recipinteg = model.Recipinteg(kgrid=calc.info['k'], kshift=calc.info['kshift'], smearing=calc.info['smear'], smeartype=calc.info['smeartype'])
+            ormcalc.basis = model.Basis(
+                kind=calc.info['ansatz'],
+                content=_json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None # NB. ujson fails on NaN
+            )
+            ormcalc.energy = model.Energy(convergence=json.dumps(calc.convergence), total=calc.info['energy'])
 
             ormcalc.spacegroup = model.Spacegroup(n=calc.info['ng'])
             ormcalc.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'], dimensions=calc.info['dims'])
@@ -661,11 +665,15 @@ class API:
 
             for n, ase_repr in enumerate(calc.structures):
                 is_final = True if n == len(calc.structures)-1 else False
-                struct = model.Structure(step = n, final = is_final)
+                struct = model.Structure(step=n, final=is_final)
 
                 s = cell_to_cellpar(ase_repr.cell)
-                struct.lattice = model.Lattice(a=s[0], b=s[1], c=s[2], alpha=s[3], beta=s[4], gamma=s[5], a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1], a13=ase_repr.cell[0][2], a21=ase_repr.cell[1][0], a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2], a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1], a33=ase_repr.cell[2][2])
-
+                struct.lattice = model.Lattice(
+                    a=s[0], b=s[1], c=s[2], alpha=s[3], beta=s[4], gamma=s[5],
+                    a11=ase_repr.cell[0][0], a12=ase_repr.cell[0][1], a13=ase_repr.cell[0][2],
+                    a21=ase_repr.cell[1][0], a22=ase_repr.cell[1][1], a23=ase_repr.cell[1][2],
+                    a31=ase_repr.cell[2][0], a32=ase_repr.cell[2][1], a33=ase_repr.cell[2][2]
+                )
                 #rmts =      ase_repr.get_array('rmts') if 'rmts' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 charges =   ase_repr.get_array('charges') if 'charges' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 magmoms =   ase_repr.get_array('magmoms') if 'magmoms' in ase_repr.arrays else [None for j in range(len(ase_repr))]
