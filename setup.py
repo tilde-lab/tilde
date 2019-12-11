@@ -101,6 +101,7 @@ setup(
     scripts=[
         "utils/tilde",
         "utils/entry.py",
-        "utils/gui_server.py"
+        "utils/gui_server.py",
+        "utils/chk_tilde_install.py"
     ]
 )
