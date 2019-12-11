@@ -51,22 +51,22 @@ except (IOError, ImportError, RuntimeError) as e:
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
-    'numpy >= 1.9',
+    'numpy',
     'ujson',
     'bcrypt',
     'importlib',
     'pg8000',
-    'sqlalchemy >= 1.0.12',
+    'sqlalchemy',
     'argparse',
-    'ase >= 3.15',
+    'ase',
     'spglib',
-    'tornado >= 4.3.0',
+    'tornado == 4.5.3',
     'sockjs-tornado',
     'websocket-client',
     'futures',
     'httplib2',
     'quantum_esperanto',
-    'pycrystal >= 1.0.2'
+    'pycrystal'
 ]
 
 setup(

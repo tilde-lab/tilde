@@ -1,17 +1,17 @@
-numpy >= 1.9
+numpy
 ujson
 bcrypt
-nose >= 1.3.4
+nose
 pypandoc
-pg8000==1.12.3
-sqlalchemy >= 1.0.12
+pg8000
+sqlalchemy
 argparse
-ase==3.16.2
+ase
 spglib
 tornado==4.5.3
 sockjs-tornado
 websocket-client==0.52.0
 futures
-httplib2==0.11.3
+httplib2
 quantum_esperanto
 pycrystal
