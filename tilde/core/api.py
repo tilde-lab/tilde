@@ -2,7 +2,7 @@
 # Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.9.1"
+__version__ = "0.9.3"
 
 import os, sys
 import re
@@ -34,7 +34,28 @@ import six
 class API:
     version = __version__
     __shared_state = {}
-    formula_sequence = ['Fr','Cs','Rb','K','Na','Li',  'Be','Mg','Ca','Sr','Ba','Ra',  'Sc','Y','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb',  'Ac','Th','Pa','U','Np','Pu',  'Ti','Zr','Hf',  'V','Nb','Ta',  'Cr','Mo','W',  'Fe','Ru','Os',  'Co','Rh','Ir',  'Mn','Tc','Re',  'Ni','Pd','Pt',  'Cu','Ag','Au',  'Zn','Cd','Hg',  'B','Al','Ga','In','Tl',  'Pb','Sn','Ge','Si','C',   'N','P','As','Sb','Bi',   'H',   'Po','Te','Se','S','O',  'At','I','Br','Cl','F',  'He','Ne','Ar','Kr','Xe','Rn']
+    formula_sequence = [
+        'Fr','Cs','Rb','K','Na','Li',
+        'Be','Mg','Ca','Sr','Ba','Ra',
+        'Sc','Y','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb',
+        'Ac','Th','Pa','U','Np','Pu',
+        'Ti','Zr','Hf',
+        'V','Nb','Ta',
+        'Cr','Mo','W',
+        'Fe','Ru','Os',
+        'Co','Rh','Ir',
+        'Mn','Tc','Re',
+        'Ni','Pd','Pt',
+        'Cu','Ag','Au',
+        'Zn','Cd','Hg',
+        'B','Al','Ga','In','Tl',
+        'Pb','Sn','Ge','Si','C',
+        'N','P','As','Sb','Bi',
+        'H',
+        'Po','Te','Se','S','O',
+        'At','I','Br','Cl','F',
+        'He','Ne','Ar','Kr','Xe','Rn'
+    ]
 
     def __init__(self, settings=settings):
         self.settings = settings
@@ -58,14 +79,14 @@ class API:
             if not os.path.isfile( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/' + parsername + '.py' ):
                 raise RuntimeError('Parser API Error: Parser code for ' + parsername + ' is missing!')
             try:
-                parsermanifest = json.loads( open( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ).read() )
+                parsermanifest = json.loads(open( os.path.realpath(BASE_DIR + '/../parsers') + '/' + parsername + '/manifest.json' ).read())
             except:
                 raise RuntimeError('Parser API Error: Parser manifest for ' + parsername + ' has corrupted format!')
 
             if (not 'enabled' in parsermanifest or not parsermanifest['enabled']) and not self.settings['debug_regime']:
                 continue
 
-            All_parsers[parsername] = importlib.import_module('tilde.parsers.' + parsername + '.' + parsername) # all imported modules will be stored here
+            All_parsers[parsername] = importlib.import_module('tilde.parsers.' + parsername + '.' + parsername) # all imported modules will be here
 
         # replace modules by classes and check *fingerprints* method
         for parser, module in All_parsers.items():
@@ -101,7 +122,7 @@ class API:
                     raise RuntimeError('Module API Error: no appdata tag for ' + appname + '!')
                 if 'onprocess' in appmanifest:
                     try:
-                        app = __import__('tilde.apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # this means: from foo import Foo
+                        app = __import__('tilde.apps.' + appname + '.' + appname, fromlist=[appname.capitalize()]) # from foo import Foo
                     except ImportError:
                         raise RuntimeError('Module API Error: module ' + appname + ' is invalid or not found!')
                     self.Apps[appname] = {
@@ -285,7 +306,7 @@ class API:
             error = "routine %s parser error in %s: %s" % ( parser_name, parsable, e )
         except:
             exc_type, exc_value, exc_tb = sys.exc_info()
-            error = "unexpected %s parser error in %s:\n %s" % ( parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+            error = "unexpected %s parser error in %s:\n %s" % (parser_name, parsable, "".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
         yield None, error
 
     def parse(self, parsable):
@@ -549,7 +570,7 @@ class API:
                     AppInstance = appclass['appmodule'](calc)
                 except:
                     exc_type, exc_value, exc_tb = sys.exc_info()
-                    errmsg = "Fatal error in %s module:\n %s" % ( appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )) )
+                    errmsg = "Fatal error in %s module:\n %s" % (appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
                     calc.apps[appname]['error'] = errmsg
                     calc.warning( errmsg )
                 else:
@@ -601,9 +622,15 @@ class API:
                     # re-orientate eigenvectors
                     for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
                         for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])//3):
-                            eigv = array([calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]])
+                            eigv = array([
+                                calc.phonons['ph_eigvecs'][bzpoint][i][j*3],
+                                calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1],
+                                calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2]
+                            ])
                             R = dot( eigv, calc.structures[-1].cell ).tolist()
-                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = [round(x, 3) for x in R]
+                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3], \
+                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3+1], \
+                            calc.phonons['ph_eigvecs'][bzpoint][i][j*3+2] = [round(x, 3) for x in R]
 
                     try: irreps = calc.phonons['irreps'][bzpoint]
                     except KeyError:
@@ -612,7 +639,7 @@ class API:
                             empty.append('')
                         irreps = empty
 
-                    phonons_json.append({  'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]  })
+                    phonons_json.append({'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]})
                     if bzpoint == '0 0 0':
                         phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
                         phonons_json[-1]['raman_active'] = calc.phonons['raman_active']
@@ -641,8 +668,15 @@ class API:
 
             # construct ORM for other props
             calc.related_files = list(map(virtualize_path, calc.related_files))
-            ormcalc.meta_data = model.Metadata(location=calc.info['location'], finished=calc.info['finished'], raw_input=calc.info['input'], modeling_time=calc.info['duration'], chemical_formula=html_formula(calc.info['standard']), download_size=calc.download_size, filenames=json.dumps(calc.related_files))
-
+            ormcalc.meta_data = model.Metadata(
+                location=calc.info['location'],
+                finished=calc.info['finished'],
+                raw_input=calc.info['input'],
+                modeling_time=calc.info['duration'],
+                chemical_formula=html_formula(calc.info['standard']),
+                download_size=calc.download_size,
+                filenames=json.dumps(calc.related_files)
+            )
             codefamily = model.Codefamily.as_unique(session, content = calc.info['framework'])
             codeversion = model.Codeversion.as_unique(session, content=calc.info['prog'])
 
@@ -651,17 +685,30 @@ class API:
 
             pot = model.Pottype.as_unique(session, name=calc.info['H'])
             pot.instances.append(ormcalc)
-            ormcalc.recipinteg = model.Recipinteg(kgrid=calc.info['k'], kshift=calc.info['kshift'], smearing=calc.info['smear'], smeartype=calc.info['smeartype'])
+            ormcalc.recipinteg = model.Recipinteg(
+                kgrid=calc.info['k'],
+                kshift=calc.info['kshift'],
+                smearing=calc.info['smear'],
+                smeartype=calc.info['smeartype']
+            )
             ormcalc.basis = model.Basis(
                 kind=calc.info['ansatz'],
-                content=_json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None # NB. ujson fails on NaN
+                content=_json.dumps(calc.electrons['basis_set']) if calc.electrons['basis_set'] else None # NB. ujson fails here on NaN
             )
             ormcalc.energy = model.Energy(convergence=json.dumps(calc.convergence), total=calc.info['energy'])
 
             ormcalc.spacegroup = model.Spacegroup(n=calc.info['ng'])
-            ormcalc.struct_ratios = model.Struct_ratios(chemical_formula=calc.info['standard'], formula_units=calc.info['expanded'], nelem=calc.info['nelem'], dimensions=calc.info['dims'])
+            ormcalc.struct_ratios = model.Struct_ratios(
+                chemical_formula=calc.info['standard'],
+                formula_units=calc.info['expanded'],
+                nelem=calc.info['nelem'],
+                dimensions=calc.info['dims']
+            )
             if len(calc.tresholds) > 1:
-                ormcalc.struct_optimisation = model.Struct_optimisation(tresholds=json.dumps(calc.tresholds), ncycles=json.dumps(calc.ncycles))
+                ormcalc.struct_optimisation = model.Struct_optimisation(
+                    tresholds=_json.dumps(calc.tresholds), # NB. ujson fails here on NaN
+                    ncycles=json.dumps(calc.ncycles)
+                )
 
             for n, ase_repr in enumerate(calc.structures):
                 is_final = True if n == len(calc.structures)-1 else False
@@ -678,7 +725,7 @@ class API:
                 charges =   ase_repr.get_array('charges') if 'charges' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 magmoms =   ase_repr.get_array('magmoms') if 'magmoms' in ase_repr.arrays else [None for j in range(len(ase_repr))]
                 for n, i in enumerate(ase_repr):
-                    struct.atoms.append( model.Atom( number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, charge=charges[n], magmom=magmoms[n] ) )
+                    struct.atoms.append(model.Atom(number=chemical_symbols.index(i.symbol), x=i.x, y=i.y, z=i.z, charge=charges[n], magmom=magmoms[n]))
 
                 ormcalc.structures.append(struct)
             # TODO Forces
@@ -773,7 +820,10 @@ class API:
 
         # for all types of entries
         if len(C.references):
-            left_references = [ int(i[0]) for i in session.query(model.Reference.reference_id).join(model.metadata_references, model.Reference.reference_id == model.metadata_references.c.reference_id).filter(model.metadata_references.c.checksum == checksum).all() ]
+            left_references = [ int(i[0]) for i in session.query(model.Reference.reference_id).join(
+                model.metadata_references,
+                model.Reference.reference_id == model.metadata_references.c.reference_id
+            ).filter(model.metadata_references.c.checksum == checksum).all() ]
             session.execute( model.delete( model.metadata_references ).where( model.metadata_references.c.checksum == checksum ) )
 
             # remove the whole citation?
@@ -804,8 +854,15 @@ class API:
 
         cur_depth = 0
 
-        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.Grid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.Grid.checksum, model.Grid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(checksums)).all():
-
+        for nested_depth, grid_item, download_size in session.query(
+            model.Calculation.nested_depth,
+            model.Grid.info,
+            model.Metadata.download_size
+        ).filter(
+            model.Calculation.checksum == model.Grid.checksum,
+            model.Grid.checksum == model.Metadata.checksum,
+            model.Calculation.checksum.in_(checksums)
+        ).all():
             if nested_depth > cur_depth: cur_depth = nested_depth
 
             grid_item = json.loads(grid_item)
@@ -881,8 +938,15 @@ class API:
         parent_grid = session.query(model.Grid).get(parent)
         info_obj = json.loads(parent_grid.info)
 
-        for nested_depth, grid_item, download_size in session.query(model.Calculation.nested_depth, model.Grid.info, model.Metadata.download_size).filter(model.Calculation.checksum == model.Grid.checksum, model.Grid.checksum == model.Metadata.checksum, model.Calculation.checksum.in_(filtered_addendum)).all():
-
+        for nested_depth, grid_item, download_size in session.query(
+            model.Calculation.nested_depth,
+            model.Grid.info,
+            model.Metadata.download_size
+        ).filter(
+            model.Calculation.checksum == model.Grid.checksum,
+            model.Grid.checksum == model.Metadata.checksum,
+            model.Calculation.checksum.in_(filtered_addendum)
+        ).all():
             if nested_depth >= parent_calc.nested_depth:
                 parent_calc.nested_depth = nested_depth + 1
 
