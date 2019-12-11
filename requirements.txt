@@ -14,4 +14,4 @@ websocket-client==0.52.0
 futures
 httplib2==0.11.3
 quantum_esperanto
-pycrystal
+pycrystal==1.0.4
