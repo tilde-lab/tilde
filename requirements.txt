@@ -6,7 +6,7 @@ pypandoc
 pg8000
 sqlalchemy
 argparse
-ase
+ase==3.19.0
 spglib
 tornado==4.5.3
 sockjs-tornado
