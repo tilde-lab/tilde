@@ -13,5 +13,5 @@ sockjs-tornado
 websocket-client==0.52.0
 futures
 httplib2
-quantum_esperanto
+quantum_esperanto==0.3
 pycrystal
