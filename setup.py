@@ -60,7 +60,7 @@ install_requires = [
     'argparse',
     'ase',
     'spglib',
-    'tornado == 4.5.3',
+    'tornado == 6.0.3',
     'sockjs-tornado',
     'websocket-client',
     'futures',
