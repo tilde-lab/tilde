@@ -13,7 +13,7 @@ import time
 import logging
 import argparse
 
-from numpy import array
+from numpy import nan
 from numpy.linalg import det
 
 import chk_tilde_install
@@ -121,7 +121,7 @@ for target in target_source:
             # -i option
             if args.info:
                 found_topics = []
-                skip_topics = ['location', 'elements', 'nelem', 'natom', 'spg']
+                skip_topics = {'location', 'elements', 'nelem', 'natom', 'spg', 'dtype', 'year', 'article_title', 'doi', 'pubdata'}
                 for n, entity in enumerate(work.hierarchy):
                     if entity['cid'] > 1999 or entity['source'] in skip_topics:
                         continue # apps hierarchy
@@ -158,11 +158,11 @@ for target in target_source:
                             ncycles = calc.ncycles[i]
                         except IndexError:
                             ncycles = "^"
-                        output_lines += "{:12s}".format(str(calc.tresholds[i][0])) + "  " + \
-                                        "{:12s}".format(str(calc.tresholds[i][1])) + "  " + \
-                                        "{:12s}".format(str(calc.tresholds[i][2])) + "  " + \
-                                        "{:12s}".format(str(calc.tresholds[i][3])) + "  " + \
-                                        "E={:16s}".format(str(calc.tresholds[i][4])) + " eV" + "  " + \
+                        output_lines += "{:8f}".format(calc.tresholds[i][0]) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][1]) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][2]) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][3]) + "  " + \
+                                        "E={:12f}".format(calc.tresholds[i][4] or nan) + " eV" + "  " + \
                                         "(%s)" % ncycles + "\n"
 
             # -s option
