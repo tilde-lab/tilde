@@ -1,4 +1,4 @@
-numpy
+numpy==1.16.6
 ujson
 bcrypt
 nose
@@ -11,7 +11,6 @@ spglib
 tornado==4.5.3
 sockjs-tornado
 websocket-client==0.52.0
-futures
 httplib2
 quantum_esperanto
 pycrystal

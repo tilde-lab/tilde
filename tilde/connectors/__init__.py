@@ -18,8 +18,8 @@ def viewer_wrap(actual, prefix, kind):
     capt = actual if len(actual) <= 68 else actual[:67] + '...'
     a = htmlentities(actual)
     p = htmlentities(prefix)
-    if kind is 'DIR':
+    if kind == 'DIR':
         return "<li class='directory collapsed'><a href='' rel='" + p + a + "'>" + capt + "</a></li>"
-    elif kind is 'FILE':
+    elif kind == 'FILE':
         ext_class = actual.split('.')[-1]
         return "<li class='file ext_" + ext_class + "'><a href='' rel='" + p + a + "'>" + capt + "</a></li>"

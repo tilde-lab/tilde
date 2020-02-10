@@ -51,7 +51,7 @@ except (IOError, ImportError, RuntimeError) as e:
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
-    'numpy',
+    'numpy == 1.16.6',
     'ujson',
     'bcrypt',
     'importlib',
@@ -63,7 +63,6 @@ install_requires = [
     'tornado == 4.5.3',
     'sockjs-tornado',
     'websocket-client',
-    'futures',
     'httplib2',
     'quantum_esperanto',
     'pycrystal'
@@ -71,7 +70,7 @@ install_requires = [
 
 setup(
     name='tilde',
-    version='0.9.3',
+    version='0.9.4',
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
@@ -84,10 +83,7 @@ setup(
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8'
