@@ -1,6 +1,7 @@
 
 import os
 from operator import itemgetter
+from pprint import pformat
 
 import tilde.core.model as model
 from tilde.core.settings import EXAMPLE_DIR
@@ -35,7 +36,8 @@ class Test_Topics(TestLayerDB):
             {'topic': u'1',                              'cid': 15},
             {'topic': u'0',                              'cid': 28},
             {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
-            {'topic': u'2',                              'cid': 1006}
+            {'topic': u'2',                              'cid': 1006},
+            {'topic': u'0',                              'cid': 106}
         ],
         "EPVVPXXAWI6K2D746ETSOSMHE42TKFWRIQJ4SUASFAZAECI": [
             {'topic': u'Si16',                           'cid': 1},
@@ -58,7 +60,8 @@ class Test_Topics(TestLayerDB):
             {'topic': u'0',                              'cid': 26},
             {'topic': u'0',                              'cid': 28},
             {'topic': u'8 &mdash; Cm',                   'cid': 50},
-            {'topic': u'2',                              'cid': 1006}
+            {'topic': u'2',                              'cid': 1006},
+            {'topic': u'0',                              'cid': 106}
         ]
     }
     expected_topics_after = {
@@ -91,7 +94,8 @@ class Test_Topics(TestLayerDB):
             {'topic': u'1',                              'cid': 15},
             {'topic': u'0',                              'cid': 28},
             {'topic': u'221 &mdash; Pm-3m',              'cid': 50},
-            {'topic': u'2',                              'cid': 1006}
+            {'topic': u'2',                              'cid': 1006},
+            {'topic': u'0',                              'cid': 106}
         ],
         "EPVVPXXAWI6K2D746ETSOSMHE42TKFWRIQJ4SUASFAZAECI": [
             {'topic': u'Si16',                           'cid': 1},
@@ -120,7 +124,8 @@ class Test_Topics(TestLayerDB):
             {'topic': u'0',                              'cid': 26},
             {'topic': u'0',                              'cid': 28},
             {'topic': u'8 &mdash; Cm',                   'cid': 50},
-            {'topic': u'2',                              'cid': 1006}
+            {'topic': u'2',                              'cid': 1006},
+            {'topic': u'0',                              'cid': 106}
         ]
     }
     checksums = list(expected_topics_before)
@@ -138,7 +143,10 @@ class Test_Topics(TestLayerDB):
             self.expected_topics_before[checksum].sort(key=itemgetter('cid', 'topic'))
 
         try: self.assertEqual(self.expected_topics_before, obtained_topics_before,
-            "Expected and found topics *before* correction differ,\n    expected:\n%s\n    found:\n%s\n" % (self.expected_topics_before, obtained_topics_before))
+            "Expected and found topics *before* correction differ,\n    expected:\n%s\n    found:\n%s\n" % (
+                pformat(self.expected_topics_before),
+                pformat(obtained_topics_before)
+            ))
         except:
             TestLayerDB.failed = True
             raise
@@ -156,7 +164,10 @@ class Test_Topics(TestLayerDB):
                 self.expected_topics_after[checksum].sort(key=itemgetter('cid', 'topic'))
 
             try: self.assertEqual(self.expected_topics_after, obtained_topics_after,
-                "Expected and found topics *after* correction differ,\n  expected:\n%s\n  found:\n%s\n" % (self.expected_topics_after, obtained_topics_after))
+                "Expected and found topics *after* correction differ,\n  expected:\n%s\n  found:\n%s\n" % (
+                    pformat(self.expected_topics_after),
+                    pformat(obtained_topics_after)
+                ))
             except:
                 TestLayerDB.failed = True
                 raise
