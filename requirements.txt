@@ -10,7 +10,7 @@ ase
 spglib
 tornado==4.5.3
 sockjs-tornado
-websocket-client==0.52.0
+websocket-client==0.57.0
 httplib2
 quantum_esperanto
 pycrystal
