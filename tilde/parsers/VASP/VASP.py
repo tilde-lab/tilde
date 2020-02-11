@@ -12,41 +12,50 @@ from tilde.parsers import Output
 #from tilde.core.electron_structure import Edos TODO
 
 
-# TODO: kpoints, dos, eigenvalues
-current_parser = VaspParser(whitelist=['incar', 'generator', 'atominfo', 'parameters', 'energy', 'structure:finalpos'])
-
 class XML_Output(Output):
+
+    # TODO: kpoints, dos, eigenvalues, etc.
+    obligatory_tags = ['incar', 'generator', 'atominfo', 'parameters', 'structure:finalpos']
+    current_parser = VaspParser(whitelist=obligatory_tags + ['energy'])
+
     def __init__(self, filename):
         Output.__init__(self, filename)
         self.related_files.append(filename)
-
         self.info['framework'] = 0x2
 
         try:
-            repr = current_parser.parse_file(filename)['modeling']
-        except:
-            raise RuntimeError('VASP output corrupted or not correctly finalized!')
+            repr = XML_Output.current_parser.parse_file(filename)['modeling']
+        except Exception as ex:
+            raise RuntimeError('VASP output issue: %s' % ex)
+
+        for tag in XML_Output.obligatory_tags:
+            if tag not in repr:
+                raise RuntimeError('VASP output contains too little necessary data')
 
         self.incar = repr['incar']
         self.parameters = flatten_dict(repr['parameters'])
         self.info['prog'] = repr['generator'].get('version')
 
         self.info['ansatz'] = 0x2
+        self.electrons['basis_set'] = [
+            (item[1], item[4]) for item in repr['atominfo']['array:atomtypes']['values']
+        ]
 
         try:
-            self.electrons['basis_set'] = [
-                (item[1], item[4]) for item in repr['atominfo']['array:atomtypes']['values']
-            ]
-            self.info['energy'] = repr['calculation']['energy']['e_wo_entrp']/Hartree # TODO handle convergence
+            self.info['energy'] = repr['calculation'][0]['energy']['e_wo_entrp'] \
+                if type(repr['calculation']) == list \
+                else repr['calculation']['energy']['e_wo_entrp']
+        except KeyError:
+            raise RuntimeError('VASP output contains no energy')
 
-            self.structures.append(Atoms(
-                symbols=[item[0] for item in repr['atominfo']['array:atoms']['values']],
-                cell=repr['structure:finalpos']['crystal']['basis'],
-                scaled_positions=repr['structure:finalpos']['positions'],
-                pbc=True
-            ))
-        except RuntimeError:
-            raise RuntimeError('VASP output corrupted or not correctly finalized!')
+        self.info['energy'] /= Hartree # TODO handle convergence
+
+        self.structures.append(Atoms(
+            symbols=[item[0] for item in repr['atominfo']['array:atoms']['values']],
+            cell=repr['structure:finalpos']['crystal']['basis'],
+            scaled_positions=repr['structure:finalpos']['positions'],
+            pbc=True
+        ))
 
         self.potcar_sequence = [item[0] for item in self.electrons['basis_set']]
         self.set_method()

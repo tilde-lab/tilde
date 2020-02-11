@@ -104,8 +104,10 @@ def classify(tilde_obj):
         tilde_obj.info['contents'].pop(e) # TODO
         tilde_obj.info['impurity' + str(num)] = impurity_element + str(content) if content > 1 else impurity_element
         num += 1
-        if impurity_element in Perovskite_Structure.A: A_hosts[A_hosts.keys()[0]] += content
-        elif impurity_element in Perovskite_Structure.B: B_hosts[B_hosts.keys()[0]] += content
+        if impurity_element in Perovskite_Structure.A:
+            A_hosts[list(A_hosts.keys())[0]] += content
+        elif impurity_element in Perovskite_Structure.B:
+            B_hosts[list(B_hosts.keys())[0]] += content
 
     for n, i in enumerate(tilde_obj.info['elements']):
         if i in A_hosts:
