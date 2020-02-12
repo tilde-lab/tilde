@@ -51,7 +51,7 @@ except (IOError, ImportError, RuntimeError) as e:
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
-    'numpy == 1.16.6',
+    'numpy == 1.18.1',
     'ujson',
     'bcrypt',
     'importlib',
