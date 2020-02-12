@@ -158,10 +158,10 @@ for target in target_source:
                             ncycles = calc.ncycles[i]
                         except IndexError:
                             ncycles = "^"
-                        output_lines += "{:8f}".format(calc.tresholds[i][0]) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][1]) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][2]) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][3]) + "  " + \
+                        output_lines += "{:8f}".format(calc.tresholds[i][0] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][1] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][2] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[i][3] or nan) + "  " + \
                                         "E={:12f}".format(calc.tresholds[i][4] or nan) + " eV" + "  " + \
                                         "(%s)" % ncycles + "\n"
 
