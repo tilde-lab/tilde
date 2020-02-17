@@ -152,6 +152,7 @@ INSERT INTO hierarchy_values (cid, num, name) VALUES (6, 5, 'magnetic moments');
 INSERT INTO hierarchy_values (cid, num, name) VALUES (6, 6, 'phonons');
 INSERT INTO hierarchy_values (cid, num, name) VALUES (6, 7, 'phonon dispersion');
 INSERT INTO hierarchy_values (cid, num, name) VALUES (6, 8, 'static dielectric constant');
+INSERT INTO hierarchy_values (cid, num, name) VALUES (6, 9, 'elastic properties');
 
 INSERT INTO hierarchy_values (cid, num, name) VALUES (8, 1, 'organic molecule');
 INSERT INTO hierarchy_values (cid, num, name) VALUES (8, 2, 'vacancy defect');

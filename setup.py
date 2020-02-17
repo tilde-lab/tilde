@@ -48,6 +48,8 @@ except (IOError, ImportError, RuntimeError) as e:
     else:
         long_description = ''
 
+from tilde import __version__
+
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
@@ -70,7 +72,7 @@ install_requires = [
 
 setup(
     name='tilde',
-    version='0.9.4',
+    version=__version__,
     description='Materials informatics framework for ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',

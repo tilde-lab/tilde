@@ -62,6 +62,7 @@ class Output:
             'zpe':              None,
             'td':               None
         }
+        self.elastic = {}
 
         # modules output object
         self.apps = {}

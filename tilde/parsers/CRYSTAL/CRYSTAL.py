@@ -29,6 +29,7 @@ class CRYSTOUT(Output):
         self.phonons = result.info['phonons']
         self.electrons = result.info['electrons']
         self.electrons['basis_set']['ps'] = self.electrons['basis_set']['ecp']
+        self.elastic = result.info['elastic']
 
         self.info['framework'] = 0x3
         self.info['ansatz'] = 0x3

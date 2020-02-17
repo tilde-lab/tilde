@@ -2,8 +2,6 @@
 # Functionality exposed as an API
 # Author: Evgeny Blokhin
 
-__version__ = "0.9.3"
-
 import os, sys
 import re
 from fractions import gcd
@@ -14,6 +12,7 @@ from functools import reduce
 
 from numpy import dot, array
 
+from tilde import __version__
 from tilde.core.common import u, is_binary_string, html_formula
 from tilde.core.symmetry import SymmetryHandler
 from tilde.core.settings import BASE_DIR, settings, virtualize_path, get_hierarchy
@@ -382,7 +381,7 @@ class API:
             except:
                 pass
 
-        # applying filter: todo
+        # applying filter: TODO
         if (calc.info['finished'] == 0x1 and self.settings['skip_unfinished']) or \
            (not calc.info['energy'] and self.settings['skip_notenergy']):
             return None, 'data do not satisfy the active filter'
@@ -438,7 +437,9 @@ class API:
         if calc.phonons['ph_k_degeneracy']:
             calc.info['calctypes'].append(0x7)
         if calc.phonons['dielectric_tensor']:
-            calc.info['calctypes'].append(0x8) # CRYSTAL-only!
+            calc.info['calctypes'].append(0x8)
+        if calc.elastic.get('elastic_constants') or calc.elastic.get('elastic_moduli'):
+            calc.info['calctypes'].append(0x9)
         if len(calc.tresholds) > 1:
             calc.info['calctypes'].append(0x3)
             calc.info['optgeom'] = True
