@@ -13,4 +13,4 @@ sockjs-tornado
 websocket-client==0.52.0
 httplib2
 quantum_esperanto
-pycrystal
+pycrystal==1.0.6
