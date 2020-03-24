@@ -94,9 +94,7 @@ for target in target_source:
         print('Target does not exist: ' + target)
         continue
 
-    tasks = work.savvyize(target, recursive=args.recursive, stemma=True)
-
-    for task in tasks:
+    for task in work.savvyize(target, recursive=args.recursive, stemma=True):
 
         detected = False
         for calc, error in work.parse(task):

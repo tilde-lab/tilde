@@ -90,9 +90,8 @@ class API:
         # replace modules by classes and check *fingerprints* method
         for parser, module in All_parsers.items():
             for name, cls in inspect.getmembers(module):
-                if inspect.isclass(cls):
-                    if inspect.isclass(cls) and hasattr(cls, 'fingerprints'):
-                        self.Parsers[cls.__name__] = cls
+                if inspect.isclass(cls) and hasattr(cls, 'fingerprints'):
+                    self.Parsers[cls.__name__] = cls
 
         # *module API*
         # Tilde module (app) is a subfolder (%appfolder%) of apps folder
