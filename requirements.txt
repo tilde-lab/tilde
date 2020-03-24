@@ -1,5 +1,5 @@
 numpy==1.16.6
-ujson
+ujson==2.0.3
 bcrypt
 nose
 pypandoc
