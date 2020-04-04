@@ -3,7 +3,7 @@ ujson
 bcrypt
 nose
 pypandoc
-pg8000
+pg8000==1.15.1
 sqlalchemy
 argparse
 ase
