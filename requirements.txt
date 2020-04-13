@@ -2,7 +2,7 @@ numpy==1.16.6
 ujson
 bcrypt
 nose
-pypandoc
+pypandoc==1.5
 pg8000
 sqlalchemy
 argparse
