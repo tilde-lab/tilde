@@ -53,7 +53,7 @@ from tilde import __version__
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
-    'numpy == 1.16.6',
+    'numpy == 1.18.3',
     'ujson',
     'bcrypt',
     'importlib',
