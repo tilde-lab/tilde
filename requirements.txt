@@ -9,7 +9,7 @@ argparse
 ase
 spglib
 tornado==4.5.3
-sockjs-tornado
+sockjs-tornado==1.0.7
 websocket-client==0.52.0
 httplib2
 quantum_esperanto
