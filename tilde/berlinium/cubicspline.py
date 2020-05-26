@@ -2,7 +2,7 @@
 # http://www.bruunisejs.dk/PythonHacks/rstFiles/200%20PythonHacks.html
 '''Cubic splines are used as yield curves.
 
-Most textbooks, eg [Ralston]_ and [Press & all]_ on numerical mathematics talks 
+Most textbooks, eg [Ralston]_ and [Press & all]_ on numerical mathematics talks
 about the natural splines.
 The following code is inspired by [Kiusalaas]_ allthough the coding follow my
 my own derivation.
@@ -10,11 +10,11 @@ my own derivation.
 One of the interesting things about [Kiusalaas]_ is that he uses numpy in his
 examples. And so did I.
 
-The code below is converted to use class functions, ie classes and the methods 
+The code below is converted to use class functions, ie classes and the methods
 __init__ and __call__.
 The benefit is that the class function is set with some starting values before use.
 
-Further the decorator uFuncConverter is added to the __call__ such that the cubic 
+Further the decorator uFuncConverter is added to the __call__ such that the cubic
 spline behaves like a numpy universal function.
 '''
 from numpy import zeros, ones, float64, array, linspace, asarray, ndarray
@@ -33,11 +33,11 @@ def uFuncConverter(variableIndex):
     **How to use:**
 
     In the example below uFuncConverter is used on the first parameter x:
-    
+
     >>> @uFuncConverter(0)
     ... def test(x, y = 2):
     ...     return x+y
-    ... 
+    ...
     >>> x0 = 4
     >>> x1 = (1, 2, 3)
     >>> x2 = [2, 3, 4]
@@ -107,11 +107,11 @@ class LUdecomp3:
     >>> # f is just called as a function
     >>> print f([5., -5., 4., -5., 5.])
     [2.0, -1.0, 1.0, -1.0, 2.0]
-    
+
     **Reference:**
 
     [Kiusalaas]_ p. 59
-    
+
     '''
     def __init__(self, c, d, e):
         n = len(d)
@@ -144,10 +144,10 @@ class NaturalCubicSpline:
 
     At instantion the class function is prepared to calculate y-values for x-values
     according to the natural cubic spline.
-    
-    Extrapolation is linear from the endpoints with the slope like the one at 
+
+    Extrapolation is linear from the endpoints with the slope like the one at
     the endpoint.
-    
+
     **When called as a function:**
 
     :param x: The value to interpolate from
@@ -160,7 +160,7 @@ class NaturalCubicSpline:
     **How to use:**
 
     [Kiusalaas]_ p. 119
-    
+
     >>> xData = array([1, 2, 3, 4, 5], float64)
     >>> yData = array([0, 1, 0, 1, 0], float64)
     >>> # Instantiation
@@ -173,20 +173,20 @@ class NaturalCubicSpline:
     1.17857142857 -1.17857142857
     >>> print f(1.5, 2), f(4.5, 2)
     -2.14285714286 -2.14285714286
-    
+
     Call the function with a tuple, list or an array
-    
+
     >>> print f([1.5, 4.5])
     [ 0.76785714  0.76785714]
     >>> print f([1.5, 4.5], 1)
     [ 1.17857143 -1.17857143]
     >>> print f([1.5, 4.5], 2)
     [-2.14285714 -2.14285714]
-    
+
     **Reference:**
-    
+
     [Kiusalaas]_ p. 118, p. 191
-    
+
     '''
     def __init__(self, xData, yData):
         n = len(xData)
@@ -201,7 +201,7 @@ class NaturalCubicSpline:
         e[1:n-1] = dx[1:n-1]                    # Upper diagonal, e[0] = 0
         k[1:n-1] = 6.0 * (dy[1:] / dx[1:] - dy[0:-1] / dx[0:-1])    # k[0] = k[n] = 0
         self.xData = xData
-        self.yData = yData 
+        self.yData = yData
         lu = LUdecomp3(c, d, e)
         self.k = lu(k)
 
@@ -220,7 +220,7 @@ class NaturalCubicSpline:
         elif degree == 2:
             return 0
         else:
-            return slope * (x - x0) + y0            
+            return slope * (x - x0) + y0
 
     def _interpolate(self, x, degree = 0):
         i = self._findSegment(x)
@@ -232,11 +232,11 @@ class NaturalCubicSpline:
             return (ku * (x - xl)**2 - kl * (xu - x)**2) / (2 * h) + (yu - yl) / h - h / 6 * (ku - kl)
         elif degree == 2:
             return (ku * (x - xl) + kl * (xu - x)) / h
-        else:        
+        else:
             return (ku * (x - xl)**3 + kl * (xu - x)**3) / (6 * h) \
                    + (yl / h - h * kl / 6) * (xu - x) \
                    + (yu / h - h * ku / 6) * (x - xl)
-                
+
     def _findSegment(self, x):
         '''
         :param x: x value to place in segment defined by the xData (instantiation)

@@ -5,9 +5,7 @@
 from __future__ import print_function
 
 from setuptools import setup, find_packages
-from codecs import open
-import os
-import sys
+import os, sys
 
 # Search for required system packages
 missing_packages = []
@@ -53,10 +51,9 @@ from tilde import __version__
 packages = find_packages(exclude=["tests", "tests.*"])
 
 install_requires = [
-    'numpy == 1.16.6',
+    'numpy',
     'ujson',
     'bcrypt',
-    'importlib',
     'pg8000',
     'sqlalchemy',
     'argparse',

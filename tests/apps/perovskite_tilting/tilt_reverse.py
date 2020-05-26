@@ -18,8 +18,6 @@ from tilde.parsers import Output
 from tilde.classifiers.perovskites import generate_random_perovskite
 from tilde.apps.perovskite_tilting.perovskite_tilting import Perovskite_tilting
 
-from ase.spacegroup import crystal
-
 
 # First, work with ASE
 # this is the cubic perovskite given in orthorhombic P n m lat, in order to allow arbitrary octahedral tilting
