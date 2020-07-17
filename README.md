@@ -3,6 +3,7 @@ Tilde
 [![Build Status](https://travis-ci.org/tilde-lab/tilde.svg?branch=master)](https://travis-ci.org/tilde-lab/tilde)
 [![DOI](https://zenodo.org/badge/18811/tilde-lab/tilde.svg)](https://zenodo.org/badge/latestdoi/18811/tilde-lab/tilde)
 ![PyPI](https://img.shields.io/pypi/v/tilde.svg?style=flat)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftilde-lab%2Ftilde.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftilde-lab%2Ftilde?ref=badge_shield)
 
 Tilde is an intelligent data organizer and Python framework for computational _ab initio_ materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. Other data formats can be added relatively easily. The folders with the log files can be scanned and the results added into a repository. A simple usecase is described in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc). Web-based repository GUI is [separately available](https://github.com/tilde-lab/berlinium).
 
@@ -76,6 +77,9 @@ sh tests/run_tests.sh
 ## Licensing
 
 [MIT](https://en.wikipedia.org/wiki/MIT_License)
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftilde-lab%2Ftilde.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftilde-lab%2Ftilde?ref=badge_large)
 
 ## Similar projects
 
