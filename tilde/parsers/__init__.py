@@ -75,8 +75,9 @@ class Output:
             'prog':       'unknown version', # code version
             'perf':       None, # benchmarking
             'location':   filename,
-            'finished':   0x0,
+            'finished':   0x0, # 0x1 errored, 0x2 correctly finalized
             'duration':   None,
+            'timestamp':  None, # time of calc start, in Unix time fmt
             'input':      None,
 
             'energy':     None, # in eV

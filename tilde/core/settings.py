@@ -25,7 +25,7 @@ INIT_DATA = os.path.join(DATA_DIR, 'sql/init-data.sql')
 TEST_DBS_FILE = os.path.join(DATA_DIR, 'test_dbs.txt')
 TEST_DBS_REF_FILE = os.path.join(DATA_DIR, 'test_dbs_ref.txt')
 SETTINGS_PATH = DATA_DIR + os.sep + SETTINGS_FILE
-GUI_URL_TPL = 'http://tilde-lab.github.io/berlinium/?http://127.0.0.1:%s'
+GUI_URL_TPL = 'http://tilde-lab.github.io/berlinium/?http://127.0.0.1:%s' # ?https://db.tilde.pro
 
 DEFAULT_SETUP = {
 

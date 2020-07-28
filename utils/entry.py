@@ -171,7 +171,7 @@ for target in target_source:
                 out += str(cell_to_cellpar(calc.structures[-1].cell))
                 out += " V=%2.2f\n" % calc.info['dims']
                 for atom in calc.structures[-1]:
-                    out += " %s %s %s %s (q=%s m=%s)\n" % (atom.symbol, atom.x, atom.y, atom.z, atom.charge, atom.magmom)
+                    out += "\t%s %2.3f %2.3f %2.3f\t(q=%1.1f m=%1.1f)\n" % (atom.symbol, atom.x, atom.y, atom.z, atom.charge, atom.magmom)
                 output_lines += out
 
             # -c option

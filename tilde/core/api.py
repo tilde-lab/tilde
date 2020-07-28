@@ -272,21 +272,20 @@ class API:
             tasks.append(input_string) # skip_if_path directive is not applicable here
 
         # given filename stemma
-        else:
-            if stemma:
-                parent = os.path.dirname(input_string)
-                for filename in os.listdir(parent):
-                    filename = u(filename)
-                    if input_string in parent + os.sep + filename and not os.path.isdir(parent + os.sep + filename):
-                        # skip_if_path directive
-                        if restricted:
-                            for rs in restricted:
-                                if filename.startswith(rs) or filename.endswith(rs):
-                                    break
-                            else:
-                                tasks.append(parent + os.sep + filename)
+        elif stemma:
+            parent = os.path.dirname(input_string)
+            for filename in os.listdir(parent):
+                filename = u(filename)
+                if input_string in parent + os.sep + filename and not os.path.isdir(parent + os.sep + filename):
+                    # skip_if_path directive
+                    if restricted:
+                        for rs in restricted:
+                            if filename.startswith(rs) or filename.endswith(rs):
+                                break
                         else:
                             tasks.append(parent + os.sep + filename)
+                    else:
+                        tasks.append(parent + os.sep + filename)
         return tasks
 
     def _parse(self, parsable, parser_name):
