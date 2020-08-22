@@ -52,8 +52,10 @@ DEFAULT_SETUP = {
     'title': "Tilde GUI"
 }
 
+
 def virtualize_path(item):
     return item
+
 
 def connect_url(settings, named=None):
     if settings['db']['engine'] == 'sqlite':
@@ -70,6 +72,7 @@ def connect_url(settings, named=None):
         return settings['db']['engine'] + '+pg8000://' + settings['db']['user'] + ':' + settings['db']['password'] + '@' + settings['db']['host'] + ':' + str(settings['db']['port']) + '/' + settings['db']['dbname']
 
     else: sys.exit('Unsupported DB type: %s!\n' % settings['db']['engine'])
+
 
 def connect_database(settings, named=None, no_pooling=False, default_actions=True, scoped=False):
     '''
@@ -131,6 +134,7 @@ def connect_database(settings, named=None, no_pooling=False, default_actions=Tru
 
     return Session()
 
+
 def write_settings(settings):
     '''
     Saves user's settings
@@ -147,6 +151,7 @@ def write_settings(settings):
         return False
     else:
         return True
+
 
 def get_hierarchy(settings):
     '''
@@ -208,35 +213,37 @@ def get_hierarchy(settings):
     session.close()
     return hierarchy, hierarchy_groups, hierarchy_values
 
-# DEFAULT ACTIONS: LOAD/SAVE SETTINGS
+
+# DEFAULT ACTIONS ALWAYS TO DO: LOAD/SAVE SETTINGS
 if not os.path.exists(os.path.abspath(SETTINGS_PATH)):
     settings = DEFAULT_SETUP
     if not os.path.exists(DATA_DIR):
         try:
             os.makedirs(DATA_DIR)
         except IOError:
-            sys.exit('I/O error: failed write ' + DATA_DIR)
+            sys.exit('I/O error: failed write to %s' % DATA_DIR)
     if not write_settings(settings):
-        sys.exit('I/O error: failed to save settings in ' + DATA_DIR)
+        sys.exit('I/O error: failed to save settings in %s' % DATA_DIR)
 
 try: settings
 except NameError:
     try:
         settings = json.loads(open(SETTINGS_PATH).read())
     except ValueError:
-        sys.exit('Your ' + SETTINGS_PATH + ' seems to be bad-formatted, please, pay attention to commas and quotes!')
+        sys.exit('Your %s seems to be bad-formatted, please, pay attention to commas and quotes' % SETTINGS_PATH)
     except IOError:
-        sys.exit('Your ' + SETTINGS_PATH + ' is not accessible!')
+        sys.exit('Your %s is not accessible' % SETTINGS_PATH)
 
     DEFAULT_SETUP.update(settings)
     settings = DEFAULT_SETUP
 
-# DEFAULT ACTIONS: CHECK SETTINGS COMBINATIONS & RESTRICTIONS
+
+# DEFAULT ACTIONS ALWAYS TO DO: CHECK SETTINGS COMBINATIONS & RESTRICTIONS
 if settings['skip_if_path'] and len(settings['skip_if_path']) > 3:
-    sys.exit('Path skipping directive must not contain more than 3 symbols due to memory limits!')
+    sys.exit('Path skipping directive must not contain more than 3 symbols due to memory limits')
 
 if not 'engine' in settings['db'] or settings['db']['engine'] not in ['sqlite', 'postgresql']:
-    sys.exit('This DB backend is not supported!')
+    sys.exit('This DB backend is not supported')
 
 if not 'default_sqlite_db' in settings['db']:
-    sys.exit('Note that the settings.json format has been changed with the respect to the default sqlite DB.')
+    sys.exit('Note that the settings.json format has been changed with the respect to the default sqlite DB')

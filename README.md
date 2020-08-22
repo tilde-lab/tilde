@@ -6,6 +6,8 @@ Tilde
 
 Tilde is an intelligent data organizer and Python framework for computational _ab initio_ materials science. Tilde creates systemized data repositories from the simulation logs of [VASP](http://www.vasp.at), [CRYSTAL](http://www.crystal.unito.it) and [Quantum ESPRESSO](http://www.quantum-espresso.org) packages. Other data formats can be added relatively easily. The folders with the log files can be scanned and the results added into a repository. A simple usecase is described in [this blog post](https://blog.tilde.pro/simple-ab-initio-materials-data-mining-tutorial-6127c777dabc). Web-based repository GUI is [separately available](https://github.com/tilde-lab/berlinium).
 
+**WARNING! This is NOT the working software, but rather just a proof of concept. We internally use some parts of it in our in-house projects, but in general this repository is NOT recommended for any external usage, except educating or experimenting.**
+
 ## Installation
 
 System packages

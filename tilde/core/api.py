@@ -1,5 +1,5 @@
 
-# Functionality exposed as an API
+# All functionalities exposed as an API
 # Author: Evgeny Blokhin
 
 import os, sys
@@ -30,7 +30,7 @@ import ujson as json
 import six
 
 
-class API:
+class TildeAPI:
     version = __version__
     __shared_state = {}
     formula_sequence = [
@@ -1000,3 +1000,6 @@ class API:
         session.add_all([parent_calc, parent_meta, parent_grid])
         session.commit()
         return False
+
+
+API = TildeAPI

@@ -73,6 +73,7 @@ with open(points_file, "w") as s:
     s.write("x,y,z,label\n")
     for n, i in enumerate(ref):
         s.write(",".join(map(str, i)) + "\n")
+
 with open(cluster_file, "w") as s:
     s.write("x,y,z\n")
     for n, c in enumerate(clusters, 1):
@@ -80,5 +81,5 @@ with open(cluster_file, "w") as s:
             s.write(",".join(map(str, p.coords)) + "\n")
         s.write("-,-,-\n")
 
-print points_file
-print cluster_file
+print(points_file)
+print(cluster_file)

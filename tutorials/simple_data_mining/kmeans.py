@@ -89,8 +89,7 @@ if __name__ == "__main__":
     clusters = kmeans(points, k_from_n(num_points))
 
     for p in points:
-        print p
-    print
+        print(p)
+
     for c in clusters:
-        print c
-        print
+        print(c)

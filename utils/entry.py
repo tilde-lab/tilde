@@ -26,6 +26,7 @@ from tilde.core.api import API
 from ase.geometry import cell_to_cellpar
 
 
+logging.basicConfig(level=logging.INFO)
 starttime = time.time()
 work = API()
 
@@ -103,16 +104,15 @@ for target in target_source:
             if error:
                 if args.terse and 'was read' in error:
                     continue
-                print(task, error)
-                logging.info("%s %s" % (task, error))
+                logging.error("%s %s" % (task, error))
                 continue
 
             calc, error = work.classify(calc, args.symprec)
             if error:
-                print(task, error)
-                logging.info("%s %s" % (task, error))
+                logging.error("%s %s" % (task, error))
                 continue
 
+            logging.debug(task)
             header_line = (task + " (E=" + str(calc.info['energy']) + " eV)") if calc.info['energy'] else task
             if calc.info['warns']: add_msg = " (" + " ".join(calc.info['warns']) + ")"
 
@@ -151,16 +151,16 @@ for target in target_source:
                 if calc.convergence:
                     output_lines += str(calc.convergence) + "\n"
                 if calc.tresholds:
-                    for i in range(len(calc.tresholds)):
+                    for n in range(len(calc.tresholds)):
                         try:
-                            ncycles = calc.ncycles[i]
+                            ncycles = calc.ncycles[n]
                         except IndexError:
                             ncycles = "^"
-                        output_lines += "{:8f}".format(calc.tresholds[i][0] or nan) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][1] or nan) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][2] or nan) + "  " + \
-                                        "{:8f}".format(calc.tresholds[i][3] or nan) + "  " + \
-                                        "E={:12f}".format(calc.tresholds[i][4] or nan) + " eV" + "  " + \
+                        output_lines += "{:8f}".format(calc.tresholds[n][0] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[n][1] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[n][2] or nan) + "  " + \
+                                        "{:8f}".format(calc.tresholds[n][3] or nan) + "  " + \
+                                        "E={:12f}".format(calc.tresholds[n][4] or nan) + " eV" + "  " + \
                                         "(%s)" % ncycles + "\n"
 
             # -s option
@@ -193,7 +193,7 @@ for target in target_source:
             if args.module:
                 if args.module is True:
                     calc = work.postprocess(calc, dry_run=True)
-                    output_lines += "Modules to be invoked: " + str([i for i in calc.apps]) + "\n"
+                    output_lines += "Modules to be invoked: " + str([item for item in calc.apps]) + "\n"
                 else:
                     calc = work.postprocess(calc, args.module)
                     if args.module not in calc.apps:
@@ -209,20 +209,24 @@ for target in target_source:
                 else:
                     for bzpoint, frqset in calc.phonons['modes'].items():
                         output_lines += "\tK-POINT: " + bzpoint + "\n"
-                        compare = 0
-                        for i in range(len(frqset)):
-                            # if compare == frqset[i]: continue
+
+                        for n in range(len(frqset)):
                             irreps = calc.phonons['irreps'].get(bzpoint)
-                            irreps = irreps[i] if irreps else "?"
-                            output_lines += "%d" % frqset[i] + " (" + irreps + ")" + "\n"
-                            compare = frqset[i]
+                            irreps = irreps[n] if irreps else "?"
+                            output_lines += "%d" % frqset[n] + " (" + irreps + ") " + (
+                                ("\t" +
+                                    ("IR = " if calc.phonons['ir_active'][n] else "-") +
+                                        str(calc.phonons['ir_active'][n] or "-") + "\t\t\t" +
+                                    ("Raman = " if calc.phonons['raman_active'][n] else "-") +
+                                        str(calc.phonons['raman_active'][n] or "-")
+                                ) if bzpoint == '0 0 0' and calc.phonons['ir_active'] and calc.phonons['raman_active'] else ""
+                            ) + "\n"
 
             # -a option
             if args.add:
                 checksum, error = work.save(calc, session)
                 if error:
-                    print(task, error)
-                    logging.info("%s %s" % (task, error))
+                    logging.error("%s %s" % (task, error))
                     continue
                 header_line += ' added'
                 detected = True

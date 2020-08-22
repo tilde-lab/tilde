@@ -70,6 +70,6 @@ with open(cluster_file, "w") as s:
             s.write(",".join(map(str, pnt.coords) + [pnt.reference]) + "\n")
         s.write("-,-,-,-\n")
 
-print points_file
-print cluster_file
-print "\nDone in %1.2f sc" % (time.time() - starttime)
+print(points_file)
+print(cluster_file)
+print("\nDone in %1.2f sc" % (time.time() - starttime))
