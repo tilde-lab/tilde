@@ -117,7 +117,7 @@ class SymmetryHandler(SymmetryFinder):
         elif self.ng == 1:          self.pg = 'C<sub>1</sub>'
 
         # space group to layer group conversion
-        if tilde_obj['structures'][-1].periodicity == 2:
+        if getattr(tilde_obj['structures'][-1], 'periodicity') == 2:
             if self.ng in [25, 26, 28, 51]:
                 tilde_obj.warning('Warning! Diperiodical group setting is undefined!')
             DIPERIODIC_MAPPING = {3:8, 4:9, 5:10, 6:11, 7:12, 8:13, 10:14, 11:15, 12:16, 13:17, 14:18, 16:19, 17:20, 18:21, 21:22, 25:23, 25:24, 26:25, 26:26, 27:27, 28:28, 28:29, 29:30, 30:31, 31:32, 32:33, 35:34, 38:35, 39:36, 47:37, 49:38, 50:39, 51:40, 51:41, 53:42, 54:43, 55:44, 57:45, 59:46, 65:47, 67:48, 75:49, 81:50, 83:51, 85:52, 89:53, 90:54, 99:55, 100:56, 111:57, 113:58, 115:59, 117:60, 123:61, 125:62, 127:63, 129:64, 143:65, 147:66, 149:67, 150:68, 156:69, 157:70, 162:71, 164:72, 168:73, 174:74, 175:75, 177:76, 183:77, 187:78, 189:79, 191:80}
