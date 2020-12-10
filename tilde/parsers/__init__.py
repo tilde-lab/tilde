@@ -92,6 +92,7 @@ class Output:
             'lack':       False,
             'expanded':   False,
             'tags':       [],
+            'n_atoms':    None,
 
             'etype':      0x0,
             'bandgap':    None, # in eV

@@ -32,7 +32,7 @@ import six
 
 class TildeAPI:
     version = __version__
-    __shared_state = {}
+
     formula_sequence = [
         'Fr','Cs','Rb','K','Na','Li',
         'Be','Mg','Ca','Sr','Ba','Ra',
@@ -201,10 +201,10 @@ class TildeAPI:
             lbl = re.sub("[0-9]+", "", atom_i).capitalize()
             if lbl not in labels:
                 labels[lbl] = y
-                types.append([k+1])
+                types.append([k + 1])
                 y += 1
             else:
-                types[ labels[lbl] ].append(k+1)
+                types[ labels[lbl] ].append(k + 1)
         atoms = list(labels.keys())
         atoms = [x for x in self.formula_sequence if x in atoms] + [x for x in atoms if x not in self.formula_sequence]
         formula = ''
@@ -384,6 +384,10 @@ class TildeAPI:
            (not calc.info['energy'] and self.settings['skip_notenergy']):
             return None, 'data do not satisfy the active filter'
 
+        # applying filter: TODO: NB 0x1 means non-finalized
+        #if calc.info['finished'] != 0x1 or calc.info['H'] != 'PBE0': return None, 'data do not satisfy the filter'
+        #if calc.info['timestamp'] and calc.info['timestamp'] < 1602633600: return None, 'data do not satisfy the filter' # 14/10/20
+
         # naive elements extraction
         fragments = re.findall(r'([A-Z][a-z]?)(\d*[?:.\d+]*)?', calc.info['formula'])
         for fragment in fragments:
@@ -391,6 +395,9 @@ class TildeAPI:
                 continue
             calc.info['elements'].append(fragment[0])
             calc.info['contents'].append(int(fragment[1])) if fragment[1] else calc.info['contents'].append(1)
+
+        # applying filter: TODO: only unaries
+        #if len(calc.info['elements']) != 1: return None, 'data do not satisfy the filter'
 
         # extend hierarchy with modules
         for C_obj in self.Classifiers:
@@ -685,7 +692,7 @@ class TildeAPI:
             pot = model.Pottype.as_unique(session, name=calc.info['H'])
             pot.instances.append(ormcalc)
             ormcalc.recipinteg = model.Recipinteg(
-                kgrid=calc.info['k'],
+                kgrid=str(calc.info['k']),
                 kshift=calc.info['kshift'],
                 smearing=calc.info['smear'],
                 smeartype=calc.info['smeartype']
