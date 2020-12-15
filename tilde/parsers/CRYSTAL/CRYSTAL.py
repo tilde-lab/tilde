@@ -3,7 +3,7 @@ An updated CRYSTAL logs parser
 wrapping a standalone parser called pycrystal
 Authors: Evgeny Blokhin and Andrey Sobolev
 """
-import os
+import os.path
 
 from pycrystal import CRYSTOUT as _CRYSTOUT, CRYSTOUT_Error
 from tilde.parsers import Output
@@ -44,6 +44,13 @@ class CRYSTOUT(Output):
         for check in check_files:
             if os.path.exists(os.path.join(cur_folder, check)):
                 self.related_files.append(os.path.join(cur_folder, check))
+
+        err_file = os.path.join(cur_folder, 'fort.87')
+        if os.path.exists(err_file):
+            with open(err_file, 'r') as f:
+                err_msg = f.readline()
+            if err_msg:
+                self.info['warns'].append(err_msg)
 
     @staticmethod
     def fingerprints(test_string):
