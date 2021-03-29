@@ -12,12 +12,12 @@ import spglib as spg
 
 
 class SymmetryFinder:
-    accuracy = 1e-04 # recommended accuracy value: 1e-04
+    accuracy = 1e-04
 
     def __init__(self, accuracy=None):
         self.error = None
         self.accuracy=accuracy if accuracy else SymmetryFinder.accuracy
-        self.angle_tolerance=4
+        self.angle_tolerance = -1
 
     def get_spacegroup(self, tilde_obj):
         try:

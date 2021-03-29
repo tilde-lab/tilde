@@ -54,8 +54,8 @@ class BerliniumGUIProvider:
         if type(req['settings'].get('cols')) is not list or not 1 <= len(req['settings'].get('cols')) <= 40:
             return (None, 'Invalid settings!')
 
-        for i in ['cols', 'colnum']:
-            Connection.Clients[client_id].usettings[i] = req['settings'].get(i)
+        for item in ['cols', 'colnum']:
+            Connection.Clients[client_id].usettings[item] = req['settings'].get(item)
 
         # all available columns are compiled here and sent to user to select between them
         avcols = []
@@ -67,8 +67,8 @@ class BerliniumGUIProvider:
 
         # settings of specified scope
         data['settings'] = { 'avcols': avcols, 'dbs': [DB_TITLE] }
-        for i in ['exportability', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport']:
-            if i in settings: data['settings'][i] = settings[i]
+        for item in ['exportability', 'local_dir', 'skip_unfinished', 'skip_if_path', 'webport']:
+            if item in settings: data['settings'][item] = settings[item]
 
         return (data, None)
 
@@ -132,7 +132,7 @@ class BerliniumGUIProvider:
                 except: return (data, 'Invalid request!')
 
             proposition = []
-            for i, _ in db_session.query(model.Calculation.checksum, sortby) \
+            for item, _ in db_session.query(model.Calculation.checksum, sortby) \
                 .join(model.Calculation.meta_data) \
                 .join(model.Calculation.uitopics) \
                 .filter(model.Topic.tid.in_(req['tids'])) \
@@ -141,7 +141,7 @@ class BerliniumGUIProvider:
                 .filter(and_(*clauses)) \
                 .order_by(sortby) \
                 .slice(start, stop).all():
-                proposition.append(i)
+                proposition.append(item)
 
             if not proposition: return ({'msg': 'Nothing found'}, error)
 
@@ -149,8 +149,8 @@ class BerliniumGUIProvider:
 
         elif clauses:
             proposition = []
-            for i in db_session.query(model.Calculation.checksum).filter(and_(*clauses)).slice(start, stop).all():
-                proposition += list(i)
+            for item in db_session.query(model.Calculation.checksum).filter(and_(*clauses)).slice(start, stop).all():
+                proposition += list(item)
             if not proposition: return ({'msg': 'Nothing found &mdash; change slider limits'}, error)
 
             data['count'] = db_session.query(model.Calculation.checksum).filter(and_(*clauses)).count()
@@ -263,8 +263,8 @@ class BerliniumGUIProvider:
                 if n > 1:
                     baseq += ' INNER JOIN tags t%s ON t%s.checksum = t%s.checksum AND t%s.tid = :param%s' % ( (n+1), n, (n+1), (n+1), n ) # FIXME self-joins in ORM
             current_engine = db_session.get_bind()
-            for i in current_engine.execute(text(baseq), **params).fetchall():
-                categs += list(i)
+            for item in current_engine.execute(text(baseq), **params).fetchall():
+                categs += list(item)
 
         return (categs, None)
 
@@ -348,8 +348,8 @@ class BerliniumGUIProvider:
 
         # *server + client-side* settings
         if req['area'] == 'cols':
-            for i in ['cols', 'colnum']:
-                Connection.Clients[client_id].usettings[i] = req['settings'][i]
+            for item in ['cols', 'colnum']:
+                Connection.Clients[client_id].usettings[item] = req['settings'][item]
 
         else: error = 'Unknown settings context area!'
 
