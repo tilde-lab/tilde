@@ -15,7 +15,7 @@ from numpy import dot, array
 from tilde import __version__
 from tilde.core.common import u, is_binary_string, html_formula
 from tilde.core.symmetry import SymmetryHandler
-from tilde.core.settings import BASE_DIR, settings, virtualize_path, get_hierarchy
+from tilde.core.settings import BASE_DIR, settings as default_settings, virtualize_path, get_hierarchy
 from tilde.core.electron_structure import ElectronStructureError
 from tilde.parsers import Output
 import tilde.core.model as model
@@ -56,12 +56,14 @@ class TildeAPI:
         'He','Ne','Ar','Kr','Xe','Rn'
     ]
 
-    def __init__(self, settings=settings):
-        self.settings = settings
+    def __init__(self, settings=None):
+        self.settings = default_settings
+        for item in (settings or {}):
+            self.settings[item] = settings[item]
 
         # Default hierarchy is set in the file init-data.sql
         # Conventionally, the hierarchy values are set by hexadecimal numbers (with leading 0x)
-        self.hierarchy, self.hierarchy_groups, self.hierarchy_values = get_hierarchy(settings)
+        self.hierarchy, self.hierarchy_groups, self.hierarchy_values = get_hierarchy(self.settings)
 
         # *parser API*
         # Subfolder "parsers" contains directories with parsers.
@@ -347,7 +349,7 @@ class TildeAPI:
                                 error = 'Valid structure is not present!'
 
                             if calc.info['finished'] == 0x1:
-                                calc.warning( 'This calculation is not correctly finished!' )
+                                calc.warning('This calculation is not correctly finished!')
 
                             if not calc.info['H']:
                                 error = 'XC potential is not present!'
@@ -578,14 +580,14 @@ class TildeAPI:
                     exc_type, exc_value, exc_tb = sys.exc_info()
                     errmsg = "Fatal error in %s module:\n %s" % (appname, " ".join(traceback.format_exception( exc_type, exc_value, exc_tb )))
                     calc.apps[appname]['error'] = errmsg
-                    calc.warning( errmsg )
+                    calc.warning(errmsg)
                 else:
                     try:
                         calc.apps[appname]['data'] = getattr(AppInstance, appclass['appdata'])
                     except AttributeError:
                         errmsg = 'No appdata-defined property found for %s module!' % appname
                         calc.apps[appname]['error'] = errmsg
-                        calc.warning( errmsg )
+                        calc.warning(errmsg)
         return calc
 
     def save(self, calc, session):
@@ -653,7 +655,8 @@ class TildeAPI:
                         phonons_json[-1]['ph_k_degeneracy'] = calc.phonons['ph_k_degeneracy'][bzpoint]
 
                 ormcalc.phonons = model.Phonons()
-                ormcalc.spectra.append( model.Spectra(kind=model.Spectra.PHONON, eigenvalues=json.dumps(phonons_json)) )
+                try: ormcalc.spectra.append( model.Spectra(kind=model.Spectra.PHONON, eigenvalues=json.dumps(phonons_json)) )
+                except: calc.warning('Cannot save phonon eigenvalues!')
 
             # prepare electron data for saving TODO re-structure this
             for task in ['dos', 'bands']: # projected?
