@@ -34,7 +34,7 @@ DEFAULT_SETUP = {
     'log_dir': os.path.join(DATA_DIR, "logs"), # TODO
     'skip_unfinished': False,
     'skip_notenergy': False,
-    'skip_if_path': "",
+    'skip_if_path': [],
 
     # DB part
     'db': {

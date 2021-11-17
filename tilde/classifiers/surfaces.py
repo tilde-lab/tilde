@@ -3,7 +3,6 @@
 # Author: Evgeny Blokhin
 
 import math
-import fractions
 from functools import reduce
 
 # hierarchy API: __order__ to apply classifier
@@ -123,7 +122,7 @@ def classify(tilde_obj):
         if len(adsorbate):
             tilde_obj.info['tags'].append(0x3)
             adsorbent_formula = ''
-            r = reduce(fractions.gcd, adsorbate.values())
+            r = reduce(math.gcd, adsorbate.values())
 
             # sort according to pre-defined element order in a full slab formula
             elems = [x for x in tilde_obj.info['elements'] if x in adsorbate.keys()] + [x for x in adsorbate.keys() if x not in tilde_obj.info['elements']]
@@ -136,7 +135,7 @@ def classify(tilde_obj):
 
     if content_by_layer[0] == content_by_layer[-1] and len(content_by_layer) > 1:
         termination_formula = ''
-        d = reduce(fractions.gcd, content_by_layer[0].values())
+        d = reduce(math.gcd, content_by_layer[0].values())
         # sort according to pre-defined element order in a full slab formula
         elems = [x for x in tilde_obj.info['elements'] if x in content_by_layer[0].keys()] + [x for x in content_by_layer[0].keys() if x not in tilde_obj.info['elements']]
         elems_content = [ content_by_layer[0][i] for i in elems ]

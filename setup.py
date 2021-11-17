@@ -70,7 +70,7 @@ install_requires = [
 setup(
     name='tilde',
     version=__version__,
-    description='Materials informatics framework for ab initio data repositories',
+    description='Materials informatics framework for creating ab initio data repositories',
     long_description=long_description,
     url='https://github.com/tilde-lab/tilde',
     license='MIT',

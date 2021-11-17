@@ -4,7 +4,7 @@
 
 import os, sys
 import re
-from fractions import gcd
+from math import gcd
 import inspect
 import traceback
 import importlib
@@ -628,7 +628,7 @@ class TildeAPI:
 
                 for bzpoint, frqset in calc.phonons['modes'].items():
                     # re-orientate eigenvectors
-                    for i in range(0, len(calc.phonons['ph_eigvecs'][bzpoint])):
+                    for i in range(0, len( (calc.phonons['ph_eigvecs'] or {}).get(bzpoint) )):
                         for j in range(0, len(calc.phonons['ph_eigvecs'][bzpoint][i])//3):
                             eigv = array([
                                 calc.phonons['ph_eigvecs'][bzpoint][i][j*3],
@@ -647,7 +647,7 @@ class TildeAPI:
                             empty.append('')
                         irreps = empty
 
-                    phonons_json.append({'bzpoint':bzpoint, 'freqs':frqset, 'irreps':irreps, 'ph_eigvecs':calc.phonons['ph_eigvecs'][bzpoint]})
+                    phonons_json.append({'bzpoint': bzpoint, 'freqs': frqset, 'irreps': irreps, 'ph_eigvecs': (calc.phonons['ph_eigvecs'] or {}).get(bzpoint) })
                     if bzpoint == '0 0 0':
                         phonons_json[-1]['ir_active'] = calc.phonons['ir_active']
                         phonons_json[-1]['raman_active'] = calc.phonons['raman_active']
@@ -713,7 +713,7 @@ class TildeAPI:
                 nelem=calc.info['nelem'],
                 dimensions=calc.info['dims']
             )
-            if len(calc.tresholds) > 1:
+            if calc.tresholds:
                 ormcalc.struct_optimisation = model.Struct_optimisation(
                     tresholds=_json.dumps(calc.tresholds), # NB. ujson fails here on NaN
                     ncycles=json.dumps(calc.ncycles)

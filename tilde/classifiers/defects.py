@@ -2,7 +2,7 @@
 # Try to find vacancy defects: detects vacant places of host atoms
 # Author: Evgeny Blokhin
 
-import fractions
+from math import gcd
 from functools import reduce
 
 
@@ -13,7 +13,7 @@ def classify(tilde_obj):
     if len(tilde_obj.info['elements']) < 2: return tilde_obj
     elif tilde_obj.structures[-1].periodicity in [0, 1, 2]: return tilde_obj
 
-    tilde_obj.info['expanded'] = reduce(fractions.gcd, tilde_obj.info['contents'])
+    tilde_obj.info['expanded'] = reduce(gcd, tilde_obj.info['contents'])
     if sum(tilde_obj.info['contents']) / tilde_obj.info['expanded'] < 15: return tilde_obj # check for >= 15-atoms
 
     gcds = []
@@ -26,7 +26,7 @@ def classify(tilde_obj):
             else: try_index = index
 
             chk_content[try_index] += i
-            gcds.append([try_index, i, reduce(fractions.gcd, chk_content)])
+            gcds.append([try_index, i, reduce(gcd, chk_content)])
             if tilde_obj.info['lack']: break
     m_red = max(gcds, key = lambda a: a[2]) # WARNING: only one of several possible reducing configurations is taken!
 
